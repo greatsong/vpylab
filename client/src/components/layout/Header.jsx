@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { useI18n } from '../../i18n';
 import useAppStore from '../../stores/appStore';
@@ -130,10 +131,10 @@ export default function Header() {
         </svg>
       </button>
 
-      {/* 모바일 메뉴 오버레이 */}
-      {mobileMenuOpen && (
+      {/* 모바일 메뉴 오버레이 (Portal) */}
+      {mobileMenuOpen && createPortal(
         <div
-          className="md:hidden fixed inset-0 z-[200]"
+          className="md:hidden fixed inset-0 z-[9999]"
           style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
           onClick={() => setMobileMenuOpen(false)}
         >
@@ -146,37 +147,42 @@ export default function Header() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* 메뉴 헤더 */}
-            <div className="flex items-center gap-2.5 mb-6 px-1">
-              <svg width="24" height="24" viewBox="0 0 48 48">
-                <defs>
-                  <radialGradient id="m-sv" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#B8A9FF"/><stop offset="50%" stopColor="#6C5CE7"/><stop offset="100%" stopColor="#4834B0"/></radialGradient>
-                  <radialGradient id="m-sc" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#FFB3A7"/><stop offset="50%" stopColor="#FF6B6B"/><stop offset="100%" stopColor="#C44569"/></radialGradient>
-                  <radialGradient id="m-sm" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#7DFFDA"/><stop offset="50%" stopColor="#00B894"/><stop offset="100%" stopColor="#00876A"/></radialGradient>
-                  <linearGradient id="m-ba" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#FFEAA7"/><stop offset="100%" stopColor="#FDCB6E"/></linearGradient>
-                  <linearGradient id="m-bs2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#81ECEC"/><stop offset="100%" stopColor="#00CEC9"/></linearGradient>
-                </defs>
-                {[12,18,24,30,36].map(y=><line key={y} x1="3" y1={y} x2="45" y2={y} stroke="#D5C8F0" strokeWidth="1" strokeLinecap="round" opacity="0.7"/>)}
-                <line x1="12" y1="10" x2="12" y2="28" stroke="#6C5CE7" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-                <line x1="24" y1="8" x2="24" y2="20" stroke="#00B894" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-                <line x1="36" y1="14" x2="36" y2="32" stroke="#FF6B6B" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-                <path d="M12 10 C15 10, 16 13, 14 15" stroke="#6C5CE7" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.5"/>
-                <path d="M24 8 C27 8, 28 11, 26 13" stroke="#00B894" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.5"/>
-                <path d="M36 14 C39 14, 40 17, 38 19" stroke="#FF6B6B" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.5"/>
-                <circle cx="12" cy="30" r="4.5" fill="url(#m-sv)"/>
-                <ellipse cx="10.8" cy="28.5" rx="1.5" ry="1" fill="white" opacity="0.45"/>
-                <rect x="20.5" y="17" width="7" height="7" rx="1" fill="url(#m-ba)" transform="rotate(15, 24, 20.5)"/>
-                <circle cx="36" cy="34" r="4" fill="url(#m-sc)"/>
-                <circle cx="42" cy="13" r="2.5" fill="url(#m-sm)"/>
-                <rect x="5" y="38" width="5" height="5" rx="0.8" fill="url(#m-bs2)" transform="rotate(-10, 7.5, 40.5)"/>
-              </svg>
-              <span className="font-display text-base font-bold" style={{ color: 'var(--color-text-primary)' }}>
-                VPyLab
-              </span>
+            <div className="flex items-center justify-between mb-8 px-1">
+              <div className="flex items-center gap-2.5">
+                <svg width="28" height="28" viewBox="0 0 28 28">
+                  <line x1="14" y1="14" x2="24" y2="20" stroke="#FF6B6B" strokeWidth="2.5" strokeLinecap="round"/>
+                  <line x1="14" y1="14" x2="14" y2="4" stroke="#00B894" strokeWidth="2.5" strokeLinecap="round"/>
+                  <line x1="14" y1="14" x2="6" y2="20" stroke="#6C5CE7" strokeWidth="2.5" strokeLinecap="round"/>
+                  <circle cx="14" cy="14" r="3" fill="#6C5CE7"/>
+                </svg>
+                <span className="font-display text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                  VPyLab
+                </span>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer"
+                style={{ border: 'none', backgroundColor: 'transparent' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round">
+                  <line x1="4" y1="4" x2="14" y2="14" />
+                  <line x1="14" y1="4" x2="4" y2="14" />
+                </svg>
+              </button>
             </div>
 
             {/* 네비게이션 */}
             <nav className="flex flex-col gap-1 flex-1">
               {navItems.map(({ key, path }) => {
+                const iconColors = {
+                  home: '#6C5CE7',
+                  sandbox: '#00B894',
+                  missions: '#FF6B6B',
+                  gallery: '#FDCB6E',
+                  aiLab: '#00CEC9',
+                  dashboard: '#A29BFE',
+                  about: '#72757E',
+                };
                 const icons = {
                   home: <path d="M3 10L12 3L21 10V20C21 20.55 20.55 21 20 21H15V14H9V21H4C3.45 21 3 20.55 3 20V10Z" fill="currentColor"/>,
                   sandbox: <><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.8" fill="none"/><path d="M8 8L16 8M8 12L13 12M8 16L15 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></>,
@@ -187,6 +193,7 @@ export default function Header() {
                   about: <><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" fill="none"/><path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></>,
                 };
                 const active = isActive(path);
+                const iconColor = active ? 'var(--color-accent)' : iconColors[key];
                 return (
                   <Link
                     key={key}
@@ -198,10 +205,13 @@ export default function Header() {
                     }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                      style={{ color: active ? 'var(--color-accent)' : 'var(--color-text-muted)', flexShrink: 0 }}>
-                      {icons[key] || icons.about}
-                    </svg>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: active ? 'var(--color-accent-bg)' : `${iconColors[key]}15` }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        style={{ color: iconColor }}>
+                        {icons[key] || icons.about}
+                      </svg>
+                    </div>
                     {t(`nav.${key}`)}
                   </Link>
                 );
@@ -215,7 +225,8 @@ export default function Header() {
               </p>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 컨트롤 */}
