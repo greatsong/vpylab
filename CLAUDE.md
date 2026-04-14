@@ -1,4 +1,4 @@
-# VPy Lab — Claude Code 가이드
+# VPyLab — Claude Code 가이드
 
 ## 프로젝트 개요
 
@@ -14,13 +14,15 @@
 - **Python**: Pyodide (Web Worker)
 - **DB/인증**: Supabase Pro
 - **AI**: Upstage Solar Pro 3 (서버 프록시)
-- **호스팅**: Railway (백엔드), Cloudflare Pages (프론트)
+- **호스팅**: Railway (백엔드), Vercel (프론트)
 
 ## 코딩 컨벤션
 
 - UI 텍스트와 주석은 한국어
 - 코드(변수명, 함수명 등)는 영어
-- CSS 변수 기반 4종 테마 시스템 (data-theme 속성)
+- CSS 변수 기반 2종 테마 시스템 (creative-light / deep-dark)
+- 폰트: Satoshi(Display) + DM Sans(Body) + JetBrains Mono(Code)
+- 디자인 시스템: DESIGN.md 참조
 - 보안: Express에 helmet, cors, rate-limit 필수. Worker 내 위험 API 삭제 필수.
 
 ## 보안 주의사항

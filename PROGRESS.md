@@ -198,7 +198,7 @@
 ### About 페이지 + 배포 설정 (2026-04-14 오후 5차)
 - **About 페이지**: 비전, GlowScript 비교 테이블, 기술 스택 카드, 기여 안내, 라이선스, 크레딧
 - **i18n 추가**: auth, code, dashboard, about, common 섹션 (ko + en)
-- **배포 준비**: Cloudflare Pages `_redirects`, Railway `Procfile`, 환경변수 설정
+- **배포 준비**: Vercel `_redirects`, Railway `Procfile`, 환경변수 설정
 - **67개 테스트 전체 통과, 빌드 성공**
 - **라우팅 추가**: /about, /dashboard, /auth/callback
 
@@ -243,7 +243,7 @@
 
 ### 우선순위 1: 실제 배포
 1. **OAuth 활성화** — Supabase 대시보드에서 Google/GitHub OAuth 설정
-2. **배포 실행** — Cloudflare Pages + Railway 실제 배포
+2. **배포 실행** — Vercel + Railway 실제 배포
 3. **E2E 인증 테스트** — 로그인 → 코드 저장 → 갤러리 발행 → GitHub Pages 확인
 
 ### 우선순위 2: 갤러리 고도화
@@ -280,7 +280,7 @@ vpylab/
 ├── client/
 │   ├── vite.config.js (포트 4033, vitest 설정 포함)
 │   ├── .env, .env.example
-│   ├── public/_redirects (Cloudflare Pages SPA)
+│   ├── public/_redirects (Vercel SPA)
 │   ├── src/
 │   │   ├── index.css (4종 테마 + 브랜드 + 애니메이션)
 │   │   ├── App.jsx (라우팅 + lazy loading + Gallery/GalleryDetail 추가)
