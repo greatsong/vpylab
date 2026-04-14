@@ -4,6 +4,8 @@ import { useI18n } from '../i18n';
 import Header from '../components/layout/Header';
 import { categories, getMissionsByCategory } from '../data/missions';
 import useAppStore from '../stores/appStore';
+import useGalleryStore from '../stores/galleryStore';
+import GalleryCard from '../components/gallery/GalleryCard';
 
 const CATEGORY_COLORS = {
   CT: '#58a6ff',
@@ -17,12 +19,15 @@ const CATEGORY_COLORS = {
 export default function Home() {
   const { t } = useI18n();
   const [serverStatus, setServerStatus] = useState(null);
+  const featuredWorks = useGalleryStore(s => s.featuredWorks);
+  const fetchFeaturedWorks = useGalleryStore(s => s.fetchFeaturedWorks);
 
   useEffect(() => {
     fetch('/api/health')
       .then((r) => r.json())
       .then((data) => setServerStatus(data.status))
       .catch(() => setServerStatus('offline'));
+    fetchFeaturedWorks();
   }, []);
 
   const statusIcon = serverStatus === 'ok' ? '🟢' : serverStatus === 'offline' ? '🔴' : '⏳';
@@ -153,6 +158,25 @@ export default function Home() {
             })}
           </div>
         </section>
+
+        {/* 갤러리 하이라이트 */}
+        {featuredWorks.length > 0 && (
+          <section className="max-w-5xl mx-auto px-4 py-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                🎨 {t('gallery.featured') || '인기 작품'}
+              </h2>
+              <Link to="/gallery" className="text-sm no-underline" style={{ color: 'var(--color-accent)' }}>
+                {t('gallery.title') || '갤러리'} →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {featuredWorks.slice(0, 6).map(work => (
+                <GalleryCard key={work.id} work={work} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* 푸터 */}
         <footer className="text-center text-sm py-8" style={{ color: 'var(--color-text-muted)' }}>

@@ -202,24 +202,60 @@
 - **67개 테스트 전체 통과, 빌드 성공**
 - **라우팅 추가**: /about, /dashboard, /auth/callback
 
+### 내보내기 동기화 v2 (2026-04-14 오후 9차)
+- **export-html.js 완전 재작성**: vpython-api.py와 100% 동기화
+  - 30색 팔레트(_ColorPalette + 한글 이름) + compound + make_trail + 속성 setter
+  - 사운드: beep/note/chord/sequence + SFX 12종 + BGM 5종 + 악기 8종 인라인
+  - 3D 차트: scatter3d/surface3d/line3d/bar3d + 5종 컬러맵 인라인
+  - NamedList(음계/무지개/파스텔 등) + 한글 API 별칭(음표/효과음/배경음악/악기)
+  - numpy 자동 설치(micropip) + stdout 콘솔 표시
+  - `from vpython import *` 자동 제거 (독립 HTML에서 ModuleNotFoundError 수정)
+  - `vector.clone()` 메서드 추가
+- **E2E 테스트 5건 통과**: 30색/compound/trail, 사운드 7종, scatter3d/surface3d, NamedList/setter/rate(), 내보내기 HTML 20항목 검증
+- **120개 vitest 테스트 통과, 빌드 성공**
+
+### 갤러리 + GitHub Pages 발행 시스템 (2026-04-14 오후 9차)
+- **DB 스키마**: `002_gallery.sql` — vpylab_gallery + vpylab_gallery_likes 테이블
+  - RLS 7개 정책, 인덱스 7개, RPC 3개 (조회수/좋아요 토글/Remix 카운트)
+  - 보안: 본인 작품만 수정/삭제, 본인 조회수 카운트 안 함, 좋아요 중복 방지
+- **서버 API**: `server/routes/publish.js` — GitHub Pages 자동 발행
+  - 리포 생성 → index.html 커밋 → Pages 활성화 → URL 반환
+  - 보안: rate-limit 분당 3회, 리포명 sanitize, 민감 정보 검사, token DB 미저장
+- **galleryStore**: Zustand — 목록/상세/발행/좋아요/Remix/검색/필터/페이지네이션
+- **authStore 수정**: `public_repo` scope, `getGitHubToken()`, `isGitHubUser()`
+- **UI 컴포넌트**:
+  - Gallery.jsx — 갤러리 목록 (검색/카테고리 필터/정렬)
+  - GalleryDetail.jsx — 작품 상세 + "영감" 링크 + Remix + 코드 보기
+  - GalleryCard.jsx — 작품 카드 (썸네일/통계/Pages 배지)
+  - PublishModal.jsx — 발행 모달 (제목/설명/카테고리/GitHub 옵션)
+  - thumbnail.js — 3D 뷰포트 캡처
+- **라우팅**: `/gallery`, `/gallery/:id` 추가
+- **Sandbox**: "🚀 갤러리에 올리기" 버튼, `?remix={id}` 파라미터 → 코드 로드 + Remix 배너
+- **Header**: 네비에 "갤러리" 추가
+- **Home**: 인기 작품 하이라이트 섹션
+- **i18n**: ko/en gallery 섹션 30+키 추가
+- **GitHub 오픈소스 인프라**: .github/ (Issue/PR 템플릿, CI, CODEOWNERS 등 16파일) + docs/ (3파일) + CONTRIBUTING.md
+- **120개 테스트 통과, 빌드 성공**
+
 ---
 
 ## 📋 다음 세션 작업 순서
 
-### 우선순위 1: 내보내기 동기화 (기술 부채)
-1. **export-html.js 업데이트** — 사운드/차트/compound/trail/30색/악기/NamedList를 독립 HTML에 포함
-2. **MissionPlay에 내보내기/공유 버튼** 추가 (선택적)
+### 우선순위 1: 실제 배포
+1. **OAuth 활성화** — Supabase 대시보드에서 Google/GitHub OAuth 설정
+2. **배포 실행** — Cloudflare Pages + Railway 실제 배포
+3. **E2E 인증 테스트** — 로그인 → 코드 저장 → 갤러리 발행 → GitHub Pages 확인
 
-### 우선순위 2: 배포
-3. **OAuth 활성화** — Supabase 대시보드에서 Google/GitHub OAuth 설정
-4. **배포 실행** — Cloudflare Pages + Railway 실제 배포
-5. **E2E 인증 테스트** — 실제 로그인 → 코드 저장 → 미션 제출 흐름 검증
+### 우선순위 2: 갤러리 고도화
+4. **Sandbox 내보내기 파일명** — GitHub ID + 날짜시간 형식 (이미 적용됨)
+5. **갤러리 상세에서 3D 미리보기** — 코드 자동 실행 (읽기 전용 Sandbox)
+6. **Home 갤러리 하이라이트** — 추천/인기 작품 표시 (구현 완료, 데이터 필요)
 
 ### 우선순위 3: 기능 확장
-6. **교사 역할 전환** — admin이 교사 역할 부여하는 기능
-7. **미션 추가** — 50개 목표 중 16개 완료 → 추가 미션 개발
-8. **2D 오버레이 차트** — plot2d() 함수 (캔버스 기반 HUD)
-9. **matplotlib 이미지 렌더링** — base64 PNG → 콘솔/뷰포트 표시
+7. **교사 역할 전환** — admin이 교사 역할 부여하는 기능
+8. **미션 추가** — 50개 목표 중 16개 완료 → 추가 미션 개발
+9. **2D 오버레이 차트** — plot2d() 함수 (캔버스 기반 HUD)
+10. **matplotlib 이미지 렌더링** — base64 PNG → 콘솔/뷰포트 표시
 
 ---
 
@@ -228,40 +264,48 @@
 ```
 vpylab/
 ├── PLAN.md, DESIGN_REVIEW.md, PROGRESS.md, CLAUDE.md
+├── CONTRIBUTING.md
 ├── LICENSE (AGPL v3), CODE_OF_CONDUCT.md
 ├── .gitignore, package.json
+├── .github/
+│   ├── ISSUE_TEMPLATE/ (4개: bug, mission, feature, i18n)
+│   ├── PULL_REQUEST_TEMPLATE/ (기본 + mission)
+│   ├── workflows/ (ci, mission-review, i18n-check, welcome, stale)
+│   ├── CODEOWNERS, SECURITY.md, FUNDING.yml, labels.yml
+├── docs/ (MISSION_SCHEMA.md, I18N_GUIDE.md, GALLERY_SYSTEM.md)
 ├── supabase/
 │   ├── config.toml
-│   └── migrations/001_vpylab_schema.sql (4테이블 + 11 RLS + 트리거)
+│   ├── migrations/001_vpylab_schema.sql (4테이블 + 11 RLS)
+│   └── migrations/002_gallery.sql (2테이블 + 7 RLS + 3 RPC)
 ├── client/
 │   ├── vite.config.js (포트 4033, vitest 설정 포함)
 │   ├── .env, .env.example
 │   ├── public/_redirects (Cloudflare Pages SPA)
 │   ├── src/
 │   │   ├── index.css (4종 테마 + 브랜드 + 애니메이션)
-│   │   ├── App.jsx (라우팅 + lazy loading + AuthModal + 인증 초기화)
+│   │   ├── App.jsx (라우팅 + lazy loading + Gallery/GalleryDetail 추가)
 │   │   ├── lib/supabase.js (Supabase 클라이언트)
-│   │   ├── i18n/ (ko.json 150+키, en.json 150+키, index.jsx)
-│   │   ├── engine/ (9개 엔진 파일 + 4개 테스트)
-│   │   │   ├── sound-system.js (게임SFX 12종 + BGM 5종 + 악기 8종)
-│   │   │   ├── camera-system.js (Auto-Fit + Smooth Follow + Manual)
-│   │   │   ├── chart-system.js (scatter3d/surface3d/line3d/bar3d + 5종 컬러맵)
-│   │   │   ├── vpython-api.py (30색 팔레트 + NamedList + 한글 API)
+│   │   ├── i18n/ (ko.json 180+키, en.json 180+키, index.jsx)
+│   │   ├── engine/ (10개 엔진 파일 + 4개 테스트)
+│   │   │   ├── sound-system.js, camera-system.js, chart-system.js
+│   │   │   ├── vpython-api.py (30색 + NamedList + 한글 API + clone)
+│   │   │   ├── thumbnail.js (3D 뷰포트 JPEG 캡처)
 │   │   │   └── ... (code-preprocessor, vpython-bridge, grading-engine 등)
-│   │   ├── data/missions.js (16개 미션: CT2+CR2+MA2+SC2+AR3+SN5 + 테스트)
+│   │   ├── data/missions.js (16개 미션 + 테스트)
 │   │   ├── hooks/usePyodide.js
 │   │   ├── components/
-│   │   │   ├── layout/Header.jsx (로그인/프로필 드롭다운)
+│   │   │   ├── layout/Header.jsx (갤러리 네비 추가)
 │   │   │   ├── auth/AuthModal.jsx (Google + GitHub OAuth)
-│   │   │   ├── code/SavedCodeList.jsx (저장 코드 사이드패널)
+│   │   │   ├── code/SavedCodeList.jsx
+│   │   │   ├── gallery/GalleryCard.jsx, PublishModal.jsx
 │   │   │   ├── dashboard/ClassManager.jsx, StudentProgress.jsx
 │   │   │   ├── editor/, viewport/, console/, shared/
-│   │   ├── pages/ (Home, Sandbox, Missions, MissionPlay, About, Dashboard, AuthCallback)
-│   │   ├── stores/ (appStore.js, authStore.js, codeStore.js)
-│   │   ├── utils/ (share.js, export-html.js)
+│   │   ├── pages/ (Home, Sandbox, Missions, MissionPlay, About, Dashboard, Gallery, GalleryDetail, AuthCallback)
+│   │   ├── stores/ (appStore.js, authStore.js, codeStore.js, galleryStore.js)
+│   │   ├── utils/ (share.js, export-html.js v2)
 │   │   └── test/setup.js
 ├── server/
-│   ├── index.js, routes/ai.js
+│   ├── index.js, routes/ai.js, routes/publish.js
 │   ├── Procfile (Railway)
 │   └── .env, .env.example
 ```

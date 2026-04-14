@@ -3,6 +3,25 @@ import { supabase } from '../lib/supabase';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
 
+/**
+ * 사용자 프로필을 일괄 조회하여 작품에 매핑
+ * vpylab_gallery.user_id → vpylab_profiles.id (둘 다 auth.users FK)
+ */
+async function attachProfiles(works) {
+  if (!works || works.length === 0) return works;
+  const userIds = [...new Set(works.map(w => w.user_id))];
+  const { data: profiles } = await supabase
+    .from('vpylab_profiles')
+    .select('id, display_name, avatar_url')
+    .in('id', userIds);
+  const profileMap = {};
+  for (const p of (profiles || [])) profileMap[p.id] = p;
+  return works.map(w => ({
+    ...w,
+    vpylab_profiles: profileMap[w.user_id] || { display_name: '익명', avatar_url: null },
+  }));
+}
+
 const useGalleryStore = create((set, get) => ({
   works: [],
   featuredWorks: [],
@@ -26,21 +45,17 @@ const useGalleryStore = create((set, get) => ({
 
     let query = supabase
       .from('vpylab_gallery')
-      .select('id, title, description, thumbnail, category, view_count, like_count, remix_count, github_url, created_at, user_id, vpylab_profiles!inner(display_name, avatar_url)')
+      .select('id, title, description, thumbnail, category, view_count, like_count, remix_count, github_url, created_at, user_id')
       .eq('is_public', true)
       .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
-    // 카테고리 필터
     if (filters.category !== 'all') {
       query = query.eq('category', filters.category);
     }
-
-    // 검색
     if (filters.search) {
       query = query.ilike('title', `%${filters.search}%`);
     }
 
-    // 정렬
     switch (filters.sort) {
       case 'popular':
         query = query.order('like_count', { ascending: false });
@@ -48,14 +63,15 @@ const useGalleryStore = create((set, get) => ({
       case 'views':
         query = query.order('view_count', { ascending: false });
         break;
-      default: // latest
+      default:
         query = query.order('created_at', { ascending: false });
     }
 
     const { data, error } = await query;
 
     if (!error && data) {
-      const newWorks = reset ? data : [...works, ...data];
+      const withProfiles = await attachProfiles(data);
+      const newWorks = reset ? withProfiles : [...works, ...withProfiles];
       set({
         works: newWorks,
         page: currentPage + 1,
@@ -69,26 +85,26 @@ const useGalleryStore = create((set, get) => ({
 
   // === 추천 작품 조회 (Home 하이라이트) ===
   fetchFeaturedWorks: async () => {
-    const { data } = await supabase
+    let { data } = await supabase
       .from('vpylab_gallery')
-      .select('id, title, thumbnail, like_count, view_count, github_url, vpylab_profiles!inner(display_name)')
+      .select('id, title, thumbnail, like_count, view_count, github_url, user_id')
       .eq('is_public', true)
       .eq('is_featured', true)
       .order('created_at', { ascending: false })
       .limit(6);
 
-    // featured가 부족하면 인기순으로 채우기
     if (!data || data.length < 4) {
       const { data: popular } = await supabase
         .from('vpylab_gallery')
-        .select('id, title, thumbnail, like_count, view_count, github_url, vpylab_profiles!inner(display_name)')
+        .select('id, title, thumbnail, like_count, view_count, github_url, user_id')
         .eq('is_public', true)
         .order('like_count', { ascending: false })
         .limit(6);
-      set({ featuredWorks: popular || [] });
-    } else {
-      set({ featuredWorks: data });
+      data = popular;
     }
+
+    const withProfiles = await attachProfiles(data || []);
+    set({ featuredWorks: withProfiles });
   },
 
   // === 작품 상세 조회 ===
@@ -97,39 +113,42 @@ const useGalleryStore = create((set, get) => ({
 
     const { data } = await supabase
       .from('vpylab_gallery')
-      .select('*, vpylab_profiles!inner(display_name, avatar_url)')
+      .select('*')
       .eq('id', id)
       .single();
 
     if (data) {
-      set({ currentWork: data, loading: false });
+      const [withProfile] = await attachProfiles([data]);
+      set({ currentWork: withProfile, loading: false });
 
-      // 조회수 증가 (본인 작품은 서버에서 제외)
+      // 조회수 증가
       supabase.rpc('vpylab_increment_view', { work_id: id });
 
       // Remix 원본 정보 로드
       if (data.remix_from) {
         const { data: original } = await supabase
           .from('vpylab_gallery')
-          .select('id, title, vpylab_profiles!inner(display_name)')
+          .select('id, title, user_id')
           .eq('id', data.remix_from)
           .single();
         if (original) {
-          set({ currentWork: { ...get().currentWork, originalWork: original } });
+          const [origWithProfile] = await attachProfiles([original]);
+          set({ currentWork: { ...get().currentWork, originalWork: origWithProfile } });
         }
       }
 
       // 이 작품의 Remix 목록
       const { data: remixes } = await supabase
         .from('vpylab_gallery')
-        .select('id, title, thumbnail, vpylab_profiles!inner(display_name)')
+        .select('id, title, thumbnail, user_id')
         .eq('remix_from', id)
         .eq('is_public', true)
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (remixes) {
-        set({ currentWork: { ...get().currentWork, remixes } });
+      if (remixes && remixes.length > 0) {
+        const remixesWithProfiles = await attachProfiles(remixes);
+        set({ currentWork: { ...get().currentWork, remixes: remixesWithProfiles } });
       }
     } else {
       set({ loading: false });
@@ -148,7 +167,6 @@ const useGalleryStore = create((set, get) => ({
       let githubRepo = null;
       let warnings = [];
 
-      // GitHub Pages 발행 (GitHub 토큰이 있을 때만)
       if (githubToken && htmlContent) {
         const res = await fetch(`${API_BASE}/api/publish`, {
           method: 'POST',
@@ -162,13 +180,11 @@ const useGalleryStore = create((set, get) => ({
           githubRepo = result.githubRepo;
           warnings = result.warnings || [];
         } else {
-          // GitHub 발행 실패해도 갤러리 등록은 진행
           console.warn('GitHub Pages 발행 실패:', result.error);
           warnings.push(result.error || 'GitHub Pages 발행 실패');
         }
       }
 
-      // 갤러리 DB에 등록
       const { data, error } = await supabase
         .from('vpylab_gallery')
         .insert({
@@ -187,7 +203,6 @@ const useGalleryStore = create((set, get) => ({
 
       if (error) throw error;
 
-      // 원본 작품의 remix_count 증가
       if (remixFrom) {
         supabase.rpc('vpylab_increment_remix', { work_id: remixFrom });
       }
@@ -207,7 +222,6 @@ const useGalleryStore = create((set, get) => ({
 
     const { data: liked } = await supabase.rpc('vpylab_toggle_like', { work_id: galleryId });
 
-    // 현재 작품의 like_count 로컬 업데이트
     const current = get().currentWork;
     if (current?.id === galleryId) {
       set({
@@ -222,7 +236,7 @@ const useGalleryStore = create((set, get) => ({
     return liked;
   },
 
-  // === 현재 사용자가 좋아요 했는지 확인 ===
+  // === 좋아요 확인 ===
   checkIfLiked: async (galleryId) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;

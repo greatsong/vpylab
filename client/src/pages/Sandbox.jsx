@@ -18,6 +18,7 @@ import useCodeStore from '../stores/codeStore';
 import useGalleryStore from '../stores/galleryStore';
 import SavedCodeList from '../components/code/SavedCodeList';
 import PublishModal from '../components/gallery/PublishModal';
+import EXAMPLES, { EXAMPLE_CATEGORIES } from '../data/examples';
 
 /**
  * Sandbox 페이지 — 자유 코딩 IDE
@@ -32,6 +33,8 @@ export default function Sandbox() {
   const [shareMsg, setShareMsg] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
   const [showSavedCodes, setShowSavedCodes] = useState(false);
+  const [showExamples, setShowExamples] = useState(false);
+  const [exampleCategory, setExampleCategory] = useState('all');
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [remixFrom, setRemixFrom] = useState(null);
   const [remixInfo, setRemixInfo] = useState(null);
@@ -206,6 +209,9 @@ export default function Sandbox() {
           <button onClick={handleSave} className="toolbar-btn">
             {saveMsg || t('code.save')}
           </button>
+          <button onClick={() => setShowExamples(true)} className="toolbar-btn --examples">
+            💡 {t('editor.examples') || '예제'}
+          </button>
           <button onClick={() => setShowSavedCodes(true)} className="toolbar-btn">
             {t('code.myCodes')}
           </button>
@@ -286,6 +292,81 @@ export default function Sandbox() {
           borderRadius: 8, fontSize: 13, zIndex: 50, backdropFilter: 'blur(8px)',
         }}>
           🔀 Remix: {remixInfo.author}의 "{remixInfo.title}"
+        </div>
+      )}
+
+      {/* 예제 패널 */}
+      {showExamples && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowExamples(false); }}
+        >
+          <div
+            style={{
+              background: 'var(--color-bg-secondary)', borderRadius: 12,
+              width: '90%', maxWidth: 720, maxHeight: '80vh', overflow: 'hidden',
+              display: 'flex', flexDirection: 'column',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            {/* 헤더 */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: 18, color: 'var(--color-text-primary)' }}>💡 예제 갤러리</h2>
+              <button onClick={() => setShowExamples(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
+            </div>
+
+            {/* 카테고리 탭 */}
+            <div style={{ padding: '8px 20px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {EXAMPLE_CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setExampleCategory(cat.id)}
+                  style={{
+                    padding: '4px 12px', borderRadius: 16, border: 'none', cursor: 'pointer',
+                    fontSize: 13, fontWeight: exampleCategory === cat.id ? 600 : 400,
+                    background: exampleCategory === cat.id ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
+                    color: exampleCategory === cat.id ? 'white' : 'var(--color-text-secondary)',
+                  }}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 예제 리스트 */}
+            <div style={{ flex: 1, overflow: 'auto', padding: '8px 20px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+              {EXAMPLES
+                .filter(ex => exampleCategory === 'all' || ex.category === exampleCategory)
+                .map(ex => (
+                  <button
+                    key={ex.id}
+                    onClick={() => { setCode(ex.code); setShowExamples(false); }}
+                    style={{
+                      background: 'var(--color-bg-primary)', border: '1px solid var(--color-border)',
+                      borderRadius: 8, padding: 12, cursor: 'pointer', textAlign: 'left',
+                      transition: 'border-color 0.2s, transform 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.transform = 'none'; }}
+                  >
+                    <div style={{ fontSize: 32, marginBottom: 8, lineHeight: 1 }}>
+                      {ex.thumbnail || '💡'}
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 4 }}>{ex.title}</div>
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', lineHeight: 1.4 }}>{ex.description}</div>
+                    <div style={{ marginTop: 8, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      {ex.tags.slice(0, 3).map(tag => (
+                        <span key={tag} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>{tag}</span>
+                      ))}
+                    </div>
+                  </button>
+                ))
+              }
+            </div>
+          </div>
         </div>
       )}
 
