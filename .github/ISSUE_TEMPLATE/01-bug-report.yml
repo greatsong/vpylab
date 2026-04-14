@@ -1,0 +1,89 @@
+name: "버그 신고 (Bug Report)"
+description: "VPy Lab에서 발생한 문제를 알려주세요. Report a bug in VPy Lab."
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        버그를 신고해 주셔서 감사합니다! 아래 양식을 채워주세요.
+        Thank you for reporting! Please fill in the form below.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "문제 설명 (Bug Description)"
+      description: "어떤 문제가 발생했나요? What happened?"
+      placeholder: "코드를 실행했을 때 3D 뷰가 표시되지 않습니다..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "재현 방법 (Steps to Reproduce)"
+      description: "문제를 재현하는 단계를 알려주세요."
+      value: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "기대 동작 (Expected Behavior)"
+      description: "원래 어떻게 되어야 하나요?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: "관련 코드 (Code)"
+      description: "문제를 일으키는 Python 코드를 붙여넣으세요."
+      render: python
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: "브라우저 (Browser)"
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - 기타 (Other)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: "문제 영역 (Area)"
+      options:
+        - "3D 뷰 (3D Viewer)"
+        - "코드 에디터 (Code Editor)"
+        - "미션 채점 (Mission Grading)"
+        - "사운드 (Sound)"
+        - "UI/UX"
+        - "서버/API (Server/API)"
+        - "기타 (Other)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "스크린샷 (Screenshots)"
+      description: "스크린샷이 있으면 첨부해 주세요."
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: "확인사항"
+      options:
+        - label: "기존 Issue에 같은 문제가 없는지 확인했습니다."
+          required: true
+        - label: "[행동 강령](CODE_OF_CONDUCT.md)을 읽고 동의합니다."
+          required: true

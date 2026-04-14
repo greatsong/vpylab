@@ -1,0 +1,100 @@
+# VPy Lab GitHub Labels
+# 이 파일을 github-label-sync 등의 도구로 적용할 수 있습니다.
+# https://github.com/Financial-Times/github-label-sync
+
+# === 유형 (Type) ===
+- name: "bug"
+  color: "d73a4a"
+  description: "버그 — Something isn't working"
+
+- name: "enhancement"
+  color: "a2eeef"
+  description: "새 기능 — New feature or request"
+
+- name: "mission"
+  color: "7057ff"
+  description: "미션 콘텐츠 — Mission content addition or change"
+
+- name: "i18n"
+  color: "e4e669"
+  description: "번역 — Translation and internationalization"
+
+- name: "docs"
+  color: "0075ca"
+  description: "문서 — Documentation improvement"
+
+- name: "engine"
+  color: "b60205"
+  description: "3D 엔진 — Three.js / Pyodide engine"
+
+- name: "sound"
+  color: "ff7b00"
+  description: "사운드 — Web Audio API / Sound system"
+
+- name: "security"
+  color: "e11d48"
+  description: "보안 — Security related"
+
+# === 상태 (Status) ===
+- name: "triage"
+  color: "d4c5f9"
+  description: "분류 필요 — Needs triage"
+
+- name: "approved"
+  color: "0e8a16"
+  description: "승인됨 — Approved for implementation"
+
+- name: "wontfix"
+  color: "ffffff"
+  description: "수정 안 함 — This will not be worked on"
+
+- name: "duplicate"
+  color: "cfd3d7"
+  description: "중복 — Duplicate issue"
+
+# === 난이도 (Difficulty) ===
+- name: "good first issue"
+  color: "7057ff"
+  description: "첫 기여용 — Good for newcomers"
+
+- name: "help wanted"
+  color: "008672"
+  description: "도움 필요 — Extra attention needed"
+
+# === 대상 (Target) ===
+- name: "for-teachers"
+  color: "fbca04"
+  description: "교사용 — For teachers"
+
+- name: "for-students"
+  color: "1d76db"
+  description: "학생용 — For students"
+
+# === 카테고리 (Mission Category) ===
+- name: "cat:CT"
+  color: "4A90D9"
+  description: "컴퓨팅 사고 — Computational Thinking"
+
+- name: "cat:CR"
+  color: "D94A8C"
+  description: "3D 창작 — Creative"
+
+- name: "cat:MA"
+  color: "4AD99A"
+  description: "수학 시각화 — Math"
+
+- name: "cat:SC"
+  color: "D9A44A"
+  description: "과학 시뮬레이션 — Science"
+
+- name: "cat:AR"
+  color: "9A4AD9"
+  description: "코드 아트 — Art"
+
+- name: "cat:SN"
+  color: "D9694A"
+  description: "사운드 코딩 — Sound"
+
+- name: "cat:AI"
+  color: "4AD9D9"
+  description: "인공지능 원리 — AI Principles"

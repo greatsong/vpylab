@@ -1,0 +1,101 @@
+name: i18n Translation Check
+
+on:
+  pull_request:
+    paths:
+      - 'client/src/i18n/**'
+      - 'client/src/data/missions.js'
+
+jobs:
+  i18n-completeness:
+    name: "번역 완전성 검사"
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check translation completeness
+        id: check
+        run: |
+          node << 'SCRIPT'
+          const fs = require('fs');
+          const path = require('path');
+
+          const i18nDir = 'client/src/i18n';
+          const files = fs.readdirSync(i18nDir).filter(f => f.endsWith('.json'));
+
+          const enData = JSON.parse(fs.readFileSync(path.join(i18nDir, 'en.json'), 'utf8'));
+
+          function flattenKeys(obj, prefix = '') {
+            return Object.entries(obj).reduce((acc, [key, val]) => {
+              const fullKey = prefix ? `${prefix}.${key}` : key;
+              if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+                return [...acc, ...flattenKeys(val, fullKey)];
+              }
+              return [...acc, fullKey];
+            }, []);
+          }
+
+          const enKeys = flattenKeys(enData);
+          const report = [];
+
+          for (const file of files) {
+            if (file === 'en.json') continue;
+            const lang = file.replace('.json', '');
+            const langData = JSON.parse(fs.readFileSync(path.join(i18nDir, file), 'utf8'));
+            const langKeys = flattenKeys(langData);
+            const missing = enKeys.filter(k => !langKeys.includes(k));
+            const coverage = ((langKeys.length / enKeys.length) * 100).toFixed(1);
+
+            report.push({
+              lang,
+              total: enKeys.length,
+              translated: langKeys.length,
+              missing: missing.length,
+              coverage,
+              missingKeys: missing.slice(0, 10), // 최대 10개만 표시
+            });
+          }
+
+          // 결과를 JSON으로 출력
+          const output = JSON.stringify(report);
+          fs.writeFileSync('/tmp/i18n-report.json', output);
+          console.log(output);
+          SCRIPT
+
+      - name: Comment translation report
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('/tmp/i18n-report.json', 'utf8'));
+
+            if (report.length === 0) return;
+
+            let body = '## 번역 현황 (Translation Status)\n\n';
+            body += '| 언어 | 전체 | 번역 완료 | 누락 | 커버리지 |\n';
+            body += '|------|------|-----------|------|----------|\n';
+
+            for (const r of report) {
+              const status = r.coverage >= 100 ? 'complete' : r.coverage >= 80 ? 'partial' : 'low';
+              body += `| ${r.lang} | ${r.total} | ${r.translated} | ${r.missing} | ${r.coverage}% |\n`;
+            }
+
+            for (const r of report) {
+              if (r.missingKeys.length > 0) {
+                body += `\n### ${r.lang} 누락 키 (상위 10개)\n`;
+                body += r.missingKeys.map(k => `- \`${k}\``).join('\n');
+                if (r.missing > 10) {
+                  body += `\n- ... 외 ${r.missing - 10}개`;
+                }
+              }
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });

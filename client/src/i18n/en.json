@@ -1,0 +1,226 @@
+{
+  "app": {
+    "title": "VPy Lab",
+    "subtitle": "Observe nature in 3D, decode with code, feel through sound, discuss with friends, share with the world",
+    "version": "v0.1"
+  },
+  "nav": {
+    "home": "Home",
+    "sandbox": "Sandbox",
+    "missions": "Missions",
+    "about": "About",
+    "dashboard": "Dashboard",
+    "gallery": "Gallery",
+    "settings": "Settings"
+  },
+  "gallery": {
+    "title": "Gallery",
+    "subtitle": "Explore student 3D projects and remix them!",
+    "publish": "Publish to Gallery",
+    "publishing": "Publishing...",
+    "published": "Published!",
+    "remix": "Remix (Open in Sandbox)",
+    "remixOf": "Inspired by",
+    "inspiredBy": "Inspired by {{author}}'s \"{{title}}\"",
+    "viewCode": "View Code",
+    "hideCode": "Hide Code",
+    "viewOnGithub": "View on GitHub Pages",
+    "copyUrl": "Copy URL",
+    "inputTitle": "Project title",
+    "inputDesc": "Description (optional)",
+    "category": "Category",
+    "publishToGithub": "Publish to GitHub Pages (get a unique URL)",
+    "githubLoginRequired": "GitHub login required for GitHub Pages.",
+    "noWorks": "No projects yet.",
+    "firstWork": "Be the first to publish!",
+    "loadMore": "Load More",
+    "search": "Search projects...",
+    "sortLatest": "Latest",
+    "sortPopular": "Popular",
+    "sortViews": "Most Viewed",
+    "all": "All",
+    "free": "Free",
+    "featured": "Featured",
+    "remixes": "Remixes inspired by this project"
+  },
+  "home": {
+    "serverConnected": "Server connected",
+    "serverOffline": "Server offline",
+    "serverChecking": "Checking...",
+    "missionCount": "{{count}} missions",
+    "preparing": "Coming soon",
+    "startMission": "Start Mission",
+    "backToMissions": "← Missions",
+    "allCategories": "All Categories",
+    "level": "Lv.{{level}}",
+    "selectCategory": "Select a category",
+    "footer": "AGPL v3 License · Open-source education platform for schools worldwide",
+    "author": "Danggok High School · Seok Ri-song"
+  },
+  "categories": {
+    "CT": "Computational Thinking",
+    "CR": "Creative Expression",
+    "MA": "Mathematical Exploration",
+    "SC": "Science Simulation",
+    "AR": "Art & Code",
+    "SN": "Sound Coding",
+    "AI": "AI Principles"
+  },
+  "editor": {
+    "run": "Run",
+    "stop": "Stop",
+    "reset": "Reset",
+    "share": "Share",
+    "export": "Export",
+    "placeholder": "# Write your Python code here\nfrom vpython import *\n\nsphere()"
+  },
+  "console": {
+    "title": "Console Output",
+    "clear": "Clear",
+    "noOutput": "No output yet. Try running your code."
+  },
+  "grading": {
+    "title": "Grading Result",
+    "passed": "Passed",
+    "failed": "Failed",
+    "score": "Score",
+    "feedback": "Feedback",
+    "gradeA": "Static Check",
+    "gradeB": "Trajectory Match",
+    "gradeAB": "Combined"
+  },
+  "mission": {
+    "description": "Description",
+    "hints": "Hints",
+    "hint1": "Direction hint",
+    "hint2": "Specific hint",
+    "hint3": "Near-answer hint",
+    "solution": "Solution",
+    "submit": "Grade",
+    "next": "Next Mission",
+    "difficulty": "Difficulty",
+    "tryAgain": "Try Again",
+    "showHint": "Show Hint",
+    "congratulations": "Congratulations!",
+    "notYet": "Not passed yet"
+  },
+  "ai": {
+    "askHint": "Ask AI for a hint",
+    "thinking": "Thinking...",
+    "cooldown": "Take a moment to think",
+    "dailyLimit": "You've used all AI hints for today",
+    "disclaimer": "AI responses are for reference only. Try to think and solve it yourself."
+  },
+  "theme": {
+    "deepSpace": "Deep Space",
+    "neonLab": "Neon Lab",
+    "forestNight": "Forest Night",
+    "cleanWhite": "Clean White"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "fontSize": "Font Size",
+    "teacher": "Teacher Settings"
+  },
+  "share": {
+    "copyLink": "Copy Link",
+    "copied": "Copied!",
+    "externalCode": "This code was shared externally. Please review before running.",
+    "tooLarge": "Code is too large (exceeds 50KB)"
+  },
+  "errors": {
+    "syntaxError": "Syntax Error",
+    "nameError": "Undefined variable",
+    "typeError": "Type Error",
+    "indexError": "Index out of range",
+    "timeout": "Execution timeout (10s)",
+    "memoryLimit": "Memory limit exceeded",
+    "unknown": "Unknown error"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "loginDescription": "Sign in with your social account. Save code, track missions, and join classes.",
+    "googleLogin": "Sign in with Google",
+    "githubLogin": "Sign in with GitHub",
+    "notice": "All features work without login. Sign in to save your progress.",
+    "user": "User",
+    "myCode": "My Code",
+    "student": "Student",
+    "teacher": "Teacher"
+  },
+  "code": {
+    "save": "Save",
+    "savedCodes": "My Saved Code",
+    "loginRequired": "Login required to save code",
+    "noSavedCodes": "No saved code yet",
+    "saveTitle": "Code Title",
+    "saveTitlePlaceholder": "Enter a name for your code",
+    "saved": "Saved!",
+    "myCodes": "My Code"
+  },
+  "dashboard": {
+    "title": "Teacher Dashboard",
+    "loginRequired": "Login required for teacher dashboard",
+    "studentView": "My Class",
+    "classes": "Class Management",
+    "studentProgress": "Student Progress",
+    "createClass": "Create New Class",
+    "classNamePlaceholder": "Class name (e.g., Grade 10 Section A)",
+    "create": "Create",
+    "noClasses": "No classes yet",
+    "studentsUnit": " students",
+    "inviteCode": "Invite Code",
+    "joinClass": "Join a Class",
+    "inviteCodePlaceholder": "Enter invite code from your teacher",
+    "join": "Join",
+    "joinSuccess": "Successfully joined the class!",
+    "alreadyJoined": "You are already in a class",
+    "student": "Student",
+    "completedMissions": "Completed",
+    "totalScore": "Total Score",
+    "noStudents": "No students yet. Share the invite code."
+  },
+  "about": {
+    "title": "VPy Lab",
+    "vision": "VPy Lab is a 3D programming education platform replacing GlowScript. Built on Pyodide (Python 3) + Three.js + Web Audio API with zero build. Multilingual UI, auto-grading, AI feedback, sound, and mission curriculum. An open-source platform for schools worldwide.",
+    "whyTitle": "Why VPy Lab?",
+    "feature": "Feature",
+    "compare": {
+      "python": { "name": "Python", "old": "Skulpt (Python 2 legacy)", "new": "Pyodide (Python 3)" },
+      "language": { "name": "Language", "old": "English only", "new": "Multilingual (KO/EN)" },
+      "grading": { "name": "Grading", "old": "None", "new": "Auto-grading" },
+      "ai": { "name": "AI", "old": "None", "new": "AI hints/review" },
+      "sound": { "name": "Sound", "old": "None", "new": "Web Audio" }
+    },
+    "techTitle": "Tech Stack",
+    "techReact": "Modern frontend framework",
+    "techPyodide": "Python 3 running in the browser",
+    "techThreejs": "WebGL-based 3D graphics",
+    "techMonaco": "VS Code editor experience",
+    "techSupabase": "Auth, database, realtime",
+    "techAudio": "Sound effects and audio feedback",
+    "contributeTitle": "Contribute",
+    "contributeDesc": "VPy Lab is open source. Bug reports, feature requests, new missions, and translation contributions are welcome.",
+    "licenseTitle": "License",
+    "licenseCode": "Code",
+    "licenseContent": "Mission Content",
+    "creditsTitle": "Credits",
+    "credits": "Danggok High School · Seok Ri-song · Built with Claude Code"
+  },
+  "common": {
+    "loading": "Loading...",
+    "delete": "Delete",
+    "copy": "Copy",
+    "cancel": "Cancel",
+    "confirm": "OK"
+  },
+  "loading": {
+    "pyodide": "Loading Python engine...",
+    "progress": "{{percent}}% complete",
+    "ready": "Ready!",
+    "tip": "First visit may take ~30 seconds. Subsequent visits will load much faster."
+  }
+}

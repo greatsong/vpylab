@@ -1,0 +1,50 @@
+name: "번역 기여 (Translation / i18n)"
+description: "새 언어 번역 또는 번역 수정을 제안합니다."
+labels: ["i18n"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        번역에 참여해 주셔서 감사합니다!
+        VPy Lab은 전 세계 학교에서 사용할 수 있도록 다국어를 지원합니다.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: "번역 유형 (Type)"
+      options:
+        - "새 언어 추가 (Add new language)"
+        - "기존 번역 수정 (Fix existing translation)"
+        - "미션 번역 (Mission translation)"
+    validations:
+      required: true
+
+  - type: input
+    id: language
+    attributes:
+      label: "언어 (Language)"
+      placeholder: "Japanese (ja) / Espanol (es) / ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: "상세 내용 (Details)"
+      description: "어떤 부분을 번역하시겠습니까?"
+      placeholder: |
+        - [ ] UI 텍스트 (i18n/ja.json)
+        - [ ] 미션 title/description/hints
+        - [ ] 미션 starterCode 내 주석
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: "확인사항"
+      options:
+        - label: "프로그래밍 용어(sphere, vector 등)는 번역하지 않겠습니다."
+          required: true
+        - label: "번역 콘텐츠가 CC BY-NC-SA 4.0으로 공유되는 것에 동의합니다."
+          required: true

@@ -1,0 +1,226 @@
+{
+  "app": {
+    "title": "VPy Lab",
+    "subtitle": "자연 현상을 3D로 관찰하고, 코드로 해독하고, 소리로 느끼고, 친구와 토론하고, 세상과 공유하는 플랫폼",
+    "version": "v0.1"
+  },
+  "nav": {
+    "home": "홈",
+    "sandbox": "자유 코딩",
+    "missions": "미션",
+    "about": "프로젝트 소개",
+    "dashboard": "대시보드",
+    "gallery": "갤러리",
+    "settings": "설정"
+  },
+  "gallery": {
+    "title": "갤러리",
+    "subtitle": "학생들의 멋진 3D 작품을 구경하고, Remix 해보세요!",
+    "publish": "갤러리에 올리기",
+    "publishing": "발행 중...",
+    "published": "발행 완료!",
+    "remix": "Remix (내 코드로 열기)",
+    "remixOf": "영감",
+    "inspiredBy": "{{author}}의 \"{{title}}\"에서 영감 받음",
+    "viewCode": "코드 보기",
+    "hideCode": "코드 숨기기",
+    "viewOnGithub": "GitHub Pages에서 보기",
+    "copyUrl": "URL 복사",
+    "inputTitle": "작품 제목",
+    "inputDesc": "작품에 대한 설명 (선택)",
+    "category": "카테고리",
+    "publishToGithub": "GitHub Pages로 발행 (고유 URL 생성)",
+    "githubLoginRequired": "GitHub Pages 발행을 위해 GitHub 로그인이 필요합니다.",
+    "noWorks": "아직 작품이 없습니다.",
+    "firstWork": "첫 번째 작품을 올려보세요!",
+    "loadMore": "더보기",
+    "search": "작품 검색...",
+    "sortLatest": "최신순",
+    "sortPopular": "인기순",
+    "sortViews": "조회순",
+    "all": "전체",
+    "free": "자유",
+    "featured": "인기 작품",
+    "remixes": "이 작품에서 영감을 받은 Remix"
+  },
+  "home": {
+    "serverConnected": "서버 연결됨",
+    "serverOffline": "서버 오프라인",
+    "serverChecking": "확인 중...",
+    "missionCount": "{{count}}개 미션",
+    "preparing": "준비 중",
+    "startMission": "미션 시작",
+    "backToMissions": "← 미션 목록",
+    "allCategories": "전체 카테고리",
+    "level": "Lv.{{level}}",
+    "selectCategory": "카테고리를 선택하세요",
+    "footer": "AGPL v3 라이선스 · 전 세계 학교를 위한 오픈소스 교육 플랫폼",
+    "author": "당곡고등학교 수리정보교육부 · 석리송"
+  },
+  "categories": {
+    "CT": "컴퓨팅 사고력",
+    "CR": "창의적 표현",
+    "MA": "수학적 탐구",
+    "SC": "과학 시뮬레이션",
+    "AR": "예술과 코드",
+    "SN": "사운드 코딩",
+    "AI": "인공지능 원리"
+  },
+  "editor": {
+    "run": "실행",
+    "stop": "정지",
+    "reset": "초기화",
+    "share": "공유",
+    "export": "내보내기",
+    "placeholder": "# 여기에 Python 코드를 작성하세요\nfrom vpython import *\n\nsphere()"
+  },
+  "console": {
+    "title": "콘솔 출력",
+    "clear": "지우기",
+    "noOutput": "출력이 없습니다. 코드를 실행해보세요."
+  },
+  "grading": {
+    "title": "채점 결과",
+    "passed": "통과",
+    "failed": "실패",
+    "score": "점수",
+    "feedback": "피드백",
+    "gradeA": "정적 검사",
+    "gradeB": "궤적 비교",
+    "gradeAB": "복합 채점"
+  },
+  "mission": {
+    "description": "문제 설명",
+    "hints": "힌트",
+    "hint1": "방향 힌트",
+    "hint2": "구체적 힌트",
+    "hint3": "거의 답 힌트",
+    "solution": "풀이 해설",
+    "submit": "채점하기",
+    "next": "다음 미션",
+    "difficulty": "난이도",
+    "tryAgain": "다시 도전",
+    "showHint": "힌트 보기",
+    "congratulations": "축하합니다!",
+    "notYet": "아직 통과하지 못했어요"
+  },
+  "ai": {
+    "askHint": "AI 힌트 요청",
+    "thinking": "생각 중...",
+    "cooldown": "잠시 생각해보세요",
+    "dailyLimit": "오늘의 AI 힌트를 모두 사용했습니다",
+    "disclaimer": "AI 응답은 참고용입니다. 직접 생각하고 해결해보세요."
+  },
+  "theme": {
+    "deepSpace": "Deep Space",
+    "neonLab": "Neon Lab",
+    "forestNight": "Forest Night",
+    "cleanWhite": "Clean White"
+  },
+  "settings": {
+    "title": "설정",
+    "language": "언어",
+    "theme": "테마",
+    "fontSize": "글자 크기",
+    "teacher": "교사 설정"
+  },
+  "share": {
+    "copyLink": "링크 복사",
+    "copied": "복사됨!",
+    "externalCode": "이 코드는 외부에서 공유된 것입니다. 실행 전 내용을 확인하세요.",
+    "tooLarge": "코드가 너무 깁니다 (50KB 초과)"
+  },
+  "errors": {
+    "syntaxError": "문법 오류",
+    "nameError": "정의되지 않은 변수",
+    "typeError": "잘못된 타입",
+    "indexError": "인덱스 범위 초과",
+    "timeout": "실행 시간 초과 (10초)",
+    "memoryLimit": "메모리 제한 초과",
+    "unknown": "알 수 없는 오류"
+  },
+  "auth": {
+    "login": "로그인",
+    "logout": "로그아웃",
+    "loginDescription": "소셜 계정으로 간편하게 로그인하세요. 코드 저장, 미션 기록, 학급 참여가 가능합니다.",
+    "googleLogin": "Google로 로그인",
+    "githubLogin": "GitHub로 로그인",
+    "notice": "로그인 없이도 모든 기능을 사용할 수 있습니다. 로그인하면 진행 상황이 저장됩니다.",
+    "user": "사용자",
+    "myCode": "내 코드",
+    "student": "학생",
+    "teacher": "교사"
+  },
+  "code": {
+    "save": "저장",
+    "savedCodes": "내 코드 목록",
+    "loginRequired": "코드를 저장하려면 로그인이 필요합니다",
+    "noSavedCodes": "저장된 코드가 없습니다",
+    "saveTitle": "코드 제목",
+    "saveTitlePlaceholder": "코드 이름을 입력하세요",
+    "saved": "저장됨!",
+    "myCodes": "내 코드"
+  },
+  "dashboard": {
+    "title": "교사 대시보드",
+    "loginRequired": "교사 대시보드를 사용하려면 로그인이 필요합니다",
+    "studentView": "내 학급",
+    "classes": "학급 관리",
+    "studentProgress": "학생 현황",
+    "createClass": "새 학급 만들기",
+    "classNamePlaceholder": "학급 이름 (예: 1학년 3반)",
+    "create": "만들기",
+    "noClasses": "아직 학급이 없습니다",
+    "studentsUnit": "명",
+    "inviteCode": "초대 코드",
+    "joinClass": "학급 참여",
+    "inviteCodePlaceholder": "선생님이 알려준 초대 코드",
+    "join": "참여",
+    "joinSuccess": "학급에 참여했습니다!",
+    "alreadyJoined": "이미 학급에 참여하고 있습니다",
+    "student": "학생",
+    "completedMissions": "완료 미션",
+    "totalScore": "총점",
+    "noStudents": "아직 학생이 없습니다. 초대 코드를 공유하세요."
+  },
+  "about": {
+    "title": "VPy Lab",
+    "vision": "VPy Lab은 GlowScript을 대체하는 3D 프로그래밍 교육 플랫폼입니다. Pyodide(Python 3) + Three.js + Web Audio API 기반으로 제로 빌드. 다국어 UI, 자동 채점, AI 피드백, 사운드, 미션 커리큘럼을 제공합니다. 전 세계 모든 학교에 도입될 수 있는 오픈소스 교육 플랫폼을 지향합니다.",
+    "whyTitle": "왜 VPy Lab인가?",
+    "feature": "기능",
+    "compare": {
+      "python": { "name": "Python 실행", "old": "Skulpt (Python 2 잔재)", "new": "Pyodide (Python 3)" },
+      "language": { "name": "언어", "old": "영문 전용", "new": "다국어 (한/영)" },
+      "grading": { "name": "채점", "old": "없음", "new": "자동 채점" },
+      "ai": { "name": "AI", "old": "없음", "new": "AI 힌트/리뷰" },
+      "sound": { "name": "사운드", "old": "없음", "new": "Web Audio" }
+    },
+    "techTitle": "기술 스택",
+    "techReact": "최신 프론트엔드 프레임워크",
+    "techPyodide": "브라우저에서 실행되는 Python 3",
+    "techThreejs": "WebGL 기반 3D 그래픽",
+    "techMonaco": "VS Code 에디터 경험",
+    "techSupabase": "인증, DB, 실시간",
+    "techAudio": "효과음 및 오디오 피드백",
+    "contributeTitle": "기여하기",
+    "contributeDesc": "VPy Lab은 오픈소스 프로젝트입니다. 버그 리포트, 기능 제안, 새 미션 추가, 번역 기여를 환영합니다.",
+    "licenseTitle": "라이선스",
+    "licenseCode": "코드",
+    "licenseContent": "미션 콘텐츠",
+    "creditsTitle": "크레딧",
+    "credits": "당곡고등학교 수리정보교육부 · 석리송 · Claude Code로 개발"
+  },
+  "common": {
+    "loading": "로딩 중...",
+    "delete": "삭제",
+    "copy": "복사",
+    "cancel": "취소",
+    "confirm": "확인"
+  },
+  "loading": {
+    "pyodide": "Python 엔진 로딩 중...",
+    "progress": "{{percent}}% 완료",
+    "ready": "준비 완료!",
+    "tip": "첫 방문 시 약 30초가 걸릴 수 있어요. 두 번째 방문부터는 빠르게 로드됩니다."
+  }
+}

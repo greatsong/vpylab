@@ -1,0 +1,16 @@
+{
+  "name": "vpylab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VPy Lab — 3D 프로그래밍 교육 플랫폼",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && PORT=4034 node --watch index.js",
+    "build": "cd client && npm run build",
+    "start": "cd server && node index.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

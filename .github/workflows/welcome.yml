@@ -1,0 +1,67 @@
+name: Welcome New Contributors
+
+on:
+  pull_request_target:
+    types: [opened]
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const isIssue = !!context.payload.issue;
+            const isPR = !!context.payload.pull_request;
+            const author = isIssue
+              ? context.payload.issue.user.login
+              : context.payload.pull_request.user.login;
+
+            // 이 사용자의 이전 Issue/PR 확인
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner, repo,
+              creator: author,
+              state: 'all',
+              per_page: 2,
+            });
+
+            // 첫 기여자인 경우에만 환영 메시지
+            if (issues.length > 1) return;
+
+            const number = isIssue
+              ? context.payload.issue.number
+              : context.payload.pull_request.number;
+
+            const body = isIssue
+              ? [
+                  `@${author} 님, VPy Lab에 처음 Issue를 작성해 주셔서 감사합니다! 🎉`,
+                  '',
+                  'Thank you for your first issue!',
+                  '',
+                  '메인테이너가 곧 확인하겠습니다. 그동안 다음 자료를 참고해 주세요:',
+                  '- [기여 가이드 (Contributing Guide)](CONTRIBUTING.md)',
+                  '- [행동 강령 (Code of Conduct)](CODE_OF_CONDUCT.md)',
+                  '- [Discussions](https://github.com/greatsong/vpylab/discussions)',
+                ].join('\n')
+              : [
+                  `@${author} 님, VPy Lab에 처음 PR을 보내주셔서 감사합니다! 🎉`,
+                  '',
+                  'Thank you for your first pull request!',
+                  '',
+                  '리뷰어가 곧 확인하겠습니다. CI 검사 결과를 확인해 주세요.',
+                  '',
+                  '미션 PR이라면 [미션 스키마](docs/MISSION_SCHEMA.md)를 참고해 주세요.',
+                ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner, repo,
+              issue_number: number,
+              body,
+            });

@@ -1,0 +1,31 @@
+name: Stale Issue Cleanup
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # 매주 월요일 자정 (UTC)
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          stale-issue-message: >
+            이 Issue가 60일간 활동이 없어 stale로 표시됩니다.
+            14일 이내에 응답이 없으면 자동으로 닫힙니다.
+            This issue has been automatically marked as stale due to 60 days of inactivity.
+          stale-pr-message: >
+            이 PR이 30일간 활동이 없어 stale로 표시됩니다.
+            14일 이내에 업데이트가 없으면 자동으로 닫힙니다.
+            This PR has been automatically marked as stale due to 30 days of inactivity.
+          days-before-issue-stale: 60
+          days-before-pr-stale: 30
+          days-before-close: 14
+          stale-issue-label: 'stale'
+          stale-pr-label: 'stale'
+          exempt-issue-labels: 'approved,security,mission'
+          exempt-pr-labels: 'approved'

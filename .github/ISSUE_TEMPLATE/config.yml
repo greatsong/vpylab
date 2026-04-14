@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "질문/토론 (Questions & Discussions)"
+    url: https://github.com/greatsong/vpylab/discussions
+    about: "버그 신고나 기능 요청이 아닌 일반 질문은 Discussions를 이용해 주세요. For general questions, please use Discussions."
+  - name: "미션 아이디어 제안 (Mission Ideas)"
+    url: https://github.com/greatsong/vpylab/discussions/categories/mission-ideas
+    about: "새 미션 아이디어를 공유하고 토론하세요. Share and discuss new mission ideas."

@@ -1,0 +1,209 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ──────────────────────────────────────────────
+  # 1. 미션 데이터 무결성 검사
+  # ──────────────────────────────────────────────
+  validate-missions:
+    name: "미션 데이터 검증"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Run mission tests
+        working-directory: client
+        run: npx vitest run src/data/missions.test.js
+
+  # ──────────────────────────────────────────────
+  # 2. i18n 번역 완전성 검사
+  # ──────────────────────────────────────────────
+  validate-i18n:
+    name: "번역 키 검증"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check i18n key completeness
+        run: |
+          node << 'EOF'
+          const fs = require('fs');
+          const path = require('path');
+
+          const i18nDir = 'client/src/i18n';
+          const files = fs.readdirSync(i18nDir).filter(f => f.endsWith('.json'));
+
+          if (files.length < 2) {
+            console.log('Only one language file found, skipping comparison.');
+            process.exit(0);
+          }
+
+          // en.json을 기준으로 다른 언어 파일의 키 누락을 검사
+          const enPath = path.join(i18nDir, 'en.json');
+          const enData = JSON.parse(fs.readFileSync(enPath, 'utf8'));
+
+          function flattenKeys(obj, prefix = '') {
+            return Object.entries(obj).reduce((acc, [key, val]) => {
+              const fullKey = prefix ? `${prefix}.${key}` : key;
+              if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+                return [...acc, ...flattenKeys(val, fullKey)];
+              }
+              return [...acc, fullKey];
+            }, []);
+          }
+
+          const enKeys = flattenKeys(enData);
+          let hasError = false;
+
+          for (const file of files) {
+            if (file === 'en.json') continue;
+            const lang = file.replace('.json', '');
+            const langData = JSON.parse(fs.readFileSync(path.join(i18nDir, file), 'utf8'));
+            const langKeys = flattenKeys(langData);
+
+            const missing = enKeys.filter(k => !langKeys.includes(k));
+            const extra = langKeys.filter(k => !enKeys.includes(k));
+
+            if (missing.length > 0) {
+              console.error(`\n[${lang}] Missing ${missing.length} keys:`);
+              missing.forEach(k => console.error(`  - ${k}`));
+              hasError = true;
+            }
+
+            if (extra.length > 0) {
+              console.warn(`\n[${lang}] Extra ${extra.length} keys (not in en.json):`);
+              extra.forEach(k => console.warn(`  + ${k}`));
+            }
+          }
+
+          if (hasError) {
+            console.error('\ni18n key validation failed. See missing keys above.');
+            process.exit(1);
+          }
+
+          console.log(`\ni18n key validation passed. ${files.length} language files checked.`);
+          EOF
+
+  # ──────────────────────────────────────────────
+  # 3. 미션 i18n 필드 검증
+  # ──────────────────────────────────────────────
+  validate-mission-i18n:
+    name: "미션 다국어 필드 검증"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Check mission i18n fields
+        working-directory: client
+        run: |
+          node << 'EOF'
+          // missions.js를 dynamic import로 읽어 ko/en 필드 존재 확인
+          import('./src/data/missions.js').then(({ default: missions }) => {
+            let hasError = false;
+            const requiredLangs = ['ko', 'en'];
+
+            for (const m of missions) {
+              for (const lang of requiredLangs) {
+                if (!m.title?.[lang]) {
+                  console.error(`${m.id}: title.${lang} 누락`);
+                  hasError = true;
+                }
+                if (!m.description?.[lang]) {
+                  console.error(`${m.id}: description.${lang} 누락`);
+                  hasError = true;
+                }
+                for (let i = 0; i < (m.hints?.length || 0); i++) {
+                  if (!m.hints[i]?.[lang]) {
+                    console.error(`${m.id}: hints[${i}].${lang} 누락`);
+                    hasError = true;
+                  }
+                }
+              }
+            }
+
+            if (hasError) {
+              process.exit(1);
+            }
+            console.log(`Mission i18n check passed. ${missions.length} missions verified.`);
+          });
+          EOF
+
+  # ──────────────────────────────────────────────
+  # 4. 클라이언트 빌드 검사
+  # ──────────────────────────────────────────────
+  build:
+    name: "빌드 검증"
+    runs-on: ubuntu-latest
+    needs: [validate-missions, validate-i18n]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build
+        working-directory: client
+        run: npm run build
+
+  # ──────────────────────────────────────────────
+  # 5. 보안 검사
+  # ──────────────────────────────────────────────
+  security:
+    name: "보안 검사"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for innerHTML usage
+        run: |
+          echo "Checking for innerHTML usage in client source..."
+          if grep -r "innerHTML" client/src/ --include="*.jsx" --include="*.js" --include="*.tsx" --include="*.ts" | grep -v "node_modules" | grep -v ".test."; then
+            echo "::error::innerHTML usage detected! Use textContent instead for XSS prevention."
+            exit 1
+          fi
+          echo "No innerHTML usage found. Security check passed."
+
+      - name: Check for secrets in code
+        run: |
+          echo "Checking for potential secrets..."
+          if grep -rE "(SUPABASE_SERVICE_ROLE|sk-[a-zA-Z0-9]{20,}|password\s*=\s*['\"][^'\"]+['\"])" client/src/ server/ --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" | grep -v "node_modules" | grep -v ".example"; then
+            echo "::error::Potential secrets found in source code!"
+            exit 1
+          fi
+          echo "No secrets detected."

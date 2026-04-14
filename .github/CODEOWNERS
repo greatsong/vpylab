@@ -1,0 +1,24 @@
+# VPy Lab 코드 소유자 (Code Owners)
+# PR 리뷰를 자동 요청합니다.
+
+# 전체 코드베이스 기본 리뷰어
+* @greatsong
+
+# 미션 콘텐츠 — 교육 전문가 리뷰 필수
+client/src/data/missions.js @greatsong
+
+# i18n 번역 파일
+client/src/i18n/ @greatsong
+
+# 3D 엔진 & Worker
+client/src/engine/ @greatsong
+
+# 보안 관련 파일
+server/middleware/ @greatsong
+client/src/engine/*Worker* @greatsong
+
+# CI/CD
+.github/ @greatsong
+
+# Supabase 설정
+supabase/ @greatsong
