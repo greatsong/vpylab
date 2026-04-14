@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import Header from '../components/layout/Header';
 import useGalleryStore from '../stores/galleryStore';
 import useAuthStore from '../stores/authStore';
 import GalleryCard from '../components/gallery/GalleryCard';
+import { useI18n } from '../i18n';
 
 export default function GalleryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { lang } = useI18n();
   const { currentWork, loading, fetchWork, toggleLike, checkIfLiked, forkWork } = useGalleryStore();
   const user = useAuthStore(s => s.user);
   const getGitHubToken = useAuthStore(s => s.getGitHubToken);
@@ -15,22 +18,26 @@ export default function GalleryDetail() {
   const [showCode, setShowCode] = useState(false);
   const [forking, setForking] = useState(false);
 
-  useEffect(() => {
-    fetchWork(id);
-  }, [id]);
+  useEffect(() => { fetchWork(id); }, [id]);
 
   useEffect(() => {
-    if (currentWork && user) {
-      checkIfLiked(id).then(setIsLiked);
-    }
+    if (currentWork && user) checkIfLiked(id).then(setIsLiked);
   }, [currentWork, user]);
 
   if (loading || !currentWork) {
-    return <div className="gallery-detail-loading">로딩 중...</div>;
+    return (
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+        <Header />
+        <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--color-text-muted)' }}>
+          {lang === 'ko' ? '로딩 중...' : 'Loading...'}
+        </div>
+      </div>
+    );
   }
 
-  const author = currentWork.vpylab_profiles?.display_name || '익명';
-  const date = new Date(currentWork.created_at).toLocaleDateString('ko-KR');
+  const author = currentWork.vpylab_profiles?.display_name || (lang === 'ko' ? '익명' : 'Anonymous');
+  const date = new Date(currentWork.created_at).toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US');
+  const isMyWork = user && currentWork.user_id === user.id;
 
   const handleLike = async () => {
     if (!user) return;
@@ -38,240 +45,222 @@ export default function GalleryDetail() {
     setIsLiked(liked);
   };
 
-  const handleRemix = () => {
-    // Sandbox로 이동하면서 코드와 remixFrom 전달
-    navigate(`/sandbox?remix=${id}`);
-  };
-
+  const handleRemix = () => navigate(`/sandbox?remix=${id}`);
   const handlePlay = () => {
     if (currentWork.github_url) {
       window.open(currentWork.github_url, '_blank');
+    } else {
+      navigate(`/sandbox?remix=${id}`);
     }
   };
-
-  const isMyWork = user && currentWork.user_id === user.id;
-
-  const handleEdit = () => {
-    navigate(`/sandbox?edit=${id}`);
-  };
+  const handleEdit = () => navigate(`/sandbox?edit=${id}`);
 
   const handleFork = async () => {
     if (!user || !isGitHubUser() || !currentWork.github_repo) return;
     setForking(true);
     const token = await getGitHubToken();
     if (!token) { setForking(false); return; }
-
-    const result = await forkWork({
-      sourceId: id,
-      sourceRepo: currentWork.github_repo,
-      githubToken: token,
-    });
+    const result = await forkWork({ sourceId: id, sourceRepo: currentWork.github_repo, githubToken: token });
     setForking(false);
-
-    if (result.error) {
-      alert('Fork 실패: ' + result.error);
-    } else {
-      navigate(`/sandbox?edit=${result.data.id}`);
-    }
+    if (result.error) alert('Fork failed: ' + result.error);
+    else navigate(`/sandbox?edit=${result.data.id}`);
   };
 
   return (
-    <div className="gallery-detail">
-      {/* 상단: 썸네일 + 정보 */}
-      <div className="detail-main">
-        {/* 썸네일 */}
-        <div className="detail-visual">
-          {currentWork.thumbnail ? (
-            <img src={currentWork.thumbnail} alt={currentWork.title} />
-          ) : (
-            <div className="detail-placeholder">🎨</div>
-          )}
-        </div>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+      <Header />
 
-        {/* 정보 패널 */}
-        <div className="detail-info">
-          <h1>{currentWork.title}</h1>
-          <p className="detail-author">{author} · {date}</p>
+      <main className="flex-1 max-w-5xl mx-auto px-6 py-8 w-full">
+        {/* 뒤로가기 */}
+        <Link to="/gallery" className="inline-flex items-center gap-1.5 text-sm no-underline mb-6"
+          style={{ color: 'var(--color-text-muted)' }}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"/>
+          </svg>
+          {lang === 'ko' ? '갤러리' : 'Gallery'}
+        </Link>
 
-          {currentWork.description && (
-            <p className="detail-desc">{currentWork.description}</p>
-          )}
-
-          {/* 영감 표시 */}
-          {currentWork.originalWork && (
-            <Link to={`/gallery/${currentWork.originalWork.id}`} className="inspired-badge">
-              🔀 영감: {currentWork.originalWork.vpylab_profiles?.display_name}의
-              "{currentWork.originalWork.title}"
-            </Link>
-          )}
-
-          {/* 통계 */}
-          <div className="detail-stats">
-            <button
-              className={`like-btn ${isLiked ? 'liked' : ''}`}
-              onClick={handleLike}
-              disabled={!user}
-              title={user ? '' : '로그인이 필요합니다'}
-            >
-              {isLiked ? '❤️' : '🤍'} {currentWork.like_count || 0}
-            </button>
-            <span>👁️ {currentWork.view_count || 0}</span>
-            <span>🔀 {currentWork.remix_count || 0}</span>
+        {/* 메인 */}
+        <div className="detail-layout mb-8">
+          {/* 썸네일 */}
+          <div className="rounded-xl overflow-hidden" style={{
+            aspectRatio: '16/10',
+            backgroundColor: 'var(--color-bg-tertiary)',
+          }}>
+            {currentWork.thumbnail ? (
+              <img src={currentWork.thumbnail} alt={currentWork.title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                  <rect x="8" y="8" width="48" height="48" rx="8" stroke="var(--color-text-muted)" strokeWidth="2" opacity="0.2"/>
+                  <circle cx="24" cy="26" r="6" fill="var(--color-text-muted)" opacity="0.15"/>
+                  <path d="M8 44L22 34L34 42L46 30L56 38" stroke="var(--color-text-muted)" strokeWidth="2" opacity="0.15"/>
+                </svg>
+              </div>
+            )}
           </div>
 
-          {/* 액션 버튼 */}
-          <div className="detail-actions">
-            <button onClick={handlePlay} className="btn-play">
-              ▶ 바로 플레이
-            </button>
-            {isMyWork && currentWork.github_repo && (
-              <button onClick={handleEdit} className="btn-edit">
-                ✏️ 수정하기
+          {/* 정보 */}
+          <div>
+            <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>
+              {currentWork.title}
+            </h1>
+            <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
+              {author} · {date}
+            </p>
+
+            {currentWork.description && (
+              <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+                {currentWork.description}
+              </p>
+            )}
+
+            {/* 영감 */}
+            {currentWork.originalWork && (
+              <Link to={`/gallery/${currentWork.originalWork.id}`}
+                className="inline-flex items-center gap-2 text-xs no-underline px-3 py-2 rounded-lg mb-4"
+                style={{
+                  backgroundColor: 'var(--color-accent-bg)',
+                  border: '1px solid rgba(108,92,231,0.2)',
+                  color: 'var(--color-accent)',
+                }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z"/>
+                </svg>
+                {lang === 'ko' ? '영감' : 'Inspired by'}: {currentWork.originalWork.vpylab_profiles?.display_name} — "{currentWork.originalWork.title}"
+              </Link>
+            )}
+
+            {/* 통계 */}
+            <div className="flex items-center gap-4 mb-5 text-sm">
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-all"
+                onClick={handleLike}
+                disabled={!user}
+                style={{
+                  border: `1.5px solid ${isLiked ? 'var(--color-error)' : 'var(--color-border)'}`,
+                  backgroundColor: isLiked ? 'rgba(255,107,107,0.08)' : 'transparent',
+                  color: isLiked ? 'var(--color-error)' : 'var(--color-text-muted)',
+                  opacity: user ? 1 : 0.5,
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+                  <path d="M8 14s-5.5-3.5-5.5-7A3.5 3.5 0 018 4a3.5 3.5 0 015.5 3c0 3.5-5.5 7-5.5 7z"/>
+                </svg>
+                {currentWork.like_count || 0}
               </button>
-            )}
-            {!isMyWork && currentWork.github_repo && user && isGitHubUser() && (
-              <button onClick={handleFork} disabled={forking} className="btn-fork">
-                {forking ? '🔄 Fork 중...' : '🍴 Fork'}
+              <span className="flex items-center gap-1.5" style={{ color: 'var(--color-text-muted)' }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 3C4.5 3 1.5 5.5.5 8c1 2.5 4 5 7.5 5s6.5-2.5 7.5-5c-1-2.5-4-5-7.5-5zm0 8a3 3 0 110-6 3 3 0 010 6z"/>
+                </svg>
+                {currentWork.view_count || 0}
+              </span>
+              <span className="flex items-center gap-1.5" style={{ color: 'var(--color-text-muted)' }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z"/>
+                </svg>
+                {currentWork.remix_count || 0}
+              </span>
+            </div>
+
+            {/* 액션 버튼 */}
+            <div className="flex flex-wrap gap-2">
+              <button onClick={handlePlay}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full border-none cursor-pointer font-semibold text-sm text-white transition-all"
+                style={{ backgroundColor: 'var(--color-accent)' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2l10 6-10 6V2z"/></svg>
+                {lang === 'ko' ? '바로 플레이' : 'Play'}
               </button>
-            )}
-            <button onClick={handleRemix} className="btn-remix">
-              🔀 Remix (코드만 복사)
-            </button>
-            {currentWork.github_url && (
-              <a href={currentWork.github_url} target="_blank" rel="noopener noreferrer" className="btn-github-pages">
-                🌐 GitHub Pages에서 보기
-              </a>
-            )}
-            <button onClick={() => setShowCode(!showCode)} className="btn-code">
-              {showCode ? '코드 숨기기' : '📝 코드 보기'}
-            </button>
+
+              {isMyWork && currentWork.github_repo && (
+                <button onClick={handleEdit}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border-none cursor-pointer font-semibold text-sm text-white"
+                  style={{ backgroundColor: '#f0883e' }}>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M12.1 1.5l2.4 2.4-9 9H3v-2.5l9.1-8.9zm-1.4 1.4L4 9.6V11h1.4l6.7-6.7-1.4-1.4z"/></svg>
+                  {lang === 'ko' ? '수정' : 'Edit'}
+                </button>
+              )}
+
+              {!isMyWork && currentWork.github_repo && user && isGitHubUser() && (
+                <button onClick={handleFork} disabled={forking}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border-none cursor-pointer font-semibold text-sm text-white"
+                  style={{ backgroundColor: '#00B894', opacity: forking ? 0.6 : 1 }}>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.25a2.25 2.25 0 00-1 4.34v1.16A2.25 2.25 0 005 13a2.25 2.25 0 001-4.34V7.59A2.25 2.25 0 005 3.25zM11 3.25a2.25 2.25 0 00-1 4.34v.16c0 .83-.67 1.5-1.5 1.5H7V7.59A2.25 2.25 0 005 3.25"/></svg>
+                  {forking ? (lang === 'ko' ? 'Fork 중...' : 'Forking...') : 'Fork'}
+                </button>
+              )}
+
+              <button onClick={handleRemix}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full cursor-pointer font-medium text-sm transition-all"
+                style={{ border: '1.5px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-primary)' }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z"/></svg>
+                Remix
+              </button>
+
+              {currentWork.github_url && (
+                <a href={currentWork.github_url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full no-underline font-medium text-sm transition-all"
+                  style={{ border: '1.5px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-primary)' }}>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                  Pages
+                </a>
+              )}
+
+              <button onClick={() => setShowCode(!showCode)}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full cursor-pointer font-medium text-sm transition-all"
+                style={{ border: '1.5px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-secondary)' }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 4L1 8l4.5 4M10.5 4L15 8l-4.5 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>
+                {showCode ? (lang === 'ko' ? '코드 숨기기' : 'Hide Code') : (lang === 'ko' ? '코드 보기' : 'View Code')}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 코드 영역 */}
-      {showCode && (
-        <div className="detail-code">
-          <div className="code-header">
-            <span>Python 코드</span>
-            <button onClick={() => navigator.clipboard.writeText(currentWork.code)}>
-              복사
-            </button>
+        {/* 코드 */}
+        {showCode && (
+          <div className="rounded-xl overflow-hidden mb-8"
+            style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+            <div className="flex justify-between items-center px-4 py-2.5 text-xs font-medium"
+              style={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
+              <span>Python</span>
+              <button
+                onClick={() => navigator.clipboard.writeText(currentWork.code)}
+                className="px-3 py-1 rounded-md cursor-pointer text-xs transition-all"
+                style={{ border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-secondary)' }}>
+                {lang === 'ko' ? '복사' : 'Copy'}
+              </button>
+            </div>
+            <pre style={{
+              padding: '1rem', margin: 0, overflowX: 'auto',
+              fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', lineHeight: 1.6,
+              maxHeight: '400px', overflowY: 'auto', color: 'var(--color-text-primary)',
+            }}>
+              <code>{currentWork.code}</code>
+            </pre>
           </div>
-          <pre><code>{currentWork.code}</code></pre>
-        </div>
-      )}
+        )}
 
-      {/* Remix 목록 */}
-      {currentWork.remixes?.length > 0 && (
-        <div className="detail-remixes">
-          <h2>🔀 이 작품에서 영감을 받은 Remix ({currentWork.remixes.length})</h2>
-          <div className="remix-grid">
-            {currentWork.remixes.map(remix => (
-              <GalleryCard key={remix.id} work={remix} />
-            ))}
+        {/* Remix 목록 */}
+        {currentWork.remixes?.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"
+              style={{ color: 'var(--color-text-primary)' }}>
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="var(--color-accent)">
+                <path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z"/>
+              </svg>
+              Remix ({currentWork.remixes.length})
+            </h2>
+            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+              {currentWork.remixes.map(remix => (
+                <GalleryCard key={remix.id} work={remix} />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-
-      <style>{`
-        .gallery-detail {
-          max-width: 1000px; margin: 0 auto; padding: 24px 16px;
-        }
-        .gallery-detail-loading {
-          text-align: center; padding: 80px 0; color: var(--text-secondary, #8b949e);
-        }
-        .detail-main {
-          display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; margin-bottom: 24px;
-        }
-        .detail-visual {
-          aspect-ratio: 16/10; border-radius: 12px; overflow: hidden;
-          background: linear-gradient(135deg, #1a1e2e, #2d1f3d);
-        }
-        .detail-visual img { width: 100%; height: 100%; object-fit: cover; }
-        .detail-placeholder {
-          width: 100%; height: 100%; display: flex;
-          align-items: center; justify-content: center; font-size: 64px;
-        }
-        .detail-info h1 { margin: 0 0 4px; font-size: 22px; }
-        .detail-author { color: var(--text-secondary, #8b949e); font-size: 13px; margin: 0 0 12px; }
-        .detail-desc { font-size: 14px; line-height: 1.5; margin: 0 0 12px; }
-        .inspired-badge {
-          display: inline-block; background: rgba(108,92,231,0.15);
-          border: 1px solid rgba(108,92,231,0.3); padding: 6px 12px;
-          border-radius: 6px; font-size: 13px; color: var(--text-primary);
-          text-decoration: none; margin-bottom: 12px;
-        }
-        .inspired-badge:hover { border-color: var(--accent, #6C5CE7); }
-
-        .detail-stats {
-          display: flex; align-items: center; gap: 16px; margin-bottom: 16px; font-size: 14px;
-        }
-        .like-btn {
-          background: transparent; border: 1px solid var(--border, #30363d);
-          border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 14px;
-          color: var(--text-secondary);
-        }
-        .like-btn.liked { border-color: #f85149; color: #f85149; }
-        .like-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .detail-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-        .btn-play {
-          padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer;
-          background: linear-gradient(135deg, #00CEC9, #6C5CE7); color: white;
-          font-weight: 600; font-size: 15px; transition: transform 0.15s;
-        }
-        .btn-play:hover { transform: scale(1.03); }
-        .btn-edit {
-          padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
-          background: #f0883e; color: white; font-weight: 600; font-size: 14px;
-        }
-        .btn-fork {
-          padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
-          background: #238636; color: white; font-weight: 600; font-size: 14px;
-        }
-        .btn-fork:disabled { opacity: 0.6; cursor: wait; }
-        .btn-remix {
-          padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
-          background: var(--accent, #6C5CE7); color: white; font-weight: 600; font-size: 14px;
-        }
-        .btn-github-pages {
-          padding: 10px 20px; border-radius: 8px; text-decoration: none;
-          background: #238636; color: white; font-size: 14px; font-weight: 600;
-        }
-        .btn-code {
-          padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px;
-          border: 1px solid var(--border, #30363d); background: transparent;
-          color: var(--text-secondary, #8b949e);
-        }
-
-        .detail-code {
-          background: var(--bg-secondary, #161b22); border-radius: 10px;
-          border: 1px solid var(--border, #30363d); margin-bottom: 24px; overflow: hidden;
-        }
-        .code-header {
-          display: flex; justify-content: space-between; align-items: center;
-          padding: 8px 16px; border-bottom: 1px solid var(--border, #30363d); font-size: 13px;
-        }
-        .code-header button {
-          background: transparent; border: 1px solid var(--border); border-radius: 4px;
-          padding: 2px 10px; color: var(--text-secondary); cursor: pointer; font-size: 12px;
-        }
-        .detail-code pre {
-          padding: 16px; margin: 0; overflow-x: auto; font-family: 'JetBrains Mono', monospace;
-          font-size: 13px; line-height: 1.5; max-height: 400px; overflow-y: auto;
-        }
-
-        .detail-remixes { margin-top: 32px; }
-        .detail-remixes h2 { font-size: 18px; margin: 0 0 16px; }
-        .remix-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;
-        }
-
-        @media (max-width: 700px) {
-          .detail-main { grid-template-columns: 1fr; }
-        }
-      `}</style>
+        )}
+      </main>
     </div>
   );
 }
