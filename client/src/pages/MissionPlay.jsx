@@ -318,13 +318,13 @@ export default function MissionPlay() {
           <div className="p-4 space-y-4">
             {/* 미션 설명 */}
             <section>
-              <h3 className="text-[11px] font-semibold mb-2 flex items-center gap-1.5" style={{ color: 'var(--color-text-muted)' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <h3 className="text-xs font-bold mb-2 flex items-center gap-1.5" style={{ color: 'var(--color-text-primary)' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/>
                 </svg>
                 {t('mission.description')}
               </h3>
-              <p className="text-[13px] leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
                 {mission.description[lang]}
               </p>
             </section>
@@ -333,17 +333,17 @@ export default function MissionPlay() {
 
             {/* 힌트 */}
             <section>
-              <h3 className="text-[11px] font-semibold mb-2.5 flex items-center gap-1.5" style={{ color: 'var(--color-text-muted)' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <h3 className="text-xs font-bold mb-2.5 flex items-center gap-1.5" style={{ color: 'var(--color-text-primary)' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E0A800" strokeWidth="2" strokeLinecap="round">
                   <path d="M9 21h6M12 3a6 6 0 00-4 10.5V17h8v-3.5A6 6 0 0012 3z"/>
                 </svg>
                 {t('mission.hints')}
               </h3>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {mission.hints.map((hint, i) => (
                   <div key={i}>
                     {i <= hintIndex ? (
-                      <div className="text-[13px] py-2 px-3 rounded-lg leading-relaxed" style={{
+                      <div className="text-sm py-2.5 px-3 rounded-lg leading-relaxed" style={{
                         backgroundColor: 'var(--color-bg-panel)',
                         border: '1px solid var(--color-border)',
                         color: 'var(--color-text-secondary)',
@@ -353,14 +353,14 @@ export default function MissionPlay() {
                     ) : (
                       <button
                         onClick={() => setHintIndex(i)}
-                        className="text-[12px] px-3 py-2 rounded-lg cursor-pointer w-full text-left flex items-center gap-2 transition-colors"
+                        className="text-[13px] px-3 py-2.5 rounded-lg cursor-pointer w-full text-left flex items-center gap-2 transition-colors font-medium"
                         style={{
                           backgroundColor: 'transparent',
                           color: 'var(--color-text-muted)',
                           border: '1px dashed var(--color-border)',
                         }}
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                           <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
                         </svg>
                         {t('mission.showHint')} {i + 1}
@@ -378,20 +378,20 @@ export default function MissionPlay() {
               <button
                 onClick={handleAiHint}
                 disabled={aiLoading}
-                className="w-full py-2 px-3 rounded-lg text-[13px] font-medium cursor-pointer transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-3 rounded-lg text-sm font-semibold cursor-pointer transition-colors flex items-center justify-center gap-2"
                 style={{
                   backgroundColor: 'var(--color-accent-bg)',
                   border: '1px solid var(--color-border)',
                   color: 'var(--color-accent)',
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/>
                 </svg>
                 {aiLoading ? t('ai.thinking') : t('ai.askHint')}
               </button>
               {aiHint && (
-                <div className="mt-2 text-[12px] p-3 rounded-lg leading-relaxed" style={{
+                <div className="mt-2.5 text-[13px] p-3 rounded-lg leading-relaxed" style={{
                   backgroundColor: 'var(--color-bg-panel)',
                   border: '1px solid var(--color-border)',
                   color: 'var(--color-text-secondary)',
@@ -399,7 +399,7 @@ export default function MissionPlay() {
                   {aiHint}
                 </div>
               )}
-              <p className="text-[11px] mt-1.5 text-center" style={{ color: 'var(--color-text-muted)' }}>
+              <p className="text-xs mt-2 text-center" style={{ color: 'var(--color-text-muted)' }}>
                 {t('ai.disclaimer')}
               </p>
             </section>
