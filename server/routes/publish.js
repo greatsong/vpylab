@@ -224,4 +224,163 @@ router.post('/', publishLimiter, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/publish/fetch
+ * GitHub 리포에서 index.html을 읽어 Python 코드를 추출
+ * Query: repo=owner/repoName&githubToken=xxx
+ */
+router.get('/fetch', async (req, res) => {
+  try {
+    const { repo, githubToken } = req.query;
+
+    if (!repo || !githubToken) {
+      return res.status(400).json({ error: 'repo와 githubToken이 필요합니다.' });
+    }
+
+    // index.html 읽기
+    const file = await githubFetch(
+      `https://api.github.com/repos/${repo}/contents/index.html`,
+      githubToken,
+    );
+
+    const html = Buffer.from(file.content, 'base64').toString('utf-8');
+
+    // Base64로 임베딩된 Python 코드 추출
+    const match = html.match(/atob\('([A-Za-z0-9+/=]+)'\)/);
+    let code = '';
+    if (match) {
+      code = Buffer.from(match[1], 'base64').toString('utf-8');
+    }
+
+    // 제목 추출
+    const titleMatch = html.match(/<title>(.+?)(?:\s*[—·-]\s*VPy Lab)?<\/title>/);
+    const title = titleMatch ? titleMatch[1].trim() : '';
+
+    res.json({ code, title, sha: file.sha });
+  } catch (err) {
+    console.error('[Fetch] 오류:', err.message);
+    if (err.message.includes('Bad credentials') || err.message.includes('401')) {
+      return res.status(401).json({ error: 'GitHub 인증이 만료되었습니다.' });
+    }
+    res.status(500).json({ error: '코드를 가져오는 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
+ * PUT /api/publish/update
+ * 기존 GitHub 리포의 index.html을 업데이트
+ * Body: { githubRepo, title, code (완성 HTML), githubToken }
+ */
+router.put('/update', publishLimiter, async (req, res) => {
+  try {
+    const { githubRepo, title, code, githubToken } = req.body;
+
+    if (!githubRepo || !code || !githubToken) {
+      return res.status(400).json({ error: '필수 항목이 누락되었습니다.' });
+    }
+
+    if (code.length > 500 * 1024) {
+      return res.status(400).json({ error: '코드가 너무 큽니다. (최대 500KB)' });
+    }
+
+    // 기존 파일 sha 조회
+    let existingSha = null;
+    try {
+      const existing = await githubFetch(
+        `https://api.github.com/repos/${githubRepo}/contents/index.html`,
+        githubToken,
+      );
+      existingSha = existing.sha;
+    } catch {
+      // 파일이 없으면 새로 생성
+    }
+
+    const contentBase64 = Buffer.from(code, 'utf-8').toString('base64');
+    const commitBody = {
+      message: `✏️ VPy Lab에서 업데이트: ${title || '작품 수정'}`,
+      content: contentBase64,
+      branch: 'main',
+    };
+    if (existingSha) commitBody.sha = existingSha;
+
+    await githubFetch(
+      `https://api.github.com/repos/${githubRepo}/contents/index.html`,
+      githubToken,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(commitBody),
+      },
+    );
+
+    const [owner, repoName] = githubRepo.split('/');
+    res.json({
+      success: true,
+      githubUrl: `https://${owner}.github.io/${repoName}/`,
+    });
+  } catch (err) {
+    console.error('[Update] 오류:', err.message);
+    if (err.message.includes('Bad credentials') || err.message.includes('401')) {
+      return res.status(401).json({ error: 'GitHub 인증이 만료되었습니다.' });
+    }
+    res.status(500).json({ error: '업데이트 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
+ * POST /api/publish/fork
+ * 다른 사용자의 리포를 fork
+ * Body: { sourceRepo, githubToken }
+ */
+router.post('/fork', publishLimiter, async (req, res) => {
+  try {
+    const { sourceRepo, githubToken } = req.body;
+
+    if (!sourceRepo || !githubToken) {
+      return res.status(400).json({ error: '필수 항목이 누락되었습니다.' });
+    }
+
+    // Fork API
+    const forked = await githubFetch(
+      `https://api.github.com/repos/${sourceRepo}/forks`,
+      githubToken,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      },
+    );
+
+    // fork 완료 대기 (GitHub 비동기 처리)
+    await new Promise(r => setTimeout(r, 2000));
+
+    // GitHub Pages 활성화
+    try {
+      await githubFetch(
+        `https://api.github.com/repos/${forked.full_name}/pages`,
+        githubToken,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: { branch: 'main', path: '/' } }),
+        },
+      );
+    } catch {
+      // 이미 활성화된 경우
+    }
+
+    res.json({
+      success: true,
+      forkedRepo: forked.full_name,
+      githubUrl: `https://${forked.owner.login}.github.io/${forked.name}/`,
+    });
+  } catch (err) {
+    console.error('[Fork] 오류:', err.message);
+    if (err.message.includes('Bad credentials') || err.message.includes('401')) {
+      return res.status(401).json({ error: 'GitHub 인증이 만료되었습니다.' });
+    }
+    res.status(500).json({ error: 'Fork 중 오류가 발생했습니다.' });
+  }
+});
+
 export default router;

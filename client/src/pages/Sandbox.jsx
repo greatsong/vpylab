@@ -38,6 +38,7 @@ export default function Sandbox() {
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [remixFrom, setRemixFrom] = useState(null);
   const [remixInfo, setRemixInfo] = useState(null);
+  const [editMode, setEditMode] = useState(null); // { id, githubRepo, title }
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
   const { user } = useAuthStore();
@@ -67,6 +68,32 @@ export default function Sandbox() {
           setCode(work.code);
           setRemixInfo({ title: work.title, author: work.vpylab_profiles?.display_name });
           addOutput(`🔀 "${work.title}" 작품을 Remix합니다. 자유롭게 수정해보세요!`, 'success');
+        }
+      });
+    }
+  }, [searchParams]);
+
+  // Edit 파라미터 처리 (?edit=galleryId) — GitHub에서 코드 가져와 수정 모드
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId) {
+      useGalleryStore.getState().fetchWork(editId).then(async () => {
+        const work = useGalleryStore.getState().currentWork;
+        if (work && work.github_repo) {
+          const token = await useAuthStore.getState().getGitHubToken();
+          if (token) {
+            try {
+              const { code: fetchedCode } = await useGalleryStore.getState().fetchCodeFromGitHub(work.github_repo, token);
+              if (fetchedCode) setCode(fetchedCode);
+              else setCode(work.code); // fallback: DB 코드 사용
+            } catch {
+              setCode(work.code);
+            }
+          } else {
+            setCode(work.code);
+          }
+          setEditMode({ id: editId, githubRepo: work.github_repo, title: work.title });
+          addOutput(`✏️ "${work.title}" 수정 모드. 수정 후 "업데이트"를 눌러주세요.`, 'success');
         }
       });
     }
@@ -167,6 +194,31 @@ export default function Sandbox() {
     }
   };
 
+  // GitHub 작품 업데이트 (edit 모드)
+  const handleUpdate = async () => {
+    if (!editMode) return;
+    const token = await useAuthStore.getState().getGitHubToken();
+    if (!token) {
+      addOutput('❌ GitHub 인증이 필요합니다.', 'error');
+      return;
+    }
+    const htmlContent = generateStandaloneHTML(code, editMode.title);
+    addOutput('📤 GitHub에 업데이트 중...', 'log');
+    const result = await useGalleryStore.getState().updateWork({
+      id: editMode.id,
+      title: editMode.title,
+      code,
+      htmlContent,
+      githubRepo: editMode.githubRepo,
+      githubToken: token,
+    });
+    if (result.error) {
+      addOutput('❌ 업데이트 실패: ' + result.error, 'error');
+    } else {
+      addOutput('✅ 업데이트 완료!', 'success');
+    }
+  };
+
   // 로딩 중이면 로딩 화면 표시
   if (isLoading) {
     return (
@@ -200,6 +252,11 @@ export default function Sandbox() {
         </button>
 
         <div className="hidden md:flex items-center gap-2 ml-2">
+          {editMode && (
+            <button onClick={handleUpdate} className="toolbar-btn --update" style={{ background: '#f0883e', color: 'white', fontWeight: 600 }}>
+              📤 업데이트
+            </button>
+          )}
           <button onClick={handleShare} className="toolbar-btn">
             {shareMsg || t('editor.share')}
           </button>
@@ -292,6 +349,16 @@ export default function Sandbox() {
           borderRadius: 8, fontSize: 13, zIndex: 50, backdropFilter: 'blur(8px)',
         }}>
           🔀 Remix: {remixInfo.author}의 "{remixInfo.title}"
+        </div>
+      )}
+
+      {editMode && (
+        <div style={{
+          position: 'fixed', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(240,136,62,0.9)', color: 'white', padding: '6px 16px',
+          borderRadius: 8, fontSize: 13, zIndex: 50, backdropFilter: 'blur(8px)',
+        }}>
+          ✏️ 수정 모드: "{editMode.title}" — 수정 후 "📤 업데이트"를 눌러주세요
         </div>
       )}
 

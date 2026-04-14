@@ -265,6 +265,101 @@ const useGalleryStore = create((set, get) => ({
     set({ myWorks: data || [] });
   },
 
+  // === GitHub 리포에서 코드 가져오기 ===
+  fetchCodeFromGitHub: async (githubRepo, githubToken) => {
+    const res = await fetch(`${API_BASE}/api/publish/fetch?repo=${encodeURIComponent(githubRepo)}&githubToken=${encodeURIComponent(githubToken)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    return data; // { code, title, sha }
+  },
+
+  // === 기존 작품 업데이트 (GitHub + Supabase) ===
+  updateWork: async ({ id, title, description, code, htmlContent, githubRepo, githubToken }) => {
+    set({ publishing: true });
+    try {
+      // GitHub 리포 업데이트
+      if (githubRepo && githubToken && htmlContent) {
+        const res = await fetch(`${API_BASE}/api/publish/update`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ githubRepo, title, code: htmlContent, githubToken }),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error);
+      }
+
+      // Supabase 레코드 업데이트
+      const updates = { code };
+      if (title) updates.title = title;
+      if (description !== undefined) updates.description = description;
+
+      const { error } = await supabase
+        .from('vpylab_gallery')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+      set({ publishing: false });
+      return { success: true };
+    } catch (err) {
+      set({ publishing: false });
+      return { error: err.message };
+    }
+  },
+
+  // === 작품 Fork (GitHub fork + 갤러리 등록) ===
+  forkWork: async ({ sourceId, sourceRepo, githubToken }) => {
+    set({ publishing: true });
+    try {
+      // GitHub fork
+      const res = await fetch(`${API_BASE}/api/publish/fork`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceRepo, githubToken }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+
+      // 원본 작품 정보 가져오기
+      const { data: source } = await supabase
+        .from('vpylab_gallery')
+        .select('title, description, code, category, thumbnail')
+        .eq('id', sourceId)
+        .single();
+
+      if (!source) throw new Error('원본 작품을 찾을 수 없습니다.');
+
+      // 갤러리에 새 작품 등록
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from('vpylab_gallery')
+        .insert({
+          user_id: user.id,
+          title: `${source.title} (Fork)`,
+          description: source.description,
+          code: source.code,
+          thumbnail: source.thumbnail,
+          category: source.category,
+          remix_from: sourceId,
+          github_url: result.githubUrl,
+          github_repo: result.forkedRepo,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // 원본의 remix_count 증가
+      supabase.rpc('vpylab_increment_remix', { work_id: sourceId });
+
+      set({ publishing: false });
+      return { data, githubUrl: result.githubUrl, forkedRepo: result.forkedRepo };
+    } catch (err) {
+      set({ publishing: false });
+      return { error: err.message };
+    }
+  },
+
   // === 작품 삭제 ===
   deleteWork: async (id) => {
     const { error } = await supabase

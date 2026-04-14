@@ -7,10 +7,13 @@ import GalleryCard from '../components/gallery/GalleryCard';
 export default function GalleryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentWork, loading, fetchWork, toggleLike, checkIfLiked } = useGalleryStore();
+  const { currentWork, loading, fetchWork, toggleLike, checkIfLiked, forkWork } = useGalleryStore();
   const user = useAuthStore(s => s.user);
+  const getGitHubToken = useAuthStore(s => s.getGitHubToken);
+  const isGitHubUser = useAuthStore(s => s.isGitHubUser);
   const [isLiked, setIsLiked] = useState(false);
   const [showCode, setShowCode] = useState(false);
+  const [forking, setForking] = useState(false);
 
   useEffect(() => {
     fetchWork(id);
@@ -43,6 +46,32 @@ export default function GalleryDetail() {
   const handlePlay = () => {
     if (currentWork.github_url) {
       window.open(currentWork.github_url, '_blank');
+    }
+  };
+
+  const isMyWork = user && currentWork.user_id === user.id;
+
+  const handleEdit = () => {
+    navigate(`/sandbox?edit=${id}`);
+  };
+
+  const handleFork = async () => {
+    if (!user || !isGitHubUser() || !currentWork.github_repo) return;
+    setForking(true);
+    const token = await getGitHubToken();
+    if (!token) { setForking(false); return; }
+
+    const result = await forkWork({
+      sourceId: id,
+      sourceRepo: currentWork.github_repo,
+      githubToken: token,
+    });
+    setForking(false);
+
+    if (result.error) {
+      alert('Fork 실패: ' + result.error);
+    } else {
+      navigate(`/sandbox?edit=${result.data.id}`);
     }
   };
 
@@ -95,8 +124,18 @@ export default function GalleryDetail() {
             <button onClick={handlePlay} className="btn-play">
               ▶ 바로 플레이
             </button>
+            {isMyWork && currentWork.github_repo && (
+              <button onClick={handleEdit} className="btn-edit">
+                ✏️ 수정하기
+              </button>
+            )}
+            {!isMyWork && currentWork.github_repo && user && isGitHubUser() && (
+              <button onClick={handleFork} disabled={forking} className="btn-fork">
+                {forking ? '🔄 Fork 중...' : '🍴 Fork'}
+              </button>
+            )}
             <button onClick={handleRemix} className="btn-remix">
-              🔀 Remix (내 코드로 열기)
+              🔀 Remix (코드만 복사)
             </button>
             {currentWork.github_url && (
               <a href={currentWork.github_url} target="_blank" rel="noopener noreferrer" className="btn-github-pages">
@@ -183,6 +222,15 @@ export default function GalleryDetail() {
           font-weight: 600; font-size: 15px; transition: transform 0.15s;
         }
         .btn-play:hover { transform: scale(1.03); }
+        .btn-edit {
+          padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
+          background: #f0883e; color: white; font-weight: 600; font-size: 14px;
+        }
+        .btn-fork {
+          padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
+          background: #238636; color: white; font-weight: 600; font-size: 14px;
+        }
+        .btn-fork:disabled { opacity: 0.6; cursor: wait; }
         .btn-remix {
           padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
           background: var(--accent, #6C5CE7); color: white; font-weight: 600; font-size: 14px;
