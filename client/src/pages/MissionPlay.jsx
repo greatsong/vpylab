@@ -13,6 +13,8 @@ import { clearRegistry } from '../engine/object-registry';
 import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
 import missions from '../data/missions';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
 import useAppStore from '../stores/appStore';
 import useCodeStore from '../stores/codeStore';
 import useAuthStore from '../stores/authStore';
@@ -74,7 +76,7 @@ export default function MissionPlay() {
   }, []);
 
   const {
-    status, progress, progressMessage,
+    progress, progressMessage,
     initWorker, runCode, stopExecution,
     isLoading, isReady, isRunning,
   } = usePyodide({
@@ -185,7 +187,7 @@ export default function MissionPlay() {
     setAiLoading(true);
     setAiHint('');
     try {
-      const res = await fetch('/api/hint', {
+      const res = await fetch(`${API_BASE}/api/ai/hint`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

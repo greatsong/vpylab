@@ -90,8 +90,11 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     scene.add(axesHelper);
     axesRef.current = axesHelper;
 
-    // sceneRef로 씬 전달
-    if (sceneRef) sceneRef.current = scene;
+    // sceneRef로 씬 전달 + 렌더러 참조 (썸네일 캡처용)
+    if (sceneRef) {
+      sceneRef.current = scene;
+      sceneRef.current._renderer = renderer;
+    }
     onSceneReady?.(scene);
 
     // 렌더 루프
@@ -141,7 +144,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     if (sceneRef?.current) {
       sceneRef.current.background = new THREE.Color(THEME_BG[theme] || 0xf7f8fa);
     }
-  }, [theme]);
+  }, [theme, sceneRef]);
 
   // 축/그리드 토글
   useEffect(() => {

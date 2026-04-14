@@ -10,7 +10,7 @@ function createMockAudioContext() {
     currentTime: 0,
     state: 'running',
     sampleRate: 44100,
-    resume: vi.fn(),
+    resume: vi.fn(() => Promise.resolve()),
     destination: {},
     createOscillator: vi.fn(() => ({
       type: 'sine',

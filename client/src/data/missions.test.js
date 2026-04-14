@@ -49,7 +49,7 @@ describe('missions 데이터 무결성', () => {
   });
 
   it('gradeType이 유효하다', () => {
-    const validTypes = ['A', 'B', 'A+B'];
+    const validTypes = ['A', 'B', 'A+B', 'notes', 'run'];
     for (const mission of missions) {
       expect(validTypes).toContain(mission.gradeType);
     }

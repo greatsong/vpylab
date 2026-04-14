@@ -22,7 +22,7 @@ const SORTS = [
 ];
 
 export default function Gallery() {
-  const { t, lang } = useI18n();
+  const { t, locale: lang } = useI18n();
   const { works, loading, hasMore, filters, setFilters, fetchWorks } = useGalleryStore();
   const [search, setSearch] = useState('');
 
@@ -46,12 +46,16 @@ export default function Gallery() {
 
       <div className="gallery-page">
         {/* 헤더 */}
-        <div className="gallery-header">
-          <h1>{t('gallery.title') || '갤러리'}</h1>
-          <p>{t('gallery.subtitle') || '학생들의 멋진 3D 작품을 구경하고, Remix 해보세요!'}</p>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+            {t('gallery.title') || '갤러리'}
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
+            {t('gallery.subtitle') || '학생들의 멋진 3D 작품을 구경하고, Remix 해보세요!'}
+          </p>
         </div>
 
-        {/* 필터 바 */}
+        {/* 필터 바 — 한 줄 정리 */}
         <div className="gallery-filters">
           <form onSubmit={handleSearch} className="gallery-search">
             <input
@@ -63,28 +67,32 @@ export default function Gallery() {
             <button type="submit">{lang === 'ko' ? '검색' : 'Search'}</button>
           </form>
 
-          <div className="gallery-cats">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.value}
-                className={`cat-pill ${filters.category === cat.value ? 'active' : ''}`}
-                onClick={() => setFilters({ category: cat.value })}
-              >
-                {lang === 'ko' ? cat.label : cat.en}
-              </button>
-            ))}
-          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="gallery-cats">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.value}
+                  className={`cat-pill ${filters.category === cat.value ? 'active' : ''}`}
+                  onClick={() => setFilters({ category: cat.value })}
+                >
+                  {lang === 'ko' ? cat.label : cat.en}
+                </button>
+              ))}
+            </div>
 
-          <div className="gallery-sort">
-            {SORTS.map(sort => (
-              <button
-                key={sort.value}
-                className={`sort-btn ${filters.sort === sort.value ? 'active' : ''}`}
-                onClick={() => setFilters({ sort: sort.value })}
-              >
-                {lang === 'ko' ? sort.label : sort.en}
-              </button>
-            ))}
+            <div style={{ width: 1, height: 16, backgroundColor: 'var(--color-border)', margin: '0 4px' }} />
+
+            <div className="gallery-sort">
+              {SORTS.map(sort => (
+                <button
+                  key={sort.value}
+                  className={`sort-btn ${filters.sort === sort.value ? 'active' : ''}`}
+                  onClick={() => setFilters({ sort: sort.value })}
+                >
+                  {lang === 'ko' ? sort.label : sort.en}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -98,13 +106,15 @@ export default function Gallery() {
         {/* 빈 상태 */}
         {!loading && works.length === 0 && (
           <div className="gallery-empty">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ margin: '0 auto 12px' }}>
-              <rect x="6" y="6" width="36" height="36" rx="8" stroke="var(--color-text-muted)" strokeWidth="2" opacity="0.3"/>
-              <circle cx="18" cy="20" r="4" fill="var(--color-text-muted)" opacity="0.3"/>
-              <path d="M6 32L16 24L24 30L32 22L42 32" stroke="var(--color-text-muted)" strokeWidth="2" opacity="0.3"/>
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ margin: '0 auto 12px' }}>
+              <rect x="5" y="5" width="30" height="30" rx="6" stroke="var(--color-text-muted)" strokeWidth="1.5" opacity="0.3"/>
+              <circle cx="15" cy="16" r="3" fill="var(--color-text-muted)" opacity="0.3"/>
+              <path d="M5 28L13 21L20 26L27 19L35 28" stroke="var(--color-text-muted)" strokeWidth="1.5" opacity="0.3"/>
             </svg>
-            <p>{lang === 'ko' ? '아직 작품이 없습니다.' : 'No works yet.'}</p>
-            <p style={{ fontSize: '0.8125rem' }}>{lang === 'ko' ? '첫 번째 작품을 올려보세요!' : 'Be the first to publish!'}</p>
+            <p className="text-sm">{lang === 'ko' ? '아직 작품이 없습니다.' : 'No works yet.'}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+              {lang === 'ko' ? '첫 번째 작품을 올려보세요!' : 'Be the first to publish!'}
+            </p>
           </div>
         )}
 

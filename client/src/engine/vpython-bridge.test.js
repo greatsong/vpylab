@@ -12,6 +12,7 @@ vi.mock('./chart-system', () => ({
 }));
 vi.mock('./sound-system', () => ({
   processSoundCommand: vi.fn(),
+  setNotePlayCallback: vi.fn(),
 }));
 
 // Three.js를 mock — jsdom에서는 WebGL 불가

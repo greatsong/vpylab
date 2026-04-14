@@ -43,6 +43,8 @@ const useGalleryStore = create((set, get) => ({
 
     set({ loading: true });
 
+    // 성능: 목록 조회에서 thumbnail은 가져오되 크기를 줄이려면 Storage 이관 필요
+    // TODO: thumbnail을 Supabase Storage URL로 이관 후 이 쿼리에서 제거
     let query = supabase
       .from('vpylab_gallery')
       .select('id, title, description, thumbnail, category, view_count, like_count, remix_count, github_url, created_at, user_id')
@@ -275,9 +277,13 @@ const useGalleryStore = create((set, get) => ({
     set({ myWorks: data || [] });
   },
 
-  // === GitHub 리포에서 코드 가져오기 ===
+  // === GitHub 리포에서 코드 가져오기 (POST body로 토큰 전달 — 보안) ===
   fetchCodeFromGitHub: async (githubRepo, githubToken) => {
-    const res = await fetch(`${API_BASE}/api/publish/fetch?repo=${encodeURIComponent(githubRepo)}&githubToken=${encodeURIComponent(githubToken)}`);
+    const res = await fetch(`${API_BASE}/api/publish/fetch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo: githubRepo, githubToken }),
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
     return data; // { code, title, sha }

@@ -13,12 +13,19 @@ import { Router } from 'express';
 
 const router = Router();
 
-// 일일 요청 카운터 (메모리, 프로덕션에서는 Redis 사용)
+// 일일 요청 카운터 (메모리 — 프로덕션에서는 Redis 권장)
 const dailyCounts = new Map();
 const DAILY_LIMIT = 20;
+let lastResetDate = new Date().toDateString();
 
-// 자정에 카운터 리셋
-setInterval(() => dailyCounts.clear(), 24 * 60 * 60 * 1000);
+// 실제 자정 기준 리셋 (날짜 변경 감지)
+function resetIfNewDay() {
+  const today = new Date().toDateString();
+  if (today !== lastResetDate) {
+    dailyCounts.clear();
+    lastResetDate = today;
+  }
+}
 
 const SYSTEM_PROMPT = `당신은 VPyLab의 교육 AI 조교입니다.
 학생이 3D 프로그래밍(VPython) 과제를 풀 때 도움을 줍니다.
@@ -42,6 +49,9 @@ router.post('/hint', async (req, res) => {
   if (code.length > 10_000) {
     return res.status(400).json({ error: '코드가 너무 깁니다 (10KB 초과)' });
   }
+
+  // 날짜 변경 시 카운터 리셋
+  resetIfNewDay();
 
   // 일일 제한 체크 (IP 기반, 프로덕션에서는 JWT 사용자 기반)
   const clientId = req.ip;
@@ -74,6 +84,7 @@ router.post('/hint', async (req, res) => {
             role: 'user',
             content: `미션: ${missionId || '자유 코딩'}
 힌트 단계: ${hintLevel || 1} (1=방향, 2=구체적, 3=거의 답)
+${language === 'en' ? '답변 언어: English' : ''}
 
 <user_code>
 ${code}
@@ -96,10 +107,14 @@ ${code}
     const data = await response.json();
     let hint = data.choices?.[0]?.message?.content || '';
 
-    // 보안: 완전한 코드 블록 필터링 (```python ... ``` 에서 5줄 이상이면 제거)
-    hint = hint.replace(/```python\n([\s\S]{200,?})```/g,
-      '```\n[코드가 너무 길어서 생략되었습니다. 직접 생각해보세요!]\n```'
-    );
+    // 보안: 완전한 코드 블록 필터링 (3줄 이상 코드 블록 제거)
+    hint = hint.replace(/```(?:python|py)?\n([\s\S]*?)```/g, (match, codeBlock) => {
+      const lineCount = codeBlock.split('\n').filter(l => l.trim()).length;
+      if (lineCount >= 3) {
+        return '```\n[코드가 너무 길어서 생략되었습니다. 직접 생각해보세요!]\n```';
+      }
+      return match;
+    });
 
     // 카운터 증가
     dailyCounts.set(clientId, count + 1);

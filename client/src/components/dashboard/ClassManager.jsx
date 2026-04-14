@@ -22,7 +22,7 @@ export default function ClassManager() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchClasses(); }, [user]);
+  useEffect(() => { fetchClasses(); }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const createClass = async () => {
     if (!newClassName.trim() || !user) return;

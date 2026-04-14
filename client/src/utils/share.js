@@ -3,15 +3,15 @@
  * 짧은 URL 방식 (/s/abc12345) + LZ-String 하위 호환
  */
 
-import { nanoid } from 'nanoid';
 import { supabase } from '../lib/supabase';
 import { decompressFromEncodedURIComponent } from 'lz-string';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
 const MAX_CODE_SIZE = 50_000; // 50KB 상한
-const SHARE_ID_LENGTH = 8;
 
 /**
- * 코드를 Supabase에 저장하고 짧은 URL 반환
+ * 코드를 서버 경유로 저장하고 짧은 URL 반환
+ * 보안: anon key 직접 INSERT 대신 서버 rate-limit + 크기 검증
  * @param {string} code
  * @param {string} [title]
  * @returns {Promise<{ url: string|null, error: string|null }>}
@@ -21,28 +21,23 @@ export async function createShareLink(code, title = '제목 없음') {
     return { url: null, error: '코드가 너무 깁니다 (50KB 초과)' };
   }
 
-  // 현재 로그인 사용자 (없으면 null)
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const res = await fetch(`${API_BASE}/api/share`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, title }),
+    });
+    const data = await res.json();
 
-  // nanoid로 짧은 ID 생성, 충돌 시 재시도
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const id = nanoid(SHARE_ID_LENGTH);
-    const { error } = await supabase
-      .from('vpylab_shares')
-      .insert({ id, code, title, user_id: user?.id || null });
-
-    if (!error) {
-      const url = `${window.location.origin}/s/${id}`;
-      return { url, error: null };
+    if (!res.ok) {
+      return { url: null, error: data.error || '공유 링크 생성 실패' };
     }
 
-    // PK 충돌이면 재시도, 다른 에러면 반환
-    if (!error.message?.includes('duplicate')) {
-      return { url: null, error: error.message };
-    }
+    const url = `${window.location.origin}${data.url}`;
+    return { url, error: null };
+  } catch {
+    return { url: null, error: '서버 연결 실패' };
   }
-
-  return { url: null, error: '공유 링크 생성 실패' };
 }
 
 /**

@@ -9,7 +9,7 @@ import { useI18n } from '../i18n';
 export default function GalleryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { lang } = useI18n();
+  const { t, locale: lang } = useI18n();
   const { currentWork, loading, fetchWork, toggleLike, checkIfLiked, forkWork } = useGalleryStore();
   const user = useAuthStore(s => s.user);
   const getGitHubToken = useAuthStore(s => s.getGitHubToken);

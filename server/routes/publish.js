@@ -237,13 +237,14 @@ router.post('/', publishLimiter, async (req, res) => {
 });
 
 /**
- * GET /api/publish/fetch
+ * POST /api/publish/fetch
  * GitHub 리포에서 index.html을 읽어 Python 코드를 추출
- * Query: repo=owner/repoName&githubToken=xxx
+ * Body: { repo, githubToken }
+ * 보안: 토큰을 URL 쿼리스트링이 아닌 POST body로 전달
  */
-router.get('/fetch', async (req, res) => {
+router.post('/fetch', publishLimiter, async (req, res) => {
   try {
-    const { repo, githubToken } = req.query;
+    const { repo, githubToken } = req.body;
 
     if (!repo || !githubToken) {
       return res.status(400).json({ error: 'repo와 githubToken이 필요합니다.' });

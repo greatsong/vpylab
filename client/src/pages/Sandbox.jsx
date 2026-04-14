@@ -9,7 +9,7 @@ import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture } from '../engine/sound-system';
+import { runSound, errorSound, stopBgm, initAudioOnUserGesture } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 import { generateStandaloneHTML, downloadHTML } from '../utils/export-html';
@@ -37,11 +37,11 @@ export default function Sandbox() {
   const [showExamples, setShowExamples] = useState(false);
   const [exampleCategory, setExampleCategory] = useState('all');
   const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishThumbnail, setPublishThumbnail] = useState(null);
   const [remixFrom, setRemixFrom] = useState(null);
   const [remixInfo, setRemixInfo] = useState(null);
   const [editMode, setEditMode] = useState(null); // { id, githubRepo, title }
   const sceneRef = useRef(null);
-  const rendererRef = useRef(null);
   const { user } = useAuthStore();
   const { saveCode, autoSave, clearAutoSave, saveStatus } = useCodeStore();
   const [searchParams] = useSearchParams();
@@ -77,6 +77,10 @@ export default function Sandbox() {
   useEffect(() => () => clearAutoSave(), []);
   useEffect(() => { initAudioOnUserGesture(); }, []);
 
+  const addOutput = useCallback((text, type = 'log') => {
+    setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
+  }, []);
+
   // Remix 파라미터 처리 (?remix=galleryId)
   useEffect(() => {
     const remixId = searchParams.get('remix');
@@ -92,7 +96,7 @@ export default function Sandbox() {
         }
       });
     }
-  }, [searchParams]);
+  }, [searchParams, addOutput]);
 
   // Play 파라미터 처리 (?play=galleryId) — 코드 로드 후 자동 실행
   const pendingPlayRef = useRef(null); // 자동 실행할 코드
@@ -134,11 +138,7 @@ export default function Sandbox() {
         }
       });
     }
-  }, [searchParams]);
-
-  const addOutput = useCallback((text, type = 'log') => {
-    setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
-  }, []);
+  }, [searchParams, addOutput]);
 
   const handleBatch = useCallback((commands) => {
     if (sceneRef.current) {
@@ -147,7 +147,7 @@ export default function Sandbox() {
   }, []);
 
   const {
-    status, progress, progressMessage,
+    progress, progressMessage,
     initWorker, runCode, stopExecution,
     isLoading, isReady, isRunning,
   } = usePyodide({
@@ -332,6 +332,8 @@ export default function Sandbox() {
           <button
             onClick={() => {
               if (!user) { useAuthStore.getState().setAuthModalOpen(true); return; }
+              const thumb = sceneRef.current?._renderer ? captureThumbnail(sceneRef.current._renderer.domElement) : null;
+              setPublishThumbnail(thumb);
               setPublishModalOpen(true);
             }}
             className="toolbar-btn --publish"
@@ -365,7 +367,13 @@ export default function Sandbox() {
                 { label: t('editor.examples') || '예제', action: () => { setShowExamples(true); setMobileMore(false); } },
                 { label: t('code.myCodes'), action: () => { setShowSavedCodes(true); setMobileMore(false); } },
                 { label: t('gallery.publish') || '갤러리에 올리기', action: () => {
-                  if (!user) { useAuthStore.getState().setAuthModalOpen(true); } else { setPublishModalOpen(true); }
+                  if (!user) {
+                    useAuthStore.getState().setAuthModalOpen(true);
+                  } else {
+                    const thumb = sceneRef.current?._renderer ? captureThumbnail(sceneRef.current._renderer.domElement) : null;
+                    setPublishThumbnail(thumb);
+                    setPublishModalOpen(true);
+                  }
                   setMobileMore(false);
                 }},
               ].map((item, i) => (
@@ -557,9 +565,9 @@ export default function Sandbox() {
       {/* 갤러리 발행 모달 */}
       <PublishModal
         isOpen={publishModalOpen}
-        onClose={() => setPublishModalOpen(false)}
+        onClose={() => { setPublishModalOpen(false); setPublishThumbnail(null); }}
         code={code}
-        thumbnail={sceneRef.current?._renderer ? captureThumbnail(sceneRef.current._renderer.domElement) : null}
+        thumbnail={publishThumbnail}
         remixFrom={remixFrom}
       />
     </div>

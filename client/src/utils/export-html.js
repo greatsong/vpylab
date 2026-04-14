@@ -22,22 +22,32 @@ const THREE_VERSION = '0.183.2';
  * @param {string} title - 작품 제목
  * @returns {string} HTML 문자열
  */
+/**
+ * HTML 엔티티 이스케이프 (XSS 방지)
+ */
+function escapeHTML(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function generateStandaloneHTML(code, title = 'VPyLab') {
   // Base64로 안전하게 코드 임베딩 (모든 특수문자 문제 해결)
   const base64Code = btoa(unescape(encodeURIComponent(code)));
-  // 백틱 리터럴용 이스케이프 (레거시 호환)
-  const escapedCode = code
-    .replace(/\\/g, '\\\\')
-    .replace(/`/g, '\\`')
-    .replace(/\$/g, '\\$');
+
+  // 보안: 제목을 HTML 엔티티로 이스케이프 (저장형 XSS 방지)
+  const safeTitle = escapeHTML(title);
 
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net blob:; connect-src https://cdn.jsdelivr.net blob:; img-src * blob: data:;">
-  <title>${title} — VPyLab</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net blob:; style-src 'unsafe-inline'; connect-src https://cdn.jsdelivr.net https://pypi.org https://files.pythonhosted.org blob:; img-src blob: data:; font-src https://cdn.jsdelivr.net; worker-src blob:;">
+  <title>${safeTitle} — VPyLab</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; }
@@ -57,7 +67,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
     <div style="font-size:14px">Python 엔진 로딩 중...</div>
     <div class="bar"><div class="fill" id="progress" style="width:0%"></div></div>
   </div>
-  <div id="info">${title} · <a href="https://github.com/greatsong/vpylab" target="_blank">VPyLab</a></div>
+  <div id="info">${safeTitle} · <a href="https://github.com/greatsong/vpylab" target="_blank">VPyLab</a></div>
   <div id="viewport"></div>
   <div id="console"></div>
 

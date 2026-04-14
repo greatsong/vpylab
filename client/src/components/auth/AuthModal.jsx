@@ -12,44 +12,32 @@ export default function AuthModal() {
       <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
         {/* 닫기 */}
         <button className="auth-close" onClick={() => setAuthModalOpen(false)} aria-label="닫기">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M13.5 4.5L4.5 13.5M4.5 4.5l9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
 
-        {/* 상단 장식 */}
-        <div className="auth-header-glow" />
-
         {/* 로고 + 타이틀 */}
         <div className="auth-logo">
-          <svg width="36" height="36" viewBox="0 0 48 48">
-            <defs>
-              <radialGradient id="a-s1" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#B8A9FF"/><stop offset="50%" stopColor="#6C5CE7"/><stop offset="100%" stopColor="#4834B0"/></radialGradient>
-              <radialGradient id="a-s2" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#FFB3A7"/><stop offset="50%" stopColor="#FF6B6B"/><stop offset="100%" stopColor="#C44569"/></radialGradient>
-              <radialGradient id="a-s3" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#7DFFDA"/><stop offset="50%" stopColor="#00B894"/><stop offset="100%" stopColor="#00876A"/></radialGradient>
-              <radialGradient id="a-s4" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#FFE4A0"/><stop offset="50%" stopColor="#FDCB6E"/><stop offset="100%" stopColor="#E0A800"/></radialGradient>
-              <radialGradient id="a-s5" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#A0F0EE"/><stop offset="50%" stopColor="#00CEC9"/><stop offset="100%" stopColor="#009E9A"/></radialGradient>
-            </defs>
-            {[11,17.5,24,30.5,37].map(y=><line key={y} x1="2" y1={y} x2="46" y2={y} stroke="#CBC3E3" strokeWidth="0.8" opacity="0.6"/>)}
-            <line x1="14.5" y1="9" x2="14.5" y2="24" stroke="#6C5CE7" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
-            <path d="M14.5 9 C17.5 9, 19 12, 17 14" stroke="#6C5CE7" strokeWidth="1.1" fill="none" strokeLinecap="round" opacity="0.45"/>
-            <ellipse cx="11.5" cy="25.5" rx="4.8" ry="3.5" transform="rotate(-15, 11.5, 25.5)" fill="url(#a-s1)"/>
-            <ellipse cx="10" cy="24.2" rx="1.8" ry="1" transform="rotate(-15, 10, 24.2)" fill="white" opacity="0.4"/>
-            <line x1="25.5" y1="14.5" x2="25.5" y2="32" stroke="#E0A800" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
-            <path d="M25.5 32 C22.5 32, 21 29, 23 27" stroke="#E0A800" strokeWidth="1.1" fill="none" strokeLinecap="round" opacity="0.45"/>
-            <ellipse cx="28.5" cy="13.5" rx="4.8" ry="3.5" transform="rotate(-15, 28.5, 13.5)" fill="url(#a-s4)"/>
-            <ellipse cx="27" cy="12.2" rx="1.8" ry="1" transform="rotate(-15, 27, 12.2)" fill="white" opacity="0.4"/>
-            <line x1="38" y1="15" x2="38" y2="32" stroke="#FF6B6B" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
-            <path d="M38 15 C41 15, 42 18, 40 20" stroke="#FF6B6B" strokeWidth="1.1" fill="none" strokeLinecap="round" opacity="0.45"/>
-            <ellipse cx="35" cy="33.5" rx="4.5" ry="3.3" transform="rotate(-15, 35, 33.5)" fill="url(#a-s2)"/>
-            <ellipse cx="33.5" cy="32.3" rx="1.6" ry="0.9" transform="rotate(-15, 33.5, 32.3)" fill="white" opacity="0.4"/>
-            <circle cx="6" cy="37.5" r="2.2" fill="url(#a-s3)"/>
-            <circle cx="43" cy="9" r="2" fill="url(#a-s5)"/>
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <line x1="14" y1="14" x2="24" y2="20" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round"/>
+            <line x1="14" y1="14" x2="14" y2="4" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round"/>
+            <line x1="14" y1="14" x2="6" y2="20" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round"/>
+            <circle cx="14" cy="14" r="2.5" fill="#2563EB"/>
           </svg>
         </div>
 
-        <h2 className="auth-title">{t('auth.login')}</h2>
+        <h2 className="auth-title">VPyLab {t('auth.login')}</h2>
         <p className="auth-desc">{t('auth.loginDescription')}</p>
+
+        {/* 가치 포인트 */}
+        <div className="auth-features">
+          <span>Python 3D</span>
+          <span>·</span>
+          <span>Web Audio</span>
+          <span>·</span>
+          <span>AI Hints</span>
+        </div>
 
         {/* 소셜 버튼 */}
         <div className="auth-buttons">
@@ -71,11 +59,6 @@ export default function AuthModal() {
           </button>
         </div>
 
-        {/* 구분선 */}
-        <div className="auth-divider">
-          <span>또는</span>
-        </div>
-
         {/* 안내 */}
         <p className="auth-notice">{t('auth.notice')}</p>
       </div>
@@ -85,122 +68,96 @@ export default function AuthModal() {
           position: fixed; inset: 0; z-index: 100;
           display: flex; align-items: center; justify-content: center;
           padding: 16px;
-          background: rgba(0,0,0,0.45);
-          backdrop-filter: blur(8px);
+          background: rgba(0,0,0,0.35);
+          backdrop-filter: blur(4px);
           animation: authFadeIn 0.2s ease;
         }
         @keyframes authFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes authSlideUp {
-          from { opacity: 0; transform: translateY(20px) scale(0.96); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
         .auth-modal {
           position: relative;
           width: 100%; max-width: 380px;
-          border-radius: var(--radius-xl, 20px);
-          padding: 36px 32px 28px;
-          background: var(--color-bg-panel, #1E1E24);
-          border: 1px solid var(--color-border, #2E2E38);
-          box-shadow: 0 24px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.04) inset;
-          overflow: hidden;
-          animation: authSlideUp 0.3s ease;
-          font-family: var(--font-body, 'DM Sans', sans-serif);
-        }
-
-        /* 상단 장식 그라데이션 */
-        .auth-header-glow {
-          position: absolute; top: 0; left: 0; right: 0; height: 120px;
-          background: linear-gradient(180deg, rgba(108, 92, 231, 0.08) 0%, transparent 100%);
-          pointer-events: none;
+          border-radius: var(--radius-xl);
+          padding: 32px 28px 24px;
+          background: var(--color-bg-panel);
+          border: 1px solid var(--color-border);
+          box-shadow: var(--shadow-xl);
+          animation: authSlideUp 0.2s ease;
+          font-family: var(--font-body);
         }
 
         .auth-close {
-          position: absolute; top: 16px; right: 16px;
+          position: absolute; top: 14px; right: 14px;
           background: none; border: none; cursor: pointer;
-          color: var(--color-text-muted, #72757E);
-          padding: 6px; border-radius: 8px;
-          transition: all 0.15s; z-index: 1;
+          color: var(--color-text-muted);
+          padding: 6px; border-radius: var(--radius-sm);
+          transition: all 0.15s;
         }
         .auth-close:hover {
-          background: var(--color-bg-tertiary, #26262E);
-          color: var(--color-text-primary, #FFFFFE);
+          background: var(--color-bg-secondary);
+          color: var(--color-text-primary);
         }
 
-        .auth-logo {
-          position: relative; z-index: 1;
-          margin-bottom: 16px;
-        }
+        .auth-logo { margin-bottom: 14px; }
 
         .auth-title {
-          position: relative; z-index: 1;
-          margin: 0 0 8px; font-size: 22px; font-weight: 700;
-          font-family: var(--font-display, 'Satoshi', sans-serif);
-          color: var(--color-text-primary, #FFFFFE);
+          margin: 0 0 6px; font-size: 20px; font-weight: 700;
+          font-family: var(--font-display);
+          color: var(--color-text-primary);
         }
 
         .auth-desc {
-          position: relative; z-index: 1;
-          margin: 0 0 24px;
-          font-size: 14px; line-height: 1.5;
-          color: var(--color-text-secondary, #94A1B2);
+          margin: 0 0 16px;
+          font-size: 13px; line-height: 1.5;
+          color: var(--color-text-secondary);
+        }
+
+        .auth-features {
+          display: flex; align-items: center; gap: 8px;
+          margin-bottom: 20px;
+          font-size: 11px; font-weight: 500;
+          color: var(--color-text-muted);
         }
 
         .auth-buttons {
-          position: relative; z-index: 1;
-          display: flex; flex-direction: column; gap: 10px;
+          display: flex; flex-direction: column; gap: 8px;
         }
 
         .auth-btn {
           display: flex; align-items: center; justify-content: center;
           gap: 10px; width: 100%;
-          padding: 13px 16px; border-radius: var(--radius-md, 12px);
-          font-size: 14px; font-weight: 600; cursor: pointer;
-          transition: all 0.2s;
+          padding: 11px 16px; border-radius: var(--radius-md);
+          font-size: 13px; font-weight: 600; cursor: pointer;
+          transition: all 0.15s;
           font-family: inherit;
         }
 
         .auth-btn-google {
-          background: var(--color-bg-secondary, #F0F1F5);
-          border: 1px solid var(--color-border, #E5E6EE);
-          color: var(--color-text-primary, #1A1A2E);
+          background: var(--color-bg-panel);
+          border: 1px solid var(--color-border);
+          color: var(--color-text-primary);
         }
         .auth-btn-google:hover {
-          border-color: #4285F4;
-          box-shadow: 0 2px 12px rgba(66, 133, 244, 0.15);
-          transform: translateY(-1px);
+          border-color: var(--color-accent);
+          background: var(--color-accent-bg);
         }
 
         .auth-btn-github {
-          background: linear-gradient(135deg, #24292f, #1b1f23);
-          border: none; color: #fff;
+          background: #24292f;
+          border: 1px solid #24292f; color: #fff;
         }
         .auth-btn-github:hover {
-          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-          transform: translateY(-1px);
-        }
-        .auth-btn:active { transform: translateY(0); }
-
-        .auth-divider {
-          position: relative; z-index: 1;
-          display: flex; align-items: center;
-          margin: 20px 0 16px; gap: 12px;
-        }
-        .auth-divider::before,
-        .auth-divider::after {
-          content: ''; flex: 1; height: 1px;
-          background: var(--color-border, #2E2E38);
-        }
-        .auth-divider span {
-          font-size: 12px; color: var(--color-text-muted, #72757E);
-          white-space: nowrap;
+          background: #1b1f23;
         }
 
         .auth-notice {
-          position: relative; z-index: 1;
-          text-align: center; margin: 0;
-          font-size: 12px; line-height: 1.6;
-          color: var(--color-text-muted, #72757E);
+          text-align: center; margin: 16px 0 0;
+          font-size: 11px; line-height: 1.6;
+          color: var(--color-text-muted);
         }
       `}</style>
     </div>

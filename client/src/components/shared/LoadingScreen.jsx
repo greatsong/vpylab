@@ -37,48 +37,31 @@ export default function LoadingScreen({ progress = 0, message = '' }) {
 
   return (
     <div
-      className="flex flex-col items-center justify-center h-full gap-6 px-8"
+      className="flex flex-col items-center justify-center h-full gap-5 px-8"
       style={{ backgroundColor: 'var(--color-bg-primary)' }}
     >
-      {/* 로고 애니메이션 */}
-      <div className="relative">
-        <svg width="64" height="64" viewBox="0 0 28 28" className="animate-pulse">
-          <line x1="14" y1="14" x2="24" y2="20" stroke="#FF6B6B" strokeWidth="2.5" strokeLinecap="round"/>
-          <line x1="14" y1="14" x2="14" y2="4" stroke="#00B894" strokeWidth="2.5" strokeLinecap="round"/>
-          <line x1="14" y1="14" x2="6" y2="20" stroke="#6C5CE7" strokeWidth="2.5" strokeLinecap="round"/>
-          <circle cx="14" cy="14" r="3" fill="#6C5CE7"/>
-        </svg>
-      </div>
-
       {/* 상태 메시지 */}
       <div className="text-center">
-        <p className="text-base font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>
+        <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
           {message || t('loading.pyodide')}
         </p>
-        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-          {t('loading.progress', { percent: Math.round(progress) })}
+        <p className="text-xs font-mono" style={{ color: 'var(--color-text-muted)' }}>
+          {Math.round(progress)}%
         </p>
       </div>
 
       {/* 프로그레스 바 */}
-      <div className="w-64 loading-bar h-2">
+      <div className="w-56 loading-bar h-1.5">
         <div className="loading-bar-fill" style={{ width: `${progress}%` }} />
       </div>
 
       {/* 학습 팁 */}
-      <div
-        className="text-sm text-center max-w-sm animate-slide-up flex items-center gap-2"
+      <p
+        className="text-xs text-center max-w-xs"
         key={tipIndex}
-        style={{ color: 'var(--color-text-muted)' }}
+        style={{ color: 'var(--color-text-muted)', animation: 'slide-up 0.2s ease-out' }}
       >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--color-accent)" style={{ flexShrink: 0 }}>
-          <path d="M8 1a5 5 0 00-2 9.58V12a1 1 0 001 1h2a1 1 0 001-1v-1.42A5 5 0 008 1zm0 2a3 3 0 012 5.24V10H6V8.24A3 3 0 018 3zM6 14h4v1H6v-1z"/>
-        </svg>
         {tips[tipIndex]}
-      </div>
-
-      <p className="text-xs mt-4" style={{ color: 'var(--color-text-muted)' }}>
-        {t('loading.tip')}
       </p>
     </div>
   );
