@@ -413,7 +413,7 @@ export default function MissionPlay() {
                 className="p-4 rounded-xl"
                 style={{
                   backgroundColor: gradeResult.passed ? '#3fb95010' : '#f7816610',
-                  border: `1.5px solid ${gradeResult.passed ? '#3fb95040' : '#f7816640'}`,
+                  border: `1px solid ${gradeResult.passed ? '#3fb95040' : '#f7816640'}`,
                 }}
               >
                 <h3

@@ -122,8 +122,8 @@ export default function Home() {
                 <div style={{
                   backgroundColor: 'var(--color-bg-panel)',
                   borderRadius: 'var(--radius-xl)',
-                  border: '1.5px solid var(--color-border)',
-                  boxShadow: '0 16px 48px rgba(0,0,0,0.06)',
+                  border: '1px solid var(--color-border)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
                   overflow: 'hidden',
                 }}>
                   {/* 코드 미리보기 */}
