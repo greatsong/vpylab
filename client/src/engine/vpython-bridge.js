@@ -9,8 +9,12 @@ import {
   registerObject,
   updateObject,
   clearRegistry,
+  registerNote,
 } from './object-registry';
-import { processSoundCommand } from './sound-system';
+import { processSoundCommand, setNotePlayCallback } from './sound-system';
+
+// 음표 재생 시 레지스트리에 기록
+setNotePlayCallback((name, duration) => registerNote(name, duration));
 import { renderChart, clearCharts } from './chart-system';
 
 // Three.js 메시 레지스트리 (id → Three.js Mesh)

@@ -8,7 +8,7 @@ import OutputConsole from '../components/console/OutputConsole';
 import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
-import { gradeA, gradeB } from '../engine/grading-engine';
+import { gradeA, gradeB, gradeNotes } from '../engine/grading-engine';
 import { clearRegistry } from '../engine/object-registry';
 import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
@@ -125,7 +125,13 @@ export default function MissionPlay() {
 
     let result;
 
-    if (mission.gradeType === 'A') {
+    if (mission.gradeType === 'notes') {
+      // 음악 미션: 재생된 노트 시퀀스와 정답 비교
+      result = gradeNotes(mission.expectedNotes);
+    } else if (mission.gradeType === 'run') {
+      // 탐험형 미션: 코드 실행 자체가 목표 (실행했으면 통과)
+      result = { grade: 'run', passed: true, score: 100, message: '✅ 실행 완료!' };
+    } else if (mission.gradeType === 'A') {
       result = gradeA(mission.assertions);
     } else if (mission.gradeType === 'B') {
       result = gradeB('obj_1', mission.referenceTrajectory, 0.9);
@@ -151,7 +157,6 @@ export default function MissionPlay() {
 
     if (result.passed) {
       completeMission(missionId, result.score);
-      // Supabase에 제출 기록 저장 (로그인 상태일 때만)
       useCodeStore.getState().submitMission({
         missionId,
         code,
@@ -160,9 +165,17 @@ export default function MissionPlay() {
         gradingDetails: result,
       });
       successSound();
-      addOutput(`🎉 ${t('mission.congratulations')} (${result.score}점)`, 'success');
+      if (result.score >= 100) {
+        addOutput(`🎉 ${t('mission.congratulations')} (${result.score}점)`, 'success');
+      } else {
+        addOutput(`✅ 통과! (${result.score}점) — 더 완벽하게 도전해 보세요!`, 'success');
+      }
     } else {
-      addOutput(`📝 ${t('mission.notYet')} (${result.score}점)`, 'warning');
+      if (result.score > 0) {
+        addOutput(`📝 ${result.score}점 — ${result.message || t('mission.notYet')}`, 'warning');
+      } else {
+        addOutput(`📝 ${result.message || t('mission.notYet')}`, 'warning');
+      }
     }
   };
 
@@ -429,6 +442,12 @@ export default function MissionPlay() {
                     {r.message}
                   </div>
                 ))}
+                {/* 음악/실행 미션 메시지 */}
+                {!gradeResult.results && gradeResult.message && (
+                  <div className="text-xs pl-2" style={{ color: 'var(--color-text-secondary)' }}>
+                    {gradeResult.message}
+                  </div>
+                )}
 
                 {/* 다음 미션 버튼 */}
                 {gradeResult.passed && nextMission && (

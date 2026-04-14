@@ -5,7 +5,7 @@
  * C등급: AI 루브릭 (70-90%) — Step 7에서 구현
  */
 
-import { getSnapshot, getTrajectory, getAllObjects } from './object-registry';
+import { getSnapshot, getTrajectory, getAllObjects, getNoteHistory } from './object-registry';
 
 /**
  * A등급 채점: 정적 assertion 검사
@@ -16,6 +16,16 @@ import { getSnapshot, getTrajectory, getAllObjects } from './object-registry';
  * @returns {{ passed: boolean, score: number, results: object[] }}
  */
 export function gradeA(assertions) {
+  if (!assertions || assertions.length === 0) {
+    return {
+      grade: 'A',
+      passed: false,
+      score: 0,
+      results: [],
+      message: '채점 기준이 설정되지 않았습니다.',
+    };
+  }
+
   const snapshot = getSnapshot();
   const results = [];
 
@@ -166,6 +176,54 @@ function getPropertyValue(props, path) {
     value = value[part];
   }
   return value;
+}
+
+/**
+ * N등급 채점: 노트 시퀀스 비교 (음악 미션용)
+ *
+ * @param {string[]} expectedNotes - 정답 노트 시퀀스 (예: ['G4','G4','A4','A4','G4','G4','E4'])
+ * @returns {{ passed: boolean, score: number, matched: number, total: number, message: string }}
+ */
+export function gradeNotes(expectedNotes) {
+  const played = getNoteHistory();
+
+  if (played.length === 0) {
+    return {
+      grade: 'N',
+      passed: false,
+      score: 0,
+      matched: 0,
+      total: expectedNotes.length,
+      message: '음표가 재생되지 않았습니다. 코드를 실행한 뒤 채점하세요.',
+    };
+  }
+
+  // 재생된 노트 이름만 추출 (대문자 정규화)
+  const playedNames = played.map(n => n.name.toUpperCase());
+  const expectedUpper = expectedNotes.map(n => n.toUpperCase());
+
+  // 순서대로 매칭 (재생된 노트가 정답 시퀀스를 포함하는지)
+  let matched = 0;
+  for (let i = 0; i < expectedUpper.length; i++) {
+    if (i < playedNames.length && playedNames[i] === expectedUpper[i]) {
+      matched++;
+    }
+  }
+
+  const score = Math.round((matched / expectedUpper.length) * 100);
+  const passed = matched === expectedUpper.length && playedNames.length >= expectedUpper.length;
+
+  return {
+    grade: 'N',
+    passed,
+    score,
+    matched,
+    total: expectedUpper.length,
+    played: playedNames.length,
+    message: passed
+      ? `✅ 멜로디 완성! ${matched}/${expectedUpper.length} 음표 일치`
+      : `❌ ${matched}/${expectedUpper.length} 음표 일치 (${expectedUpper.length - matched}개 부족)`,
+  };
 }
 
 /**

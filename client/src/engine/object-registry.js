@@ -7,6 +7,9 @@
 let nextId = 0;
 const registry = new Map();
 
+// 음표 기록 (음악 미션 채점용)
+let noteHistory = [];
+
 /**
  * 새 객체를 레지스트리에 등록
  * @param {string} type - 객체 타입 ('sphere', 'box', 'arrow' 등)
@@ -87,10 +90,28 @@ export function removeObject(id) {
 }
 
 /**
+ * 재생된 음표 기록 (음악 미션 채점용)
+ * @param {string} name - 노트 이름 (예: 'G4', 'C4')
+ * @param {number} duration - 길이 (초)
+ */
+export function registerNote(name, duration) {
+  noteHistory.push({ name: name.toUpperCase(), duration, t: performance.now() });
+}
+
+/**
+ * 기록된 음표 시퀀스 반환
+ * @returns {{ name: string, duration: number }[]}
+ */
+export function getNoteHistory() {
+  return [...noteHistory];
+}
+
+/**
  * 전체 레지스트리 초기화
  */
 export function clearRegistry() {
   registry.clear();
+  noteHistory = [];
   nextId = 0;
 }
 

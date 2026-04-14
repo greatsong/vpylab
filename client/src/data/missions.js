@@ -499,7 +499,8 @@ for v in vertices:
       ko: 'sound() 또는 음표()를 사용하여 도-미-솔 3개 음을 차례로 재생하세요.',
       en: 'Use sound() to play 3 sounds (Do-Mi-Sol) in sequence.',
     },
-    gradeType: 'A',
+    gradeType: 'notes',
+    expectedNotes: ['C4', 'E4', 'G4'],
     starterCode: `from vpython import *
 
 # sound(주파수, 길이) — 소리 재생
@@ -544,7 +545,7 @@ print("도-미-솔 완성!")
       ko: '효과음()으로 다양한 게임 효과음을 재생해 보세요. 점프, 코인, 파워업, 폭발 등!',
       en: 'Explore game sound effects with sfx(): jump, coin, powerup, explosion!',
     },
-    gradeType: 'A',
+    gradeType: 'run',
     starterCode: `from vpython import *
 
 # 효과음(이름) 또는 sfx(이름) — 게임 효과음 재생
@@ -601,7 +602,11 @@ print("효과음 탐험 완료!")
       ko: '음표()를 사용하여 "학교 종이 땡땡땡" 멜로디를 연주하세요. 한글 노트 이름을 사용합니다!',
       en: 'Play the melody of a school bell song using play_note().',
     },
-    gradeType: 'A',
+    gradeType: 'notes',
+    expectedNotes: [
+      'G4', 'G4', 'A4', 'A4', 'G4', 'G4', 'E4',
+      'G4', 'G4', 'E4', 'E4', 'D4', 'D4', 'C4',
+    ],
     starterCode: `from vpython import *
 
 # 음표("노트이름", 길이) — 한글 노트 이름 지원!

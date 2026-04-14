@@ -15,6 +15,10 @@
 let audioCtx = null;
 let audioUnlocked = false;
 
+// 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
+let _onNotePlay = null;
+export function setNotePlayCallback(cb) { _onNotePlay = cb; }
+
 function getAudioContext() {
   if (!audioCtx) {
     audioCtx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
@@ -143,6 +147,7 @@ export function noteToFreq(name) {
 export function playNote(name, duration = 0.5, type = 'sine', volume = 0.4) {
   const freq = noteToFreq(name);
   if (freq === null) return;
+  if (_onNotePlay) _onNotePlay(name, duration);
   beep(freq, duration, type, volume);
 }
 
