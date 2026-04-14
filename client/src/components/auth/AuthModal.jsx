@@ -22,17 +22,29 @@ export default function AuthModal() {
 
         {/* 로고 + 타이틀 */}
         <div className="auth-logo">
-          <svg width="36" height="36" viewBox="0 0 36 36">
-            <circle cx="18" cy="18" r="18" fill="url(#authLogoGrad)" />
-            <line x1="18" y1="18" x2="26" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.9"/>
-            <line x1="18" y1="18" x2="18" y2="10" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.9"/>
-            <line x1="18" y1="18" x2="11" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.9"/>
-            <circle cx="18" cy="18" r="2.5" fill="white"/>
+          <svg width="36" height="36" viewBox="0 0 48 48">
             <defs>
-              <linearGradient id="authLogoGrad" x1="0" y1="0" x2="36" y2="36">
-                <stop stopColor="#6C5CE7" /><stop offset="1" stopColor="#4A6CF7" />
-              </linearGradient>
+              <radialGradient id="a-s1" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#B8A9FF"/><stop offset="50%" stopColor="#6C5CE7"/><stop offset="100%" stopColor="#4834B0"/></radialGradient>
+              <radialGradient id="a-s2" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#FFB3A7"/><stop offset="50%" stopColor="#FF6B6B"/><stop offset="100%" stopColor="#C44569"/></radialGradient>
+              <radialGradient id="a-s3" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#7DFFDA"/><stop offset="50%" stopColor="#00B894"/><stop offset="100%" stopColor="#00876A"/></radialGradient>
+              <radialGradient id="a-s4" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#FFE4A0"/><stop offset="50%" stopColor="#FDCB6E"/><stop offset="100%" stopColor="#E0A800"/></radialGradient>
+              <radialGradient id="a-s5" cx="35%" cy="30%" r="65%"><stop offset="0%" stopColor="#A0F0EE"/><stop offset="50%" stopColor="#00CEC9"/><stop offset="100%" stopColor="#009E9A"/></radialGradient>
             </defs>
+            {[11,17.5,24,30.5,37].map(y=><line key={y} x1="2" y1={y} x2="46" y2={y} stroke="#CBC3E3" strokeWidth="0.8" opacity="0.6"/>)}
+            <line x1="14.5" y1="9" x2="14.5" y2="24" stroke="#6C5CE7" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
+            <path d="M14.5 9 C17.5 9, 19 12, 17 14" stroke="#6C5CE7" strokeWidth="1.1" fill="none" strokeLinecap="round" opacity="0.45"/>
+            <ellipse cx="11.5" cy="25.5" rx="4.8" ry="3.5" transform="rotate(-15, 11.5, 25.5)" fill="url(#a-s1)"/>
+            <ellipse cx="10" cy="24.2" rx="1.8" ry="1" transform="rotate(-15, 10, 24.2)" fill="white" opacity="0.4"/>
+            <line x1="25.5" y1="14.5" x2="25.5" y2="32" stroke="#E0A800" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
+            <path d="M25.5 32 C22.5 32, 21 29, 23 27" stroke="#E0A800" strokeWidth="1.1" fill="none" strokeLinecap="round" opacity="0.45"/>
+            <ellipse cx="28.5" cy="13.5" rx="4.8" ry="3.5" transform="rotate(-15, 28.5, 13.5)" fill="url(#a-s4)"/>
+            <ellipse cx="27" cy="12.2" rx="1.8" ry="1" transform="rotate(-15, 27, 12.2)" fill="white" opacity="0.4"/>
+            <line x1="38" y1="15" x2="38" y2="32" stroke="#FF6B6B" strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
+            <path d="M38 15 C41 15, 42 18, 40 20" stroke="#FF6B6B" strokeWidth="1.1" fill="none" strokeLinecap="round" opacity="0.45"/>
+            <ellipse cx="35" cy="33.5" rx="4.5" ry="3.3" transform="rotate(-15, 35, 33.5)" fill="url(#a-s2)"/>
+            <ellipse cx="33.5" cy="32.3" rx="1.6" ry="0.9" transform="rotate(-15, 33.5, 32.3)" fill="white" opacity="0.4"/>
+            <circle cx="6" cy="37.5" r="2.2" fill="url(#a-s3)"/>
+            <circle cx="43" cy="9" r="2" fill="url(#a-s5)"/>
           </svg>
         </div>
 
