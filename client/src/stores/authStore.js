@@ -65,23 +65,27 @@ const useAuthStore = create((set, get) => ({
 
   // Google 로그인
   signInWithGoogle: async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) console.error('Google 로그인 오류:', error.message);
+    if (data?.url) window.location.href = data.url;
   },
 
   // GitHub 로그인 (public_repo scope으로 갤러리 발행 지원)
   signInWithGitHub: async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         scopes: 'public_repo',
+        skipBrowserRedirect: false,
       },
     });
     if (error) console.error('GitHub 로그인 오류:', error.message);
+    // 자동 리다이렉트가 안 될 경우 수동 이동
+    if (data?.url) window.location.href = data.url;
   },
 
   // GitHub provider_token 추출 (갤러리 발행 시 사용)
