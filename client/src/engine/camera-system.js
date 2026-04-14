@@ -31,10 +31,9 @@ const DEFAULTS = {
   fitDelay: 300,              // 코드 실행 후 Auto-Fit까지 딜레이 (ms)
 
   // Smooth Follow
-  lerpFactor: 0.03,          // 카메라 이동 보간 속도 (0=안움직임, 1=즉시)
+  lerpFactor: 0.05,          // 카메라 이동 보간 속도 (0=안움직임, 1=즉시)
   zoomLerpFactor: 0.03,      // 줌 보간 속도
-  followThreshold: 2.0,      // 바운딩 중심이 이 이상 변해야 카메라 추적 시작
-  snapThreshold: 0.002,      // 이 이하면 즉시 스냅 (떨림 방지)
+  followThreshold: 0.01,     // 이 이하 변화량은 무시
 
   // 기본 카메라
   defaultDistance: 8,         // 물체 없을 때 기본 거리
@@ -173,13 +172,12 @@ export default class CameraSystem {
 
   /**
    * 매 프레임 호출 — 카메라를 부드럽게 목표로 이동
-   * 반환값: true면 CameraSystem이 카메라를 제어 중 (OrbitControls.update 스킵해야 함)
    */
   update() {
     this._frameCount++;
 
-    // 수동 모드면 OrbitControls에 위임
-    if (this.mode === MODE.MANUAL) return false;
+    // 수동 모드면 아무것도 하지 않음
+    if (this.mode === MODE.MANUAL) return;
 
     // Auto-Fit / Follow 모드: 바운딩 박스 업데이트 (매 10프레임)
     if (this._frameCount % 10 === 0 || this.mode === MODE.AUTO_FIT) {
@@ -201,48 +199,30 @@ export default class CameraSystem {
       }
     }
 
-    // 카메라 방향을 보간 전에 먼저 저장
+    // 부드럽게 보간
+    const lerpFactor = this.mode === MODE.AUTO_FIT
+      ? 0.12  // Auto-Fit은 좀 더 빠르게
+      : this.options.lerpFactor;
+
+    this._currentCenter.lerp(this._targetCenter, lerpFactor);
+    this._currentDistance += (this._targetDistance - this._currentDistance) * this.options.zoomLerpFactor;
+
+    // 카메라 방향을 타겟 업데이트 전에 저장
     const direction = new THREE.Vector3();
     direction.subVectors(this.camera.position, this.controls.target);
 
+    // 방향 벡터가 너무 짧으면 기본 z축 (정면)
     if (direction.lengthSq() < 0.001) {
       direction.set(0, 0, 1);
     } else {
       direction.normalize();
     }
 
-    // 부드럽게 보간 — 목표에 충분히 가까우면 스냅
-    const lerpFactor = this.mode === MODE.AUTO_FIT
-      ? 0.12
-      : this.options.lerpFactor;
-
-    const centerDist = this._currentCenter.distanceTo(this._targetCenter);
-    const zoomDiff = Math.abs(this._targetDistance - this._currentDistance);
-
-    if (centerDist < this.options.snapThreshold) {
-      this._currentCenter.copy(this._targetCenter);
-    } else {
-      this._currentCenter.lerp(this._targetCenter, lerpFactor);
-    }
-
-    if (zoomDiff < this.options.snapThreshold) {
-      this._currentDistance = this._targetDistance;
-    } else {
-      this._currentDistance += (this._targetDistance - this._currentDistance) * this.options.zoomLerpFactor;
-    }
-
-    // OrbitControls 타겟과 카메라 위치를 직접 설정
+    // OrbitControls 타겟 업데이트
     this.controls.target.copy(this._currentCenter);
+
+    // 카메라 위치: 보던 방향 유지 + 거리 조절
     this.camera.position.copy(this._currentCenter).addScaledVector(direction, this._currentDistance);
-
-    // OrbitControls 내부 상태를 동기화 (damping 없이)
-    // enableDamping을 잠시 끄고 update → damping이 카메라를 추가로 움직이는 것을 방지
-    const wasDamping = this.controls.enableDamping;
-    this.controls.enableDamping = false;
-    this.controls.update();
-    this.controls.enableDamping = wasDamping;
-
-    return true; // CameraSystem이 제어 중 — 외부에서 controls.update() 호출 금지
   }
 
   /**

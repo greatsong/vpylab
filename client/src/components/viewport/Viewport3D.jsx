@@ -99,11 +99,10 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     function animate() {
       animFrameRef.current = requestAnimationFrame(animate);
 
-      // 카메라 시스템이 제어 중이면 OrbitControls.update() 스킵 (이중 호출 방지)
-      const cameraControlled = camSystem.update();
-      if (!cameraControlled) {
-        controls.update();
-      }
+      // 카메라 자동 시스템 업데이트
+      camSystem.update();
+
+      controls.update();
       renderer.render(scene, camera);
 
       // UI 모드 표시 업데이트 (60프레임마다)
@@ -177,9 +176,9 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     <div className="w-full h-full relative" style={{ touchAction: 'none' }}>
       <div ref={containerRef} className="w-full h-full" />
 
-      {/* 뷰포트 컨트롤 */}
-      <div className="viewport-controls">
-        {/* 카메라 모드 */}
+      {/* 카메라 모드 표시 + 축 토글 */}
+      <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+        {/* 카메라 모드 뱃지 */}
         <button
           onClick={() => {
             if (cameraSystemRef.current) {
@@ -187,98 +186,33 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
               setCameraMode('auto-fit');
             }
           }}
-          className={`vp-btn vp-camera-btn ${cameraMode === 'manual' ? 'vp-manual' : 'vp-auto'}`}
+          className="text-xs px-2 py-0.5 rounded cursor-pointer"
+          style={{
+            color: cameraMode === 'manual' ? 'var(--color-text-muted)' : 'var(--color-accent)',
+            backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
+            border: cameraMode === 'manual' ? 'none' : '1px solid var(--color-accent)',
+          }}
           title="더블클릭 또는 이 버튼으로 자동 카메라 복귀"
         >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            {cameraMode === 'manual' ? (
-              /* 수동: 마우스 커서 아이콘 */
-              <path d="M4 1L4 11L6.5 8.5L9 13L11 12L8.5 7.5L12 7.5L4 1Z" fill="currentColor"/>
-            ) : (
-              /* 자동: 타겟 아이콘 */
-              <>
-                <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                <circle cx="8" cy="8" r="1" fill="currentColor"/>
-                <path d="M8 2V4M8 12V14M2 8H4M12 8H14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              </>
-            )}
-          </svg>
-          {modeLabels[cameraMode] || '자동'}
+          📷 {modeLabels[cameraMode] || '자동'}
         </button>
 
-        {/* XYZ 축 토글 */}
-        <button
-          onClick={() => setShowAxes(!showAxes)}
-          className={`vp-btn vp-xyz-btn ${showAxes ? 'vp-active' : ''}`}
-          title="좌표축 표시/숨기기"
+        {/* 축 토글 */}
+        <label
+          className="flex items-center gap-1.5 text-xs cursor-pointer select-none px-2 py-1 rounded"
+          style={{
+            color: 'var(--color-text-muted)',
+            backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
+          }}
         >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <path d="M8 2V14" stroke="#00B894" strokeWidth="1.5" strokeLinecap="round" opacity={showAxes ? 1 : 0.4}/>
-            <path d="M2 10L8 14L14 10" stroke="#6C5CE7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={showAxes ? 1 : 0.4}/>
-            <path d="M2 6L8 2L14 6" stroke="#FF6B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={showAxes ? 1 : 0.4}/>
-          </svg>
+          <input
+            type="checkbox"
+            checked={showAxes}
+            onChange={(e) => setShowAxes(e.target.checked)}
+            className="accent-current"
+          />
           XYZ
-        </button>
-
-        <style>{`
-          .viewport-controls {
-            position: absolute; top: 10px; right: 10px;
-            display: flex; flex-direction: column; gap: 6px;
-            align-items: flex-end; z-index: 5;
-          }
-          .vp-btn {
-            display: flex; align-items: center; gap: 5px;
-            padding: 5px 10px; border-radius: 8px;
-            font-size: 11px; font-weight: 600; cursor: pointer;
-            border: 1px solid transparent;
-            font-family: var(--font-body, 'DM Sans', sans-serif);
-            letter-spacing: 0.02em;
-            backdrop-filter: blur(8px);
-            transition: all 0.2s;
-          }
-
-          /* 카메라 — 자동 */
-          .vp-camera-btn.vp-auto {
-            background: rgba(108, 92, 231, 0.15);
-            border-color: rgba(108, 92, 231, 0.3);
-            color: var(--brand-purple, #6C5CE7);
-          }
-          .vp-camera-btn.vp-auto:hover {
-            background: rgba(108, 92, 231, 0.25);
-          }
-
-          /* 카메라 — 수동 */
-          .vp-camera-btn.vp-manual {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.08);
-            color: var(--color-text-muted, #72757E);
-          }
-          .vp-camera-btn.vp-manual:hover {
-            background: rgba(108, 92, 231, 0.12);
-            border-color: rgba(108, 92, 231, 0.25);
-            color: var(--brand-purple, #6C5CE7);
-          }
-
-          /* XYZ — 비활성 */
-          .vp-xyz-btn {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.08);
-            color: var(--color-text-muted, #72757E);
-          }
-          .vp-xyz-btn:hover {
-            background: rgba(0, 184, 148, 0.1);
-            border-color: rgba(0, 184, 148, 0.25);
-          }
-          /* XYZ — 활성 */
-          .vp-xyz-btn.vp-active {
-            background: rgba(0, 184, 148, 0.12);
-            border-color: rgba(0, 184, 148, 0.3);
-            color: var(--brand-mint, #00B894);
-          }
-          .vp-xyz-btn.vp-active:hover {
-            background: rgba(0, 184, 148, 0.2);
-          }
-        `}</style>
+        </label>
       </div>
     </div>
   );
