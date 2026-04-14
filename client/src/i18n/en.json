@@ -72,6 +72,7 @@
     "reset": "Reset",
     "share": "Share",
     "export": "Export",
+    "examples": "Examples",
     "placeholder": "# Write your Python code here\nfrom vpython import *\n\nsphere()"
   },
   "console": {

@@ -3,6 +3,14 @@ import { Link } from 'react-router-dom';
 export default function GalleryCard({ work }) {
   const author = work.vpylab_profiles?.display_name || '익명';
 
+  const handlePlay = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (work.github_url) {
+      window.open(work.github_url, '_blank');
+    }
+  };
+
   return (
     <Link to={`/gallery/${work.id}`} className="gallery-card">
       {/* 썸네일 */}
@@ -14,6 +22,7 @@ export default function GalleryCard({ work }) {
             <span>🎨</span>
           </div>
         )}
+        <button className="play-overlay" onClick={handlePlay} title="바로 플레이">▶</button>
         {work.github_url && <span className="github-badge">Pages</span>}
       </div>
 
@@ -48,6 +57,15 @@ export default function GalleryCard({ work }) {
           width: 100%; height: 100%; display: flex;
           align-items: center; justify-content: center; font-size: 32px;
         }
+        .play-overlay {
+          position: absolute; inset: 0; display: flex;
+          align-items: center; justify-content: center;
+          background: rgba(0,0,0,0.4); color: white; font-size: 28px;
+          border: none; cursor: pointer; opacity: 0;
+          transition: opacity 0.2s;
+        }
+        .gallery-card:hover .play-overlay { opacity: 1; }
+        .play-overlay:hover { background: rgba(108,92,231,0.6); }
         .github-badge {
           position: absolute; top: 6px; right: 6px;
           background: rgba(35,134,54,0.9); color: white;

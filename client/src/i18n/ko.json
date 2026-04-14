@@ -72,6 +72,7 @@
     "reset": "초기화",
     "share": "공유",
     "export": "내보내기",
+    "examples": "예제",
     "placeholder": "# 여기에 Python 코드를 작성하세요\nfrom vpython import *\n\nsphere()"
   },
   "console": {

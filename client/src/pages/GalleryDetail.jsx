@@ -40,6 +40,12 @@ export default function GalleryDetail() {
     navigate(`/sandbox?remix=${id}`);
   };
 
+  const handlePlay = () => {
+    if (currentWork.github_url) {
+      window.open(currentWork.github_url, '_blank');
+    }
+  };
+
   return (
     <div className="gallery-detail">
       {/* 상단: 썸네일 + 정보 */}
@@ -86,6 +92,9 @@ export default function GalleryDetail() {
 
           {/* 액션 버튼 */}
           <div className="detail-actions">
+            <button onClick={handlePlay} className="btn-play">
+              ▶ 바로 플레이
+            </button>
             <button onClick={handleRemix} className="btn-remix">
               🔀 Remix (내 코드로 열기)
             </button>
@@ -168,6 +177,12 @@ export default function GalleryDetail() {
         .like-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .detail-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .btn-play {
+          padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer;
+          background: linear-gradient(135deg, #00CEC9, #6C5CE7); color: white;
+          font-weight: 600; font-size: 15px; transition: transform 0.15s;
+        }
+        .btn-play:hover { transform: scale(1.03); }
         .btn-remix {
           padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
           background: var(--accent, #6C5CE7); color: white; font-weight: 600; font-size: 14px;
