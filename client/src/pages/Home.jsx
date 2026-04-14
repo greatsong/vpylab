@@ -22,8 +22,10 @@ export default function Home() {
   const featuredWorks = useGalleryStore(s => s.featuredWorks);
   const fetchFeaturedWorks = useGalleryStore(s => s.fetchFeaturedWorks);
 
+  const apiBase = import.meta.env.VITE_API_URL || '';
+
   useEffect(() => {
-    fetch('/api/health')
+    fetch(`${apiBase}/api/health`)
       .then((r) => r.json())
       .then((data) => setServerStatus(data.status))
       .catch(() => setServerStatus('offline'));
