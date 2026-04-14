@@ -315,41 +315,61 @@ export default function MissionPlay() {
             backgroundColor: 'var(--color-bg-secondary)',
           }}
         >
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-5">
             {/* 미션 설명 */}
-            <div>
-              <h3 className="text-xs font-bold mb-2 uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>
-                {t('mission.description')}
-              </h3>
+            <div className="rounded-xl p-3.5" style={{ backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)' }}>
+              <div className="flex items-center gap-2 mb-2.5">
+                <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: '#6C5CE715' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M14 2H6C5.45 2 5 2.45 5 3V21C5 21.55 5.45 22 6 22H18C18.55 22 19 21.55 19 21V7L14 2Z" stroke="#6C5CE7" strokeWidth="2" fill="none"/>
+                    <path d="M14 2V7H19" stroke="#6C5CE7" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M9 13H15M9 17H13" stroke="#6C5CE7" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-accent)', letterSpacing: '0.08em' }}>
+                  {t('mission.description')}
+                </h3>
+              </div>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
                 {mission.description[lang]}
               </p>
             </div>
 
             {/* 힌트 */}
-            <div>
-              <h3 className="text-xs font-bold mb-2 uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>
-                {t('mission.hints')}
-              </h3>
+            <div className="rounded-xl p-3.5" style={{ backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)' }}>
+              <div className="flex items-center gap-2 mb-2.5">
+                <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: '#FDCB6E15' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 21H15M12 3C8.69 3 6 5.69 6 9C6 11.22 7.21 13.15 9 14.19V17C9 17.55 9.45 18 10 18H14C14.55 18 15 17.55 15 17V14.19C16.79 13.15 18 11.22 18 9C18 5.69 15.31 3 12 3Z" stroke="#FDCB6E" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: '#E0A800', letterSpacing: '0.08em' }}>
+                  {t('mission.hints')}
+                </h3>
+              </div>
               {mission.hints.map((hint, i) => (
                 <div key={i} className="mb-2">
                   {i <= hintIndex ? (
-                    <p className="text-sm p-2 rounded" style={{
-                      backgroundColor: 'var(--color-bg-tertiary)',
+                    <div className="text-sm p-2.5 rounded-lg flex items-start gap-2" style={{
+                      backgroundColor: '#FDCB6E10',
+                      border: '1px solid #FDCB6E30',
                       color: 'var(--color-text-secondary)',
                     }}>
-                      💡 {hint[lang]}
-                    </p>
+                      <span style={{ fontSize: 16, lineHeight: 1 }}>💡</span>
+                      <span>{hint[lang]}</span>
+                    </div>
                   ) : (
                     <button
                       onClick={() => setHintIndex(i)}
-                      className="text-xs px-3 py-1.5 rounded border-none cursor-pointer w-full text-left"
+                      className="text-xs px-3 py-2.5 rounded-lg cursor-pointer w-full text-left flex items-center gap-2 transition-all"
                       style={{
                         backgroundColor: 'var(--color-bg-tertiary)',
                         color: 'var(--color-text-muted)',
+                        border: '1px solid var(--color-border)',
                       }}
                     >
-                      🔒 {t('mission.showHint')} {i + 1}
+                      <span style={{ fontSize: 14 }}>🔒</span>
+                      <span>{t('mission.showHint')} {i + 1}</span>
                     </button>
                   )}
                 </div>
@@ -357,23 +377,32 @@ export default function MissionPlay() {
             </div>
 
             {/* AI 힌트 */}
-            <div>
+            <div className="rounded-xl p-3.5" style={{ backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)' }}>
               <button
                 onClick={handleAiHint}
                 disabled={aiLoading}
-                className="toolbar-btn w-full justify-center"
+                className="w-full py-2.5 px-4 rounded-lg text-sm font-semibold cursor-pointer transition-all flex items-center justify-center gap-2"
+                style={{
+                  background: 'linear-gradient(135deg, #6C5CE720, #00B89420)',
+                  border: '1px solid #6C5CE730',
+                  color: 'var(--color-accent)',
+                }}
               >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L14.4 9.6H22L15.8 14.4L18.2 22L12 17.2L5.8 22L8.2 14.4L2 9.6H9.6L12 2Z" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinejoin="round"/>
+                </svg>
                 {aiLoading ? t('ai.thinking') : t('ai.askHint')}
               </button>
               {aiHint && (
-                <div className="mt-2 text-xs p-2.5 rounded leading-relaxed" style={{
-                  backgroundColor: 'var(--color-bg-tertiary)',
+                <div className="mt-2.5 text-xs p-3 rounded-lg leading-relaxed" style={{
+                  backgroundColor: '#6C5CE710',
+                  border: '1px solid #6C5CE720',
                   color: 'var(--color-text-secondary)',
                 }}>
                   {aiHint}
                 </div>
               )}
-              <p className="text-xs mt-1.5 opacity-40" style={{ color: 'var(--color-text-muted)' }}>
+              <p className="text-[11px] mt-2 text-center" style={{ color: 'var(--color-text-muted)', opacity: 0.5 }}>
                 {t('ai.disclaimer')}
               </p>
             </div>
@@ -381,25 +410,25 @@ export default function MissionPlay() {
             {/* 채점 결과 */}
             {gradeResult && (
               <div
-                className="p-3 rounded-lg"
+                className="p-4 rounded-xl"
                 style={{
-                  backgroundColor: gradeResult.passed ? '#3fb95015' : '#f7816615',
-                  border: `1px solid ${gradeResult.passed ? '#3fb950' : '#f78166'}`,
+                  backgroundColor: gradeResult.passed ? '#3fb95010' : '#f7816610',
+                  border: `1.5px solid ${gradeResult.passed ? '#3fb95040' : '#f7816640'}`,
                 }}
               >
                 <h3
-                  className="text-sm font-bold mb-2"
+                  className="text-sm font-bold mb-2 flex items-center gap-1.5"
                   style={{ color: gradeResult.passed ? '#3fb950' : '#f78166' }}
                 >
                   {gradeResult.passed ? '✅ ' + t('grading.passed') : '❌ ' + t('grading.failed')}
                 </h3>
                 <p className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                  {gradeResult.score}<span className="text-sm font-normal" style={{ color: 'var(--color-text-muted)' }}>점</span>
+                  {gradeResult.score}<span className="text-sm font-normal ml-1" style={{ color: 'var(--color-text-muted)' }}>점</span>
                 </p>
 
                 {/* 세부 결과 */}
                 {gradeResult.results?.map((r, i) => (
-                  <div key={i} className="text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  <div key={i} className="text-xs mb-1.5 pl-2" style={{ color: 'var(--color-text-secondary)', borderLeft: `2px solid ${r.passed ? '#3fb95050' : '#f7816650'}` }}>
                     {r.message}
                   </div>
                 ))}
@@ -408,10 +437,10 @@ export default function MissionPlay() {
                 {gradeResult.passed && nextMission && (
                   <Link
                     to={`/mission/${nextMission.id}`}
-                    className="block mt-3 text-center text-sm font-bold py-2 rounded-lg no-underline"
+                    className="block mt-3 text-center text-sm font-bold py-2.5 rounded-lg no-underline transition-all"
                     style={{
-                      backgroundColor: 'var(--color-accent-bg)',
-                      color: 'var(--color-accent)',
+                      background: 'linear-gradient(135deg, var(--color-accent), #8B7CF7)',
+                      color: '#fff',
                     }}
                     onClick={() => {
                       setCode(nextMission.starterCode);
