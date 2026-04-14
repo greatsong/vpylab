@@ -17,7 +17,7 @@ app.use(helmet());
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:4033'],
 }));
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({ limit: '1mb' }));
 
 // AI 프록시 레이트 리밋 (학생당 분당 5회)
 const aiLimiter = rateLimit({

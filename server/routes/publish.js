@@ -1,5 +1,5 @@
 /**
- * VPy Lab — GitHub Pages 발행 API
+ * VPyLab — GitHub Pages 발행 API
  *
  * 보안 설계:
  * - GitHub token은 DB에 저장하지 않음 (요청 시 전송, 메모리에서만 사용)
@@ -101,9 +101,9 @@ router.post('/', publishLimiter, async (req, res) => {
       return res.status(401).json({ error: 'GitHub 로그인이 필요합니다.' });
     }
 
-    // 코드 크기 제한 (원본 코드 50KB, 생성 HTML ~500KB 이내)
-    if (code.length > 50 * 1024) {
-      return res.status(400).json({ error: '코드가 너무 큽니다. (최대 50KB)' });
+    // HTML 콘텐츠 크기 제한 (클라이언트가 생성한 HTML을 보냄, ~500KB 이내)
+    if (code.length > 500 * 1024) {
+      return res.status(400).json({ error: '코드가 너무 큽니다. (최대 500KB)' });
     }
 
     // 민감 정보 검사
@@ -131,7 +131,7 @@ router.post('/', publishLimiter, async (req, res) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: repoName,
-          description: `VPy Lab — ${title}`,
+          description: `VPyLab — ${title}`,
           homepage: `https://${owner}.github.io/${repoName}/`,
           auto_init: true,         // README 자동 생성 (빈 리포 방지)
           has_issues: false,
@@ -163,7 +163,7 @@ router.post('/', publishLimiter, async (req, res) => {
     const contentBase64 = Buffer.from(htmlContent, 'utf-8').toString('base64');
 
     const commitBody = {
-      message: `🚀 VPy Lab에서 발행: ${title}`,
+      message: `🚀 VPyLab에서 발행: ${title}`,
       content: contentBase64,
       branch: 'main',
     };
@@ -253,7 +253,7 @@ router.get('/fetch', async (req, res) => {
     }
 
     // 제목 추출
-    const titleMatch = html.match(/<title>(.+?)(?:\s*[—·-]\s*VPy Lab)?<\/title>/);
+    const titleMatch = html.match(/<title>(.+?)(?:\s*[—·-]\s*VPyLab)?<\/title>/);
     const title = titleMatch ? titleMatch[1].trim() : '';
 
     res.json({ code, title, sha: file.sha });
@@ -297,7 +297,7 @@ router.put('/update', publishLimiter, async (req, res) => {
 
     const contentBase64 = Buffer.from(code, 'utf-8').toString('base64');
     const commitBody = {
-      message: `✏️ VPy Lab에서 업데이트: ${title || '작품 수정'}`,
+      message: `✏️ VPyLab에서 업데이트: ${title || '작품 수정'}`,
       content: contentBase64,
       branch: 'main',
     };
