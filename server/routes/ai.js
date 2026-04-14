@@ -1,5 +1,5 @@
 /**
- * VPy Lab — Solar Pro 3 AI 힌트 프록시
+ * VPyLab — Solar Pro 3 AI 힌트 프록시
  *
  * 보안 감사 결과 반영:
  * - 학생당 분당 5회 레이트 리밋 (미들웨어에서 적용)
@@ -20,7 +20,7 @@ const DAILY_LIMIT = 20;
 // 자정에 카운터 리셋
 setInterval(() => dailyCounts.clear(), 24 * 60 * 60 * 1000);
 
-const SYSTEM_PROMPT = `당신은 VPy Lab의 교육 AI 조교입니다.
+const SYSTEM_PROMPT = `당신은 VPyLab의 교육 AI 조교입니다.
 학생이 3D 프로그래밍(VPython) 과제를 풀 때 도움을 줍니다.
 
 반드시 지켜야 할 규칙:

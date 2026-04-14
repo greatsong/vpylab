@@ -1,5 +1,5 @@
 /**
- * VPy Lab MVP 미션 데이터 (10개)
+ * VPyLab MVP 미션 데이터 (10개)
  *
  * 카테고리: CT(2) + CR(2) + MA(2) + SC(2) + AR(2)
  * 난이도: Lv.1~2
@@ -29,8 +29,8 @@ const missions = [
       en: 'Your First Sphere',
     },
     description: {
-      ko: '빨간색 구를 만들어 보세요. VPy Lab에서의 첫 3D 프로그래밍입니다!',
-      en: 'Create a red sphere. Your first 3D programming in VPy Lab!',
+      ko: '빨간색 구를 만들어 보세요. VPyLab에서의 첫 3D 프로그래밍입니다!',
+      en: 'Create a red sphere. Your first 3D programming in VPyLab!',
     },
     gradeType: 'A',
     starterCode: `from vpython import *

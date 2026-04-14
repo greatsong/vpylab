@@ -1,5 +1,5 @@
 /**
- * VPy Lab — JS 측 VPython 브릿지
+ * VPyLab — JS 측 VPython 브릿지
  * Worker에서 받은 JSON 커맨드를 Three.js 씬에 적용
  * 커맨드 배칭: 프레임당 단일 postMessage에서 받은 배치를 처리
  */

@@ -69,9 +69,9 @@ export default function OutputConsole({ outputs = [], onClear }) {
               }}
             >
               {/* textContent만 사용 — XSS 방지 */}
-              {item.type === 'error' && '❌ '}
-              {item.type === 'warning' && '⚠️ '}
-              {item.type === 'success' && '✅ '}
+              {item.type === 'error' && <span style={{ marginRight: 4, fontFamily: 'var(--font-sans)' }}>&#x2716;</span>}
+              {item.type === 'warning' && <span style={{ marginRight: 4, fontFamily: 'var(--font-sans)' }}>&#x26A0;</span>}
+              {item.type === 'success' && <span style={{ marginRight: 4, fontFamily: 'var(--font-sans)' }}>&#x2714;</span>}
               {item.text}
             </div>
           ))

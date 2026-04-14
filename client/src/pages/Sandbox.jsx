@@ -67,7 +67,7 @@ export default function Sandbox() {
         if (work) {
           setCode(work.code);
           setRemixInfo({ title: work.title, author: work.vpylab_profiles?.display_name });
-          addOutput(`🔀 "${work.title}" 작품을 Remix합니다. 자유롭게 수정해보세요!`, 'success');
+          addOutput(`"${work.title}" 작품을 Remix합니다. 자유롭게 수정해보세요!`, 'success');
         }
       });
     }
@@ -93,7 +93,7 @@ export default function Sandbox() {
             setCode(work.code);
           }
           setEditMode({ id: editId, githubRepo: work.github_repo, title: work.title });
-          addOutput(`✏️ "${work.title}" 수정 모드. 수정 후 "업데이트"를 눌러주세요.`, 'success');
+          addOutput(`"${work.title}" 수정 모드. 수정 후 "업데이트"를 눌러주세요.`, 'success');
         }
       });
     }
@@ -145,7 +145,7 @@ export default function Sandbox() {
     setOutputs([]);
     setActiveTab('3d');  // 실행 시 3D 뷰로 자동 전환
     runSound();
-    addOutput('▶ 실행 중...', 'log');
+    addOutput('실행 중...', 'log');
     runCode(code);
   };
 
@@ -169,7 +169,7 @@ export default function Sandbox() {
   };
 
   const handleExport = () => {
-    const html = generateStandaloneHTML(code, 'My VPy Lab Project');
+    const html = generateStandaloneHTML(code, 'My VPyLab Project');
     // 파일명: 깃헙아이디_파일이름_날짜시간.html
     const githubId = user?.user_metadata?.user_name
       || user?.user_metadata?.preferred_username
@@ -199,11 +199,11 @@ export default function Sandbox() {
     if (!editMode) return;
     const token = await useAuthStore.getState().getGitHubToken();
     if (!token) {
-      addOutput('❌ GitHub 인증이 필요합니다.', 'error');
+      addOutput('GitHub 인증이 필요합니다.', 'error');
       return;
     }
     const htmlContent = generateStandaloneHTML(code, editMode.title);
-    addOutput('📤 GitHub에 업데이트 중...', 'log');
+    addOutput('GitHub에 업데이트 중...', 'log');
     const result = await useGalleryStore.getState().updateWork({
       id: editMode.id,
       title: editMode.title,
@@ -213,9 +213,9 @@ export default function Sandbox() {
       githubToken: token,
     });
     if (result.error) {
-      addOutput('❌ 업데이트 실패: ' + result.error, 'error');
+      addOutput('업데이트 실패: ' + result.error, 'error');
     } else {
-      addOutput('✅ 업데이트 완료!', 'success');
+      addOutput('업데이트 완료!', 'success');
     }
   };
 
@@ -254,7 +254,7 @@ export default function Sandbox() {
         <div className="hidden md:flex items-center gap-2 ml-2">
           {editMode && (
             <button onClick={handleUpdate} className="toolbar-btn --update" style={{ background: '#f0883e', color: 'white', fontWeight: 600 }}>
-              📤 업데이트
+              업데이트
             </button>
           )}
           <button onClick={handleShare} className="toolbar-btn">
@@ -267,7 +267,7 @@ export default function Sandbox() {
             {saveMsg || t('code.save')}
           </button>
           <button onClick={() => setShowExamples(true)} className="toolbar-btn --examples">
-            💡 {t('editor.examples') || '예제'}
+            {t('editor.examples') || '예제'}
           </button>
           <button onClick={() => setShowSavedCodes(true)} className="toolbar-btn">
             {t('code.myCodes')}
@@ -279,7 +279,7 @@ export default function Sandbox() {
             }}
             className="toolbar-btn --publish"
           >
-            🚀 {t('gallery.publish') || '갤러리에 올리기'}
+            {t('gallery.publish') || '갤러리에 올리기'}
           </button>
         </div>
 
@@ -348,7 +348,7 @@ export default function Sandbox() {
           background: 'rgba(108,92,231,0.9)', color: 'white', padding: '6px 16px',
           borderRadius: 8, fontSize: 13, zIndex: 50, backdropFilter: 'blur(8px)',
         }}>
-          🔀 Remix: {remixInfo.author}의 "{remixInfo.title}"
+          Remix: {remixInfo.author} — "{remixInfo.title}"
         </div>
       )}
 
@@ -358,7 +358,7 @@ export default function Sandbox() {
           background: 'rgba(240,136,62,0.9)', color: 'white', padding: '6px 16px',
           borderRadius: 8, fontSize: 13, zIndex: 50, backdropFilter: 'blur(8px)',
         }}>
-          ✏️ 수정 모드: "{editMode.title}" — 수정 후 "📤 업데이트"를 눌러주세요
+          수정 모드: "{editMode.title}" — 수정 후 "업데이트"를 눌러주세요
         </div>
       )}
 
@@ -381,8 +381,10 @@ export default function Sandbox() {
           >
             {/* 헤더 */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: 18, color: 'var(--color-text-primary)' }}>💡 예제 갤러리</h2>
-              <button onClick={() => setShowExamples(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
+              <h2 style={{ margin: 0, fontSize: 18, color: 'var(--color-text-primary)' }}>{t('editor.examples') || '예제 갤러리'}</h2>
+              <button onClick={() => setShowExamples(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 4 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3L8 6.5 11.5 3 13 4.5 9.5 8 13 11.5 11.5 13 8 9.5 4.5 13 3 11.5 6.5 8 3 4.5 4.5 3z"/></svg>
+              </button>
             </div>
 
             {/* 카테고리 탭 */}
@@ -420,7 +422,11 @@ export default function Sandbox() {
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.transform = 'none'; }}
                   >
                     <div style={{ fontSize: 32, marginBottom: 8, lineHeight: 1 }}>
-                      {ex.thumbnail || '💡'}
+                      {ex.thumbnail || (
+                        <svg width="28" height="28" viewBox="0 0 16 16" fill="var(--color-accent)" opacity="0.5">
+                          <path d="M8 1a5 5 0 00-2 9.58V12a1 1 0 001 1h2a1 1 0 001-1v-1.42A5 5 0 008 1z"/>
+                        </svg>
+                      )}
                     </div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 4 }}>{ex.title}</div>
                     <div style={{ fontSize: 11, color: 'var(--color-text-muted)', lineHeight: 1.4 }}>{ex.description}</div>

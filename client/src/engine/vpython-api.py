@@ -1,5 +1,5 @@
 """
-VPy Lab — Python 측 VPython API
+VPyLab — Python 측 VPython API
 Pyodide Web Worker 내에서 실행됨.
 Three.js 메인 스레드로 JSON 커맨드를 전송하는 방식.
 

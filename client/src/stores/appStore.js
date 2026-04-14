@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
-const THEMES = ['deep-space', 'neon-lab', 'forest-night', 'clean-white'];
+const THEMES = ['creative-light', 'deep-dark'];
 
 const useAppStore = create((set) => ({
   // 테마
-  theme: localStorage.getItem('vpylab-theme') || 'deep-space',
+  theme: localStorage.getItem('vpylab-theme') || 'creative-light',
   setTheme: (theme) => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('vpylab-theme', theme);
@@ -13,7 +13,7 @@ const useAppStore = create((set) => ({
   },
 
   // 언어
-  locale: localStorage.getItem('vpylab-locale') || 'ko',
+  locale: localStorage.getItem('vpylab-locale') || 'en',
   setLocale: (locale) => {
     localStorage.setItem('vpylab-locale', locale);
     set({ locale });
@@ -78,7 +78,7 @@ const useAppStore = create((set) => ({
 }));
 
 // 초기 테마 적용
-const savedTheme = localStorage.getItem('vpylab-theme') || 'deep-space';
+const savedTheme = localStorage.getItem('vpylab-theme') || 'creative-light';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
 export default useAppStore;

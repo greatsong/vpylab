@@ -1,5 +1,5 @@
 /**
- * VPy Lab — 3D 뷰포트 썸네일 캡처
+ * VPyLab — 3D 뷰포트 썸네일 캡처
  * Three.js renderer의 현재 프레임을 JPEG base64로 변환
  */
 

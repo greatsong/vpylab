@@ -13,8 +13,8 @@ const LEVEL_LABELS = {
 };
 
 const CAT_COLORS = {
-  CT: '#58a6ff', CR: '#f78166', MA: '#d2a8ff',
-  SC: '#3fb950', AR: '#f0883e', AI: '#79c0ff',
+  CT: '#6C5CE7', CR: '#FF6B6B', MA: '#00CEC9',
+  SC: '#00B894', AR: '#FDCB6E', AI: '#A29BFE',
 };
 
 export default function Missions() {
@@ -33,10 +33,10 @@ export default function Missions() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
 
-      <main className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
+      <main className="flex-1 max-w-4xl mx-auto px-6 py-10 w-full">
         {/* 브레드크럼 + 제목 */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-2">
             <Link to="/" className="text-xs no-underline" style={{ color: 'var(--color-text-muted)' }}>
               {t('nav.home')}
             </Link>
@@ -45,13 +45,13 @@ export default function Missions() {
           <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
             {t('nav.missions')}
           </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="text-sm mt-1.5" style={{ color: 'var(--color-text-muted)' }}>
             {filteredMissions.length}{lang === 'ko' ? '개 미션' : ' missions'}
           </p>
         </div>
 
         {/* 카테고리 필터 */}
-        <div className="flex gap-2 flex-wrap mb-6">
+        <div className="flex gap-2.5 flex-wrap mb-8">
           <button
             onClick={() => setSelectedCategory(null)}
             className="mission-filter-btn"
@@ -92,23 +92,25 @@ export default function Missions() {
                 className="mission-card no-underline"
                 style={{ '--mission-color': color }}
               >
-                {/* 왼쪽: 상태 표시 */}
+                {/* 상태 */}
                 <div className="mission-card-status">
                   {completed ? (
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs"
-                      style={{ background: 'var(--color-success)', color: '#fff' }}>
-                      ✓
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center"
+                      style={{ background: 'var(--color-success)' }}>
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="white">
+                        <path d="M6.5 12L2 7.5l1.5-1.5L6.5 9 12.5 3 14 4.5 6.5 12z"/>
+                      </svg>
                     </div>
                   ) : (
-                    <div className="w-5 h-5 rounded-full"
+                    <div className="w-6 h-6 rounded-full"
                       style={{ border: '2px solid var(--color-border)' }} />
                   )}
                 </div>
 
-                {/* 중앙: 제목 + 설명 */}
+                {/* 제목 + 설명 */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-mono" style={{ color }}>{mission.id}</span>
+                    <span className="text-xs font-mono font-semibold" style={{ color }}>{mission.id}</span>
                     <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>
                       {mission.title[lang]}
                     </span>
@@ -118,10 +120,10 @@ export default function Missions() {
                   </p>
                 </div>
 
-                {/* 오른쪽: 레벨 + 점수 */}
+                {/* 레벨 + 점수 */}
                 <div className="flex items-center gap-3 shrink-0">
                   {score != null && (
-                    <span className="text-xs font-mono" style={{ color: 'var(--color-success)' }}>
+                    <span className="text-xs font-mono font-semibold" style={{ color: 'var(--color-success)' }}>
                       {score}
                     </span>
                   )}
@@ -135,7 +137,13 @@ export default function Missions() {
         </div>
 
         {filteredMissions.length === 0 && (
-          <div className="text-center py-16" style={{ color: 'var(--color-text-muted)' }}>
+          <div className="text-center py-20" style={{ color: 'var(--color-text-muted)' }}>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ margin: '0 auto 12px' }}>
+              <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2" opacity="0.3"/>
+              <path d="M16 28a8 8 0 0116 0" stroke="currentColor" strokeWidth="2" opacity="0.3" fill="none"/>
+              <circle cx="18" cy="20" r="2" fill="currentColor" opacity="0.3"/>
+              <circle cx="30" cy="20" r="2" fill="currentColor" opacity="0.3"/>
+            </svg>
             {t('home.preparing')}
           </div>
         )}

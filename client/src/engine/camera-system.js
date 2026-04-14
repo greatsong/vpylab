@@ -1,5 +1,5 @@
 /**
- * VPy Lab — 하이브리드 카메라 시스템
+ * VPyLab — 하이브리드 카메라 시스템
  *
  * Phase 1: Auto-Fit — 모든 물체를 감싸도록 자동 줌
  * Phase 2: Smooth Follow — 물체 중심을 부드럽게 추적

@@ -1,5 +1,5 @@
 /**
- * VPy Lab 코드 전처리기
+ * VPyLab 코드 전처리기
  * rate() → await rate(), sleep() → await sleep() 변환
  *
  * 기술 리뷰 결과 반영:

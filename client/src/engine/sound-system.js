@@ -1,5 +1,5 @@
 /**
- * VPy Lab — 사운드 시스템 (Phase 2: 게임 효과음 + BGM + 노트 시스템)
+ * VPyLab — 사운드 시스템 (Phase 2: 게임 효과음 + BGM + 노트 시스템)
  * 의존성 0. 브라우저 내장 Web Audio API만 사용.
  *
  * 기능:

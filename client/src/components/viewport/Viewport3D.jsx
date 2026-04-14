@@ -5,10 +5,8 @@ import useAppStore from '../../stores/appStore';
 import CameraSystem from '../../engine/camera-system';
 
 const THEME_BG = {
-  'deep-space': 0x0d1117,
-  'neon-lab': 0x0a0a1a,
-  'forest-night': 0x0d1a0d,
-  'clean-white': 0xf6f8fa,
+  'creative-light': 0xf7f8fa,
+  'deep-dark': 0x16161a,
 };
 
 export default function Viewport3D({ sceneRef, onSceneReady }) {
@@ -33,7 +31,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
 
     // 씬
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(THEME_BG[theme] || 0x0d1117);
+    scene.background = new THREE.Color(THEME_BG[theme] || 0xf7f8fa);
 
     // 카메라 — 기본 거리를 8로 줄여 가까이에서 시작
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
@@ -141,7 +139,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
   // 테마 변경 시 배경색만 업데이트
   useEffect(() => {
     if (sceneRef?.current) {
-      sceneRef.current.background = new THREE.Color(THEME_BG[theme] || 0x0d1117);
+      sceneRef.current.background = new THREE.Color(THEME_BG[theme] || 0xf7f8fa);
     }
   }, [theme]);
 

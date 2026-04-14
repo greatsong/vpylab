@@ -3,10 +3,8 @@ import Editor from '@monaco-editor/react';
 import useAppStore from '../../stores/appStore';
 
 const MONACO_THEME_MAP = {
-  'deep-space': 'vs-dark',
-  'neon-lab': 'vs-dark',
-  'forest-night': 'vs-dark',
-  'clean-white': 'vs',
+  'creative-light': 'vs',
+  'deep-dark': 'vs-dark',
 };
 
 const DEFAULT_CODE = `from vpython import *

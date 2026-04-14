@@ -1,5 +1,5 @@
 /**
- * VPy Lab — Pyodide Web Worker
+ * VPyLab — Pyodide Web Worker
  *
  * 보안 감사 결과 반영:
  * - Pyodide 로딩 완료 후 위험 API 삭제 (fetch, WebSocket, IndexedDB, importScripts)

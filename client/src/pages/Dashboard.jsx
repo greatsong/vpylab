@@ -21,7 +21,7 @@ export default function Dashboard() {
             <button
               onClick={() => useAuthStore.getState().setAuthModalOpen(true)}
               className="px-6 py-2 rounded-lg cursor-pointer border-none font-medium"
-              style={{ background: 'var(--brand-gradient)', color: '#fff' }}
+              style={{ background: 'var(--color-accent)', color: '#fff' }}
             >
               {t('auth.login')}
             </button>
@@ -66,7 +66,7 @@ export default function Dashboard() {
               onClick={() => setActiveTab(tab.id)}
               className="px-4 py-2 rounded-lg text-sm cursor-pointer border-none transition-all"
               style={{
-                backgroundColor: activeTab === tab.id ? 'var(--brand-primary)' : 'var(--color-bg-tertiary)',
+                backgroundColor: activeTab === tab.id ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
                 color: activeTab === tab.id ? '#fff' : 'var(--color-text-secondary)',
                 fontWeight: activeTab === tab.id ? 600 : 400,
               }}
@@ -133,7 +133,7 @@ function StudentView() {
             <button
               onClick={handleJoin}
               className="px-4 py-2 rounded-lg text-sm cursor-pointer border-none font-medium"
-              style={{ background: 'var(--brand-gradient)', color: '#fff' }}
+              style={{ background: 'var(--color-accent)', color: '#fff' }}
             >
               {t('dashboard.join')}
             </button>

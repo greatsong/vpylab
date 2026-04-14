@@ -6,3 +6,5 @@ dist/
 !client/.env.production
 .DS_Store
 *.log
+.vercel
+.env*.local
