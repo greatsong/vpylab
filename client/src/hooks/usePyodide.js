@@ -10,14 +10,17 @@ import * as singleton from '../engine/pyodide-singleton';
  * - micropip은 필요할 때만 지연 로딩
  */
 export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone }) {
-  const [status, setStatus] = useState(singleton.getStatus());
+  const [status, setStatus] = useState(() => {
+    const s = singleton.getStatus();
+    return s === 'running' ? 'ready' : s; // 이전 세션의 running은 ready로 취급
+  });
   const [progress, setProgress] = useState(singleton.getStatus() === 'ready' ? 100 : 0);
   const [progressMessage, setProgressMessage] = useState('');
   const hardStopTimerRef = useRef(null);
   const activityTimerRef = useRef(null);
   const unsubRef = useRef(null);
 
-  const ACTIVITY_TIMEOUT = 10_000; // 10초 무응답 시 타임아웃
+  const ACTIVITY_TIMEOUT = 10_000;
 
   // 콜백 refs (최신 값 유지)
   const cbRef = useRef({ onOutput, onError, onBatch, onReady, onDone });
@@ -35,7 +38,7 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
       if (activityTimerRef.current) {
         clearTimeout(activityTimerRef.current);
         activityTimerRef.current = setTimeout(() => {
-          stopExecution();
+          doStopExecution();
           cb.onError?.('실행 시간 초과 (10초 무응답). 무한 루프에 rate()가 있는지 확인하세요.');
         }, ACTIVITY_TIMEOUT);
       }
@@ -61,6 +64,12 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
         cb.onOutput?.(data.text, 'error');
         break;
 
+      case 'batch':
+        if (data.commands) {
+          cb.onBatch?.(data.commands);
+        }
+        break;
+
       case 'error':
         setStatus((prev) => prev === 'loading' ? 'error' : 'ready');
         cb.onError?.(data.error);
@@ -75,6 +84,27 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
     }
   }, []);
 
+  // 소프트 + 하드 스톱 로직 (ref로 관리하여 handleMessage에서 접근 가능)
+  const doStopExecution = useCallback(() => {
+    clearTimeout(activityTimerRef.current);
+    clearTimeout(hardStopTimerRef.current);
+
+    // 1단계: 소프트 스톱 시도
+    singleton.softStop();
+    setStatus('ready'); // 즉시 ready로 전환 (로딩 화면 안 보이게)
+
+    // 2단계: 3초 내에 done이 안 오면 하드 스톱
+    hardStopTimerRef.current = setTimeout(() => {
+      singleton.hardStop();
+      // Worker 재생성 + 재구독
+      unsubRef.current?.();
+      const listener = { onMessage: handleMessage };
+      unsubRef.current = singleton.subscribe(listener);
+      setStatus('loading');
+      singleton.initIfNeeded();
+    }, 3000);
+  }, [handleMessage]);
+
   /**
    * 구독 등록 (마운트 시)
    */
@@ -85,7 +115,6 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
       unsubRef.current?.();
       clearTimeout(activityTimerRef.current);
       clearTimeout(hardStopTimerRef.current);
-      // 언마운트 시에도 Worker는 유지 (싱글톤)
     };
   }, [handleMessage]);
 
@@ -120,37 +149,19 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
 
     // 활동 타임아웃 설정
     activityTimerRef.current = setTimeout(() => {
-      stopExecution();
+      doStopExecution();
       cbRef.current.onError?.('실행 시간 초과 (10초 무응답). 무한 루프에 rate()가 있는지 확인하세요.');
     }, ACTIVITY_TIMEOUT);
 
     singleton.runCode(code);
-  }, []);
+  }, [doStopExecution]);
 
   /**
-   * 실행 중지
-   * 1단계: 소프트 스톱 (rate() 기반, Worker 유지)
-   * 2단계: 3초 후 소프트 스톱 실패 시 하드 스톱 (terminate + 재생성)
+   * 실행 중지 (외부 API)
    */
   const stopExecution = useCallback(() => {
-    clearTimeout(activityTimerRef.current);
-    clearTimeout(hardStopTimerRef.current);
-
-    // 1단계: 소프트 스톱 시도
-    singleton.softStop();
-
-    // 2단계: 3초 내에 done이 안 오면 하드 스톱
-    hardStopTimerRef.current = setTimeout(() => {
-      singleton.hardStop();
-      setStatus('idle');
-
-      // Worker 재생성
-      const listener = { onMessage: handleMessage };
-      unsubRef.current = singleton.subscribe(listener);
-      setStatus('loading');
-      singleton.initIfNeeded();
-    }, 3000);
-  }, [handleMessage]);
+    doStopExecution();
+  }, [doStopExecution]);
 
   return {
     status,
