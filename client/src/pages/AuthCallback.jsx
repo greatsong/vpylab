@@ -6,21 +6,32 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Supabase가 URL 해시에서 토큰을 자동으로 처리
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const handleCallback = async () => {
+      // PKCE 플로우: URL에 code 파라미터가 있으면 교환
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+
+      if (code) {
+        // code를 세션으로 교환
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) console.error('세션 교환 실패:', error.message);
+      }
+
+      // 세션 확인 후 홈으로 이동
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         navigate('/', { replace: true });
       } else {
-        // 세션이 없으면 해시에서 처리 시도
+        // 해시 기반 implicit 플로우 대비
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         if (hashParams.get('access_token')) {
-          // Supabase가 자동으로 처리할 때까지 잠시 대기
-          setTimeout(() => navigate('/', { replace: true }), 500);
-        } else {
-          navigate('/', { replace: true });
+          await new Promise(r => setTimeout(r, 500));
         }
+        navigate('/', { replace: true });
       }
-    });
+    };
+
+    handleCallback();
   }, [navigate]);
 
   return (
