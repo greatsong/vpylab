@@ -423,10 +423,10 @@ export default function Sandbox() {
 
         {/* 우측: 3D + 콘솔 */}
         <div className={`${activeTab === 'editor' ? 'hidden' : 'flex'} md:flex flex-1 flex-col min-h-0 min-w-0`}>
-          {/* 3D 뷰포트 */}
+          {/* 3D 뷰포트 — 모바일: 100%, 데스크톱: 항상 60% */}
           <div
             className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex`}
-            style={{ height: activeTab === '3d' ? '100%' : '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
+            style={{ height: '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
             <Viewport3D sceneRef={sceneRef} />
           </div>
@@ -434,10 +434,10 @@ export default function Sandbox() {
           {/* 리사이저 (데스크톱) */}
           <div className="hidden md:block panel-resizer panel-resizer-h h-1" />
 
-          {/* 콘솔 */}
+          {/* 콘솔 — 데스크톱: 항상 표시 */}
           <div
-            className={`${activeTab === 'console' ? 'flex' : 'hidden'} md:flex flex-col`}
-            style={{ flex: activeTab === 'console' ? 1 : 1, minHeight: 0, height: activeTab === 'console' ? '100%' : undefined }}
+            className={`${activeTab === 'console' || activeTab === '3d' ? 'flex' : 'hidden'} md:flex flex-col`}
+            style={{ flex: 1, minHeight: 0 }}
           >
             <OutputConsole outputs={outputs} onClear={() => setOutputs([])} />
           </div>

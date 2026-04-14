@@ -308,12 +308,12 @@ export default function MissionPlay() {
         <div className={`${activeTab === 'editor' ? 'hidden' : activeTab === 'info' ? 'hidden md:flex' : 'flex'} md:flex flex-1 flex-col min-h-0 min-w-0`}>
           <div
             className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex`}
-            style={{ height: activeTab === '3d' ? '100%' : '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
+            style={{ height: '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
             <Viewport3D sceneRef={sceneRef} />
           </div>
           <div
-            className="hidden md:flex flex-col"
+            className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex flex-col`}
             style={{ flex: 1, minHeight: 0 }}
           >
             <OutputConsole outputs={outputs} onClear={() => setOutputs([])} />
