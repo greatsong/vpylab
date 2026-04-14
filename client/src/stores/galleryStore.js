@@ -107,6 +107,16 @@ const useGalleryStore = create((set, get) => ({
     set({ featuredWorks: withProfiles });
   },
 
+  // === 작품 코드만 가져오기 (Play 모드용, 경량) ===
+  fetchWorkCode: async (id) => {
+    const { data } = await supabase
+      .from('vpylab_gallery')
+      .select('code')
+      .eq('id', id)
+      .single();
+    return data?.code || null;
+  },
+
   // === 작품 상세 조회 ===
   fetchWork: async (id) => {
     set({ loading: true, currentWork: null });

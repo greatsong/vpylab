@@ -94,6 +94,22 @@ export default function Sandbox() {
     }
   }, [searchParams]);
 
+  // Play 파라미터 처리 (?play=galleryId) — 코드 로드 후 자동 실행
+  const pendingPlayRef = useRef(null); // 자동 실행할 코드
+  useEffect(() => {
+    const playId = searchParams.get('play');
+    if (!playId) return;
+
+    let cancelled = false;
+    (async () => {
+      const playCode = await useGalleryStore.getState().fetchWorkCode(playId);
+      if (cancelled || !playCode) return;
+      setCode(playCode);
+      pendingPlayRef.current = playCode;
+    })();
+    return () => { cancelled = true; };
+  }, [searchParams]);
+
   // Edit 파라미터 처리 (?edit=galleryId) — GitHub에서 코드 가져와 수정 모드
   useEffect(() => {
     const editId = searchParams.get('edit');
@@ -169,6 +185,25 @@ export default function Sandbox() {
     addOutput('실행 중...', 'log');
     runCode(code);
   };
+
+  // pendingPlay: Play 모드 코드 로드 + Pyodide 준비 모두 완료 시 자동 실행
+  useEffect(() => {
+    if (isReady && pendingPlayRef.current) {
+      const playCode = pendingPlayRef.current;
+      pendingPlayRef.current = null;
+      // 다음 프레임에서 실행 (코드 state 반영 보장)
+      requestAnimationFrame(() => {
+        if (sceneRef.current) clearScene(sceneRef.current);
+        clearRegistry();
+        if (sceneRef.current?._cameraSystem) sceneRef.current._cameraSystem.onCodeStart();
+        setOutputs([]);
+        setActiveTab('3d');
+        runSound();
+        addOutput('실행 중...', 'log');
+        runCode(playCode);
+      });
+    }
+  }, [isReady, code]);
 
   const handleStop = () => {
     stopExecution();

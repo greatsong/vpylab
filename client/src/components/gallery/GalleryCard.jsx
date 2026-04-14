@@ -1,14 +1,13 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function GalleryCard({ work }) {
+  const navigate = useNavigate();
   const author = work.vpylab_profiles?.display_name || '익명';
 
   const handlePlay = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (work.github_url) {
-      window.open(work.github_url, '_blank');
-    }
+    navigate(`/sandbox?play=${work.id}`);
   };
 
   return (
