@@ -43,7 +43,6 @@ export default function Header() {
       label: '탐색',
       items: [
         { key: 'gallery', path: '/gallery' },
-        { key: 'aiLab', path: '/ai-lab' },
       ],
     },
     {
