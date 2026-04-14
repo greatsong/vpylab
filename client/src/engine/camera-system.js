@@ -173,12 +173,13 @@ export default class CameraSystem {
 
   /**
    * 매 프레임 호출 — 카메라를 부드럽게 목표로 이동
+   * 반환값: true면 CameraSystem이 카메라를 제어 중 (OrbitControls.update 스킵해야 함)
    */
   update() {
     this._frameCount++;
 
-    // 수동 모드면 아무것도 하지 않음
-    if (this.mode === MODE.MANUAL) return;
+    // 수동 모드면 OrbitControls에 위임
+    if (this.mode === MODE.MANUAL) return false;
 
     // Auto-Fit / Follow 모드: 바운딩 박스 업데이트 (매 10프레임)
     if (this._frameCount % 10 === 0 || this.mode === MODE.AUTO_FIT) {
@@ -200,7 +201,7 @@ export default class CameraSystem {
       }
     }
 
-    // 카메라 방향을 보간 전에 먼저 저장 (피드백 루프 방지)
+    // 카메라 방향을 보간 전에 먼저 저장
     const direction = new THREE.Vector3();
     direction.subVectors(this.camera.position, this.controls.target);
 
@@ -230,11 +231,18 @@ export default class CameraSystem {
       this._currentDistance += (this._targetDistance - this._currentDistance) * this.options.zoomLerpFactor;
     }
 
-    // OrbitControls 타겟 업데이트
+    // OrbitControls 타겟과 카메라 위치를 직접 설정
     this.controls.target.copy(this._currentCenter);
-
-    // 카메라 위치: 보던 방향 유지 + 거리 조절
     this.camera.position.copy(this._currentCenter).addScaledVector(direction, this._currentDistance);
+
+    // OrbitControls 내부 상태를 동기화 (damping 없이)
+    // enableDamping을 잠시 끄고 update → damping이 카메라를 추가로 움직이는 것을 방지
+    const wasDamping = this.controls.enableDamping;
+    this.controls.enableDamping = false;
+    this.controls.update();
+    this.controls.enableDamping = wasDamping;
+
+    return true; // CameraSystem이 제어 중 — 외부에서 controls.update() 호출 금지
   }
 
   /**

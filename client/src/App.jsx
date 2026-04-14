@@ -17,11 +17,6 @@ const Gallery = lazy(() => import('./pages/Gallery'));
 const GalleryDetail = lazy(() => import('./pages/GalleryDetail'));
 const SharedCodeLoader = lazy(() => import('./pages/SharedCodeLoader'));
 const AILabIndex = lazy(() => import('./pages/ai-lab/AILabIndex'));
-const TeachableMachine = lazy(() => import('./pages/ai-lab/TeachableMachine'));
-const RLPlayground = lazy(() => import('./pages/ai-lab/RLPlayground'));
-const NeuralNetViz = lazy(() => import('./pages/ai-lab/NeuralNetViz'));
-const PoseDance = lazy(() => import('./pages/ai-lab/PoseDance'));
-const PhysicsPrediction = lazy(() => import('./pages/ai-lab/PhysicsPrediction'));
 
 function AppContent() {
   const initialize = useAuthStore((s) => s.initialize);
@@ -50,11 +45,6 @@ function AppContent() {
           <Route path="/gallery/:id" element={<GalleryDetail />} />
           <Route path="/s/:id" element={<SharedCodeLoader />} />
           <Route path="/ai-lab" element={<AILabIndex />} />
-          <Route path="/ai-lab/teachable" element={<TeachableMachine />} />
-          <Route path="/ai-lab/rl" element={<RLPlayground />} />
-          <Route path="/ai-lab/neural-viz" element={<NeuralNetViz />} />
-          <Route path="/ai-lab/pose-dance" element={<PoseDance />} />
-          <Route path="/ai-lab/physics" element={<PhysicsPrediction />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
         </Routes>
       </Suspense>

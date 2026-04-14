@@ -99,10 +99,11 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     function animate() {
       animFrameRef.current = requestAnimationFrame(animate);
 
-      // 카메라 자동 시스템 업데이트
-      camSystem.update();
-
-      controls.update();
+      // 카메라 시스템이 제어 중이면 OrbitControls.update() 스킵 (이중 호출 방지)
+      const cameraControlled = camSystem.update();
+      if (!cameraControlled) {
+        controls.update();
+      }
       renderer.render(scene, camera);
 
       // UI 모드 표시 업데이트 (60프레임마다)
