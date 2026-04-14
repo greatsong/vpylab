@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
+  },
+  "dependencies": {
+    "nanoid": "^5.1.7"
   }
 }

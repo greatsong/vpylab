@@ -11,6 +11,7 @@
     "about": "프로젝트 소개",
     "dashboard": "대시보드",
     "gallery": "갤러리",
+    "aiLab": "AI 실험실",
     "settings": "설정"
   },
   "gallery": {
@@ -152,6 +153,7 @@
   },
   "code": {
     "save": "저장",
+    "saveAs": "다른 이름으로 저장",
     "savedCodes": "내 코드 목록",
     "loginRequired": "코드를 저장하려면 로그인이 필요합니다",
     "noSavedCodes": "저장된 코드가 없습니다",
@@ -208,6 +210,40 @@
     "licenseContent": "미션 콘텐츠",
     "creditsTitle": "크레딧",
     "credits": "당곡고등학교 수리정보교육부 · 석리송 · Claude Code로 개발"
+  },
+  "aiLab": {
+    "title": "AI \uc2e4\ud5d8\uc2e4",
+    "subtitle": "TensorFlow.js\ub85c \ube0c\ub77c\uc6b0\uc800\uc5d0\uc11c \uc9c1\uc811 AI\ub97c \uccb4\ud5d8\ud558\uc138\uc694",
+    "back": "\u2190 AI \uc2e4\ud5d8\uc2e4",
+    "teachable": {
+      "title": "\ub0b4\uac00 \uac00\ub974\uce58\ub294 AI",
+      "desc": "\uc6f9\ucea0\uc73c\ub85c \ub370\uc774\ud130\ub97c \ubaa8\uc73c\uace0, \uc9c1\uc811 \ud559\uc2b5\uc2dc\ucf1c 3D \uc138\uacc4\ub97c \uc81c\uc5b4\ud558\uc138\uc694"
+    },
+    "rl": {
+      "title": "AI \uac78\uc74c\ub9c8 \ub180\uc774\ud130",
+      "desc": "\ubcf4\uc0c1\uc744 \uc124\uacc4\ud558\uace0 AI \uc5d0\uc774\uc804\ud2b8\uac00 \ud559\uc2b5\ud558\ub294 \uacfc\uc815\uc744 \uc9c0\ucf1c\ubcf4\uc138\uc694"
+    },
+    "neuralViz": {
+      "title": "\ub274\ub7f0\uc774 \uc0b4\uc544 \uc6c0\uc9c1\uc774\ub2e4",
+      "desc": "\uc2e0\uacbd\ub9dd \ub0b4\ubd80\ub97c 3D\ub85c \ub4e4\uc5ec\ub2e4\ubcf4\uace0 \ud559\uc2b5 \uacfc\uc815\uc744 \ub290\uaef4\ubcf4\uc138\uc694"
+    },
+    "pose": {
+      "title": "AI \ub304\uc2a4 \ud30c\ud2f0",
+      "desc": "\ubab8\uc744 \uc6c0\uc9c1\uc5ec 3D \uc544\ubc14\ud0c0\ub97c \uc870\uc885\ud558\uace0 \ub9ac\ub4ec\uc5d0 \ub9de\ucdb0 \ucda4\uc744 \ucda4\uc138\uc694"
+    },
+    "physics": {
+      "title": "AI vs \ub098: \ubb3c\ub9ac \uc608\uce21",
+      "desc": "\ud3ec\ubb3c\uc120 \uc6b4\ub3d9\uc758 \uacb0\uacfc\ub97c AI\uc640 \uacbd\uc7c1\ud558\uba70 \uc608\uce21\ud574\ubcf4\uc138\uc694"
+    },
+    "startLab": "\uc2e4\ud5d8 \uc2dc\uc791",
+    "loading": "AI \uc5d4\uc9c4 \ub85c\ub529 \uc911...",
+    "cameraPermission": "\uce74\uba54\ub77c \uad8c\ud55c\uc774 \ud544\uc694\ud569\ub2c8\ub2e4",
+    "train": "\ud559\uc2b5 \uc2dc\uc791",
+    "training": "\ud559\uc2b5 \uc911...",
+    "predict": "\uc608\uce21",
+    "reset": "\ucd08\uae30\ud654",
+    "score": "\uc810\uc218",
+    "epoch": "\uc5d0\ud3ed"
   },
   "common": {
     "loading": "로딩 중...",

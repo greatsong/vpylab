@@ -75,7 +75,10 @@ async function githubFetch(url, token, options = {}) {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const msg = body.message || `GitHub API ${res.status}`;
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = res.status;
+    err.githubErrors = body.errors; // GitHub API 상세 에러
+    throw err;
   }
 
   return res.json();
@@ -209,18 +212,27 @@ router.post('/', publishLimiter, async (req, res) => {
       warnings,
     });
   } catch (err) {
-    console.error('[Publish] 오류:', err.message);
+    console.error('[Publish] 오류:', err.message, err.githubErrors || '');
 
     // GitHub token 관련 에러
-    if (err.message.includes('Bad credentials') || err.message.includes('401')) {
+    if (err.status === 401 || err.message.includes('Bad credentials')) {
       return res.status(401).json({ error: 'GitHub 인증이 만료되었습니다. 다시 로그인해주세요.' });
     }
     // GitHub rate limit
-    if (err.message.includes('rate limit')) {
+    if (err.status === 429 || err.message.includes('rate limit')) {
       return res.status(429).json({ error: 'GitHub API 한도에 도달했습니다. 잠시 후 다시 시도해주세요.' });
     }
+    // GitHub 403 (scope 부족 등)
+    if (err.status === 403) {
+      return res.status(403).json({ error: `GitHub 권한이 부족합니다: ${err.message}` });
+    }
+    // GitHub 422 (유효성 에러)
+    if (err.status === 422) {
+      const detail = err.githubErrors?.map(e => e.message).join(', ') || err.message;
+      return res.status(422).json({ error: `GitHub 요청 오류: ${detail}` });
+    }
 
-    res.status(500).json({ error: '발행 중 오류가 발생했습니다.' });
+    res.status(500).json({ error: `발행 중 오류: ${err.message}` });
   }
 });
 

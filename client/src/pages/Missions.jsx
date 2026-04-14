@@ -14,7 +14,7 @@ const LEVEL_LABELS = {
 
 const CAT_COLORS = {
   CT: '#6C5CE7', CR: '#FF6B6B', MA: '#00CEC9',
-  SC: '#00B894', AR: '#FDCB6E', AI: '#A29BFE',
+  SC: '#00B894', AR: '#F0883E', SN: '#E84393', AI: '#4A6CF7',
 };
 
 export default function Missions() {

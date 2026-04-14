@@ -6,7 +6,13 @@ const useCodeStore = create((set, get) => ({
   loading: false,
   panelOpen: false,
 
+  // 자동 저장 상태
+  currentCodeId: null,      // 현재 작업 중인 코드 레코드 ID
+  saveStatus: 'idle',       // 'idle' | 'saving' | 'saved' | 'error'
+  _saveTimer: null,
+
   setPanelOpen: (open) => set({ panelOpen: open }),
+  setCurrentCodeId: (id) => set({ currentCodeId: id }),
 
   // 저장된 코드 목록 조회
   fetchSavedCodes: async () => {
@@ -29,7 +35,6 @@ const useCodeStore = create((set, get) => ({
     if (!user) return { error: { message: '로그인이 필요합니다' } };
 
     if (id) {
-      // 기존 코드 업데이트
       const { data, error } = await supabase
         .from('vpylab_saved_code')
         .update({ title, code, mission_id: missionId, updated_at: new Date().toISOString() })
@@ -40,7 +45,6 @@ const useCodeStore = create((set, get) => ({
       if (!error) get().fetchSavedCodes();
       return { data, error };
     } else {
-      // 새 코드 저장
       const { data, error } = await supabase
         .from('vpylab_saved_code')
         .insert({ user_id: user.id, title, code, mission_id: missionId })
@@ -49,6 +53,81 @@ const useCodeStore = create((set, get) => ({
       if (!error) get().fetchSavedCodes();
       return { data, error };
     }
+  },
+
+  /**
+   * 자동 저장 (2초 debounce)
+   * - currentCodeId가 있으면 업데이트, 없으면 새 레코드 생성
+   * - 로그인 사용자만 동작
+   */
+  autoSave: (code, { title = '제목 없음', missionId = null } = {}) => {
+    const { _saveTimer } = get();
+    if (_saveTimer) clearTimeout(_saveTimer);
+
+    const timer = setTimeout(async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      set({ saveStatus: 'saving' });
+
+      const currentId = get().currentCodeId;
+
+      if (currentId) {
+        // 기존 레코드 업데이트
+        const { error } = await supabase
+          .from('vpylab_saved_code')
+          .update({ code, updated_at: new Date().toISOString() })
+          .eq('id', currentId)
+          .eq('user_id', user.id);
+
+        set({ saveStatus: error ? 'error' : 'saved' });
+      } else {
+        // 새 레코드 생성
+        const { data, error } = await supabase
+          .from('vpylab_saved_code')
+          .insert({ user_id: user.id, title, code, mission_id: missionId })
+          .select()
+          .single();
+
+        if (!error && data) {
+          set({ currentCodeId: data.id, saveStatus: 'saved' });
+        } else {
+          set({ saveStatus: 'error' });
+        }
+      }
+    }, 2000);
+
+    set({ _saveTimer: timer, saveStatus: 'idle' });
+  },
+
+  // 자동 저장 타이머 정리
+  clearAutoSave: () => {
+    const { _saveTimer } = get();
+    if (_saveTimer) clearTimeout(_saveTimer);
+    set({ _saveTimer: null, currentCodeId: null, saveStatus: 'idle' });
+  },
+
+  /**
+   * 미션용: mission_id로 가장 최근 저장된 코드 로드
+   */
+  loadMissionCode: async (missionId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data } = await supabase
+      .from('vpylab_saved_code')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('mission_id', missionId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (data) {
+      set({ currentCodeId: data.id });
+      return data.code;
+    }
+    return null;
   },
 
   // 코드 삭제

@@ -78,10 +78,10 @@ export default function Home() {
       <main className="flex-1">
         {/* ===== 히어로 ===== */}
         <section className="hero-bg relative" style={{ padding: '6rem 0 5rem' }}>
-          <div className="max-w-5xl mx-auto px-6 relative z-10">
-            <div className="flex flex-col lg:flex-row items-center gap-12">
+          <div className="max-w-6xl mx-auto px-6 relative z-10">
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-12">
               {/* 좌: 텍스트 */}
-              <div className="flex-1 text-center lg:text-left">
+              <div className="flex-1 text-center">
                 <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6 animate-slide-up"
                   style={{ color: 'var(--color-text-primary)', lineHeight: 1.05 }}>
                   {lang === 'ko' ? (
@@ -99,14 +99,14 @@ export default function Home() {
                   )}
                 </h1>
 
-                <p className="text-base md:text-lg mb-8 animate-slide-up-delay-1"
-                  style={{ color: 'var(--color-text-secondary)', maxWidth: '420px', margin: '0 auto', lineHeight: 1.7 }}>
+                <p className="text-base md:text-lg mb-8 mx-auto animate-slide-up-delay-1"
+                  style={{ color: 'var(--color-text-secondary)', maxWidth: '480px', lineHeight: 1.7 }}>
                   {lang === 'ko'
                     ? 'Python으로 3D 시뮬레이션을 만들고, 소리를 입히고, 세상과 공유하세요.'
                     : 'Create 3D simulations with Python. Add sound. Share with the world.'}
                 </p>
 
-                <div className="flex gap-3 justify-center lg:justify-start animate-slide-up-delay-2">
+                <div className="flex gap-3 justify-center animate-slide-up-delay-2">
                   <Link to="/sandbox" className="btn-primary no-underline inline-flex items-center gap-2">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M6 2l8 6-8 6V2z"/></svg>
                     {t('nav.sandbox')}
@@ -161,7 +161,7 @@ while True:
 
         {/* ===== 카테고리 ===== */}
         <section className="py-20" style={{ backgroundColor: 'var(--color-bg-panel)' }}>
-          <div className="max-w-5xl mx-auto px-6">
+          <div className="max-w-6xl mx-auto px-6">
             <div className="flex items-end justify-between mb-10">
               <div>
                 <h2 className="font-display text-2xl md:text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
@@ -224,7 +224,7 @@ while True:
         {/* ===== 갤러리 하이라이트 ===== */}
         {featuredWorks.length > 0 && (
           <section className="py-20" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
-            <div className="max-w-5xl mx-auto px-6">
+            <div className="max-w-6xl mx-auto px-6">
               <div className="flex items-end justify-between mb-10">
                 <div>
                   <h2 className="font-display text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>

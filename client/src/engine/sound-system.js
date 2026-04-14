@@ -13,15 +13,49 @@
  */
 
 let audioCtx = null;
+let audioUnlocked = false;
 
 function getAudioContext() {
   if (!audioCtx) {
     audioCtx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    audioCtx.resume().catch(() => {});
   }
   return audioCtx;
+}
+
+/**
+ * 모바일 브라우저 오디오 잠금 해제
+ * 첫 번째 사용자 제스처(클릭/터치)에서 AudioContext를 생성하고 resume한다.
+ * 이후 Python 코드에서 호출하는 사운드가 정상 동작함.
+ */
+export function initAudioOnUserGesture() {
+  if (audioUnlocked) return;
+  const unlock = () => {
+    if (audioUnlocked) return;
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => {
+        audioUnlocked = true;
+      }).catch(() => {});
+    } else {
+      audioUnlocked = true;
+    }
+    // 무음 버퍼 재생 — iOS Safari 등에서 오디오 잠금 해제 트릭
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+
+    document.removeEventListener('click', unlock, true);
+    document.removeEventListener('touchstart', unlock, true);
+    document.removeEventListener('keydown', unlock, true);
+  };
+  document.addEventListener('click', unlock, true);
+  document.addEventListener('touchstart', unlock, true);
+  document.addEventListener('keydown', unlock, true);
 }
 
 // ===================================================================

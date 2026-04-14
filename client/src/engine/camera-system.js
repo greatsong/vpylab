@@ -31,9 +31,10 @@ const DEFAULTS = {
   fitDelay: 300,              // 코드 실행 후 Auto-Fit까지 딜레이 (ms)
 
   // Smooth Follow
-  lerpFactor: 0.05,          // 카메라 이동 보간 속도 (0=안움직임, 1=즉시)
+  lerpFactor: 0.03,          // 카메라 이동 보간 속도 (0=안움직임, 1=즉시)
   zoomLerpFactor: 0.03,      // 줌 보간 속도
-  followThreshold: 0.01,     // 이 이하 변화량은 무시
+  followThreshold: 2.0,      // 바운딩 중심이 이 이상 변해야 카메라 추적 시작
+  snapThreshold: 0.002,      // 이 이하면 즉시 스냅 (떨림 방지)
 
   // 기본 카메라
   defaultDistance: 8,         // 물체 없을 때 기본 거리
@@ -199,23 +200,34 @@ export default class CameraSystem {
       }
     }
 
-    // 부드럽게 보간
-    const lerpFactor = this.mode === MODE.AUTO_FIT
-      ? 0.12  // Auto-Fit은 좀 더 빠르게
-      : this.options.lerpFactor;
-
-    this._currentCenter.lerp(this._targetCenter, lerpFactor);
-    this._currentDistance += (this._targetDistance - this._currentDistance) * this.options.zoomLerpFactor;
-
-    // 카메라 방향을 타겟 업데이트 전에 저장
+    // 카메라 방향을 보간 전에 먼저 저장 (피드백 루프 방지)
     const direction = new THREE.Vector3();
     direction.subVectors(this.camera.position, this.controls.target);
 
-    // 방향 벡터가 너무 짧으면 기본 z축 (정면)
     if (direction.lengthSq() < 0.001) {
       direction.set(0, 0, 1);
     } else {
       direction.normalize();
+    }
+
+    // 부드럽게 보간 — 목표에 충분히 가까우면 스냅
+    const lerpFactor = this.mode === MODE.AUTO_FIT
+      ? 0.12
+      : this.options.lerpFactor;
+
+    const centerDist = this._currentCenter.distanceTo(this._targetCenter);
+    const zoomDiff = Math.abs(this._targetDistance - this._currentDistance);
+
+    if (centerDist < this.options.snapThreshold) {
+      this._currentCenter.copy(this._targetCenter);
+    } else {
+      this._currentCenter.lerp(this._targetCenter, lerpFactor);
+    }
+
+    if (zoomDiff < this.options.snapThreshold) {
+      this._currentDistance = this._targetDistance;
+    } else {
+      this._currentDistance += (this._targetDistance - this._currentDistance) * this.options.zoomLerpFactor;
     }
 
     // OrbitControls 타겟 업데이트

@@ -10,6 +10,7 @@ export default function Header() {
   const isTeacher = useAuthStore((s) => s.isTeacher());
   const { t } = useI18n();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
   const location = useLocation();
 
@@ -23,11 +24,17 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // 페이지 이동 시 모바일 메뉴 닫기
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   const navItems = [
     { key: 'home', path: '/' },
     { key: 'sandbox', path: '/sandbox' },
     { key: 'missions', path: '/missions' },
     { key: 'gallery', path: '/gallery' },
+    { key: 'aiLab', path: '/ai-lab' },
     ...(isTeacher ? [{ key: 'dashboard', path: '/dashboard' }] : []),
     { key: 'about', path: '/about' },
   ];
@@ -36,7 +43,7 @@ export default function Header() {
 
   return (
     <header
-      className="flex items-center justify-between px-6 py-3 border-b sticky top-0 z-50"
+      className="relative flex items-center justify-between px-4 md:px-6 py-3 border-b sticky top-0 z-50"
       style={{
         borderColor: 'var(--color-border)',
         backgroundColor: 'var(--color-bg-panel)',
@@ -62,7 +69,7 @@ export default function Header() {
         </span>
       </Link>
 
-      {/* 네비게이션 */}
+      {/* 네비게이션 (데스크톱) */}
       <nav className="hidden md:flex items-center gap-1">
         {navItems.map(({ key, path }) => (
           <Link
@@ -78,6 +85,56 @@ export default function Header() {
           </Link>
         ))}
       </nav>
+
+      {/* 모바일 햄버거 메뉴 */}
+      <button
+        className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg border cursor-pointer"
+        style={{ borderColor: 'var(--color-border)', backgroundColor: 'transparent', order: -1, marginRight: 8 }}
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        aria-label="메뉴"
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="var(--color-text-secondary)" strokeWidth="2" strokeLinecap="round">
+          {mobileMenuOpen ? (
+            <>
+              <line x1="4" y1="4" x2="14" y2="14" />
+              <line x1="14" y1="4" x2="4" y2="14" />
+            </>
+          ) : (
+            <>
+              <line x1="3" y1="5" x2="15" y2="5" />
+              <line x1="3" y1="9" x2="15" y2="9" />
+              <line x1="3" y1="13" x2="15" y2="13" />
+            </>
+          )}
+        </svg>
+      </button>
+
+      {/* 모바일 메뉴 드롭다운 */}
+      {mobileMenuOpen && (
+        <div
+          className="md:hidden absolute left-0 right-0 top-full flex flex-col py-2 px-4 z-50"
+          style={{
+            backgroundColor: 'var(--color-bg-panel)',
+            borderBottom: '1px solid var(--color-border)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          {navItems.map(({ key, path }) => (
+            <Link
+              key={key}
+              to={path}
+              className="text-sm no-underline px-3 py-2.5 rounded-lg transition-all font-medium"
+              style={{
+                color: isActive(path) ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                backgroundColor: isActive(path) ? 'var(--color-accent-bg)' : 'transparent',
+              }}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t(`nav.${key}`)}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* 컨트롤 */}
       <div className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import Header from '../components/layout/Header';
 import CodeEditor, { DEFAULT_CODE } from '../components/editor/CodeEditor';
@@ -9,7 +9,7 @@ import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, successSound, errorSound, stopBgm } from '../engine/sound-system';
+import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 import { generateStandaloneHTML, downloadHTML } from '../utils/export-html';
@@ -30,6 +30,7 @@ export default function Sandbox() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [outputs, setOutputs] = useState([]);
   const [activeTab, setActiveTab] = useState('editor');
+  const [mobileMore, setMobileMore] = useState(false);
   const [shareMsg, setShareMsg] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
   const [showSavedCodes, setShowSavedCodes] = useState(false);
@@ -42,11 +43,20 @@ export default function Sandbox() {
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
   const { user } = useAuthStore();
-  const { saveCode } = useCodeStore();
+  const { saveCode, autoSave, clearAutoSave, saveStatus } = useCodeStore();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
-  // URL에서 공유 코드 로드
+  // /s/:id에서 넘어온 공유 코드 로드
   useEffect(() => {
+    if (location.state?.sharedCode) {
+      setCode(location.state.sharedCode);
+      setOutputs([{ text: t('share.externalCode'), type: 'warning', id: Date.now() }]);
+      // state 정리 (뒤로가기 시 다시 로드 방지)
+      window.history.replaceState({}, '');
+      return;
+    }
+    // 기존 LZ-String URL 하위 호환
     const { code: shared, isExternal } = decodeCodeFromURL();
     if (shared) {
       setCode(shared);
@@ -55,6 +65,17 @@ export default function Sandbox() {
       }
     }
   }, []);
+
+  // 자동 저장: 코드 변경 시 2초 debounce
+  useEffect(() => {
+    if (user && code && code !== DEFAULT_CODE) {
+      autoSave(code, { title: '자유 코딩' });
+    }
+  }, [code, user]);
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => () => clearAutoSave(), []);
+  useEffect(() => { initAudioOnUserGesture(); }, []);
 
   // Remix 파라미터 처리 (?remix=galleryId)
   useEffect(() => {
@@ -181,14 +202,15 @@ export default function Sandbox() {
     downloadHTML(html, filename);
   };
 
-  const handleSave = async () => {
+  const handleSaveAs = async () => {
     if (!user) {
       useAuthStore.getState().setAuthModalOpen(true);
       return;
     }
     const title = prompt(t('code.saveTitlePlaceholder')) || `코드 ${new Date().toLocaleDateString()}`;
-    const { error } = await saveCode({ title, code });
-    if (!error) {
+    const { data, error } = await saveCode({ title, code });
+    if (!error && data) {
+      useCodeStore.getState().setCurrentCodeId(data.id);
       setSaveMsg(t('code.saved'));
       setTimeout(() => setSaveMsg(''), 2000);
     }
@@ -263,8 +285,8 @@ export default function Sandbox() {
           <button onClick={handleExport} className="toolbar-btn">
             {t('editor.export')}
           </button>
-          <button onClick={handleSave} className="toolbar-btn">
-            {saveMsg || t('code.save')}
+          <button onClick={handleSaveAs} className="toolbar-btn">
+            {saveMsg || t('code.saveAs') || '다른 이름으로 저장'}
           </button>
           <button onClick={() => setShowExamples(true)} className="toolbar-btn --examples">
             {t('editor.examples') || '예제'}
@@ -283,6 +305,48 @@ export default function Sandbox() {
           </button>
         </div>
 
+        {/* 모바일 더보기 메뉴 */}
+        <div className="relative md:hidden ml-1">
+          <button
+            onClick={() => setMobileMore(prev => !prev)}
+            className="toolbar-btn"
+            style={{ padding: '4px 8px', fontSize: 16 }}
+          >
+            ⋯
+          </button>
+          {mobileMore && (
+            <div
+              className="absolute right-0 top-full mt-1 w-44 rounded-xl py-1 z-50"
+              style={{
+                backgroundColor: 'var(--color-bg-panel)',
+                border: '1px solid var(--color-border)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+              }}
+            >
+              {[
+                { label: shareMsg || t('editor.share'), action: () => { handleShare(); setMobileMore(false); } },
+                { label: t('editor.export'), action: () => { handleExport(); setMobileMore(false); } },
+                { label: saveMsg || t('code.saveAs') || '다른 이름으로 저장', action: () => { handleSaveAs(); setMobileMore(false); } },
+                { label: t('editor.examples') || '예제', action: () => { setShowExamples(true); setMobileMore(false); } },
+                { label: t('code.myCodes'), action: () => { setShowSavedCodes(true); setMobileMore(false); } },
+                { label: t('gallery.publish') || '갤러리에 올리기', action: () => {
+                  if (!user) { useAuthStore.getState().setAuthModalOpen(true); } else { setPublishModalOpen(true); }
+                  setMobileMore(false);
+                }},
+              ].map((item, i) => (
+                <button
+                  key={i}
+                  onClick={item.action}
+                  className="w-full text-left px-4 py-2 text-xs cursor-pointer border-none bg-transparent transition-colors"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex-1" />
 
         {/* 모바일 탭 */}
@@ -299,18 +363,22 @@ export default function Sandbox() {
         </div>
 
         {/* 상태 */}
-        <div className="hidden md:flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          <span className={`status-dot ${isRunning ? '--running' : isReady ? '--ready' : '--idle'}`} />
-          {isRunning ? t('editor.run') + '...' : isReady ? 'Ready' : '...'}
+        <div className="hidden md:flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          {user && saveStatus === 'saving' && <span>저장 중...</span>}
+          {user && saveStatus === 'saved' && <span style={{ color: 'var(--color-success)' }}>저장됨 ✓</span>}
+          <span className="flex items-center gap-1.5">
+            <span className={`status-dot ${isRunning ? '--running' : isReady ? '--ready' : '--idle'}`} />
+            {isRunning ? t('editor.run') + '...' : isReady ? 'Ready' : '...'}
+          </span>
         </div>
       </div>
 
-      {/* === 3패널 레이아웃 (데스크톱) === */}
+      {/* === 3패널 레이아웃 === */}
       <div className="flex-1 flex min-h-0">
-        {/* 좌측: 에디터 (데스크톱: 항상 보임, 모바일: 탭) */}
+        {/* 좌측: 에디터 */}
         <div
-          className={`${activeTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-col`}
-          style={{ width: '45%', minWidth: '300px', borderRight: '1px solid var(--color-border)' }}
+          className={`${activeTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-[45%] md:min-w-[300px]`}
+          style={{ borderRight: '1px solid var(--color-border)' }}
         >
           <CodeEditor code={code} onChange={(val) => setCode(val || '')} />
         </div>
@@ -319,11 +387,11 @@ export default function Sandbox() {
         <div className="hidden md:block panel-resizer w-1" />
 
         {/* 우측: 3D + 콘솔 */}
-        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+        <div className={`${activeTab === 'editor' ? 'hidden' : 'flex'} md:flex flex-1 flex-col min-h-0 min-w-0`}>
           {/* 3D 뷰포트 */}
           <div
-            className={`${activeTab === '3d' || activeTab === 'editor' ? 'flex' : 'hidden'} md:flex`}
-            style={{ height: '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
+            className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex`}
+            style={{ height: activeTab === '3d' ? '100%' : '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
             <Viewport3D sceneRef={sceneRef} />
           </div>
@@ -333,8 +401,8 @@ export default function Sandbox() {
 
           {/* 콘솔 */}
           <div
-            className={`${activeTab === 'console' || activeTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-col`}
-            style={{ flex: 1, minHeight: 0 }}
+            className={`${activeTab === 'console' ? 'flex' : 'hidden'} md:flex flex-col`}
+            style={{ flex: activeTab === 'console' ? 1 : 1, minHeight: 0, height: activeTab === 'console' ? '100%' : undefined }}
           >
             <OutputConsole outputs={outputs} onClear={() => setOutputs([])} />
           </div>

@@ -47,32 +47,40 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
     setError(null);
     setResult(null);
 
-    let githubToken = null;
-    let htmlContent = null;
+    try {
+      let githubToken = null;
+      let htmlContent = null;
 
-    // GitHub Pages 발행 옵션이 켜져 있고 GitHub 로그인된 경우
-    if (publishToGitHub && isGitHubUser()) {
-      githubToken = await getGitHubToken();
-      if (githubToken) {
-        htmlContent = generateStandaloneHTML(code, title.trim());
+      // GitHub Pages 발행 옵션이 켜져 있고 GitHub 로그인된 경우
+      if (publishToGitHub && isGitHubUser()) {
+        githubToken = await getGitHubToken();
+        if (githubToken) {
+          htmlContent = generateStandaloneHTML(code, title.trim());
+        } else {
+          // provider_token이 만료됨 — GitHub 없이 갤러리에만 발행
+          console.warn('[Publish] GitHub provider_token 만료, 갤러리에만 발행합니다.');
+        }
       }
-    }
 
-    const res = await publishWork({
-      title: title.trim(),
-      description: description.trim(),
-      code,
-      thumbnail,
-      category,
-      remixFrom,
-      htmlContent,
-      githubToken,
-    });
+      const res = await publishWork({
+        title: title.trim(),
+        description: description.trim(),
+        code,
+        thumbnail,
+        category,
+        remixFrom,
+        htmlContent,
+        githubToken,
+      });
 
-    if (res.error) {
-      setError(res.error);
-    } else {
-      setResult(res);
+      if (res.error) {
+        setError(res.error);
+      } else {
+        setResult(res);
+      }
+    } catch (err) {
+      console.error('[Publish] 오류:', err);
+      setError(err.message || '발행 중 오류가 발생했습니다.');
     }
   };
 
@@ -100,10 +108,20 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
         {/* 발행 성공 */}
         {result ? (
           <div className="publish-success">
-            <h2>🎉 발행 완료!</h2>
+            <div className="success-icon">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="24" fill="url(#successGrad)" />
+                <path d="M15 24L21 30L33 18" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                <defs><linearGradient id="successGrad" x1="0" y1="0" x2="48" y2="48">
+                  <stop stopColor="#00B894" /><stop offset="1" stopColor="#00CEC9" />
+                </linearGradient></defs>
+              </svg>
+            </div>
+            <h2>발행 완료!</h2>
+            <p className="success-desc">작품이 갤러리에 올라갔습니다.</p>
             {result.githubUrl && (
               <div className="github-url-box">
-                <p>GitHub Pages URL:</p>
+                <p>GitHub Pages URL</p>
                 <a href={result.githubUrl} target="_blank" rel="noopener noreferrer">
                   {result.githubUrl}
                 </a>
@@ -129,7 +147,14 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
           </div>
         ) : (
           <>
-            <h2>갤러리에 올리기</h2>
+            <div className="modal-header">
+              <h2>갤러리에 올리기</h2>
+              <button className="close-btn" onClick={handleClose} aria-label="닫기">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
 
             {/* 썸네일 미리보기 */}
             {thumbnail && (
@@ -141,7 +166,7 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
             {/* 영감 표시 */}
             {remixFrom && (
               <div className="remix-badge">
-                🔀 다른 작품에서 영감을 받은 Remix입니다
+                <span className="remix-icon">🔀</span> 다른 작품에서 영감을 받은 Remix
               </div>
             )}
 
@@ -152,7 +177,7 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="작품 제목"
+                placeholder="작품 제목을 입력하세요"
                 maxLength={100}
                 autoFocus
               />
@@ -206,7 +231,7 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
             )}
 
             {/* 에러 */}
-            {error && <p className="publish-error">❌ {error}</p>}
+            {error && <div className="publish-error">{error}</div>}
 
             {/* 버튼 */}
             <div className="publish-actions">
@@ -215,7 +240,12 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
                 disabled={publishing || !title.trim()}
                 className="btn-primary"
               >
-                {publishing ? '발행 중...' : '발행하기'}
+                {publishing ? (
+                  <span className="publishing-state">
+                    <span className="spinner" />
+                    발행 중...
+                  </span>
+                ) : '발행하기'}
               </button>
               <button onClick={handleClose} className="btn-secondary">취소</button>
             </div>
@@ -225,70 +255,207 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
 
       <style>{`
         .publish-modal-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-          display: flex; align-items: center; justify-content: center; z-index: 1000;
+          position: fixed; inset: 0;
+          background: rgba(0,0,0,0.5);
+          backdrop-filter: blur(4px);
+          display: flex; align-items: center; justify-content: center;
+          z-index: 1000;
+          animation: fadeIn 0.2s ease;
         }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(16px) scale(0.97); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         .publish-modal {
-          background: var(--bg-secondary, #161b22); border-radius: 12px; padding: 24px;
+          background: var(--color-bg-panel, #1E1E24);
+          border-radius: var(--radius-lg, 16px);
+          padding: 28px;
           width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto;
-          border: 1px solid var(--border, #30363d);
+          border: 1px solid var(--color-border, #2E2E38);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset;
+          animation: slideUp 0.25s ease;
+          font-family: var(--font-body, 'DM Sans', sans-serif);
         }
-        .publish-modal h2 { margin: 0 0 16px; font-size: 18px; }
-        .publish-modal label { display: block; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary, #8b949e); }
+
+        .modal-header {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 20px;
+        }
+        .modal-header h2 {
+          margin: 0; font-size: 20px; font-weight: 700;
+          font-family: var(--font-display, 'Satoshi', sans-serif);
+          color: var(--color-text-primary, #FFFFFE);
+        }
+        .close-btn {
+          background: none; border: none; cursor: pointer; padding: 4px;
+          color: var(--color-text-muted, #72757E); border-radius: 6px;
+          transition: all 0.15s;
+        }
+        .close-btn:hover { background: var(--color-bg-tertiary, #26262E); color: var(--color-text-primary, #FFFFFE); }
+
+        .publish-modal label {
+          display: block; margin-bottom: 16px;
+          font-size: 13px; font-weight: 500;
+          color: var(--color-text-secondary, #94A1B2);
+        }
         .publish-modal input[type="text"],
         .publish-modal textarea {
-          display: block; width: 100%; margin-top: 4px; padding: 8px 12px;
-          background: var(--bg-primary, #0d1117); border: 1px solid var(--border, #30363d);
-          border-radius: 6px; color: var(--text-primary, #e6edf3); font-size: 14px;
+          display: block; width: 100%; margin-top: 6px;
+          padding: 10px 14px;
+          background: var(--color-bg-primary, #16161A);
+          border: 1px solid var(--color-border, #2E2E38);
+          border-radius: var(--radius-md, 12px);
+          color: var(--color-text-primary, #FFFFFE);
+          font-size: 14px; font-family: inherit;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .publish-modal input[type="text"]:focus,
+        .publish-modal textarea:focus {
+          outline: none;
+          border-color: var(--color-accent, #7F5AF0);
+          box-shadow: 0 0 0 3px var(--color-accent-bg, rgba(127, 90, 240, 0.12));
         }
         .publish-modal textarea { resize: vertical; }
-        .required { color: #f85149; }
-        .thumbnail-preview { margin-bottom: 12px; border-radius: 8px; overflow: hidden; }
+        .required { color: var(--color-error, #FF6B6B); }
+
+        .thumbnail-preview {
+          margin-bottom: 16px; border-radius: var(--radius-md, 12px);
+          overflow: hidden; border: 1px solid var(--color-border, #2E2E38);
+        }
         .thumbnail-preview img { width: 100%; height: auto; display: block; }
+
         .remix-badge {
-          background: rgba(108,92,231,0.15); border: 1px solid rgba(108,92,231,0.3);
-          padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px;
+          background: var(--color-accent-bg, rgba(127, 90, 240, 0.12));
+          border: 1px solid rgba(127, 90, 240, 0.25);
+          padding: 10px 14px; border-radius: var(--radius-md, 12px);
+          margin-bottom: 16px; font-size: 13px;
+          color: var(--color-text-secondary, #94A1B2);
+          display: flex; align-items: center; gap: 6px;
         }
-        .category-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .remix-icon { font-size: 16px; }
+
+        .category-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
         .pill {
-          padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border, #30363d);
-          background: transparent; color: var(--text-secondary, #8b949e); cursor: pointer; font-size: 12px;
+          padding: 6px 14px; border-radius: var(--radius-full, 9999px);
+          border: 1px solid var(--color-border, #2E2E38);
+          background: transparent;
+          color: var(--color-text-secondary, #94A1B2);
+          cursor: pointer; font-size: 13px; font-weight: 500;
+          transition: all 0.15s;
         }
-        .pill.active { background: var(--accent, #6C5CE7); color: white; border-color: var(--accent, #6C5CE7); }
-        .checkbox-label { display: flex !important; align-items: center; gap: 8px; cursor: pointer; }
-        .checkbox-label input { width: auto; margin: 0; }
+        .pill:hover { border-color: var(--color-accent, #7F5AF0); color: var(--color-text-primary, #FFFFFE); }
+        .pill.active {
+          background: linear-gradient(135deg, var(--brand-purple, #6C5CE7), var(--brand-blue, #4A6CF7));
+          color: white;
+          border-color: transparent;
+          box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
+        }
+
+        .checkbox-label {
+          display: flex !important; align-items: center; gap: 10px; cursor: pointer;
+          padding: 10px 14px; border-radius: var(--radius-md, 12px);
+          background: var(--color-bg-primary, #16161A);
+          border: 1px solid var(--color-border, #2E2E38);
+          margin-bottom: 16px;
+          transition: border-color 0.15s;
+        }
+        .checkbox-label:hover { border-color: var(--color-accent, #7F5AF0); }
+        .checkbox-label input[type="checkbox"] {
+          width: 16px; height: 16px; margin: 0;
+          accent-color: var(--color-accent, #7F5AF0);
+        }
+
         .github-login-prompt {
-          background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 12px;
+          background: var(--color-bg-primary, #16161A);
+          padding: 14px; border-radius: var(--radius-md, 12px);
+          margin-bottom: 16px;
+          border: 1px solid var(--color-border, #2E2E38);
         }
-        .github-login-prompt p { margin: 0 0 8px; font-size: 13px; }
+        .github-login-prompt p { margin: 0 0 10px; font-size: 13px; color: var(--color-text-secondary, #94A1B2); }
         .btn-github {
-          padding: 6px 16px; border-radius: 6px; border: none; cursor: pointer;
-          background: #238636; color: white; font-size: 13px;
+          padding: 8px 18px; border-radius: var(--radius-sm, 6px);
+          border: none; cursor: pointer;
+          background: #238636; color: white; font-size: 13px; font-weight: 600;
+          transition: background 0.15s;
         }
-        .publish-error { color: #f85149; font-size: 13px; margin: 8px 0; }
-        .publish-actions { display: flex; gap: 8px; margin-top: 16px; }
+        .btn-github:hover { background: #2ea043; }
+
+        .publish-error {
+          background: rgba(255, 107, 107, 0.1);
+          border: 1px solid rgba(255, 107, 107, 0.25);
+          color: var(--color-error, #FF6B6B);
+          font-size: 13px; padding: 10px 14px;
+          border-radius: var(--radius-md, 12px);
+          margin: 8px 0;
+        }
+
+        .publish-actions { display: flex; gap: 10px; margin-top: 20px; }
         .btn-primary {
-          flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer;
-          background: var(--accent, #6C5CE7); color: white; font-weight: 600; font-size: 14px;
+          flex: 1; padding: 12px; border-radius: var(--radius-md, 12px);
+          border: none; cursor: pointer;
+          background: linear-gradient(135deg, var(--brand-purple, #6C5CE7), var(--brand-blue, #4A6CF7));
+          color: white; font-weight: 700; font-size: 15px;
+          font-family: var(--font-display, 'Satoshi', sans-serif);
+          transition: opacity 0.15s, transform 0.15s;
+          box-shadow: 0 4px 14px rgba(108, 92, 231, 0.35);
         }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+        .btn-primary:active:not(:disabled) { transform: translateY(0); }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
         .btn-secondary {
-          padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border, #30363d);
-          background: transparent; color: var(--text-secondary, #8b949e); cursor: pointer; font-size: 14px;
+          padding: 12px 20px; border-radius: var(--radius-md, 12px);
+          border: 1px solid var(--color-border, #2E2E38);
+          background: transparent;
+          color: var(--color-text-secondary, #94A1B2);
+          cursor: pointer; font-size: 14px; font-weight: 500;
+          transition: all 0.15s;
         }
-        .publish-success { text-align: center; }
-        .publish-success h2 { font-size: 22px; margin-bottom: 16px; }
+        .btn-secondary:hover {
+          border-color: var(--color-text-muted, #72757E);
+          color: var(--color-text-primary, #FFFFFE);
+        }
+
+        .publishing-state { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .spinner {
+          width: 16px; height: 16px;
+          border: 2px solid rgba(255,255,255,0.25);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.6s linear infinite;
+        }
+
+        .publish-success { text-align: center; padding: 8px 0; }
+        .success-icon { margin-bottom: 16px; }
+        .publish-success h2 {
+          font-size: 22px; margin: 0 0 6px;
+          font-family: var(--font-display, 'Satoshi', sans-serif);
+          color: var(--color-text-primary, #FFFFFE);
+        }
+        .success-desc { color: var(--color-text-secondary, #94A1B2); font-size: 14px; margin: 0 0 20px; }
+
         .github-url-box {
-          background: rgba(0,206,201,0.1); padding: 12px; border-radius: 8px; margin-bottom: 12px;
+          background: rgba(0, 206, 201, 0.08);
+          border: 1px solid rgba(0, 206, 201, 0.2);
+          padding: 14px; border-radius: var(--radius-md, 12px);
+          margin-bottom: 16px; text-align: left;
         }
-        .github-url-box p { margin: 0 0 4px; font-size: 12px; color: var(--text-secondary); }
-        .github-url-box a { color: #58a6ff; word-break: break-all; }
+        .github-url-box p { margin: 0 0 6px; font-size: 12px; color: var(--color-text-muted, #72757E); font-weight: 500; }
+        .github-url-box a { color: var(--brand-cyan, #00CEC9); word-break: break-all; font-size: 13px; }
         .copy-btn {
-          margin-top: 8px; padding: 4px 12px; border-radius: 4px; border: 1px solid var(--border, #30363d);
-          background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 12px;
+          margin-top: 10px; padding: 6px 14px; border-radius: var(--radius-sm, 6px);
+          border: 1px solid var(--color-border, #2E2E38);
+          background: transparent; color: var(--color-text-secondary, #94A1B2);
+          cursor: pointer; font-size: 12px;
+          transition: all 0.15s;
         }
+        .copy-btn:hover { border-color: var(--brand-cyan, #00CEC9); color: var(--brand-cyan, #00CEC9); }
+
         .publish-warnings { margin: 8px 0; }
-        .publish-warnings p { font-size: 12px; color: #d29922; margin: 2px 0; }
+        .publish-warnings p { font-size: 12px; color: var(--color-warning, #FDCB6E); margin: 4px 0; }
       `}</style>
     </div>
   );

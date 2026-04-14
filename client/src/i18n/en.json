@@ -11,6 +11,7 @@
     "about": "About",
     "dashboard": "Dashboard",
     "gallery": "Gallery",
+    "aiLab": "AI Lab",
     "settings": "Settings"
   },
   "gallery": {
@@ -152,6 +153,7 @@
   },
   "code": {
     "save": "Save",
+    "saveAs": "Save As",
     "savedCodes": "My Saved Code",
     "loginRequired": "Login required to save code",
     "noSavedCodes": "No saved code yet",
@@ -208,6 +210,40 @@
     "licenseContent": "Mission Content",
     "creditsTitle": "Credits",
     "credits": "Danggok High School · Seok Ri-song · Built with Claude Code"
+  },
+  "aiLab": {
+    "title": "AI Lab",
+    "subtitle": "Experience AI hands-on in the browser with TensorFlow.js",
+    "back": "\u2190 AI Lab",
+    "teachable": {
+      "title": "Teach Your AI",
+      "desc": "Collect data from your webcam and train a model to control the 3D world"
+    },
+    "rl": {
+      "title": "RL Playground",
+      "desc": "Design rewards and watch an AI agent learn step by step"
+    },
+    "neuralViz": {
+      "title": "Living Neurons",
+      "desc": "Explore neural network internals in 3D and feel the learning process"
+    },
+    "pose": {
+      "title": "AI Dance Party",
+      "desc": "Move your body to control a 3D avatar and dance to the beat"
+    },
+    "physics": {
+      "title": "AI vs Me: Physics",
+      "desc": "Compete with AI to predict projectile motion outcomes"
+    },
+    "startLab": "Start Lab",
+    "loading": "Loading AI engine...",
+    "cameraPermission": "Camera permission required",
+    "train": "Train",
+    "training": "Training...",
+    "predict": "Predict",
+    "reset": "Reset",
+    "score": "Score",
+    "epoch": "Epoch"
   },
   "common": {
     "loading": "Loading...",

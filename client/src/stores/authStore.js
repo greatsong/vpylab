@@ -90,9 +90,20 @@ const useAuthStore = create((set, get) => ({
 
   // GitHub provider_token 추출 (갤러리 발행 시 사용)
   getGitHubToken: async () => {
+    // 1차: Supabase getSession()에서 provider_token 확인
     const { data: { session } } = await supabase.auth.getSession();
-    // Supabase는 provider_token을 세션에 포함시킴
-    return session?.provider_token || null;
+    if (session?.provider_token) return session.provider_token;
+
+    // 2차: localStorage fallback (Supabase는 세션 새로고침 시 provider_token을 잃을 수 있음)
+    try {
+      const storageKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+      if (storageKey) {
+        const stored = JSON.parse(localStorage.getItem(storageKey));
+        if (stored?.provider_token) return stored.provider_token;
+      }
+    } catch { /* ignore parse errors */ }
+
+    return null;
   },
 
   // GitHub 로그인 여부 확인

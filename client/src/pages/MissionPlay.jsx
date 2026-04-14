@@ -10,11 +10,12 @@ import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { gradeA, gradeB } from '../engine/grading-engine';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, successSound, errorSound, stopBgm } from '../engine/sound-system';
+import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
 import missions from '../data/missions';
 import useAppStore from '../stores/appStore';
 import useCodeStore from '../stores/codeStore';
+import useAuthStore from '../stores/authStore';
 
 /**
  * 미션 플레이 페이지
@@ -27,6 +28,8 @@ export default function MissionPlay() {
 
   const mission = getMissionById(missionId);
   const completeMission = useAppStore((s) => s.completeMission);
+  const { user } = useAuthStore();
+  const { autoSave, clearAutoSave, saveStatus, loadMissionCode } = useCodeStore();
   const [code, setCode] = useState(mission?.starterCode || '');
   const [outputs, setOutputs] = useState([]);
   const [gradeResult, setGradeResult] = useState(null);
@@ -40,6 +43,25 @@ export default function MissionPlay() {
   useEffect(() => {
     if (!mission) navigate('/missions');
   }, [mission, navigate]);
+
+  useEffect(() => { initAudioOnUserGesture(); }, []);
+
+  // 이전 저장된 코드 로드 (로그인 시)
+  useEffect(() => {
+    if (user && missionId) {
+      loadMissionCode(missionId).then((savedCode) => {
+        if (savedCode) setCode(savedCode);
+      });
+    }
+    return () => clearAutoSave();
+  }, [missionId, user]);
+
+  // 자동 저장: 코드 변경 시 2초 debounce
+  useEffect(() => {
+    if (user && code && mission) {
+      autoSave(code, { title: `미션: ${mission.title[lang]}`, missionId });
+    }
+  }, [code, user]);
 
   const addOutput = useCallback((text, type = 'log') => {
     setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
@@ -193,30 +215,15 @@ export default function MissionPlay() {
     <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
 
-      {/* 미션 정보 바 */}
+      {/* 툴바 — Sandbox와 동일한 레이아웃 */}
       <div
-        className="flex items-center gap-3 px-3 py-2 shrink-0"
+        className="flex items-center gap-2 px-3 py-2 shrink-0"
         style={{
           backgroundColor: 'var(--color-bg-secondary)',
           borderBottom: '1px solid var(--color-border)',
         }}
       >
-        <Link
-          to={`/missions?category=${mission.category}`}
-          className="text-xs no-underline"
-          style={{ color: 'var(--color-accent)' }}
-        >
-          {t('home.backToMissions')}
-        </Link>
-        <span className="text-xs font-mono font-bold" style={{ color: 'var(--color-text-primary)' }}>
-          {mission.id}
-        </span>
-        <span className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
-          {mission.title[lang]}
-        </span>
-        <div className="flex-1" />
-
-        {/* 실행 버튼들 */}
+        {/* 실행 버튼들 (좌측, Sandbox와 동일 위치) */}
         <button onClick={handleRun} disabled={!isReady || isRunning} className="toolbar-btn --run">
           {t('editor.run')}
         </button>
@@ -227,10 +234,28 @@ export default function MissionPlay() {
           {t('mission.submit')}
         </button>
 
-        {/* 상태 */}
-        <div className="hidden md:flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          <span className={`status-dot ${isRunning ? '--running' : isReady ? '--ready' : '--idle'}`} />
+        {/* 미션 정보 */}
+        <div className="hidden md:flex items-center gap-2 ml-2">
+          <Link
+            to={`/missions?category=${mission.category}`}
+            className="text-xs no-underline"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            ← {t('home.backToMissions')}
+          </Link>
+          <span className="text-xs font-mono font-bold" style={{ color: 'var(--color-text-muted)' }}>
+            {mission.id}
+          </span>
+          <span className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
+            {mission.title[lang]}
+          </span>
         </div>
+        {/* 모바일: 미션 제목 */}
+        <span className="md:hidden text-xs font-bold truncate max-w-[100px]" style={{ color: 'var(--color-text-primary)' }}>
+          {mission.title[lang]}
+        </span>
+
+        <div className="flex-1" />
 
         {/* 모바일 탭 */}
         <div className="flex md:hidden gap-1">
@@ -244,40 +269,48 @@ export default function MissionPlay() {
             </button>
           ))}
         </div>
+
+        {/* 상태 */}
+        <div className="hidden md:flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          {user && saveStatus === 'saving' && <span>저장 중...</span>}
+          {user && saveStatus === 'saved' && <span style={{ color: 'var(--color-success)' }}>저장됨 ✓</span>}
+          <span className="flex items-center gap-1.5">
+            <span className={`status-dot ${isRunning ? '--running' : isReady ? '--ready' : '--idle'}`} />
+            {isRunning ? t('editor.run') + '...' : isReady ? 'Ready' : '...'}
+          </span>
+        </div>
       </div>
 
       {/* === 메인 레이아웃 === */}
       <div className="flex-1 flex min-h-0">
         {/* 좌측: 에디터 */}
         <div
-          className={`${activeTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-col`}
-          style={{ width: '40%', minWidth: '280px', borderRight: '1px solid var(--color-border)' }}
+          className={`${activeTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-[45%] md:min-w-[300px]`}
+          style={{ borderRight: '1px solid var(--color-border)' }}
         >
           <CodeEditor code={code} onChange={(val) => setCode(val || '')} />
         </div>
 
         {/* 중앙: 3D + 콘솔 */}
-        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+        <div className={`${activeTab === 'editor' ? 'hidden' : activeTab === 'info' ? 'hidden md:flex' : 'flex'} md:flex flex-1 flex-col min-h-0 min-w-0`}>
           <div
-            className={`${activeTab === '3d' || activeTab === 'editor' ? 'flex' : 'hidden'} md:flex`}
-            style={{ height: '55%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
+            className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex`}
+            style={{ height: activeTab === '3d' ? '100%' : '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
             <Viewport3D sceneRef={sceneRef} />
           </div>
           <div
-            className={`${activeTab === 'info' || activeTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-col`}
+            className="hidden md:flex flex-col"
             style={{ flex: 1, minHeight: 0 }}
           >
             <OutputConsole outputs={outputs} onClear={() => setOutputs([])} />
           </div>
         </div>
 
-        {/* 우측: 미션 정보 + 채점 결과 (데스크톱) */}
+        {/* 우측: 미션 정보 + 채점 결과 */}
         <div
-          className={`${activeTab === 'info' ? 'flex' : 'hidden'} md:flex flex-col overflow-y-auto`}
+          className={`${activeTab === 'info' ? 'flex' : 'hidden'} md:flex flex-col overflow-y-auto w-full md:w-[260px] md:min-w-[240px]`}
           style={{
-            width: '260px',
-            minWidth: '240px',
             borderLeft: '1px solid var(--color-border)',
             backgroundColor: 'var(--color-bg-secondary)',
           }}
