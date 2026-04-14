@@ -17,7 +17,7 @@ app.use(helmet());
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:4033'],
 }));
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json({ limit: '100kb' }));
 
 // AI 프록시 레이트 리밋 (학생당 분당 5회)
 const aiLimiter = rateLimit({
@@ -52,5 +52,5 @@ app.use('/api/publish', publishRoutes);
 // app.use('/api/share', require('./routes/share.js'));  // Step 7에서 활성화
 
 app.listen(PORT, () => {
-  console.log(`[VPy Lab] Express 서버 실행: http://localhost:${PORT}`);
+  console.log(`[VPyLab] Express 서버 실행: http://localhost:${PORT}`);
 });
