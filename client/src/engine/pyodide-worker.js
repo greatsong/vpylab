@@ -16,6 +16,8 @@ const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`
 let pyodide = null;
 let vpythonApiCode = null;
 let vpythonApiLoaded = false;
+let shouldStop = false;
+let micropipLoaded = false;
 
 function sendProgress(percent, message) {
   self.postMessage({ type: 'progress', percent, message });
@@ -74,11 +76,6 @@ sys.modules['vpython'] = vpython_module
 `);
       vpythonApiLoaded = true;
     }
-
-    sendProgress(80, '패키지 관리자 준비 중...');
-
-    // 4-1. micropip 사전 로드 (패키지 지연 설치용)
-    await pyodide.loadPackage('micropip');
 
     sendProgress(85, '보안 샌드박스 설정 중...');
 
@@ -183,10 +180,21 @@ async function runCode(code) {
   }
 
   try {
+    // 중단 플래그 리셋
+    shouldStop = false;
+
+    // Python에서 중단 신호를 확인할 수 있도록 JS 함수 노출
+    self._checkStopSignal = () => shouldStop;
+
     // 필요한 패키지 자동 설치
     const packages = detectRequiredPackages(code);
     if (packages.length > 0) {
-      sendProgress(50, `패키지 설치 중: ${packages.join(', ')}...`);
+      // micropip 지연 로딩 (첫 사용 시에만)
+      if (!micropipLoaded) {
+        self.postMessage({ type: 'stdout', text: '📦 패키지 관리자 준비 중...' });
+        await pyodide.loadPackage('micropip');
+        micropipLoaded = true;
+      }
       self.postMessage({ type: 'stdout', text: `📦 ${packages.join(', ')} 설치 중...` });
       await pyodide.runPythonAsync(`
 import micropip
@@ -238,8 +246,15 @@ sys.stderr = StringIO()
 
     self.postMessage({ type: 'done' });
   } catch (err) {
-    const errorMsg = formatPythonError(err.message || String(err));
-    self.postMessage({ type: 'error', error: errorMsg, raw: err.message });
+    const msg = err.message || String(err);
+    // _StopExecution은 사용자 중지이므로 에러가 아닌 정상 종료로 처리
+    if (msg.includes('_StopExecution') || msg.includes('실행이 중지되었습니다')) {
+      shouldStop = false;
+      self.postMessage({ type: 'done' });
+      return;
+    }
+    const errorMsg = formatPythonError(msg);
+    self.postMessage({ type: 'error', error: errorMsg, raw: msg });
   }
 }
 
@@ -272,7 +287,8 @@ self.onmessage = async (event) => {
       break;
 
     case 'stop':
-      // 메인 스레드에서 Worker.terminate()로 처리
+      // 소프트 스톱 — rate()에서 플래그 확인 후 Python 예외 발생
+      shouldStop = true;
       break;
 
     default:

@@ -1,177 +1,156 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { preprocessCode } from '../engine/code-preprocessor';
-import vpythonApiRaw from '../engine/vpython-api.py?raw';
+import * as singleton from '../engine/pyodide-singleton';
 
 /**
- * Pyodide Worker 관리 훅
+ * Pyodide Worker 관리 훅 (싱글톤 기반)
  *
- * - Worker 생성/종료
- * - 코드 전처리 + 실행
- * - 진행률 추적
- * - 타임아웃 (Worker.terminate() 기반)
+ * - 전역 Worker 1개를 공유하여 페이지 이동 시 재로딩 없음
+ * - 소프트 스톱(rate 기반 중단) 우선, 실패 시 하드 스톱(terminate)
+ * - micropip은 필요할 때만 지연 로딩
  */
 export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone }) {
-  const [status, setStatus] = useState('idle'); // idle | loading | ready | running | error
-  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState(singleton.getStatus());
+  const [progress, setProgress] = useState(singleton.getStatus() === 'ready' ? 100 : 0);
   const [progressMessage, setProgressMessage] = useState('');
-  const workerRef = useRef(null);
-  const timeoutRef = useRef(null);
+  const hardStopTimerRef = useRef(null);
+  const activityTimerRef = useRef(null);
+  const unsubRef = useRef(null);
 
-  const EXECUTION_TIMEOUT = 10_000; // 10초 무응답 시 타임아웃 (활동 있으면 리셋)
+  const ACTIVITY_TIMEOUT = 10_000; // 10초 무응답 시 타임아웃
+
+  // 콜백 refs (최신 값 유지)
+  const cbRef = useRef({ onOutput, onError, onBatch, onReady, onDone });
+  cbRef.current = { onOutput, onError, onBatch, onReady, onDone };
 
   /**
-   * Worker 초기화
+   * Worker 메시지 핸들러
+   */
+  const handleMessage = useCallback((msg) => {
+    const { type, ...data } = msg;
+    const cb = cbRef.current;
+
+    // 활동 감지: batch/stdout/stderr 시 타임아웃 리셋
+    if (type === 'batch' || type === 'stdout' || type === 'stderr') {
+      if (activityTimerRef.current) {
+        clearTimeout(activityTimerRef.current);
+        activityTimerRef.current = setTimeout(() => {
+          stopExecution();
+          cb.onError?.('실행 시간 초과 (10초 무응답). 무한 루프에 rate()가 있는지 확인하세요.');
+        }, ACTIVITY_TIMEOUT);
+      }
+    }
+
+    switch (type) {
+      case 'progress':
+        setProgress(data.percent);
+        setProgressMessage(data.message);
+        break;
+
+      case 'ready':
+        setStatus('ready');
+        setProgress(100);
+        cb.onReady?.();
+        break;
+
+      case 'stdout':
+        cb.onOutput?.(data.text);
+        break;
+
+      case 'stderr':
+        cb.onOutput?.(data.text, 'error');
+        break;
+
+      case 'error':
+        setStatus((prev) => prev === 'loading' ? 'error' : 'ready');
+        cb.onError?.(data.error);
+        break;
+
+      case 'done':
+        clearTimeout(activityTimerRef.current);
+        clearTimeout(hardStopTimerRef.current);
+        setStatus('ready');
+        cb.onDone?.();
+        break;
+    }
+  }, []);
+
+  /**
+   * 구독 등록 (마운트 시)
+   */
+  useEffect(() => {
+    const listener = { onMessage: handleMessage };
+    unsubRef.current = singleton.subscribe(listener);
+    return () => {
+      unsubRef.current?.();
+      clearTimeout(activityTimerRef.current);
+      clearTimeout(hardStopTimerRef.current);
+      // 언마운트 시에도 Worker는 유지 (싱글톤)
+    };
+  }, [handleMessage]);
+
+  /**
+   * Worker 초기화 (이미 ready면 즉시)
    */
   const initWorker = useCallback(() => {
-    if (workerRef.current) return;
-
+    const currentStatus = singleton.getStatus();
+    if (currentStatus === 'ready') {
+      setStatus('ready');
+      setProgress(100);
+      cbRef.current.onReady?.();
+      return;
+    }
     setStatus('loading');
-    setProgress(0);
-
-    const worker = new Worker(
-      new URL('../engine/pyodide-worker.js', import.meta.url),
-      { type: 'classic' }
-    );
-
-    worker.onmessage = (e) => {
-      let msg = e.data;
-
-      // Python(vpython-api.py)에서 JSON 문자열로 보낸 경우 파싱
-      if (typeof msg === 'string') {
-        try {
-          msg = JSON.parse(msg);
-        } catch {
-          return; // 파싱 불가능하면 무시
-        }
-      }
-
-      const { type, ...data } = msg;
-
-      // 활동 감지: Worker에서 메시지가 올 때마다 타임아웃 리셋
-      // rate() 호출마다 batch가 오므로 무한 루프 시뮬레이션도 동작함
-      if (type === 'batch' || type === 'stdout' || type === 'stderr') {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = setTimeout(() => {
-            stopExecution();
-            onError?.('실행 시간 초과 (10초 무응답). 무한 루프에 rate()가 있는지 확인하세요.');
-          }, EXECUTION_TIMEOUT);
-        }
-      }
-
-      switch (type) {
-        case 'progress':
-          setProgress(data.percent);
-          setProgressMessage(data.message);
-          break;
-
-        case 'ready':
-          setStatus('ready');
-          setProgress(100);
-          onReady?.();
-          break;
-
-        case 'stdout':
-          onOutput?.(data.text);
-          break;
-
-        case 'stderr':
-          onOutput?.(data.text, 'error');
-          break;
-
-        case 'error':
-          setStatus((prev) => prev === 'loading' ? 'error' : 'ready');
-          onError?.(data.error);
-          break;
-
-        case 'done':
-          clearTimeout(timeoutRef.current);
-          setStatus('ready');
-          onDone?.();
-          break;
-
-        case 'batch':
-          // Worker에서 온 커맨드 배치 → Three.js 브릿지로 전달
-          if (data.commands) {
-            onBatch?.(data.commands);
-          }
-          break;
-
-        default:
-          break;
-      }
-    };
-
-    worker.onerror = (err) => {
-      setStatus('error');
-      onError?.(`Worker 오류: ${err.message}`);
-    };
-
-    // VPython API 코드를 함께 전송
-    worker.postMessage({
-      type: 'init',
-      vpythonApi: vpythonApiRaw,
-    });
-
-    workerRef.current = worker;
-  }, [onOutput, onError, onBatch, onReady]);
+    singleton.initIfNeeded();
+  }, []);
 
   /**
    * 코드 실행
    */
   const runCode = useCallback((rawCode) => {
-    if (!workerRef.current || status !== 'ready') return;
+    if (singleton.getStatus() !== 'ready') return;
 
-    // 코드 전처리 (rate() → await rate() 등)
     const { code, warnings } = preprocessCode(rawCode);
-
-    // 경고 출력
     if (warnings.length > 0) {
-      warnings.forEach(w => onOutput?.(`⚠️ ${w}`, 'warning'));
+      warnings.forEach(w => cbRef.current.onOutput?.(`⚠️ ${w}`, 'warning'));
     }
 
     setStatus('running');
+    singleton.setStatus('running');
 
-    // 타임아웃 설정 — 10초간 아무 응답 없으면 강제 종료
-    // rate() 호출 시 batch 메시지가 오므로 타이머가 리셋됨
-    timeoutRef.current = setTimeout(() => {
+    // 활동 타임아웃 설정
+    activityTimerRef.current = setTimeout(() => {
       stopExecution();
-      onError?.('실행 시간 초과 (10초 무응답). 무한 루프에 rate()가 있는지 확인하세요.');
-    }, EXECUTION_TIMEOUT);
+      cbRef.current.onError?.('실행 시간 초과 (10초 무응답). 무한 루프에 rate()가 있는지 확인하세요.');
+    }, ACTIVITY_TIMEOUT);
 
-    workerRef.current.postMessage({ type: 'run', code });
-  }, [status, onOutput, onError]);
+    singleton.runCode(code);
+  }, []);
 
   /**
-   * 실행 중지 (Worker 강제 종료 + 재생성)
+   * 실행 중지
+   * 1단계: 소프트 스톱 (rate() 기반, Worker 유지)
+   * 2단계: 3초 후 소프트 스톱 실패 시 하드 스톱 (terminate + 재생성)
    */
   const stopExecution = useCallback(() => {
-    clearTimeout(timeoutRef.current);
+    clearTimeout(activityTimerRef.current);
+    clearTimeout(hardStopTimerRef.current);
 
-    if (workerRef.current) {
-      workerRef.current.terminate();
-      workerRef.current = null;
-    }
+    // 1단계: 소프트 스톱 시도
+    singleton.softStop();
 
-    setStatus('idle');
+    // 2단계: 3초 내에 done이 안 오면 하드 스톱
+    hardStopTimerRef.current = setTimeout(() => {
+      singleton.hardStop();
+      setStatus('idle');
 
-    // 새 Worker 즉시 생성 (다음 실행을 위해)
-    // 약간의 딜레이 후 재초기화
-    setTimeout(() => initWorker(), 100);
-  }, [initWorker]);
-
-  /**
-   * 컴포넌트 언마운트 시 정리
-   */
-  useEffect(() => {
-    return () => {
-      clearTimeout(timeoutRef.current);
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-      }
-    };
-  }, []);
+      // Worker 재생성
+      const listener = { onMessage: handleMessage };
+      unsubRef.current = singleton.subscribe(listener);
+      setStatus('loading');
+      singleton.initIfNeeded();
+    }, 3000);
+  }, [handleMessage]);
 
   return {
     status,

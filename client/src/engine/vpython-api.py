@@ -594,12 +594,29 @@ class distant_light:
         _add_command({"action": "update", "id": self._id, "intensity": value})
 
 
+# === 중단 신호 확인 ===
+def _check_stop():
+    """JS의 shouldStop 플래그를 확인하여 중단 여부 반환"""
+    try:
+        return js._checkStopSignal()
+    except:
+        return False
+
+
+class _StopExecution(Exception):
+    """사용자가 실행을 중지했을 때 발생하는 예외"""
+    pass
+
+
 # === rate() 함수 ===
 async def rate(fps):
     """
     프레임 레이트 제어 + 커맨드 버퍼 플러시
     rate(100) = 초당 100회 루프, 각 반복 후 커맨드 배치 전송
     """
+    if _check_stop():
+        _send_commands()
+        raise _StopExecution("실행이 중지되었습니다")
     _send_commands()  # 누적된 커맨드를 한번에 전송
     delay = 1.0 / fps
     await asyncio.sleep(delay)
@@ -607,6 +624,9 @@ async def rate(fps):
 
 async def sleep(seconds):
     """비동기 sleep"""
+    if _check_stop():
+        _send_commands()
+        raise _StopExecution("실행이 중지되었습니다")
     _send_commands()
     await asyncio.sleep(seconds)
 
