@@ -11,11 +11,21 @@ import { nanoid } from 'nanoid';
 
 const router = Router();
 
-// 서버용 Supabase 클라이언트 (service_role 키)
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-);
+// 서버용 Supabase 클라이언트 (service_role 키) — 지연 초기화
+// ESM import 호이스팅으로 dotenv.config()보다 먼저 평가되므로
+// 모듈 최상위에서 createClient 호출하면 env 미로드 시 크래시 발생
+let _supabase = null;
+function getSupabase() {
+  if (!_supabase) {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new Error('SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY 미설정');
+    }
+    _supabase = createClient(url, key);
+  }
+  return _supabase;
+}
 
 const MAX_CODE_SIZE = 50_000; // 50KB
 const SHARE_ID_LENGTH = 8;
@@ -51,7 +61,7 @@ router.post('/', shareLimiter, async (req, res) => {
     // nanoid로 짧은 ID 생성, 충돌 시 재시도
     for (let attempt = 0; attempt < 3; attempt++) {
       const id = nanoid(SHARE_ID_LENGTH);
-      const { error } = await supabaseAdmin
+      const { error } = await getSupabase()
         .from('vpylab_shares')
         .insert({ id, code, title: safeTitle });
 
