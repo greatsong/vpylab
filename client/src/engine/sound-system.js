@@ -46,8 +46,14 @@ function isIOSDevice() {
   return /iPad|iPhone|iPod/.test(ua) || (platform === 'MacIntel' && touchPoints > 1);
 }
 
+function isAndroidDevice() {
+  const nav = globalThis.navigator;
+  if (!nav) return false;
+  return /Android/i.test(nav.userAgent || '');
+}
+
 export function isTouchPlaybackEnvironment() {
-  if (isIOSDevice()) return true;
+  if (isIOSDevice() || isAndroidDevice()) return true;
   if (typeof globalThis.matchMedia === 'function') {
     return globalThis.matchMedia('(hover: none) and (pointer: coarse)').matches;
   }
@@ -202,7 +208,7 @@ function withRunningContext(fn) {
 export function initAudioOnUserGesture() {
   if (audioUnlocked) return;
 
-  const EVENTS = ['click', 'touchend', 'keydown'];
+  const EVENTS = ['pointerdown', 'touchstart', 'touchend', 'click', 'keydown'];
 
   const cleanup = () => {
     EVENTS.forEach(e => document.removeEventListener(e, unlock, true));

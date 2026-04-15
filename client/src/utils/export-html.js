@@ -225,7 +225,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
   }
   // 모바일 오디오 잠금 해제 (iOS Safari 등)
   (function initAudioGesture() {
-    const evts = ['click','touchend','keydown'];
+    const evts = ['pointerdown','touchstart','touchend','click','keydown'];
     const unlock = () => {
       if (audioUnlocked) return;
       ensureAudioReady().then((ready) => {
