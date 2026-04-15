@@ -101,23 +101,21 @@ export default function GalleryDetail() {
 
         {/* 메인 */}
         <div className="detail-layout mb-8">
-          {/* 썸네일 */}
-          <div className="rounded-xl overflow-hidden" style={{
+          {/* 카테고리 비주얼 */}
+          <div className="rounded-xl overflow-hidden flex items-center justify-center" style={{
             aspectRatio: '16/10',
-            backgroundColor: 'var(--color-bg-tertiary)',
+            background: {
+              computing: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              math: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              science: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+              art: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+              sound: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+              free: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+            }[currentWork.category] || 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
           }}>
-            {currentWork.thumbnail ? (
-              <img src={currentWork.thumbnail} alt={currentWork.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                  <rect x="8" y="8" width="48" height="48" rx="8" stroke="var(--color-text-muted)" strokeWidth="2" opacity="0.2"/>
-                  <circle cx="24" cy="26" r="6" fill="var(--color-text-muted)" opacity="0.15"/>
-                  <path d="M8 44L22 34L34 42L46 30L56 38" stroke="var(--color-text-muted)" strokeWidth="2" opacity="0.15"/>
-                </svg>
-              </div>
-            )}
+            <span style={{ fontSize: '4rem', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.2))' }}>
+              {{ computing: '💻', math: '📐', science: '🔬', art: '🎨', sound: '🎵', free: '🚀' }[currentWork.category] || '🚀'}
+            </span>
           </div>
 
           {/* 정보 */}

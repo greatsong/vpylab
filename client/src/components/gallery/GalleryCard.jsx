@@ -1,39 +1,18 @@
-import { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import useGalleryStore from '../../stores/galleryStore';
+
+const CATEGORY_STYLES = {
+  computing:  { icon: '💻', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  math:       { icon: '📐', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  science:    { icon: '🔬', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  art:        { icon: '🎨', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+  sound:      { icon: '🎵', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)' },
+  free:       { icon: '🚀', gradient: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
+};
 
 export default function GalleryCard({ work }) {
   const navigate = useNavigate();
   const author = work.vpylab_profiles?.display_name || '익명';
-  const cardRef = useRef(null);
-  const [thumbnail, setThumbnail] = useState(work.thumbnail || null);
-  const [loading, setLoading] = useState(false);
-  const fetchedRef = useRef(false);
-
-  // Intersection Observer: 뷰포트 진입 시 썸네일 lazy fetch
-  useEffect(() => {
-    if (thumbnail || fetchedRef.current) return;
-    const el = cardRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !fetchedRef.current) {
-          fetchedRef.current = true;
-          observer.disconnect();
-          setLoading(true);
-          useGalleryStore.getState().fetchThumbnail(work.id).then((data) => {
-            setThumbnail(data);
-            setLoading(false);
-          });
-        }
-      },
-      { rootMargin: '200px' }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [work.id, thumbnail]);
+  const style = CATEGORY_STYLES[work.category] || CATEGORY_STYLES.free;
 
   const handlePlay = (e) => {
     e.preventDefault();
@@ -42,23 +21,9 @@ export default function GalleryCard({ work }) {
   };
 
   return (
-    <Link to={`/gallery/${work.id}`} className="gallery-card" ref={cardRef}>
-      <div className="gallery-card-thumb">
-        {thumbnail ? (
-          <img src={thumbnail} alt={work.title} loading="lazy" />
-        ) : loading ? (
-          <div className="gallery-card-placeholder">
-            <div className="thumb-loading-spinner" />
-          </div>
-        ) : (
-          <div className="gallery-card-placeholder">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect x="4" y="4" width="24" height="24" rx="4" stroke="var(--color-text-muted)" strokeWidth="1.5" opacity="0.4"/>
-              <circle cx="13" cy="14" r="3" fill="var(--color-text-muted)" opacity="0.3"/>
-              <path d="M4 24L12 18L18 22L24 16L28 20" stroke="var(--color-text-muted)" strokeWidth="1.5" opacity="0.3"/>
-            </svg>
-          </div>
-        )}
+    <Link to={`/gallery/${work.id}`} className="gallery-card">
+      <div className="gallery-card-thumb" style={{ background: style.gradient }}>
+        <div className="gallery-card-icon">{style.icon}</div>
         <button className="play-overlay" onClick={handlePlay} title="Play">
           <svg width="32" height="32" viewBox="0 0 32 32" fill="currentColor">
             <path d="M11 6l16 10-16 10V6z"/>
