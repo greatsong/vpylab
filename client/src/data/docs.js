@@ -178,10 +178,10 @@ car = compound([body, head], pos=vector(0, 0, 0))`,
     category: 'vectors',
     title: { ko: '벡터 (vector)', en: 'vector' },
     description: {
-      ko: '3D 벡터를 생성합니다. 위치, 속도, 힘 등을 표현하는 기본 수학 도구입니다.',
-      en: 'Creates a 3D vector. The fundamental math tool for position, velocity, force, etc.',
+      ko: '3D 벡터를 생성합니다. 위치, 속도, 힘 등을 표현하는 기본 수학 도구입니다. vec()로 짧게 쓸 수도 있습니다.',
+      en: 'Creates a 3D vector. The fundamental math tool for position, velocity, force, etc. vec() is a shorthand alias.',
     },
-    signature: "vector(x, y, z)",
+    signature: "vector(x, y, z)  # 또는 vec(x, y, z)",
     params: [
       { name: 'x', type: 'number', default: '0', desc: { ko: 'x 성분', en: 'x component' } },
       { name: 'y', type: 'number', default: '0', desc: { ko: 'y 성분', en: 'y component' } },
@@ -191,8 +191,12 @@ car = compound([body, head], pos=vector(0, 0, 0))`,
 v = vector(3, 4, 0)
 print(v.x, v.y, v.z)  # 3 4 0
 print(v.mag)           # 5.0
-print(v.hat)           # <0.6, 0.8, 0>`,
-    tags: ['math', 'vector', 'position', 'direction', 'mag', 'hat'],
+print(v.hat)           # <0.6, 0.8, 0>
+
+# vec()는 vector()의 단축 별칭
+w = vec(1, 2, 3)
+print(w)               # <1, 2, 3>`,
+    tags: ['math', 'vector', 'vec', 'position', 'direction', 'mag', 'hat'],
   },
   {
     id: 'mag',

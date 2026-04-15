@@ -101,6 +101,9 @@ class vector:
         """벡터 복제 — 원본과 독립된 새 벡터 반환"""
         return vector(self.x, self.y, self.z)
 
+# vec() — vector()의 단축 별칭
+vec = vector
+
 
 # === 색상 팔레트 (30색) ===
 # color.red, color['빨'], 색상['빨강'] 모두 가능
