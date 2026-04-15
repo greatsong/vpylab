@@ -182,29 +182,21 @@ export function isAudioUnlocked() {
 }
 
 /**
- * AudioContext가 'running' 상태일 때만 콜백 실행.
- * suspended 상태면 resume 후 콜백 실행 (모바일에서 필수).
- * 데스크톱(이미 running)에선 동기 실행 — 지연 없음.
+ * AudioContext를 확보하고 콜백 실행.
+ * 핵심: 상태 체크 없이 항상 즉시 fn(ctx) 호출.
  *
- * 중요: ensureAudioReady() 대신 직접 ctx.resume()을 사용.
- * Web Audio API는 resume()만으로 충분하며, iOS <audio> 트릭은 불필요.
- * ensureAudioReady()의 iosMediaUnlocked 체크가 false를 반환해서
- * 모바일에서 소리가 절대 재생되지 않는 회귀를 방지.
+ * Web Audio API는 suspended 상태에서도 노드 생성·스케줄이 가능하고,
+ * context가 resume되면 스케줄된 노드가 재생된다.
+ * initAudioOnUserGesture()에서 첫 제스처 시 resume()이 호출되므로,
+ * fn() 안에서 스케줄된 오디오는 resume 직후 재생된다.
+ *
+ * 이전 방식(resume 완료 후 fn 호출)은 모바일에서 타이밍 문제로
+ * fn()이 아예 호출되지 않는 버그가 있었음.
  */
 function withRunningContext(fn) {
   const ctx = getAudioContext();
   if (!ctx) return;
-  if (ctx.state === 'running') {
-    audioUnlocked = true;
-    fn(ctx);
-  } else {
-    ctx.resume().then(() => {
-      if (ctx.state === 'running') {
-        audioUnlocked = true;
-        fn(ctx);
-      }
-    }).catch(() => {});
-  }
+  fn(ctx);
 }
 
 /**
