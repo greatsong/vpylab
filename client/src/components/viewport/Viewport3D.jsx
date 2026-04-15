@@ -20,7 +20,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
   const axesRef = useRef(null);
   const [showAxes, setShowAxes] = useState(false);
   const [cameraMode, setCameraMode] = useState('auto-fit');
-  const [lockFollowZoom, setLockFollowZoom] = useState(true);
+  const [lockFollowZoom, setLockFollowZoom] = useState(false);
   const theme = useAppStore((s) => s.theme);
 
   useEffect(() => {

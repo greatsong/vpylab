@@ -32,7 +32,7 @@ const DEFAULTS = {
 
   // Smooth Follow
   followUpdateInterval: 1,   // 추적 모드에서 바운딩 갱신 주기 (프레임)
-  zoomLocked: true,           // 줌 고정 (자동/추적 모두 적용)
+  zoomLocked: false,           // 줌 고정 (자동/추적 모두 적용)
   lerpFactor: 0.05,          // 카메라 이동 보간 속도 (0=안움직임, 1=즉시)
   zoomLerpFactor: 0.03,      // 줌 보간 속도
   followThreshold: 0.01,     // Auto-Fit → Follow 전환 감지 임계값
