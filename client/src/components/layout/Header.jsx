@@ -75,8 +75,11 @@ export default function Header() {
 
       {/* 네비게이션 (데스크톱) */}
       <nav
-        className="hidden md:flex items-center gap-1 px-1 py-1 rounded-xl"
-        style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+        className="hidden md:flex items-center gap-1 px-1.5 py-1 rounded-xl"
+        style={{
+          border: '1px solid var(--color-border)',
+          backgroundColor: 'var(--color-bg-primary)',
+        }}
       >
         {navItems.map(({ key, path }) => (
           <Link
@@ -85,8 +88,8 @@ export default function Header() {
             className="text-[13px] no-underline px-4 py-1.5 rounded-lg transition-all font-semibold"
             style={{
               color: isActive(path) ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-              backgroundColor: isActive(path) ? 'var(--color-bg-panel)' : 'transparent',
-              boxShadow: isActive(path) ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              backgroundColor: isActive(path) ? 'var(--color-accent-bg)' : 'transparent',
+              boxShadow: isActive(path) ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
             }}
             onMouseEnter={() => handlePrewarm(path)}
             onFocus={() => handlePrewarm(path)}
