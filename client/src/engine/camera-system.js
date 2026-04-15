@@ -64,6 +64,9 @@ export default class CameraSystem {
     this._fitTimer = null;
     this._frameCount = 0;
 
+    // 추적 모드용: 이전 프레임의 물체 위치 기록
+    this._prevPositions = new Map(); // object.uuid → Vector3
+
     // 사용자 조작 감지 — 마우스 이벤트로 수동 모드 전환
     this._onUserInteraction = () => {
       if (this.mode !== MODE.MANUAL) {
@@ -140,46 +143,81 @@ export default class CameraSystem {
 
   /**
    * 카메라 프레이밍용 상태 계산
-   * - frameCenter/radius: 실제 렌더 바운딩 기준 (초기 Auto-Fit)
-   * - focusCenter: 객체 앵커 위치 기준 (추적 시 흔들림 완화)
-   * @returns {{ center: THREE.Vector3, size: THREE.Vector3, radius: number, focusCenter: THREE.Vector3 } | null}
+   * @returns {{ center: THREE.Vector3, size: THREE.Vector3, radius: number } | null}
    */
   _computeCameraState() {
     const objects = this._getVPythonObjects();
     if (objects.length === 0) return null;
 
     const frameBox = new THREE.Box3();
-    const focusBox = new THREE.Box3();
-    const worldPosition = new THREE.Vector3();
     let hasFrameBounds = false;
-    let hasFocusBounds = false;
 
     for (const obj of objects) {
       hasFrameBounds = this._expandBoxByObject(frameBox, obj) || hasFrameBounds;
-
-      obj.getWorldPosition(worldPosition);
-      focusBox.expandByPoint(worldPosition);
-      hasFocusBounds = true;
     }
 
-    const activeFrameBox = hasFrameBounds ? frameBox : (hasFocusBounds ? focusBox : null);
-    if (!activeFrameBox || activeFrameBox.isEmpty()) return null;
+    if (!hasFrameBounds || frameBox.isEmpty()) return null;
 
     const center = new THREE.Vector3();
     const size = new THREE.Vector3();
-    activeFrameBox.getCenter(center);
-    activeFrameBox.getSize(size);
-
-    const focusCenter = hasFocusBounds ? new THREE.Vector3() : center.clone();
-    if (hasFocusBounds) {
-      focusBox.getCenter(focusCenter);
-    }
+    frameBox.getCenter(center);
+    frameBox.getSize(size);
 
     return {
       center,
       size,
       radius: size.length() / 2,
-      focusCenter,
+    };
+  }
+
+  /**
+   * 추적 모드용: 움직이는 물체만의 바운딩 박스 계산
+   * 이전 프레임과 위치를 비교해 이동한 물체를 감지한다.
+   * 움직이는 물체가 없으면 전체 물체 상태를 반환한다.
+   */
+  _computeMovingObjectsState() {
+    const objects = this._getVPythonObjects();
+    if (objects.length === 0) return null;
+
+    const MOVE_THRESHOLD = 0.001; // 이 이상 이동하면 '움직이는 물체'로 판정
+    const worldPos = new THREE.Vector3();
+    const movingObjects = [];
+    const currentPositions = new Map();
+
+    for (const obj of objects) {
+      obj.getWorldPosition(worldPos);
+      currentPositions.set(obj.uuid, worldPos.clone());
+
+      const prev = this._prevPositions.get(obj.uuid);
+      if (prev && prev.distanceTo(worldPos) > MOVE_THRESHOLD) {
+        movingObjects.push(obj);
+      }
+    }
+
+    // 현재 위치를 다음 프레임 비교용으로 저장
+    this._prevPositions = currentPositions;
+
+    // 움직이는 물체가 있으면 그것들만으로 바운딩 계산
+    const targetObjects = movingObjects.length > 0 ? movingObjects : objects;
+
+    const box = new THREE.Box3();
+    let hasBounds = false;
+    for (const obj of targetObjects) {
+      hasBounds = this._expandBoxByObject(box, obj) || hasBounds;
+    }
+
+    if (!hasBounds || box.isEmpty()) return null;
+
+    const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
+    box.getCenter(center);
+    box.getSize(size);
+
+    return {
+      center,
+      size,
+      radius: size.length() / 2,
+      hasMovingObjects: movingObjects.length > 0,
     };
   }
 
@@ -231,33 +269,36 @@ export default class CameraSystem {
 
     if (shouldUpdateState) {
       this.scene.updateMatrixWorld(true);
-      const state = this._computeCameraState();
 
-      if (state) {
-        const nextDistance = this._distanceForBounds(state.radius);
-
-        if (this.mode === MODE.AUTO_FIT) {
+      if (this.mode === MODE.AUTO_FIT) {
+        const state = this._computeCameraState();
+        if (state) {
           // 자동 모드: 전체 물체가 화면에 담기도록 중심 업데이트
           this._targetCenter.copy(state.center);
           if (!this.options.zoomLocked) {
-            this._targetDistance = nextDistance;
+            this._targetDistance = this._distanceForBounds(state.radius);
           }
-        } else if (this.mode === MODE.FOLLOW) {
-          const centerDiff = state.focusCenter.distanceTo(this._targetCenter);
+          this._lastBounds = state;
+        }
+      } else if (this.mode === MODE.FOLLOW) {
+        const state = this._computeMovingObjectsState();
+        if (state) {
+          // 추적 모드: 움직이는 물체의 중심을 따라감
+          const centerDiff = state.center.distanceTo(this._targetCenter);
           if (centerDiff > this.options.followCenterDeadzone) {
-            this._targetCenter.copy(state.focusCenter);
+            this._targetCenter.copy(state.center);
           }
 
           if (!this.options.zoomLocked) {
+            const nextDistance = this._distanceForBounds(state.radius);
             const distanceRatio = Math.abs(nextDistance - this._targetDistance)
               / Math.max(this._targetDistance, 1);
             if (distanceRatio > this.options.zoomThreshold) {
               this._targetDistance = nextDistance;
             }
           }
+          this._lastBounds = state;
         }
-
-        this._lastBounds = state;
       }
     }
 
@@ -302,11 +343,13 @@ export default class CameraSystem {
   switchToFollow() {
     this.mode = MODE.FOLLOW;
     this._userInteracted = false;
-    // 현재 상태에서 추적 대상 초기화
+    // 이전 위치 기록 초기화 (다음 프레임부터 이동 감지 시작)
+    this._prevPositions.clear();
+    // 현재 전체 상태에서 추적 시작점 설정
     this.scene.updateMatrixWorld(true);
     const state = this._computeCameraState();
     if (state) {
-      this._targetCenter.copy(state.focusCenter);
+      this._targetCenter.copy(state.center);
     }
   }
 
@@ -317,6 +360,7 @@ export default class CameraSystem {
     this.mode = MODE.AUTO_FIT;
     this._userInteracted = false;
     this._frameCount = 0;
+    this._prevPositions.clear();
 
     // 약간의 딜레이 후 Auto-Fit (물체 생성 시간 확보)
     clearTimeout(this._fitTimer);
