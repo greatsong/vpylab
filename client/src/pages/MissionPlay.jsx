@@ -105,9 +105,10 @@ export default function MissionPlay() {
     initWorker();
   }, [initWorker]);
 
-  const handleRun = async () => {
+  const handleRun = () => {
     if (!isReady) return;
-    await ensureAudioReady();
+    // 오디오 잠금 해제 시도 (fire-and-forget — 실행을 차단하지 않음)
+    ensureAudioReady().catch(() => {});
     if (sceneRef.current) clearScene(sceneRef.current);
     // 카메라 자동 시스템 리셋
     if (sceneRef.current?._cameraSystem) {

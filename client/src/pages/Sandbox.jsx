@@ -203,9 +203,10 @@ export default function Sandbox() {
     runCode(sourceCode);
   }, [addOutput, runCode]);
 
-  const handleRun = async () => {
+  const handleRun = () => {
     if (!isReady) return;
-    await ensureAudioReady();
+    // 오디오 잠금 해제 시도 (fire-and-forget — 실행을 차단하지 않음)
+    ensureAudioReady().catch(() => {});
     setPlayStartRequired(false);
     startProgram(code);
   };
@@ -224,9 +225,9 @@ export default function Sandbox() {
     }
   }, [isReady, code, startProgram]);
 
-  const handlePendingPlayStart = async () => {
+  const handlePendingPlayStart = () => {
     const playCode = pendingPlayRef.current || code;
-    await ensureAudioReady();
+    ensureAudioReady().catch(() => {});
     setPlayStartRequired(false);
     pendingPlayRef.current = null;
     requestAnimationFrame(() => startProgram(playCode));
@@ -329,8 +330,8 @@ export default function Sandbox() {
 
   // 극장 모드: 3D 뷰포트만 전체 화면
   if (theaterMode) {
-    const handleTheaterStart = async () => {
-      await ensureAudioReady();
+    const handleTheaterStart = () => {
+      ensureAudioReady().catch(() => {});
       setTheaterWaiting(false);
       // 코드 자동 실행
       pendingPlayRef.current = code;
