@@ -258,6 +258,12 @@ button, [role="button"] {
 
 #root { min-height: 100vh; display: flex; flex-direction: column; }
 
+/* === 네비게이션 링크 호버 === */
+.nav-link:hover {
+  color: var(--color-accent) !important;
+  background-color: var(--color-accent-bg) !important;
+}
+
 /* === 공통 컨테이너 — 페이지 중앙 정렬 === */
 .container-main {
   width: 100%;

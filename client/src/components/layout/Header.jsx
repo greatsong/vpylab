@@ -74,22 +74,16 @@ export default function Header() {
       </Link>
 
       {/* 네비게이션 (데스크톱) */}
-      <nav
-        className="hidden md:flex items-center gap-3 px-2 py-1 rounded-xl"
-        style={{
-          border: '1px solid var(--color-border)',
-          backgroundColor: 'var(--color-bg-primary)',
-        }}
-      >
+      <nav className="hidden md:flex items-center gap-1">
         {navItems.map(({ key, path }) => (
           <Link
             key={key}
             to={path}
-            className="text-[13px] no-underline px-4 py-1.5 rounded-lg transition-all font-semibold"
+            className="nav-link text-[13px] no-underline px-4 py-1.5 rounded-full transition-all font-semibold"
             style={{
               color: isActive(path) ? 'var(--color-accent)' : 'var(--color-text-secondary)',
               backgroundColor: isActive(path) ? 'var(--color-accent-bg)' : 'transparent',
-              boxShadow: isActive(path) ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+              border: isActive(path) ? '1px solid var(--color-accent)' : '1px solid transparent',
             }}
             onMouseEnter={() => handlePrewarm(path)}
             onFocus={() => handlePrewarm(path)}
