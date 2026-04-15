@@ -617,7 +617,11 @@ async def rate(fps):
     if _check_stop():
         _send_commands()
         raise _StopExecution("실행이 중지되었습니다")
-    _send_commands()  # 누적된 커맨드를 한번에 전송
+    if _command_buffer:
+        _send_commands()  # 누적된 커맨드를 한번에 전송
+    else:
+        # 커맨드가 없어도 하트비트 전송 (활동 타이머 리셋용)
+        js.postMessage(json.dumps({"type": "batch", "commands": []}))
     delay = 1.0 / fps
     await asyncio.sleep(delay)
 
@@ -627,7 +631,10 @@ async def sleep(seconds):
     if _check_stop():
         _send_commands()
         raise _StopExecution("실행이 중지되었습니다")
-    _send_commands()
+    if _command_buffer:
+        _send_commands()
+    else:
+        js.postMessage(json.dumps({"type": "batch", "commands": []}))
     await asyncio.sleep(seconds)
 
 

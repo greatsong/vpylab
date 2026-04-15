@@ -84,12 +84,15 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
         break;
 
       case 'batch':
-        if (data.commands) {
+        if (data.commands?.length) {
           cb.onBatch?.(data.commands);
         }
+        // 빈 batch도 활동 타이머는 이미 위에서 리셋됨 (하트비트)
         break;
 
       case 'error':
+        clearTimeout(activityTimerRef.current);
+        clearTimeout(hardStopTimerRef.current);
         setStatus((prev) => prev === 'loading' ? 'error' : 'ready');
         cb.onError?.(data.error);
         break;

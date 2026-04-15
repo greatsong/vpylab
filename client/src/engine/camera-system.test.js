@@ -86,6 +86,7 @@ describe('camera-system', () => {
     scene.add(mesh);
 
     const system = new CameraSystem(camera, controls, scene, {
+      followZoomEnabled: true,
       zoomThreshold: 0.2,
     });
 
@@ -103,6 +104,56 @@ describe('camera-system', () => {
     mesh.geometry = new THREE.BoxGeometry(4, 4, 4);
     system.update();
 
+    expect(system._targetDistance).toBeGreaterThan(initialDistance);
+  });
+
+  it('기본값에서는 추적 중 자동 줌을 고정한다', () => {
+    const scene = new THREE.Scene();
+    const camera = createCamera();
+    const controls = createControls();
+
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshBasicMaterial(),
+    );
+    scene.add(mesh);
+
+    const system = new CameraSystem(camera, controls, scene);
+
+    system.resetToAutoFit();
+    const initialDistance = system._targetDistance;
+    system.mode = MODE.FOLLOW;
+
+    mesh.geometry.dispose();
+    mesh.geometry = new THREE.BoxGeometry(4, 4, 4);
+    system.update();
+
+    expect(system.isFollowZoomEnabled()).toBe(false);
+    expect(system._targetDistance).toBeCloseTo(initialDistance, 5);
+  });
+
+  it('자동 줌을 다시 켜면 추적 거리 계산을 재개한다', () => {
+    const scene = new THREE.Scene();
+    const camera = createCamera();
+    const controls = createControls();
+
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshBasicMaterial(),
+    );
+    scene.add(mesh);
+
+    const system = new CameraSystem(camera, controls, scene);
+
+    system.resetToAutoFit();
+    const initialDistance = system._targetDistance;
+    system.mode = MODE.FOLLOW;
+
+    mesh.geometry.dispose();
+    mesh.geometry = new THREE.BoxGeometry(4, 4, 4);
+    system.setFollowZoomEnabled(true);
+
+    expect(system.isFollowZoomEnabled()).toBe(true);
     expect(system._targetDistance).toBeGreaterThan(initialDistance);
   });
 });

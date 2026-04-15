@@ -32,6 +32,7 @@ const DEFAULTS = {
 
   // Smooth Follow
   followUpdateInterval: 1,   // 추적 모드에서 바운딩 갱신 주기 (프레임)
+  followZoomEnabled: false,  // 추적 중 자동 줌 사용 여부
   lerpFactor: 0.05,          // 카메라 이동 보간 속도 (0=안움직임, 1=즉시)
   zoomLerpFactor: 0.03,      // 줌 보간 속도
   followThreshold: 0.01,     // Auto-Fit → Follow 전환 감지 임계값
@@ -253,10 +254,12 @@ export default class CameraSystem {
             this._targetCenter.copy(state.focusCenter);
           }
 
-          const distanceRatio = Math.abs(nextDistance - this._targetDistance)
-            / Math.max(this._targetDistance, 1);
-          if (distanceRatio > this.options.zoomThreshold) {
-            this._targetDistance = nextDistance;
+          if (this.options.followZoomEnabled) {
+            const distanceRatio = Math.abs(nextDistance - this._targetDistance)
+              / Math.max(this._targetDistance, 1);
+            if (distanceRatio > this.options.zoomThreshold) {
+              this._targetDistance = nextDistance;
+            }
           }
         }
 
@@ -319,6 +322,28 @@ export default class CameraSystem {
    */
   getMode() {
     return this.mode;
+  }
+
+  /**
+   * 추적 중 자동 줌 설정
+   */
+  setFollowZoomEnabled(enabled) {
+    this.options.followZoomEnabled = Boolean(enabled);
+
+    if (!this.options.followZoomEnabled) return;
+
+    this.scene.updateMatrixWorld(true);
+    const state = this._computeCameraState();
+    if (state) {
+      this._targetDistance = this._distanceForBounds(state.radius);
+    }
+  }
+
+  /**
+   * 추적 중 자동 줌 설정 조회
+   */
+  isFollowZoomEnabled() {
+    return this.options.followZoomEnabled;
   }
 
   /**

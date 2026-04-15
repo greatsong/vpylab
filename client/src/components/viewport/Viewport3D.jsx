@@ -20,6 +20,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
   const axesRef = useRef(null);
   const [showAxes, setShowAxes] = useState(false);
   const [cameraMode, setCameraMode] = useState('auto-fit');
+  const [lockFollowZoom, setLockFollowZoom] = useState(true);
   const theme = useAppStore((s) => s.theme);
 
   useEffect(() => {
@@ -58,7 +59,9 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     controlsRef.current = controls;
 
     // 하이브리드 카메라 시스템
-    const camSystem = new CameraSystem(camera, controls, scene);
+    const camSystem = new CameraSystem(camera, controls, scene, {
+      followZoomEnabled: !lockFollowZoom,
+    });
     cameraSystemRef.current = camSystem;
 
     // 더블클릭 → Auto-Fit 리셋
@@ -152,6 +155,11 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     if (axesRef.current) axesRef.current.visible = showAxes;
   }, [showAxes]);
 
+  // 추적 중 자동 줌 잠금 토글
+  useEffect(() => {
+    cameraSystemRef.current?.setFollowZoomEnabled(!lockFollowZoom);
+  }, [lockFollowZoom]);
+
   // cameraSystemRef를 외부에 노출 (Sandbox/MissionPlay에서 사용)
   useEffect(() => {
     if (sceneRef && cameraSystemRef.current) {
@@ -171,7 +179,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     <div className="w-full h-full relative" style={{ touchAction: 'none' }}>
       <div ref={containerRef} className="w-full h-full" />
 
-      {/* 카메라 모드 표시 + 축 토글 */}
+      {/* 카메라 모드 표시 + 옵션 토글 */}
       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
         {/* 카메라 모드 뱃지 */}
         <button
@@ -191,6 +199,24 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
         >
           📷 {modeLabels[cameraMode] || '자동'}
         </button>
+
+        <label
+          className="flex items-center gap-1.5 text-xs cursor-pointer select-none px-2 py-1 rounded"
+          style={{
+            color: lockFollowZoom ? 'var(--color-accent)' : 'var(--color-text-muted)',
+            backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
+            border: lockFollowZoom ? '1px solid var(--color-accent)' : 'none',
+          }}
+          title="추적 중에는 카메라 거리를 고정해 어지러움을 줄입니다"
+        >
+          <input
+            type="checkbox"
+            checked={lockFollowZoom}
+            onChange={(e) => setLockFollowZoom(e.target.checked)}
+            className="accent-current"
+          />
+          줌 고정
+        </label>
 
         {/* 축 토글 */}
         <label

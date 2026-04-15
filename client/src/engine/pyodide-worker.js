@@ -247,8 +247,9 @@ sys.stderr = StringIO()
     self.postMessage({ type: 'done' });
   } catch (err) {
     const msg = err.message || String(err);
-    // _StopExecution은 사용자 중지이므로 에러가 아닌 정상 종료로 처리
-    if (msg.includes('_StopExecution') || msg.includes('실행이 중지되었습니다')) {
+    // 사용자 중지로 인한 예외는 에러가 아닌 정상 종료로 처리
+    // shouldStop 플래그 또는 예외 메시지로 판별
+    if (shouldStop || msg.includes('_StopExecution') || msg.includes('실행이 중지되었습니다')) {
       shouldStop = false;
       self.postMessage({ type: 'done' });
       return;
