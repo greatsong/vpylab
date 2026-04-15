@@ -31,35 +31,60 @@ function getAudioContext() {
 
 /**
  * 모바일 브라우저 오디오 잠금 해제
- * 첫 번째 사용자 제스처(클릭/터치)에서 AudioContext를 생성하고 resume한다.
- * 이후 Python 코드에서 호출하는 사운드가 정상 동작함.
+ * 사용자 제스처(클릭/터치/키)에서 AudioContext를 생성하고 resume한다.
+ * - touchend 사용 (iOS에서 touchstart는 스크롤로 간주될 수 있어 불안정)
+ * - resume 성공 후에만 리스너 제거 (비동기 실패 시 재시도 보장)
  */
 export function initAudioOnUserGesture() {
   if (audioUnlocked) return;
+
+  const EVENTS = ['click', 'touchend', 'keydown'];
+
+  const cleanup = () => {
+    EVENTS.forEach(e => document.removeEventListener(e, unlock, true));
+  };
+
   const unlock = () => {
     if (audioUnlocked) return;
     const ctx = getAudioContext();
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(() => {
-        audioUnlocked = true;
-      }).catch(() => {});
-    } else {
-      audioUnlocked = true;
-    }
-    // 무음 버퍼 재생 — iOS Safari 등에서 오디오 잠금 해제 트릭
-    const buf = ctx.createBuffer(1, 1, 22050);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(ctx.destination);
-    src.start(0);
 
-    document.removeEventListener('click', unlock, true);
-    document.removeEventListener('touchstart', unlock, true);
-    document.removeEventListener('keydown', unlock, true);
+    const onUnlocked = () => {
+      if (audioUnlocked) return;
+      audioUnlocked = true;
+      cleanup();
+    };
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(onUnlocked).catch(() => {});
+    } else {
+      onUnlocked();
+    }
+
+    // 무음 버퍼 재생 — iOS Safari 등에서 오디오 잠금 해제 트릭
+    try {
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch (_) { /* 중복 호출 시 무시 */ }
   };
-  document.addEventListener('click', unlock, true);
-  document.addEventListener('touchstart', unlock, true);
-  document.addEventListener('keydown', unlock, true);
+
+  EVENTS.forEach(e => document.addEventListener(e, unlock, true));
+}
+
+/**
+ * Run 버튼 등 사용자 클릭 핸들러 내부에서 직접 호출.
+ * iOS Safari는 사용자 제스처 콜스택 안에서 resume()해야 동작하므로
+ * 클릭 핸들러에서 이 함수를 동기적으로 호출해 확실히 잠금을 해제한다.
+ */
+export function ensureAudioResumed() {
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(() => { audioUnlocked = true; }).catch(() => {});
+  } else {
+    audioUnlocked = true;
+  }
 }
 
 // ===================================================================

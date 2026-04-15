@@ -9,7 +9,7 @@ import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, errorSound, stopBgm, initAudioOnUserGesture } from '../engine/sound-system';
+import { runSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioResumed } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
@@ -191,6 +191,8 @@ export default function Sandbox() {
 
   const handleRun = () => {
     if (!isReady) return;
+    // 클릭 핸들러 안에서 동기적으로 오디오 잠금 해제 (모바일 필수)
+    ensureAudioResumed();
     // 씬 + 레지스트리 초기화
     if (sceneRef.current) clearScene(sceneRef.current);
     clearRegistry();
@@ -322,10 +324,8 @@ export default function Sandbox() {
   // 극장 모드: 3D 뷰포트만 전체 화면
   if (theaterMode) {
     const handleTheaterStart = () => {
-      // 클릭으로 오디오 잠금 해제
-      initAudioOnUserGesture();
-      const ctx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
-      if (ctx.state === 'suspended') ctx.resume();
+      // 클릭 핸들러 안에서 동기적으로 오디오 잠금 해제 (모바일 필수)
+      ensureAudioResumed();
       setTheaterWaiting(false);
       // 코드 자동 실행
       pendingPlayRef.current = code;

@@ -126,11 +126,25 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
 
   // === 사운드 시스템 (Web Audio API) ===
   let audioCtx = null;
+  let audioUnlocked = false;
   function getAudioCtx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
+  // 모바일 오디오 잠금 해제 (iOS Safari 등)
+  (function initAudioGesture() {
+    const evts = ['click','touchend','keydown'];
+    const unlock = () => {
+      if (audioUnlocked) return;
+      const ctx = getAudioCtx();
+      const done = () => { if(!audioUnlocked){audioUnlocked=true; evts.forEach(e=>document.removeEventListener(e,unlock,true));} };
+      if (ctx.state==='suspended') ctx.resume().then(done).catch(()=>{});
+      else done();
+      try { const b=ctx.createBuffer(1,1,22050),s=ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination); s.start(0); } catch(_){}
+    };
+    evts.forEach(e=>document.addEventListener(e,unlock,true));
+  })();
 
   function beep(frequency = 440, duration = 0.3, type = 'sine', volume = 0.3) {
     const ctx = getAudioCtx();

@@ -10,7 +10,7 @@ import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { gradeA, gradeB, gradeNotes } from '../engine/grading-engine';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture } from '../engine/sound-system';
+import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioResumed } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
 import missions from '../data/missions';
 
@@ -107,6 +107,8 @@ export default function MissionPlay() {
 
   const handleRun = () => {
     if (!isReady) return;
+    // 클릭 핸들러 안에서 동기적으로 오디오 잠금 해제 (모바일 필수)
+    ensureAudioResumed();
     if (sceneRef.current) clearScene(sceneRef.current);
     // 카메라 자동 시스템 리셋
     if (sceneRef.current?._cameraSystem) {
