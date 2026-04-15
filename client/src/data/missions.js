@@ -806,6 +806,7 @@ print("시뮬레이션 완료!")
       { type: 'sphere', property: 'pos.y', operator: '<', value: 0 },
       { type: 'box', property: 'pos.y', operator: '==', value: -5, index: 0 },
     ],
+    targetObjectId: 'obj_2',
     referenceTrajectory: (() => {
       const t = [];
       let y = 5, vy = 0;
