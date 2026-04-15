@@ -42,6 +42,7 @@ export default function Sandbox() {
   const [remixInfo, setRemixInfo] = useState(null);
   const [editMode, setEditMode] = useState(null); // { id, githubRepo, title }
   const [theaterMode, setTheaterMode] = useState(false);
+  const [theaterWaiting, setTheaterWaiting] = useState(false); // 클릭 대기 중
   const sceneRef = useRef(null);
   const pendingBatchRef = useRef([]);  // 모바일: sceneRef 미 mount 시 버퍼
   const { user } = useAuthStore();
@@ -54,9 +55,9 @@ export default function Sandbox() {
     if (location.state?.sharedCode) {
       setCode(location.state.sharedCode);
       if (location.state?.autoPlay) {
-        // 극장 모드: 전체 화면 자동 실행
+        // 극장 모드: 클릭 대기 → 클릭 시 오디오 잠금 해제 + 실행
         setTheaterMode(true);
-        pendingPlayRef.current = location.state.sharedCode;
+        setTheaterWaiting(true);
       } else {
         setOutputs([{ text: t('share.externalCode'), type: 'warning', id: Date.now() }]);
       }
@@ -320,26 +321,67 @@ export default function Sandbox() {
 
   // 극장 모드: 3D 뷰포트만 전체 화면
   if (theaterMode) {
+    const handleTheaterStart = () => {
+      // 클릭으로 오디오 잠금 해제
+      initAudioOnUserGesture();
+      const ctx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      setTheaterWaiting(false);
+      // 코드 자동 실행
+      pendingPlayRef.current = code;
+      // pendingPlay useEffect가 isReady일 때 실행 처리
+      if (isReady) {
+        requestAnimationFrame(() => {
+          if (sceneRef.current) clearScene(sceneRef.current);
+          clearRegistry();
+          if (sceneRef.current?._cameraSystem) sceneRef.current._cameraSystem.onCodeStart();
+          setOutputs([]);
+          runSound();
+          runCode(code);
+        });
+      }
+    };
+
     return (
       <div className="h-screen w-screen relative" style={{ backgroundColor: '#000' }}>
         <Viewport3D sceneRef={sceneRef} />
 
+        {/* 클릭하여 시작 오버레이 */}
+        {theaterWaiting && (
+          <div
+            onClick={handleTheaterStart}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 200,
+              background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ textAlign: 'center', color: 'white' }}>
+              <div style={{ fontSize: 64, marginBottom: 16 }}>▶</div>
+              <div style={{ fontSize: 18, fontWeight: 600 }}>클릭하여 시작</div>
+            </div>
+          </div>
+        )}
+
         {/* 좌상단: 코드 보기 버튼 */}
-        <button
-          onClick={() => setTheaterMode(false)}
-          style={{
-            position: 'fixed', top: 16, left: 16, zIndex: 100,
-            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
-            border: 'none', borderRadius: 10,
-            color: 'white', padding: '8px 14px', fontSize: 13, fontWeight: 600,
-            cursor: 'pointer', transition: 'opacity 0.2s',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-          }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-        >
-          {'</>'} 코드 보기
-        </button>
+        {!theaterWaiting && (
+          <button
+            onClick={() => { handleStop(); setTheaterMode(false); }}
+            style={{
+              position: 'fixed', top: 16, left: 16, zIndex: 100,
+              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+              border: 'none', borderRadius: 10,
+              color: 'white', padding: '8px 14px', fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', transition: 'opacity 0.2s',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            {'</>'} 코드 보기
+          </button>
+        )}
 
         {/* 좌하단: 정지 버튼 (실행 중일 때만) */}
         {isRunning && (
