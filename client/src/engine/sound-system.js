@@ -14,19 +14,68 @@
 
 let audioCtx = null;
 let audioUnlocked = false;
+let audioUnlockPending = null;
 
 // 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
 let _onNotePlay = null;
 export function setNotePlayCallback(cb) { _onNotePlay = cb; }
 
 function getAudioContext() {
+  const AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext;
+  if (!AudioContextClass) return null;
   if (!audioCtx) {
-    audioCtx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
+    audioCtx = new AudioContextClass();
   }
   if (audioCtx.state === 'suspended') {
     audioCtx.resume().catch(() => {});
   }
   return audioCtx;
+}
+
+function playSilentUnlockBuffer(ctx) {
+  try {
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch (_) { /* 중복 호출 시 무시 */ }
+}
+
+export async function ensureAudioReady() {
+  const ctx = getAudioContext();
+  if (!ctx) return false;
+
+  if (ctx.state === 'running') {
+    audioUnlocked = true;
+    return true;
+  }
+
+  if (!audioUnlockPending) {
+    audioUnlockPending = (async () => {
+      try {
+        await ctx.resume();
+      } catch (_) {
+        // 모바일 정책으로 실패하면 다음 사용자 제스처에서 다시 시도
+      }
+
+      playSilentUnlockBuffer(ctx);
+
+      if (ctx.state === 'running') {
+        audioUnlocked = true;
+      }
+
+      return ctx.state === 'running';
+    })().finally(() => {
+      audioUnlockPending = null;
+    });
+  }
+
+  return audioUnlockPending;
+}
+
+export function isAudioUnlocked() {
+  return audioUnlocked || audioCtx?.state === 'running';
 }
 
 /**
@@ -36,11 +85,13 @@ function getAudioContext() {
  */
 function withRunningContext(fn) {
   const ctx = getAudioContext();
+  if (!ctx) return;
   if (ctx.state === 'running') {
+    audioUnlocked = true;
     fn(ctx);
   } else {
-    ctx.resume().then(() => {
-      if (ctx.state === 'running') fn(ctx);
+    ensureAudioReady().then((ready) => {
+      if (ready) fn(ctx);
     }).catch(() => {});
   }
 }
@@ -62,28 +113,9 @@ export function initAudioOnUserGesture() {
 
   const unlock = () => {
     if (audioUnlocked) return;
-    const ctx = getAudioContext();
-
-    const onUnlocked = () => {
-      if (audioUnlocked) return;
-      audioUnlocked = true;
-      cleanup();
-    };
-
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(onUnlocked).catch(() => {});
-    } else {
-      onUnlocked();
-    }
-
-    // 무음 버퍼 재생 — iOS Safari 등에서 오디오 잠금 해제 트릭
-    try {
-      const buf = ctx.createBuffer(1, 1, 22050);
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(ctx.destination);
-      src.start(0);
-    } catch (_) { /* 중복 호출 시 무시 */ }
+    ensureAudioReady().then((ready) => {
+      if (ready) cleanup();
+    }).catch(() => {});
   };
 
   EVENTS.forEach(e => document.addEventListener(e, unlock, true));
@@ -95,12 +127,7 @@ export function initAudioOnUserGesture() {
  * 클릭 핸들러에서 이 함수를 동기적으로 호출해 확실히 잠금을 해제한다.
  */
 export function ensureAudioResumed() {
-  const ctx = getAudioContext();
-  if (ctx.state === 'suspended') {
-    ctx.resume().then(() => { audioUnlocked = true; }).catch(() => {});
-  } else {
-    audioUnlocked = true;
-  }
+  void ensureAudioReady();
 }
 
 // ===================================================================

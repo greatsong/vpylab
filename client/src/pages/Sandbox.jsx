@@ -9,7 +9,7 @@ import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioResumed } from '../engine/sound-system';
+import { runSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, isAudioUnlocked } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
@@ -189,10 +189,9 @@ export default function Sandbox() {
     initWorker();
   }, [initWorker]);
 
-  const handleRun = () => {
+  const handleRun = async () => {
     if (!isReady) return;
-    // 클릭 핸들러 안에서 동기적으로 오디오 잠금 해제 (모바일 필수)
-    ensureAudioResumed();
+    await ensureAudioReady();
     // 씬 + 레지스트리 초기화
     if (sceneRef.current) clearScene(sceneRef.current);
     clearRegistry();
@@ -212,6 +211,14 @@ export default function Sandbox() {
     if (isReady && pendingPlayRef.current) {
       const playCode = pendingPlayRef.current;
       pendingPlayRef.current = null;
+      if (!isAudioUnlocked() && (globalThis.navigator?.maxTouchPoints || 0) > 0) {
+        setOutputs([{
+          text: '모바일에서는 소리를 위해 실행 버튼을 한 번 눌러 시작해 주세요.',
+          type: 'warning',
+          id: Date.now(),
+        }]);
+        return;
+      }
       // 다음 프레임에서 실행 (코드 state 반영 보장)
       requestAnimationFrame(() => {
         if (sceneRef.current) clearScene(sceneRef.current);
@@ -323,9 +330,8 @@ export default function Sandbox() {
 
   // 극장 모드: 3D 뷰포트만 전체 화면
   if (theaterMode) {
-    const handleTheaterStart = () => {
-      // 클릭 핸들러 안에서 동기적으로 오디오 잠금 해제 (모바일 필수)
-      ensureAudioResumed();
+    const handleTheaterStart = async () => {
+      await ensureAudioReady();
       setTheaterWaiting(false);
       // 코드 자동 실행
       pendingPlayRef.current = code;

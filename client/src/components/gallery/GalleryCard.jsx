@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { ensureAudioReady } from '../../engine/sound-system';
 
 /* ---------- pythink2 스타일 아이콘 (둥근 사각형 + 그라데이션 + 흰색 라인) ---------- */
 
@@ -130,9 +131,10 @@ export default function GalleryCard({ work }) {
   const author = work.vpylab_profiles?.display_name || '익명';
   const style = CATEGORY_STYLES[work.category] || CATEGORY_STYLES.free;
 
-  const handlePlay = (e) => {
+  const handlePlay = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    await ensureAudioReady();
     navigate(`/sandbox?play=${work.id}`);
   };
 

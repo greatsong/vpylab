@@ -129,6 +129,18 @@ describe('sound-system', () => {
       expect(mockCtx.resume).toHaveBeenCalled();
     });
 
+    it('ensureAudioReady가 resume 완료 후 running 상태를 반환한다', async () => {
+      mockCtx.state = 'suspended';
+      mockCtx.resume.mockImplementation(() => {
+        mockCtx.state = 'running';
+        return Promise.resolve();
+      });
+
+      const { ensureAudioReady } = await import('./sound-system.js');
+      await expect(ensureAudioReady()).resolves.toBe(true);
+      expect(mockCtx.resume).toHaveBeenCalled();
+    });
+
     it('4가지 파형 타입을 지원한다', async () => {
       const { beep } = await import('./sound-system.js');
       for (const type of ['sine', 'square', 'sawtooth', 'triangle']) {

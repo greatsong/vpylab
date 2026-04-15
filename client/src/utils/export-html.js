@@ -127,21 +127,48 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
   // === 사운드 시스템 (Web Audio API) ===
   let audioCtx = null;
   let audioUnlocked = false;
+  let audioUnlockPending = null;
   function getAudioCtx() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    if (!audioCtx) audioCtx = new AudioContextClass();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
+  }
+  function playSilentUnlockBuffer(ctx) {
+    try {
+      const b = ctx.createBuffer(1, 1, 22050);
+      const s = ctx.createBufferSource();
+      s.buffer = b;
+      s.connect(ctx.destination);
+      s.start(0);
+    } catch (_) {}
+  }
+  async function ensureAudioReady() {
+    const ctx = getAudioCtx();
+    if (!ctx) return false;
+    if (ctx.state === 'running') {
+      audioUnlocked = true;
+      return true;
+    }
+    if (!audioUnlockPending) {
+      audioUnlockPending = (async () => {
+        try { await ctx.resume(); } catch (_) {}
+        playSilentUnlockBuffer(ctx);
+        if (ctx.state === 'running') audioUnlocked = true;
+        return ctx.state === 'running';
+      })().finally(() => { audioUnlockPending = null; });
+    }
+    return audioUnlockPending;
   }
   // 모바일 오디오 잠금 해제 (iOS Safari 등)
   (function initAudioGesture() {
     const evts = ['click','touchend','keydown'];
     const unlock = () => {
       if (audioUnlocked) return;
-      const ctx = getAudioCtx();
-      const done = () => { if(!audioUnlocked){audioUnlocked=true; evts.forEach(e=>document.removeEventListener(e,unlock,true));} };
-      if (ctx.state==='suspended') ctx.resume().then(done).catch(()=>{});
-      else done();
-      try { const b=ctx.createBuffer(1,1,22050),s=ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination); s.start(0); } catch(_){}
+      ensureAudioReady().then((ready) => {
+        if (ready) evts.forEach(e => document.removeEventListener(e, unlock, true));
+      }).catch(() => {});
     };
     evts.forEach(e=>document.addEventListener(e,unlock,true));
   })();
@@ -1153,9 +1180,9 @@ async def 악기(instrument, name, duration=0.5, volume=None):
   startBtn.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(13,17,23,0.95);z-index:200;cursor:pointer;flex-direction:column;gap:16px;';
   startBtn.innerHTML = '<div style="font-size:48px">▶</div><div style="font-size:16px;color:#8b949e">클릭하여 시작</div>';
   document.body.appendChild(startBtn);
-  startBtn.addEventListener('click', () => {
+  startBtn.addEventListener('click', async () => {
     startBtn.remove();
-    try { getAudioCtx(); } catch(e) {}
+    await ensureAudioReady();
     run();
   }, { once: true });
   </script>
