@@ -79,7 +79,7 @@ export default function Missions() {
         </div>
 
         {/* 미션 카드 그리드 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" style={{ alignItems: 'start' }}>
           {filteredMissions.map((mission) => {
             const color = CAT_COLORS[mission.category];
             const completed = missionProgress[mission.id]?.passed;
@@ -132,14 +132,14 @@ export default function Missions() {
                 </h3>
 
                 {/* 설명 */}
-                <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--color-text-muted)' }}>
+                <p className="text-[13px] leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
                   {mission.description[lang]}
                 </p>
 
                 {/* 하단: 카테고리 + 점수 */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-                    style={{ backgroundColor: `${color}12`, color }}>
+                  <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded"
+                    style={{ backgroundColor: `${color}20`, color }}>
                     {t(`categories.${mission.category}`)}
                   </span>
                   {score != null && (
