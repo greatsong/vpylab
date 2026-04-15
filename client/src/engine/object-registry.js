@@ -14,10 +14,11 @@ let noteHistory = [];
  * 새 객체를 레지스트리에 등록
  * @param {string} type - 객체 타입 ('sphere', 'box', 'arrow' 등)
  * @param {object} props - 초기 속성 { pos, color, radius, ... }
+ * @param {string} [externalId] - 외부에서 지정한 ID (Python Worker의 cmd.id)
  * @returns {string} 객체 ID
  */
-export function registerObject(type, props = {}) {
-  const id = `obj_${nextId++}`;
+export function registerObject(type, props = {}, externalId) {
+  const id = externalId || `obj_${nextId++}`;
   registry.set(id, {
     id,
     type,

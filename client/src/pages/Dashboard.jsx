@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Header from '../components/layout/Header';
 import { useI18n } from '../i18n';
 import useAuthStore from '../stores/authStore';
@@ -6,7 +6,7 @@ import ClassManager from '../components/dashboard/ClassManager';
 import StudentProgress from '../components/dashboard/StudentProgress';
 
 export default function Dashboard() {
-  const { user, profile } = useAuthStore();
+  const { user } = useAuthStore();
   const isTeacher = useAuthStore((s) => s.isTeacher());
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('classes');

@@ -88,11 +88,6 @@ export function preprocessCode(code) {
   const warnings = [];
   const ASYNC_FUNCTIONS = ['rate', 'sleep', '\uc74c\ud45c', '\uc545\uae30'];
 
-  // 패턴: 독립적인 rate( 또는 sleep( (앞에 다른 단어 문자가 없는 경우)
-  const patterns = ASYNC_FUNCTIONS.map(fn =>
-    new RegExp(`(?<!\\w)${fn}\\s*\\(`, 'g')
-  );
-
   const processedLines = lines.map((line, lineNum) => {
     const commentStart = findCommentStart(line);
     // 주석 이전 부분만 처리

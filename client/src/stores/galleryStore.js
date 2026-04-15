@@ -18,7 +18,10 @@ async function attachProfiles(works) {
   for (const p of (profiles || [])) profileMap[p.id] = p;
   return works.map(w => ({
     ...w,
-    vpylab_profiles: profileMap[w.user_id] || { display_name: '익명', avatar_url: null },
+    vpylab_profiles: profileMap[w.user_id] || {
+      display_name: w.author_alias || '익명',
+      avatar_url: null
+    },
   }));
 }
 
@@ -43,11 +46,10 @@ const useGalleryStore = create((set, get) => ({
 
     set({ loading: true });
 
-    // 성능: 목록 조회에서 thumbnail은 가져오되 크기를 줄이려면 Storage 이관 필요
-    // TODO: thumbnail을 Supabase Storage URL로 이관 후 이 쿼리에서 제거
+    // 성능: 목록에서 thumbnail 제외 — GalleryCard에서 Intersection Observer로 개별 lazy fetch
     let query = supabase
       .from('vpylab_gallery')
-      .select('id, title, description, thumbnail, category, view_count, like_count, remix_count, github_url, created_at, user_id')
+      .select('id, title, description, category, view_count, like_count, remix_count, github_url, created_at, user_id')
       .eq('is_public', true)
       .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
@@ -87,9 +89,12 @@ const useGalleryStore = create((set, get) => ({
 
   // === 추천 작품 조회 (Home 하이라이트) ===
   fetchFeaturedWorks: async () => {
+    // 성능: thumbnail 제외, 단일 쿼리로 인기순 폴백 통합
+    const cols = 'id, title, like_count, view_count, github_url, user_id';
+
     let { data } = await supabase
       .from('vpylab_gallery')
-      .select('id, title, thumbnail, like_count, view_count, github_url, user_id')
+      .select(cols)
       .eq('is_public', true)
       .eq('is_featured', true)
       .order('created_at', { ascending: false })
@@ -98,7 +103,7 @@ const useGalleryStore = create((set, get) => ({
     if (!data || data.length < 4) {
       const { data: popular } = await supabase
         .from('vpylab_gallery')
-        .select('id, title, thumbnail, like_count, view_count, github_url, user_id')
+        .select(cols)
         .eq('is_public', true)
         .order('like_count', { ascending: false })
         .limit(6);
@@ -117,6 +122,16 @@ const useGalleryStore = create((set, get) => ({
       .eq('id', id)
       .single();
     return data?.code || null;
+  },
+
+  // === 썸네일 개별 조회 (GalleryCard lazy loading용) ===
+  fetchThumbnail: async (id) => {
+    const { data } = await supabase
+      .from('vpylab_gallery')
+      .select('thumbnail')
+      .eq('id', id)
+      .single();
+    return data?.thumbnail || null;
   },
 
   // === 작품 상세 조회 ===
@@ -168,7 +183,7 @@ const useGalleryStore = create((set, get) => ({
   },
 
   // === 작품 발행 (갤러리 + GitHub Pages) ===
-  publishWork: async ({ title, description, code, thumbnail, category, remixFrom, htmlContent, githubToken }) => {
+  publishWork: async ({ title, description, code, thumbnail, category, remixFrom, htmlContent, githubToken, authorAlias }) => {
     set({ publishing: true });
 
     try {
@@ -183,7 +198,7 @@ const useGalleryStore = create((set, get) => ({
         const res = await fetch(`${API_BASE}/api/publish`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: htmlContent, title, githubToken }),
+          body: JSON.stringify({ code: htmlContent, pythonCode: code, title, description, category, remixFrom, githubToken }),
         });
         const result = await res.json();
 
@@ -209,6 +224,7 @@ const useGalleryStore = create((set, get) => ({
           remix_from: remixFrom || null,
           github_url: githubUrl,
           github_repo: githubRepo,
+          author_alias: authorAlias || '익명',
         })
         .select()
         .single();
@@ -298,7 +314,7 @@ const useGalleryStore = create((set, get) => ({
         const res = await fetch(`${API_BASE}/api/publish/update`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ githubRepo, title, code: htmlContent, githubToken }),
+          body: JSON.stringify({ githubRepo, title, code: htmlContent, pythonCode: code, description, githubToken }),
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error);
@@ -345,13 +361,21 @@ const useGalleryStore = create((set, get) => ({
 
       if (!source) throw new Error('원본 작품을 찾을 수 없습니다.');
 
-      // 갤러리에 새 작품 등록
+      // 갤러리에 새 작품 등록 (비공개 초안)
       const { data: { user } } = await supabase.auth.getUser();
+
+      // 현재 사용자 프로필에서 display_name 가져오기
+      const { data: myProfile } = await supabase
+        .from('vpylab_profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .single();
+
       const { data, error } = await supabase
         .from('vpylab_gallery')
         .insert({
           user_id: user.id,
-          title: `${source.title} (Fork)`,
+          title: `${source.title} (Remix)`,
           description: source.description,
           code: source.code,
           thumbnail: source.thumbnail,
@@ -359,14 +383,15 @@ const useGalleryStore = create((set, get) => ({
           remix_from: sourceId,
           github_url: result.githubUrl,
           github_repo: result.forkedRepo,
+          author_alias: myProfile?.display_name || '익명',
+          is_public: false,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // 원본의 remix_count 증가
-      supabase.rpc('vpylab_increment_remix', { work_id: sourceId });
+      // remix_count 증가는 재발행 시에만 처리
 
       set({ publishing: false });
       return { data, githubUrl: result.githubUrl, forkedRepo: result.forkedRepo };

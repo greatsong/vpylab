@@ -40,6 +40,7 @@ export default function MissionPlay() {
   const [aiLoading, setAiLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('editor');
   const sceneRef = useRef(null);
+  const pendingBatchRef = useRef([]);  // 모바일: sceneRef 미 mount 시 버퍼
 
   // 미션이 없으면 목록으로 이동
   useEffect(() => {
@@ -71,7 +72,15 @@ export default function MissionPlay() {
 
   const handleBatch = useCallback((commands) => {
     if (sceneRef.current) {
+      if (pendingBatchRef.current.length > 0) {
+        for (const pending of pendingBatchRef.current) {
+          processBatch(pending, sceneRef.current);
+        }
+        pendingBatchRef.current = [];
+      }
       processBatch(commands, sceneRef.current);
+    } else {
+      pendingBatchRef.current.push(commands);
     }
   }, []);
 
@@ -130,18 +139,41 @@ export default function MissionPlay() {
     if (mission.gradeType === 'notes') {
       // 음악 미션: 재생된 노트 시퀀스와 정답 비교
       result = gradeNotes(mission.expectedNotes);
+    } else if (mission.gradeType === 'code') {
+      // 코드 검사형 미션: 특정 패턴이 코드에 있는지 확인
+      const checks = mission.codeChecks || [];
+      const results = [];
+      for (const check of checks) {
+        const matches = code.match(new RegExp(check.pattern, 'g'));
+        const count = matches ? matches.length : 0;
+        const passed = count >= (check.minCount || 1);
+        results.push({
+          passed,
+          message: passed
+            ? `✅ ${check.message} (${count}개 사용)`
+            : `❌ ${check.message} (현재 ${count}개)`,
+        });
+      }
+      const passedAll = results.every(r => r.passed);
+      result = {
+        grade: 'code',
+        passed: passedAll,
+        score: passedAll ? 100 : Math.round((results.filter(r => r.passed).length / results.length) * 100),
+        results,
+        message: passedAll ? '✅ 코드 검사 통과!' : '코드를 더 작성해 보세요.',
+      };
     } else if (mission.gradeType === 'run') {
       // 탐험형 미션: 코드 실행 자체가 목표 (실행했으면 통과)
       result = { grade: 'run', passed: true, score: 100, message: '✅ 실행 완료!' };
     } else if (mission.gradeType === 'A') {
       result = gradeA(mission.assertions);
     } else if (mission.gradeType === 'B') {
-      result = gradeB('obj_1', mission.referenceTrajectory, 0.9);
+      result = gradeB(mission.targetObjectId || 'obj_1', mission.referenceTrajectory, 0.9);
     } else {
       // A+B 복합
       const aResult = gradeA(mission.assertions);
       if (mission.referenceTrajectory) {
-        const bResult = gradeB('obj_1', mission.referenceTrajectory, 0.8);
+        const bResult = gradeB(mission.targetObjectId || 'obj_1', mission.referenceTrajectory, 0.8);
         result = {
           grade: 'A+B',
           passed: aResult.passed && bResult.passed,

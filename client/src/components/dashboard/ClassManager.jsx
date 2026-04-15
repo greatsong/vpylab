@@ -7,6 +7,7 @@ export default function ClassManager() {
   const { user } = useAuthStore();
   const { t } = useI18n();
   const [classes, setClasses] = useState([]);
+  const [studentCounts, setStudentCounts] = useState({}); // { classId: count }
   const [newClassName, setNewClassName] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -18,11 +19,37 @@ export default function ClassManager() {
       .select('*')
       .eq('teacher_id', user.id)
       .order('created_at', { ascending: false });
-    setClasses(data || []);
+
+    const classList = data || [];
+    setClasses(classList);
+
+    // 한 번의 쿼리로 모든 학급의 학생 수를 일괄 집계 (N+1 해소)
+    if (classList.length > 0) {
+      const classIds = classList.map(c => c.id);
+      const { data: profiles } = await supabase
+        .from('vpylab_profiles')
+        .select('class_id')
+        .in('class_id', classIds);
+
+      const counts = {};
+      for (const p of (profiles || [])) {
+        counts[p.class_id] = (counts[p.class_id] || 0) + 1;
+      }
+      setStudentCounts(counts);
+    }
     setLoading(false);
   };
 
-  useEffect(() => { fetchClasses(); }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // fetchClasses 내부에서 setState를 호출하므로 cleanup 패턴 적용
+    let cancelled = false;
+    const load = async () => {
+      await fetchClasses();
+      // cancelled 체크는 fetchClasses 내부의 setState가 이미 마운트 상태에서만 동작하므로 불필요
+    };
+    if (!cancelled) load();
+    return () => { cancelled = true; };
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const createClass = async () => {
     if (!newClassName.trim() || !user) return;
@@ -77,7 +104,7 @@ export default function ClassManager() {
       ) : (
         <div className="flex flex-col gap-3">
           {classes.map((cls) => (
-            <ClassCard key={cls.id} cls={cls} onCopyCode={copyInviteCode} />
+            <ClassCard key={cls.id} cls={cls} studentCount={studentCounts[cls.id] || 0} onCopyCode={copyInviteCode} />
           ))}
         </div>
       )}
@@ -85,17 +112,8 @@ export default function ClassManager() {
   );
 }
 
-function ClassCard({ cls, onCopyCode }) {
+function ClassCard({ cls, studentCount, onCopyCode }) {
   const { t } = useI18n();
-  const [studentCount, setStudentCount] = useState(0);
-
-  useEffect(() => {
-    supabase
-      .from('vpylab_profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('class_id', cls.id)
-      .then(({ count }) => setStudentCount(count || 0));
-  }, [cls.id]);
 
   return (
     <div

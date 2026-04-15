@@ -10,6 +10,7 @@
  */
 
 import { Router } from 'express';
+import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();
@@ -85,13 +86,72 @@ async function githubFetch(url, token, options = {}) {
 }
 
 /**
+ * GitHub Contents API로 단일 파일 커밋 헬퍼
+ * 기존 파일이 있으면 업데이트, 없으면 생성
+ */
+async function commitFile(owner, repoName, path, content, message, token) {
+  let existingSha = null;
+  try {
+    const existing = await githubFetch(
+      `https://api.github.com/repos/${owner}/${repoName}/contents/${path}`,
+      token,
+    );
+    existingSha = existing.sha;
+  } catch { /* 파일 없음 */ }
+
+  const body = {
+    message,
+    content: Buffer.from(content, 'utf-8').toString('base64'),
+    branch: 'main',
+  };
+  if (existingSha) body.sha = existingSha;
+
+  await githubFetch(
+    `https://api.github.com/repos/${owner}/${repoName}/contents/${path}`,
+    token,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+/**
+ * README.md 자동 생성
+ */
+function generateReadme(title, description, owner, repoName, remixFrom) {
+  let readme = `# ${title}\n\n> VPyLab에서 만든 3D Python 작품\n\n${description || ''}\n\n`;
+  readme += `## 실행하기\n[VPyLab에서 열기](https://vpylab.com) | [GitHub Pages](https://${owner}.github.io/${repoName}/)\n\n`;
+  if (remixFrom) {
+    readme += `## 원본\n이 작품은 [원본 작품](${remixFrom})에서 영감을 받았습니다.\n\n`;
+  }
+  readme += `---\n*VPyLab — 3D 프로그래밍 교육 플랫폼*\n`;
+  return readme;
+}
+
+/**
+ * vpylab.json 메타데이터 생성
+ */
+function generateMeta(title, category, remixFrom) {
+  return JSON.stringify({
+    title,
+    category: category || 'free',
+    remixFrom: remixFrom || null,
+    vpylabVersion: '1.0',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }, null, 2);
+}
+
+/**
  * POST /api/publish
- * Body: { code, title, githubToken }
+ * Body: { code, pythonCode, title, description, category, remixFrom, existingRepo, githubToken }
  * Returns: { githubUrl, githubRepo, warnings }
  */
 router.post('/', publishLimiter, async (req, res) => {
   try {
-    const { code, title, githubToken } = req.body;
+    const { code, pythonCode, title, description, category, remixFrom, existingRepo, githubToken } = req.body;
 
     // === 입력 검증 ===
     if (!code || typeof code !== 'string') {
@@ -111,13 +171,22 @@ router.post('/', publishLimiter, async (req, res) => {
 
     // 민감 정보 검사
     const warnings = checkSensitiveContent(code);
+    if (pythonCode) {
+      warnings.push(...checkSensitiveContent(pythonCode));
+    }
 
     // === 1단계: GitHub 사용자 정보 확인 ===
     const user = await githubFetch('https://api.github.com/user', githubToken);
     const owner = user.login;
 
-    // === 2단계: 리포 이름 결정 ===
-    const repoName = `vpylab-${sanitizeRepoName(title)}`;
+    // === 2단계: 리포 이름 결정 (기존 리포가 있으면 재사용) ===
+    let repoName;
+    if (existingRepo) {
+      repoName = existingRepo.split('/').pop();
+    } else {
+      const uid = crypto.randomUUID().slice(0, 6);
+      repoName = `vpylab-${sanitizeRepoName(title)}-${uid}`;
+    }
 
     // === 3단계: 리포 확인/생성 ===
     let repoExists = false;
@@ -134,10 +203,10 @@ router.post('/', publishLimiter, async (req, res) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: repoName,
-          description: `VPyLab — ${title}`,
+          description: `VPyLab 3D Python 작품 — ${title}`,
           homepage: `https://${owner}.github.io/${repoName}/`,
           auto_init: true,         // README 자동 생성 (빈 리포 방지)
-          has_issues: false,
+          has_issues: true,
           has_wiki: false,
         }),
       });
@@ -146,43 +215,24 @@ router.post('/', publishLimiter, async (req, res) => {
       await new Promise(r => setTimeout(r, 1500));
     }
 
-    // === 4단계: index.html 커밋 ===
-    // 기존 파일이 있으면 sha 필요 (업데이트)
-    let existingSha = null;
-    try {
-      const existing = await githubFetch(
-        `https://api.github.com/repos/${owner}/${repoName}/contents/index.html`,
-        githubToken,
-      );
-      existingSha = existing.sha;
-    } catch {
-      // 파일 없음 (새 생성)
+    // === 4단계: 멀티 파일 커밋 ===
+    const commitMsg = repoExists
+      ? `✏️ VPyLab에서 업데이트: ${title}`
+      : `🚀 VPyLab에서 발행: ${title}`;
+
+    // main.py — 순수 Python 소스 (있으면 커밋)
+    if (pythonCode) {
+      await commitFile(owner, repoName, 'main.py', pythonCode, commitMsg, githubToken);
     }
 
-    // HTML 생성은 클라이언트에서 했으므로 코드만 받아서 간단한 래퍼 사용
-    // 실제로는 클라이언트에서 generateStandaloneHTML() 결과를 보내야 함
-    // 여기서는 code 필드에 이미 완성된 HTML이 들어온다고 가정
-    const htmlContent = code;
-    const contentBase64 = Buffer.from(htmlContent, 'utf-8').toString('base64');
+    // vpylab.json — 메타데이터
+    await commitFile(owner, repoName, 'vpylab.json', generateMeta(title, category, remixFrom), commitMsg, githubToken);
 
-    const commitBody = {
-      message: `🚀 VPyLab에서 발행: ${title}`,
-      content: contentBase64,
-      branch: 'main',
-    };
-    if (existingSha) {
-      commitBody.sha = existingSha;  // 기존 파일 업데이트
-    }
+    // README.md — 자동 생성
+    await commitFile(owner, repoName, 'README.md', generateReadme(title, description, owner, repoName, remixFrom), commitMsg, githubToken);
 
-    await githubFetch(
-      `https://api.github.com/repos/${owner}/${repoName}/contents/index.html`,
-      githubToken,
-      {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(commitBody),
-      },
-    );
+    // index.html — 완성 HTML (기존과 동일)
+    await commitFile(owner, repoName, 'index.html', code, commitMsg, githubToken);
 
     // === 5단계: GitHub Pages 활성화 ===
     try {
@@ -250,26 +300,49 @@ router.post('/fetch', publishLimiter, async (req, res) => {
       return res.status(400).json({ error: 'repo와 githubToken이 필요합니다.' });
     }
 
-    // index.html 읽기
-    const file = await githubFetch(
-      `https://api.github.com/repos/${repo}/contents/index.html`,
-      githubToken,
-    );
-
-    const html = Buffer.from(file.content, 'base64').toString('utf-8');
-
-    // Base64로 임베딩된 Python 코드 추출
-    const match = html.match(/atob\('([A-Za-z0-9+/=]+)'\)/);
+    // main.py 우선 시도
     let code = '';
-    if (match) {
-      code = Buffer.from(match[1], 'base64').toString('utf-8');
+    let title = '';
+    try {
+      const mainPy = await githubFetch(
+        `https://api.github.com/repos/${repo}/contents/main.py`,
+        githubToken,
+      );
+      code = Buffer.from(mainPy.content, 'base64').toString('utf-8');
+    } catch {
+      // main.py 없음 → index.html fallback
     }
 
-    // 제목 추출
-    const titleMatch = html.match(/<title>(.+?)(?:\s*[—·-]\s*VPyLab)?<\/title>/);
-    const title = titleMatch ? titleMatch[1].trim() : '';
+    if (!code) {
+      // 기존 index.html 방식 (하위 호환)
+      const file = await githubFetch(
+        `https://api.github.com/repos/${repo}/contents/index.html`,
+        githubToken,
+      );
+      const html = Buffer.from(file.content, 'base64').toString('utf-8');
 
-    res.json({ code, title, sha: file.sha });
+      // Base64로 임베딩된 Python 코드 추출
+      const match = html.match(/atob\('([A-Za-z0-9+/=]+)'\)/);
+      if (match) {
+        code = Buffer.from(match[1], 'base64').toString('utf-8');
+      }
+
+      // 제목 추출 (HTML fallback)
+      const titleMatch = html.match(/<title>(.+?)(?:\s*[—·-]\s*VPyLab)?<\/title>/);
+      if (titleMatch) title = titleMatch[1].trim();
+    }
+
+    // vpylab.json에서 메타데이터 읽기 시도
+    try {
+      const meta = await githubFetch(
+        `https://api.github.com/repos/${repo}/contents/vpylab.json`,
+        githubToken,
+      );
+      const metaContent = JSON.parse(Buffer.from(meta.content, 'base64').toString('utf-8'));
+      if (!title && metaContent.title) title = metaContent.title;
+    } catch { /* 없으면 무시 */ }
+
+    res.json({ code, title });
   } catch (err) {
     console.error('[Fetch] 오류:', err.message);
     if (err.message.includes('Bad credentials') || err.message.includes('401')) {
@@ -281,12 +354,12 @@ router.post('/fetch', publishLimiter, async (req, res) => {
 
 /**
  * PUT /api/publish/update
- * 기존 GitHub 리포의 index.html을 업데이트
- * Body: { githubRepo, title, code (완성 HTML), githubToken }
+ * 기존 GitHub 리포의 파일들을 업데이트
+ * Body: { githubRepo, title, description, category, remixFrom, code (완성 HTML), pythonCode, githubToken }
  */
 router.put('/update', publishLimiter, async (req, res) => {
   try {
-    const { githubRepo, title, code, githubToken } = req.body;
+    const { githubRepo, title, description, category, remixFrom, code, pythonCode, githubToken } = req.body;
 
     if (!githubRepo || !code || !githubToken) {
       return res.status(400).json({ error: '필수 항목이 누락되었습니다.' });
@@ -296,37 +369,23 @@ router.put('/update', publishLimiter, async (req, res) => {
       return res.status(400).json({ error: '코드가 너무 큽니다. (최대 500KB)' });
     }
 
-    // 기존 파일 sha 조회
-    let existingSha = null;
-    try {
-      const existing = await githubFetch(
-        `https://api.github.com/repos/${githubRepo}/contents/index.html`,
-        githubToken,
-      );
-      existingSha = existing.sha;
-    } catch {
-      // 파일이 없으면 새로 생성
+    const [owner, repoName] = githubRepo.split('/');
+    const commitMsg = `✏️ VPyLab에서 업데이트: ${title || '작품 수정'}`;
+
+    // main.py — 순수 Python 소스 (있으면 커밋)
+    if (pythonCode) {
+      await commitFile(owner, repoName, 'main.py', pythonCode, commitMsg, githubToken);
     }
 
-    const contentBase64 = Buffer.from(code, 'utf-8').toString('base64');
-    const commitBody = {
-      message: `✏️ VPyLab에서 업데이트: ${title || '작품 수정'}`,
-      content: contentBase64,
-      branch: 'main',
-    };
-    if (existingSha) commitBody.sha = existingSha;
+    // vpylab.json — 메타데이터
+    await commitFile(owner, repoName, 'vpylab.json', generateMeta(title || '작품', category, remixFrom), commitMsg, githubToken);
 
-    await githubFetch(
-      `https://api.github.com/repos/${githubRepo}/contents/index.html`,
-      githubToken,
-      {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(commitBody),
-      },
-    );
+    // README.md — 자동 생성
+    await commitFile(owner, repoName, 'README.md', generateReadme(title || '작품', description, owner, repoName, remixFrom), commitMsg, githubToken);
 
-    const [owner, repoName] = githubRepo.split('/');
+    // index.html — 완성 HTML
+    await commitFile(owner, repoName, 'index.html', code, commitMsg, githubToken);
+
     res.json({
       success: true,
       githubUrl: `https://${owner}.github.io/${repoName}/`,

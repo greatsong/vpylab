@@ -31,9 +31,12 @@ const DEFAULTS = {
   fitDelay: 300,              // 코드 실행 후 Auto-Fit까지 딜레이 (ms)
 
   // Smooth Follow
+  followUpdateInterval: 1,   // 추적 모드에서 바운딩 갱신 주기 (프레임)
   lerpFactor: 0.05,          // 카메라 이동 보간 속도 (0=안움직임, 1=즉시)
   zoomLerpFactor: 0.03,      // 줌 보간 속도
-  followThreshold: 0.01,     // 이 이하 변화량은 무시
+  followThreshold: 0.01,     // Auto-Fit → Follow 전환 감지 임계값
+  followCenterDeadzone: 0.03, // 추적 중 이 이하 미세 중심 변화는 무시
+  zoomThreshold: 0.08,       // 추적 중 이 이하 거리 변화율은 무시
 
   // 기본 카메라
   defaultDistance: 8,         // 물체 없을 때 기본 거리
@@ -89,8 +92,13 @@ export default class CameraSystem {
       if (ignoreTypes.some(t => child.constructor.name === t)) return;
       if (child.type === 'GridHelper' || child.type === 'AxesHelper') return;
 
-      // Mesh 또는 Group (arrow는 Group)
-      if (child.isMesh || (child.isGroup && child.parent === this.scene)) {
+      // Group은 최상위만, Mesh는 Group 바깥의 독립 객체만 추적 대상으로 사용
+      if (child.isGroup && child.parent === this.scene) {
+        objects.push(child);
+        return;
+      }
+
+      if (child.isMesh && !child.parent?.isGroup) {
         objects.push(child);
       }
     });
@@ -99,43 +107,79 @@ export default class CameraSystem {
   }
 
   /**
-   * 모든 VPython 객체의 바운딩 박스 계산
-   * @returns {{ center: THREE.Vector3, size: THREE.Vector3, radius: number } | null}
+   * 단일 객체의 실제 렌더 바운딩 박스를 합친다.
    */
-  _computeBounds() {
+  _expandBoxByObject(box, obj) {
+    let expanded = false;
+
+    if (obj.isGroup) {
+      obj.traverse((child) => {
+        if (!child.isMesh || !child.geometry) return;
+        child.geometry.computeBoundingBox();
+        if (!child.geometry.boundingBox) return;
+        const childBox = child.geometry.boundingBox.clone();
+        childBox.applyMatrix4(child.matrixWorld);
+        box.union(childBox);
+        expanded = true;
+      });
+      return expanded;
+    }
+
+    if (obj.isMesh && obj.geometry) {
+      obj.geometry.computeBoundingBox();
+      if (!obj.geometry.boundingBox) return false;
+      const meshBox = obj.geometry.boundingBox.clone();
+      meshBox.applyMatrix4(obj.matrixWorld);
+      box.union(meshBox);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * 카메라 프레이밍용 상태 계산
+   * - frameCenter/radius: 실제 렌더 바운딩 기준 (초기 Auto-Fit)
+   * - focusCenter: 객체 앵커 위치 기준 (추적 시 흔들림 완화)
+   * @returns {{ center: THREE.Vector3, size: THREE.Vector3, radius: number, focusCenter: THREE.Vector3 } | null}
+   */
+  _computeCameraState() {
     const objects = this._getVPythonObjects();
     if (objects.length === 0) return null;
 
-    const box = new THREE.Box3();
+    const frameBox = new THREE.Box3();
+    const focusBox = new THREE.Box3();
+    const worldPosition = new THREE.Vector3();
+    let hasFrameBounds = false;
+    let hasFocusBounds = false;
+
     for (const obj of objects) {
-      if (obj.isGroup) {
-        // Group은 자식들의 바운딩 박스를 합침
-        obj.traverse((child) => {
-          if (child.isMesh) {
-            child.geometry.computeBoundingBox();
-            const childBox = child.geometry.boundingBox.clone();
-            childBox.applyMatrix4(child.matrixWorld);
-            box.union(childBox);
-          }
-        });
-      } else if (obj.isMesh && obj.geometry) {
-        obj.geometry.computeBoundingBox();
-        const meshBox = obj.geometry.boundingBox.clone();
-        meshBox.applyMatrix4(obj.matrixWorld);
-        box.union(meshBox);
-      }
+      hasFrameBounds = this._expandBoxByObject(frameBox, obj) || hasFrameBounds;
+
+      obj.getWorldPosition(worldPosition);
+      focusBox.expandByPoint(worldPosition);
+      hasFocusBounds = true;
     }
 
-    if (box.isEmpty()) return null;
+    const activeFrameBox = hasFrameBounds ? frameBox : (hasFocusBounds ? focusBox : null);
+    if (!activeFrameBox || activeFrameBox.isEmpty()) return null;
 
     const center = new THREE.Vector3();
     const size = new THREE.Vector3();
-    box.getCenter(center);
-    box.getSize(size);
+    activeFrameBox.getCenter(center);
+    activeFrameBox.getSize(size);
 
-    const radius = size.length() / 2;
+    const focusCenter = hasFocusBounds ? new THREE.Vector3() : center.clone();
+    if (hasFocusBounds) {
+      focusBox.getCenter(focusCenter);
+    }
 
-    return { center, size, radius };
+    return {
+      center,
+      size,
+      radius: size.length() / 2,
+      focusCenter,
+    };
   }
 
   /**
@@ -158,16 +202,17 @@ export default class CameraSystem {
    * Auto-Fit: 모든 물체에 맞춰 카메라 줌
    */
   _autoFit() {
-    const bounds = this._computeBounds();
-    if (!bounds) {
+    this.scene.updateMatrixWorld(true);
+    const state = this._computeCameraState();
+    if (!state) {
       this._targetCenter.set(0, 0, 0);
       this._targetDistance = this.options.defaultDistance;
       return;
     }
 
-    this._targetCenter.copy(bounds.center);
-    this._targetDistance = this._distanceForBounds(bounds.radius);
-    this._lastBounds = bounds;
+    this._targetCenter.copy(state.center);
+    this._targetDistance = this._distanceForBounds(state.radius);
+    this._lastBounds = state;
   }
 
   /**
@@ -179,23 +224,43 @@ export default class CameraSystem {
     // 수동 모드면 아무것도 하지 않음
     if (this.mode === MODE.MANUAL) return;
 
-    // Auto-Fit / Follow 모드: 바운딩 박스 업데이트 (매 10프레임)
-    if (this._frameCount % 10 === 0 || this.mode === MODE.AUTO_FIT) {
-      const bounds = this._computeBounds();
+    // Auto-Fit은 매 프레임, Follow는 더 자주 측정해 계단식 움직임을 줄인다.
+    const shouldUpdateState = this.mode === MODE.AUTO_FIT
+      || this._frameCount % this.options.followUpdateInterval === 0;
 
-      if (bounds) {
-        this._targetCenter.copy(bounds.center);
-        this._targetDistance = this._distanceForBounds(bounds.radius);
+    if (shouldUpdateState) {
+      this.scene.updateMatrixWorld(true);
+      const state = this._computeCameraState();
 
-        // 물체가 움직이고 있으면 Follow 모드로 전환
-        if (this.mode === MODE.AUTO_FIT && this._lastBounds) {
-          const centerDiff = bounds.center.distanceTo(this._lastBounds.center);
-          if (centerDiff > this.options.followThreshold) {
-            this.mode = MODE.FOLLOW;
+      if (state) {
+        const nextDistance = this._distanceForBounds(state.radius);
+
+        if (this.mode === MODE.AUTO_FIT) {
+          this._targetCenter.copy(state.center);
+          this._targetDistance = nextDistance;
+
+          // Follow 전환은 실제 렌더 박스가 아니라 객체 앵커 이동으로 감지한다.
+          if (this._lastBounds) {
+            const centerDiff = state.focusCenter.distanceTo(this._lastBounds.focusCenter);
+            if (centerDiff > this.options.followThreshold) {
+              this.mode = MODE.FOLLOW;
+              this._targetCenter.copy(state.focusCenter);
+            }
+          }
+        } else {
+          const centerDiff = state.focusCenter.distanceTo(this._targetCenter);
+          if (centerDiff > this.options.followCenterDeadzone) {
+            this._targetCenter.copy(state.focusCenter);
+          }
+
+          const distanceRatio = Math.abs(nextDistance - this._targetDistance)
+            / Math.max(this._targetDistance, 1);
+          if (distanceRatio > this.options.zoomThreshold) {
+            this._targetDistance = nextDistance;
           }
         }
 
-        this._lastBounds = bounds;
+        this._lastBounds = state;
       }
     }
 

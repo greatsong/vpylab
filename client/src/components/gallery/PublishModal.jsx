@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGalleryStore from '../../stores/galleryStore';
 import useAuthStore from '../../stores/authStore';
-import { generateStandaloneHTML } from '../../utils/export-html';
-import { useI18n } from '../../i18n';
+// export-html은 큰 모듈이므로 발행 시점에 lazy import
+
 
 const CATEGORIES = [
   { value: 'free', label: '자유', en: 'Free' },
@@ -16,21 +16,22 @@ const CATEGORIES = [
 ];
 
 export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFrom }) {
-  const { t } = useI18n();
   const navigate = useNavigate();
   const publishWork = useGalleryStore(s => s.publishWork);
   const publishing = useGalleryStore(s => s.publishing);
   const getGitHubToken = useAuthStore(s => s.getGitHubToken);
   const isGitHubUser = useAuthStore(s => s.isGitHubUser);
   const signInWithGitHub = useAuthStore(s => s.signInWithGitHub);
-  const user = useAuthStore(s => s.user);
+  const profile = useAuthStore(s => s.profile);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [authorAlias, setAuthorAlias] = useState(profile?.display_name || '');
   const [category, setCategory] = useState('free');
   const [publishToGitHub, setPublishToGitHub] = useState(true);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [githubTokenExpired, setGithubTokenExpired] = useState(false);
 
   if (!isOpen) return null;
 
@@ -55,10 +56,11 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
       if (publishToGitHub && isGitHubUser()) {
         githubToken = await getGitHubToken();
         if (githubToken) {
+          const { generateStandaloneHTML } = await import('../../utils/export-html');
           htmlContent = generateStandaloneHTML(code, title.trim());
         } else {
-          // provider_token이 만료됨 — GitHub 없이 갤러리에만 발행
-          console.warn('[Publish] GitHub provider_token 만료, 갤러리에만 발행합니다.');
+          setGithubTokenExpired(true);
+          // 경고 표시하지만 갤러리에는 발행 가능하도록 진행
         }
       }
 
@@ -71,6 +73,7 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
         remixFrom,
         htmlContent,
         githubToken,
+        authorAlias: authorAlias.trim() || '익명',
       });
 
       if (res.error) {
@@ -87,9 +90,11 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
   const handleClose = () => {
     setTitle('');
     setDescription('');
+    setAuthorAlias(profile?.display_name || '');
     setCategory('free');
     setResult(null);
     setError(null);
+    setGithubTokenExpired(false);
     onClose();
   };
 
@@ -183,6 +188,27 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
               />
             </label>
 
+            {/* 공개 이름 */}
+            <label>
+              공개 이름
+              <div className="author-alias-row">
+                <input
+                  type="text"
+                  value={authorAlias}
+                  onChange={e => setAuthorAlias(e.target.value)}
+                  placeholder="갤러리에 표시될 이름"
+                  maxLength={30}
+                />
+                <button
+                  type="button"
+                  className={`anon-btn ${!authorAlias.trim() ? 'active' : ''}`}
+                  onClick={() => setAuthorAlias('')}
+                >
+                  익명
+                </button>
+              </div>
+            </label>
+
             {/* 설명 */}
             <label>
               설명
@@ -227,6 +253,20 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
                 <button onClick={signInWithGitHub} className="btn-github">
                   GitHub으로 로그인
                 </button>
+              </div>
+            )}
+
+            {/* GitHub 토큰 만료 경고 */}
+            {githubTokenExpired && (
+              <div className="github-token-warning">
+                <span>⚠️</span>
+                <div>
+                  <p>GitHub 인증이 만료되었습니다.</p>
+                  <p>갤러리에만 발행됩니다. GitHub Pages도 원하시면 재로그인해주세요.</p>
+                  <button onClick={signInWithGitHub} className="btn-github-small">
+                    GitHub 재로그인
+                  </button>
+                </div>
               </div>
             )}
 
@@ -456,6 +496,39 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
 
         .publish-warnings { margin: 8px 0; }
         .publish-warnings p { font-size: 12px; color: var(--color-warning, #FDCB6E); margin: 4px 0; }
+
+        .author-alias-row {
+          display: flex; gap: 8px; margin-top: 6px;
+        }
+        .author-alias-row input { flex: 1; }
+        .anon-btn {
+          padding: 8px 14px; border-radius: var(--radius-md, 12px);
+          border: 1px solid var(--color-border, #2E2E38);
+          background: transparent;
+          color: var(--color-text-secondary, #94A1B2);
+          cursor: pointer; font-size: 13px; white-space: nowrap;
+          transition: all 0.15s;
+        }
+        .anon-btn.active {
+          background: var(--color-accent-bg, rgba(127, 90, 240, 0.12));
+          border-color: var(--color-accent, #7F5AF0);
+          color: var(--color-accent, #7F5AF0);
+        }
+
+        .github-token-warning {
+          display: flex; gap: 10px; align-items: flex-start;
+          background: rgba(253, 203, 110, 0.08);
+          border: 1px solid rgba(253, 203, 110, 0.25);
+          padding: 12px 14px; border-radius: var(--radius-md, 12px);
+          margin: 8px 0; font-size: 13px;
+          color: var(--color-warning, #FDCB6E);
+        }
+        .github-token-warning p { margin: 0 0 6px; }
+        .btn-github-small {
+          padding: 5px 12px; border-radius: var(--radius-sm, 6px);
+          border: none; cursor: pointer;
+          background: #238636; color: white; font-size: 12px; font-weight: 600;
+        }
       `}</style>
     </div>
   );

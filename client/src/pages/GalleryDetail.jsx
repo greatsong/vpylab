@@ -9,7 +9,7 @@ import { useI18n } from '../i18n';
 export default function GalleryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { t, locale: lang } = useI18n();
+  const { locale: lang } = useI18n();
   const { currentWork, loading, fetchWork, toggleLike, checkIfLiked, forkWork } = useGalleryStore();
   const user = useAuthStore(s => s.user);
   const getGitHubToken = useAuthStore(s => s.getGitHubToken);
@@ -52,14 +52,37 @@ export default function GalleryDetail() {
   const handleEdit = () => navigate(`/sandbox?edit=${id}`);
 
   const handleFork = async () => {
-    if (!user || !isGitHubUser() || !currentWork.github_repo) return;
+    if (!user) return;
+    if (!isGitHubUser()) {
+      alert(lang === 'ko' ? 'GitHub 로그인이 필요합니다.' : 'GitHub login required.');
+      return;
+    }
+    if (!currentWork.github_repo) return;
+
     setForking(true);
     const token = await getGitHubToken();
-    if (!token) { setForking(false); return; }
+    if (!token) {
+      setForking(false);
+      if (confirm(lang === 'ko'
+        ? 'GitHub 인증이 만료되었습니다. 재로그인하시겠습니까?'
+        : 'GitHub auth expired. Re-login?')) {
+        sessionStorage.setItem('vpylab_pending_fork', JSON.stringify({
+          sourceId: id,
+          sourceRepo: currentWork.github_repo
+        }));
+        const { signInWithGitHub } = useAuthStore.getState();
+        signInWithGitHub();
+      }
+      return;
+    }
+
     const result = await forkWork({ sourceId: id, sourceRepo: currentWork.github_repo, githubToken: token });
     setForking(false);
-    if (result.error) alert('Fork failed: ' + result.error);
-    else navigate(`/sandbox?edit=${result.data.id}`);
+    if (result.error) {
+      alert((lang === 'ko' ? 'Fork 실패: ' : 'Fork failed: ') + result.error);
+    } else {
+      navigate(`/sandbox?edit=${result.data.id}`);
+    }
   };
 
   return (
@@ -185,7 +208,9 @@ export default function GalleryDetail() {
                   className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border-none cursor-pointer font-semibold text-sm text-white"
                   style={{ backgroundColor: '#00B894', opacity: forking ? 0.6 : 1 }}>
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.25a2.25 2.25 0 00-1 4.34v1.16A2.25 2.25 0 005 13a2.25 2.25 0 001-4.34V7.59A2.25 2.25 0 005 3.25zM11 3.25a2.25 2.25 0 00-1 4.34v.16c0 .83-.67 1.5-1.5 1.5H7V7.59A2.25 2.25 0 005 3.25"/></svg>
-                  {forking ? (lang === 'ko' ? 'Fork 중...' : 'Forking...') : 'Fork'}
+                  {forking
+                    ? (lang === 'ko' ? 'Remix 중...' : 'Remixing...')
+                    : (lang === 'ko' ? '내 것으로 Remix' : 'Remix to Mine')}
                 </button>
               )}
 
@@ -203,6 +228,23 @@ export default function GalleryDetail() {
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
                   Pages
                 </a>
+              )}
+
+              {currentWork.github_repo && (
+                <>
+                  <a href={`https://github.com/${currentWork.github_repo}`} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full no-underline font-medium text-sm transition-all"
+                    style={{ border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-primary)' }}>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                    Repo
+                  </a>
+                  <a href={`https://github.com/${currentWork.github_repo}/issues/new`} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full no-underline font-medium text-sm transition-all"
+                    style={{ border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-primary)' }}>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/><path fillRule="evenodd" d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"/></svg>
+                    {lang === 'ko' ? '피드백' : 'Feedback'}
+                  </a>
+                </>
               )}
 
               <button onClick={() => setShowCode(!showCode)}

@@ -16,7 +16,8 @@ export default function Home() {
   const { t, locale: lang } = useI18n();
   const featuredWorks = useGalleryStore(s => s.featuredWorks);
   const fetchFeaturedWorks = useGalleryStore(s => s.fetchFeaturedWorks);
-  const getCompletedCount = useAppStore(s => s.getCompletedCount);
+  // missionProgress를 직접 구독 → 미션 완료 시 진행률이 반응형으로 갱신
+  const missionProgress = useAppStore(s => s.missionProgress);
 
   useEffect(() => { fetchFeaturedWorks(); }, []);
 
@@ -85,7 +86,8 @@ export default function Home() {
               {catList.map((cat) => {
                 const color = CAT_COLORS[cat.id] || '#6C5CE7';
                 const mCount = getMissionsByCategory(cat.id).length;
-                const cCount = getCompletedCount(cat.id);
+                const cCount = Object.entries(missionProgress)
+                  .filter(([id, p]) => id.startsWith(cat.id) && p.passed).length;
                 const pct = mCount > 0 ? Math.round((cCount / mCount) * 100) : 0;
 
                 return (

@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { useI18n } from '../../i18n';
 import useAppStore from '../../stores/appStore';
 import useAuthStore from '../../stores/authStore';
+import { prewarm } from '../../engine/pyodide-singleton';
 
 export default function Header() {
   const { theme, setTheme, locale, setLocale, THEMES } = useAppStore();
@@ -25,8 +26,9 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // 페이지 이동 시 모바일 메뉴 닫기
   useEffect(() => {
-    setMobileMenuOpen(false);
+    setMobileMenuOpen(false); // eslint-disable-line react-hooks/set-state-in-effect
   }, [location.pathname]);
 
   const navItems = [
@@ -37,6 +39,12 @@ export default function Header() {
   ];
 
   const isActive = (path) => location.pathname === path;
+
+  // Pyodide Worker를 미리 워밍업하는 라우트
+  const prewarmPaths = new Set(['/sandbox', '/missions']);
+  const handlePrewarm = useCallback((path) => {
+    if (prewarmPaths.has(path)) prewarm();
+  }, []);
 
   return (
     <header
@@ -70,6 +78,8 @@ export default function Header() {
               color: isActive(path) ? 'var(--color-accent)' : 'var(--color-text-secondary)',
               backgroundColor: isActive(path) ? 'var(--color-accent-bg)' : 'transparent',
             }}
+            onMouseEnter={() => handlePrewarm(path)}
+            onFocus={() => handlePrewarm(path)}
           >
             {t(`nav.${key}`)}
           </Link>
@@ -153,6 +163,8 @@ export default function Header() {
                       backgroundColor: active ? 'var(--color-accent-bg)' : 'transparent',
                     }}
                     onClick={() => setMobileMenuOpen(false)}
+                    onMouseEnter={() => handlePrewarm(path)}
+                    onFocus={() => handlePrewarm(path)}
                   >
                     {t(`nav.${key}`)}
                   </Link>

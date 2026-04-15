@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import useAppStore from '../../stores/appStore';
@@ -151,14 +151,6 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     if (gridRef.current) gridRef.current.visible = showAxes;
     if (axesRef.current) axesRef.current.visible = showAxes;
   }, [showAxes]);
-
-  // 외부에서 코드 실행 시 Auto-Fit 트리거
-  const triggerAutoFit = useCallback(() => {
-    if (cameraSystemRef.current) {
-      cameraSystemRef.current.onCodeStart();
-      setCameraMode('auto-fit');
-    }
-  }, []);
 
   // cameraSystemRef를 외부에 노출 (Sandbox/MissionPlay에서 사용)
   useEffect(() => {

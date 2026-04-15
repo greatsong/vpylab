@@ -5,7 +5,7 @@
  * C등급: AI 루브릭 (70-90%) — Step 7에서 구현
  */
 
-import { getSnapshot, getTrajectory, getAllObjects, getNoteHistory } from './object-registry';
+import { getSnapshot, getTrajectory, getNoteHistory } from './object-registry';
 
 /**
  * A등급 채점: 정적 assertion 검사

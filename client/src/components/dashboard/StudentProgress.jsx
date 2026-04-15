@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useI18n } from '../../i18n';
 import useAuthStore from '../../stores/authStore';
 import { supabase } from '../../lib/supabase';
@@ -63,13 +63,26 @@ export default function StudentProgress() {
     fetchData();
   }, [selectedClassId]);
 
-  // 학생별 완료 미션 수 계산
-  const getStudentStats = (studentId) => {
-    const studentSubs = submissions.filter((s) => s.user_id === studentId);
-    const uniqueMissions = new Set(studentSubs.map((s) => s.mission_id));
-    const totalScore = studentSubs.reduce((sum, s) => sum + s.score, 0);
-    return { completed: uniqueMissions.size, totalScore };
-  };
+  // 학생별 완료 미션 수를 한 번에 사전 계산 (렌더당 O(n) → Map 1회)
+  const studentStatsMap = useMemo(() => {
+    const map = {};
+    for (const sub of submissions) {
+      if (!map[sub.user_id]) {
+        map[sub.user_id] = { missions: new Set(), totalScore: 0 };
+      }
+      map[sub.user_id].missions.add(sub.mission_id);
+      map[sub.user_id].totalScore += sub.score;
+    }
+    // Set → count 변환
+    const result = {};
+    for (const [id, stats] of Object.entries(map)) {
+      result[id] = { completed: stats.missions.size, totalScore: stats.totalScore };
+    }
+    return result;
+  }, [submissions]);
+
+  const getStudentStats = (studentId) =>
+    studentStatsMap[studentId] || { completed: 0, totalScore: 0 };
 
   if (loading && classes.length === 0) {
     return <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{t('common.loading')}</p>;

@@ -12,7 +12,7 @@ import { clearRegistry } from '../engine/object-registry';
 import { runSound, errorSound, stopBgm, initAudioOnUserGesture } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
-import { generateStandaloneHTML, downloadHTML } from '../utils/export-html';
+// export-html은 큰 모듈이므로 사용 시점에 lazy import
 import useAuthStore from '../stores/authStore';
 import useCodeStore from '../stores/codeStore';
 import useGalleryStore from '../stores/galleryStore';
@@ -42,6 +42,7 @@ export default function Sandbox() {
   const [remixInfo, setRemixInfo] = useState(null);
   const [editMode, setEditMode] = useState(null); // { id, githubRepo, title }
   const sceneRef = useRef(null);
+  const pendingBatchRef = useRef([]);  // 모바일: sceneRef 미 mount 시 버퍼
   const { user } = useAuthStore();
   const { saveCode, autoSave, clearAutoSave, saveStatus } = useCodeStore();
   const [searchParams] = useSearchParams();
@@ -142,7 +143,17 @@ export default function Sandbox() {
 
   const handleBatch = useCallback((commands) => {
     if (sceneRef.current) {
+      // 먼저 대기 중인 batch가 있으면 flush
+      if (pendingBatchRef.current.length > 0) {
+        for (const pending of pendingBatchRef.current) {
+          processBatch(pending, sceneRef.current);
+        }
+        pendingBatchRef.current = [];
+      }
       processBatch(commands, sceneRef.current);
+    } else {
+      // 모바일: 뷰포트 미 mount 시 버퍼에 저장
+      pendingBatchRef.current.push(commands);
     }
   }, []);
 
@@ -224,7 +235,8 @@ export default function Sandbox() {
     setTimeout(() => setShareMsg(''), 2000);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const { generateStandaloneHTML, downloadHTML } = await import('../utils/export-html');
     const html = generateStandaloneHTML(code, 'My VPyLab Project');
     // 파일명: 깃헙아이디_파일이름_날짜시간.html
     const githubId = user?.user_metadata?.user_name
@@ -237,13 +249,25 @@ export default function Sandbox() {
     downloadHTML(html, filename);
   };
 
+  const openPublishModal = useCallback(() => {
+    if (!user) {
+      useAuthStore.getState().setAuthModalOpen(true);
+      return;
+    }
+    const thumb = sceneRef.current?._renderer ? captureThumbnail(sceneRef.current._renderer.domElement) : null;
+    setPublishThumbnail(thumb);
+    setPublishModalOpen(true);
+  }, [user]);
+
   const handleSaveAs = async () => {
     if (!user) {
       useAuthStore.getState().setAuthModalOpen(true);
       return;
     }
-    const title = prompt(t('code.saveTitlePlaceholder')) || `코드 ${new Date().toLocaleDateString()}`;
-    const { data, error } = await saveCode({ title, code });
+    const title = prompt(t('code.saveTitlePlaceholder'));
+    if (title === null) return;  // 취소 시 저장하지 않음
+    const finalTitle = title || `코드 ${new Date().toLocaleDateString()}`;
+    const { data, error } = await saveCode({ title: finalTitle, code });
     if (!error && data) {
       useCodeStore.getState().setCurrentCodeId(data.id);
       setSaveMsg(t('code.saved'));
@@ -259,6 +283,7 @@ export default function Sandbox() {
       addOutput('GitHub 인증이 필요합니다.', 'error');
       return;
     }
+    const { generateStandaloneHTML } = await import('../utils/export-html');
     const htmlContent = generateStandaloneHTML(code, editMode.title);
     addOutput('GitHub에 업데이트 중...', 'log');
     const result = await useGalleryStore.getState().updateWork({
@@ -330,12 +355,7 @@ export default function Sandbox() {
             {t('code.myCodes')}
           </button>
           <button
-            onClick={() => {
-              if (!user) { useAuthStore.getState().setAuthModalOpen(true); return; }
-              const thumb = sceneRef.current?._renderer ? captureThumbnail(sceneRef.current._renderer.domElement) : null;
-              setPublishThumbnail(thumb);
-              setPublishModalOpen(true);
-            }}
+            onClick={openPublishModal}
             className="toolbar-btn --publish"
           >
             {t('gallery.publish') || '갤러리에 올리기'}
@@ -367,13 +387,7 @@ export default function Sandbox() {
                 { label: t('editor.examples') || '예제', action: () => { setShowExamples(true); setMobileMore(false); } },
                 { label: t('code.myCodes'), action: () => { setShowSavedCodes(true); setMobileMore(false); } },
                 { label: t('gallery.publish') || '갤러리에 올리기', action: () => {
-                  if (!user) {
-                    useAuthStore.getState().setAuthModalOpen(true);
-                  } else {
-                    const thumb = sceneRef.current?._renderer ? captureThumbnail(sceneRef.current._renderer.domElement) : null;
-                    setPublishThumbnail(thumb);
-                    setPublishModalOpen(true);
-                  }
+                  openPublishModal();
                   setMobileMore(false);
                 }},
               ].map((item, i) => (
@@ -557,7 +571,10 @@ export default function Sandbox() {
       {/* 저장된 코드 사이드패널 */}
       {showSavedCodes && (
         <SavedCodeList
-          onLoadCode={(loadedCode) => setCode(loadedCode)}
+          onLoadCode={(loadedCode, codeId) => {
+            setCode(loadedCode);
+            if (codeId) useCodeStore.getState().setCurrentCodeId(codeId);
+          }}
           onClose={() => setShowSavedCodes(false)}
         />
       )}

@@ -121,6 +121,16 @@ export function subscribe(listener) {
 }
 
 /**
+ * Prewarm — Worker를 미리 생성하고 초기화 시작
+ * 아직 Worker가 없을 때만 동작 (idle 상태일 때)
+ */
+export function prewarm() {
+  if (status === 'idle') {
+    initIfNeeded();
+  }
+}
+
+/**
  * 현재 상태 조회
  */
 export function getStatus() {

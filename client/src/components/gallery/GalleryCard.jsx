@@ -1,8 +1,39 @@
+import { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import useGalleryStore from '../../stores/galleryStore';
 
 export default function GalleryCard({ work }) {
   const navigate = useNavigate();
   const author = work.vpylab_profiles?.display_name || '익명';
+  const cardRef = useRef(null);
+  const [thumbnail, setThumbnail] = useState(work.thumbnail || null);
+  const [loading, setLoading] = useState(false);
+  const fetchedRef = useRef(false);
+
+  // Intersection Observer: 뷰포트 진입 시 썸네일 lazy fetch
+  useEffect(() => {
+    if (thumbnail || fetchedRef.current) return;
+    const el = cardRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !fetchedRef.current) {
+          fetchedRef.current = true;
+          observer.disconnect();
+          setLoading(true);
+          useGalleryStore.getState().fetchThumbnail(work.id).then((data) => {
+            setThumbnail(data);
+            setLoading(false);
+          });
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [work.id, thumbnail]);
 
   const handlePlay = (e) => {
     e.preventDefault();
@@ -11,10 +42,14 @@ export default function GalleryCard({ work }) {
   };
 
   return (
-    <Link to={`/gallery/${work.id}`} className="gallery-card">
+    <Link to={`/gallery/${work.id}`} className="gallery-card" ref={cardRef}>
       <div className="gallery-card-thumb">
-        {work.thumbnail ? (
-          <img src={work.thumbnail} alt={work.title} loading="lazy" />
+        {thumbnail ? (
+          <img src={thumbnail} alt={work.title} loading="lazy" />
+        ) : loading ? (
+          <div className="gallery-card-placeholder">
+            <div className="thumb-loading-spinner" />
+          </div>
         ) : (
           <div className="gallery-card-placeholder">
             <svg width="32" height="32" viewBox="0 0 32 32" fill="none">

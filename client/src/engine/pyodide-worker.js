@@ -1,3 +1,4 @@
+/* global importScripts */
 /**
  * VPyLab — Pyodide Web Worker
  *
@@ -15,7 +16,6 @@ const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`
 
 let pyodide = null;
 let vpythonApiCode = null;
-let vpythonApiLoaded = false;
 let shouldStop = false;
 let micropipLoaded = false;
 
@@ -74,7 +74,7 @@ for _name in _vpython_names:
         setattr(vpython_module, _name, eval(_name))
 sys.modules['vpython'] = vpython_module
 `);
-      vpythonApiLoaded = true;
+      // vpython API 로딩 완료
     }
 
     sendProgress(85, '보안 샌드박스 설정 중...');

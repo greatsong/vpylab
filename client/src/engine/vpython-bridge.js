@@ -133,7 +133,7 @@ function createObject(cmd, scene) {
       if (cmd.pos) light.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
       scene.add(light);
       meshRegistry.set(cmd.id, light);
-      registerObject('local_light', { pos: cmd.pos || [0, 0, 0], color: cmd.color || [1, 1, 1] });
+      registerObject('local_light', { pos: cmd.pos || [0, 0, 0], color: cmd.color || [1, 1, 1] }, cmd.id);
       return;
     }
 
@@ -149,7 +149,7 @@ function createObject(cmd, scene) {
       scene.add(light);
       scene.add(light.target);
       meshRegistry.set(cmd.id, light);
-      registerObject('distant_light', { direction: dir, color: cmd.color || [1, 1, 1] });
+      registerObject('distant_light', { direction: dir, color: cmd.color || [1, 1, 1] }, cmd.id);
       return;
     }
 
@@ -175,11 +175,11 @@ function createObject(cmd, scene) {
     createTrail(cmd, scene);
   }
 
-  // 객체 레지스트리에 등록
+  // 객체 레지스트리에 등록 (Python Worker의 cmd.id를 그대로 사용)
   registerObject(cmd.type, {
     pos: cmd.pos || [0, 0, 0],
     color: cmd.color || [1, 1, 1],
-  });
+  }, cmd.id);
 }
 
 /**
@@ -376,7 +376,7 @@ export function processBatch(commands, scene) {
           createTrail(cmd, scene);
         }
 
-        registerObject('compound', { pos: cmd.pos || [0, 0, 0] });
+        registerObject('compound', { pos: cmd.pos || [0, 0, 0] }, cmd.id);
         break;
       }
       case 'sound':
@@ -396,7 +396,7 @@ export function processBatch(commands, scene) {
  */
 export function clearScene(scene) {
   // 메시 레지스트리 정리
-  for (const [id, mesh] of meshRegistry) {
+  for (const [, mesh] of meshRegistry) {
     scene.remove(mesh);
     if (mesh.geometry) mesh.geometry.dispose();
     if (mesh.material) mesh.material.dispose();
@@ -411,7 +411,7 @@ export function clearScene(scene) {
   meshRegistry.clear();
 
   // 궤적(trail) 레지스트리 정리
-  for (const [id, trail] of trailRegistry) {
+  for (const [, trail] of trailRegistry) {
     scene.remove(trail.line);
     trail.line.geometry.dispose();
     trail.line.material.dispose();

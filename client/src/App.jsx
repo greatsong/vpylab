@@ -21,7 +21,8 @@ function AppContent() {
   const initialize = useAuthStore((s) => s.initialize);
 
   useEffect(() => {
-    initialize();
+    const cleanup = initialize();
+    return () => { if (cleanup) cleanup(); };
   }, [initialize]);
 
   return (

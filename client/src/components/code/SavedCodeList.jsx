@@ -61,7 +61,7 @@ export default function SavedCodeList({ onLoadCode, onClose }) {
                 <h4
                   className="text-xs font-medium truncate flex-1"
                   style={{ color: 'var(--color-text-primary)' }}
-                  onClick={() => { onLoadCode(item.code); onClose(); }}
+                  onClick={() => { onLoadCode(item.code, item.id); onClose(); }}
                 >
                   {item.title}
                 </h4>

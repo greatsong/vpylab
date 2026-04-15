@@ -10,21 +10,25 @@ const useAuthStore = create((set, get) => ({
   setAuthModalOpen: (open) => set({ authModalOpen: open }),
 
   // 세션 초기화 (App 마운트 시 호출)
-  initialize: async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        set({ user: session.user, loading: false });
-        get().fetchProfile(session.user.id);
-      } else {
+  // cleanup 함수를 반환하여 StrictMode 이중 실행 시 리스너 중복 방지
+  initialize: () => {
+    // 세션 조회 (비동기, 반환값과 무관)
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          set({ user: session.user, loading: false });
+          get().fetchProfile(session.user.id);
+        } else {
+          set({ loading: false });
+        }
+      } catch {
         set({ loading: false });
       }
-    } catch {
-      set({ loading: false });
-    }
+    })();
 
     // 인증 상태 변화 리스너
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         set({ user: session.user });
         await get().upsertProfile(session.user);
@@ -36,6 +40,11 @@ const useAuthStore = create((set, get) => ({
         set({ user: null, profile: null });
       }
     });
+
+    // cleanup 함수 반환
+    return () => {
+      subscription.unsubscribe();
+    };
   },
 
   // 프로필 조회
