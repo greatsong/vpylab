@@ -178,15 +178,21 @@
   },
   "about": {
     "title": "VPyLab",
-    "vision": "VPyLab은 GlowScript을 대체하는 오픈소스 3D 프로그래밍 교육 플랫폼입니다. Pyodide(Python 3) + Three.js + Web Audio API 기반으로 제로 빌드. 다국어 UI, 자동 채점, 사운드, 미션 커리큘럼을 제공합니다. GitHub 기반 협력 개발로 전 세계 교사와 학생이 미션·예제·번역을 함께 만들어갈 수 있습니다.",
-    "whyTitle": "왜 VPyLab인가?",
-    "feature": "기능",
-    "compare": {
-      "python": { "name": "Python 실행", "old": "Skulpt (Python 2 잔재)", "new": "Pyodide (Python 3)" },
-      "language": { "name": "언어", "old": "영문 전용", "new": "다국어 (한/영)" },
-      "grading": { "name": "채점", "old": "없음", "new": "자동 채점" },
-      "sound": { "name": "사운드", "old": "없음", "new": "Web Audio" },
-      "collab": { "name": "협력 개발", "old": "폐쇄적 운영", "new": "GitHub 오픈소스" }
+    "vision": "Python으로 3D 세계를 만들고, 소리를 입히고, 전 세계와 공유하세요. VPyLab은 브라우저만으로 동작하는 오픈소스 3D 프로그래밍 교육 플랫폼입니다. GitHub 기반 협력 개발로 누구나 미션·예제·번역을 함께 만들어갈 수 있습니다.",
+    "featTitle": "주요 기능",
+    "feat": {
+      "python": "Python 3 실행",
+      "pythonDesc": "Pyodide 기반, 설치 없이 브라우저에서 바로 실행",
+      "sound": "사운드 코딩",
+      "soundDesc": "Web Audio API로 효과음, 멜로디, BGM을 코드로 합성",
+      "grading": "자동 채점",
+      "gradingDesc": "미션별 채점 기준으로 즉시 피드백 제공",
+      "i18n": "다국어 지원",
+      "i18nDesc": "한국어·영어 UI, 누구나 번역 파일로 새 언어 추가 가능",
+      "gallery": "갤러리 & Remix",
+      "galleryDesc": "작품을 발행하고, 다른 사람의 작품을 Remix하여 확장",
+      "mobile": "모바일 대응",
+      "mobileDesc": "스마트폰, 태블릿에서도 코딩·실행·공유 가능"
     },
     "collabTitle": "GitHub 기반 오픈소스 협력",
     "collabDesc": "VPyLab은 단순한 교육 도구가 아니라, GitHub을 통해 전 세계가 함께 만들어가는 프로젝트입니다.",

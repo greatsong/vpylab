@@ -178,15 +178,21 @@
   },
   "about": {
     "title": "VPyLab",
-    "vision": "VPyLab is an open-source 3D programming education platform replacing GlowScript. Built on Pyodide (Python 3) + Three.js + Web Audio API with zero build. Multilingual UI, auto-grading, sound, and mission curriculum. Through GitHub-based collaboration, teachers and students worldwide can build missions, examples, and translations together.",
-    "whyTitle": "Why VPyLab?",
-    "feature": "Feature",
-    "compare": {
-      "python": { "name": "Python", "old": "Skulpt (Python 2 legacy)", "new": "Pyodide (Python 3)" },
-      "language": { "name": "Language", "old": "English only", "new": "Multilingual (KO/EN)" },
-      "grading": { "name": "Grading", "old": "None", "new": "Auto-grading" },
-      "sound": { "name": "Sound", "old": "None", "new": "Web Audio" },
-      "collab": { "name": "Collaboration", "old": "Closed platform", "new": "GitHub Open Source" }
+    "vision": "Build 3D worlds with Python, add sound, and share with the world. VPyLab is an open-source 3D programming education platform that runs entirely in the browser. Through GitHub-based collaboration, anyone can contribute missions, examples, and translations.",
+    "featTitle": "Key Features",
+    "feat": {
+      "python": "Python 3 Execution",
+      "pythonDesc": "Pyodide-based, runs directly in the browser with zero install",
+      "sound": "Sound Coding",
+      "soundDesc": "Synthesize sound effects, melodies, and BGM with Web Audio API",
+      "grading": "Auto-Grading",
+      "gradingDesc": "Instant feedback with per-mission grading criteria",
+      "i18n": "Multilingual",
+      "i18nDesc": "Korean & English UI, anyone can add languages via translation files",
+      "gallery": "Gallery & Remix",
+      "galleryDesc": "Publish your work and remix others' creations",
+      "mobile": "Mobile Ready",
+      "mobileDesc": "Code, run, and share on smartphones and tablets"
     },
     "collabTitle": "GitHub-Based Open Source Collaboration",
     "collabDesc": "VPyLab is not just a teaching tool — it's a project the whole world builds together through GitHub.",
