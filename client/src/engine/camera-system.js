@@ -66,6 +66,7 @@ export default class CameraSystem {
 
     // 추적 모드용: 이전 프레임의 물체 위치 기록
     this._prevPositions = new Map(); // object.uuid → Vector3
+    this._lastObjectCount = 0;       // Auto-Fit: 물체 수 변화 감지용
 
     // 사용자 조작 감지 — 마우스 이벤트로 수동 모드 전환
     this._onUserInteraction = () => {
@@ -271,14 +272,21 @@ export default class CameraSystem {
       this.scene.updateMatrixWorld(true);
 
       if (this.mode === MODE.AUTO_FIT) {
-        const state = this._computeCameraState();
-        if (state) {
-          // 자동 모드: 전체 물체가 화면에 담기도록 중심 업데이트
-          this._targetCenter.copy(state.center);
-          if (!this.options.zoomLocked) {
-            this._targetDistance = this._distanceForBounds(state.radius);
+        const objects = this._getVPythonObjects();
+        const objectCount = objects.length;
+
+        // 물체 수가 변했을 때만 재프레이밍 (추가/제거 감지)
+        // 물체가 이동해도 카메라는 고정 — 이것이 Follow와의 핵심 차이
+        if (objectCount !== this._lastObjectCount) {
+          this._lastObjectCount = objectCount;
+          const state = this._computeCameraState();
+          if (state) {
+            this._targetCenter.copy(state.center);
+            if (!this.options.zoomLocked) {
+              this._targetDistance = this._distanceForBounds(state.radius);
+            }
+            this._lastBounds = state;
           }
-          this._lastBounds = state;
         }
       } else if (this.mode === MODE.FOLLOW) {
         const state = this._computeMovingObjectsState();
@@ -335,6 +343,7 @@ export default class CameraSystem {
     this.mode = MODE.AUTO_FIT;
     this._userInteracted = false;
     this._autoFit();
+    this._lastObjectCount = this._getVPythonObjects().length;
   }
 
   /**
@@ -361,11 +370,14 @@ export default class CameraSystem {
     this._userInteracted = false;
     this._frameCount = 0;
     this._prevPositions.clear();
+    this._lastObjectCount = 0; // 리셋하여 첫 프레임에서 반드시 프레이밍
 
     // 약간의 딜레이 후 Auto-Fit (물체 생성 시간 확보)
     clearTimeout(this._fitTimer);
     this._fitTimer = setTimeout(() => {
       this._autoFit();
+      // Auto-Fit 후 현재 물체 수 기록
+      this._lastObjectCount = this._getVPythonObjects().length;
     }, this.options.fitDelay);
   }
 
