@@ -31,7 +31,7 @@ export default function Home() {
         {/* ===== 히어로 ===== */}
         <section className="hero-bg relative" style={{ padding: '4.5rem 0 4rem' }}>
           <div className="container-main relative z-10">
-            <div className="text-center max-w-xl mx-auto">
+            <div className="text-center max-w-2xl mx-auto">
               <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mb-4 animate-slide-up"
                 style={{ color: 'var(--color-text-primary)', lineHeight: 1.1 }}>
                 {lang === 'ko' ? (

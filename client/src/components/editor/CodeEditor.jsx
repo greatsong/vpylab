@@ -16,6 +16,13 @@ loader.config({ monaco });
 const MONACO_THEME_MAP = {
   'creative-light': 'vs',
   'deep-dark': 'vs-dark',
+  'ocean-breeze': 'vs',
+  'sunset-glow': 'vs',
+  'forest-night': 'vs-dark',
+  'lavender-dream': 'vs',
+  'midnight-purple': 'vs-dark',
+  'rose-garden': 'vs',
+  'cyber-neon': 'vs-dark',
 };
 
 const DEFAULT_CODE = `from vpython import *

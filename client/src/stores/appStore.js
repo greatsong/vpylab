@@ -1,7 +1,25 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
-const THEMES = ['creative-light', 'deep-dark'];
+const THEMES = [
+  'creative-light', 'deep-dark',
+  'ocean-breeze', 'sunset-glow',
+  'forest-night', 'lavender-dream',
+  'midnight-purple', 'rose-garden',
+  'cyber-neon',
+];
+
+const THEME_META = {
+  'creative-light':  { label: '크리에이티브', icon: '☀️', dark: false },
+  'deep-dark':       { label: '딥 다크', icon: '🌙', dark: true },
+  'ocean-breeze':    { label: '바다 바람', icon: '🌊', dark: false },
+  'sunset-glow':     { label: '노을빛', icon: '🌅', dark: false },
+  'forest-night':    { label: '깊은 숲', icon: '🌲', dark: true },
+  'lavender-dream':  { label: '라벤더', icon: '💜', dark: false },
+  'midnight-purple': { label: '자정 퍼플', icon: '🔮', dark: true },
+  'rose-garden':     { label: '장미 정원', icon: '🌹', dark: false },
+  'cyber-neon':      { label: '사이버 네온', icon: '⚡', dark: true },
+};
 
 const useAppStore = create((set) => ({
   // 테마
@@ -75,6 +93,7 @@ const useAppStore = create((set) => ({
 
   // 상수
   THEMES,
+  THEME_META,
 }));
 
 // 초기 테마 적용

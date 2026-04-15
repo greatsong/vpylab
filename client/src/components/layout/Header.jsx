@@ -7,19 +7,24 @@ import useAuthStore from '../../stores/authStore';
 import { prewarm } from '../../engine/pyodide-singleton';
 
 export default function Header() {
-  const { theme, setTheme, locale, setLocale, THEMES } = useAppStore();
+  const { theme, setTheme, locale, setLocale, THEMES, THEME_META } = useAppStore();
   const { user, profile, signOut, setAuthModalOpen } = useAuthStore();
   const isTeacher = useAuthStore((s) => s.isTeacher());
   const { t } = useI18n();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const themeDropdownRef = useRef(null);
   const location = useLocation();
 
   useEffect(() => {
     const handleClick = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
+      }
+      if (themeDropdownRef.current && !themeDropdownRef.current.contains(e.target)) {
+        setThemeDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -69,21 +74,28 @@ export default function Header() {
       </Link>
 
       {/* 네비게이션 (데스크톱) */}
-      <nav className="hidden md:flex items-center gap-0.5">
-        {navItems.map(({ key, path }) => (
-          <Link
-            key={key}
-            to={path}
-            className="text-[13px] no-underline px-3 py-1.5 rounded-lg transition-colors font-medium"
-            style={{
-              color: isActive(path) ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-              backgroundColor: isActive(path) ? 'var(--color-accent-bg)' : 'transparent',
-            }}
-            onMouseEnter={() => handlePrewarm(path)}
-            onFocus={() => handlePrewarm(path)}
-          >
-            {t(`nav.${key}`)}
-          </Link>
+      <nav className="hidden md:flex items-center gap-1">
+        {navItems.map(({ key, path }, idx) => (
+          <span key={key} className="flex items-center">
+            {idx > 0 && (
+              <span
+                className="w-px h-3.5 mx-1"
+                style={{ backgroundColor: 'var(--color-border)' }}
+              />
+            )}
+            <Link
+              to={path}
+              className="text-[13px] no-underline px-3 py-1.5 rounded-lg transition-colors font-medium"
+              style={{
+                color: isActive(path) ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                backgroundColor: isActive(path) ? 'var(--color-accent-bg)' : 'transparent',
+              }}
+              onMouseEnter={() => handlePrewarm(path)}
+              onFocus={() => handlePrewarm(path)}
+            >
+              {t(`nav.${key}`)}
+            </Link>
+          </span>
         ))}
       </nav>
 
@@ -204,26 +216,60 @@ export default function Header() {
           {locale === 'ko' ? 'EN' : '한'}
         </button>
 
-        <button
-          onClick={() => {
-            const idx = THEMES.indexOf(theme);
-            setTheme(THEMES[(idx + 1) % THEMES.length]);
-          }}
-          className="w-8 h-8 rounded-md transition-all cursor-pointer border flex items-center justify-center"
-          style={{ borderColor: 'var(--color-border)', backgroundColor: 'transparent' }}
-          title={t('settings.theme')}
-        >
-          {theme === 'creative-light' ? (
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="var(--color-text-secondary)">
-              <circle cx="8" cy="8" r="3.5"/>
-              <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="var(--color-text-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
+        <div className="relative" ref={themeDropdownRef}>
+          <button
+            onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
+            className="h-8 px-2 rounded-md transition-all cursor-pointer border flex items-center gap-1.5"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'transparent' }}
+            title={t('settings.theme')}
+          >
+            <span className="text-sm leading-none">{THEME_META[theme]?.icon}</span>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="var(--color-text-muted)">
+              <path d="M2 4l3 3 3-3" stroke="var(--color-text-muted)" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-          ) : (
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="var(--color-text-secondary)">
-              <path d="M14 10a6 6 0 01-8-8 6 6 0 108 8z"/>
-            </svg>
+          </button>
+
+          {themeDropdownOpen && (
+            <div
+              className="absolute right-0 top-full mt-1.5 w-48 rounded-xl py-1.5 z-50"
+              style={{
+                backgroundColor: 'var(--color-bg-panel)',
+                border: '1px solid var(--color-border)',
+                boxShadow: 'var(--shadow-lg)',
+              }}
+            >
+              <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                테마 선택
+              </p>
+              {THEMES.map((t) => {
+                const meta = THEME_META[t];
+                const active = theme === t;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => { setTheme(t); setThemeDropdownOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left border-none cursor-pointer transition-colors"
+                    style={{
+                      backgroundColor: active ? 'var(--color-accent-bg)' : 'transparent',
+                      color: active ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                      fontFamily: 'var(--font-body)',
+                      fontSize: '0.8125rem',
+                      fontWeight: active ? 600 : 400,
+                    }}
+                  >
+                    <span className="text-sm leading-none w-5 text-center">{meta.icon}</span>
+                    <span>{meta.label}</span>
+                    {active && (
+                      <svg className="ml-auto" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 7.5l3 3 5-6"/>
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           )}
-        </button>
+        </div>
 
         {user ? (
           <div className="relative" ref={dropdownRef}>

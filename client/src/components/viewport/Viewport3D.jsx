@@ -5,8 +5,15 @@ import useAppStore from '../../stores/appStore';
 import CameraSystem from '../../engine/camera-system';
 
 const THEME_BG = {
-  'creative-light': 0xf7f8fa,
-  'deep-dark': 0x16161a,
+  'creative-light': 0xf8fafc,
+  'deep-dark': 0x0f172a,
+  'ocean-breeze': 0xf0f9ff,
+  'sunset-glow': 0xfffbf5,
+  'forest-night': 0x071a0f,
+  'lavender-dream': 0xfaf5ff,
+  'midnight-purple': 0x13081f,
+  'rose-garden': 0xfff1f2,
+  'cyber-neon': 0x0a0a0f,
 };
 
 export default function Viewport3D({ sceneRef, onSceneReady }) {

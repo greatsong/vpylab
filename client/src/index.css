@@ -80,6 +80,153 @@
   color-scheme: dark;
 }
 
+/* === Ocean Breeze — 시원한 바다 === */
+[data-theme="ocean-breeze"] {
+  --color-bg-primary: #F0F9FF;
+  --color-bg-secondary: #E0F2FE;
+  --color-bg-tertiary: #BAE6FD;
+  --color-bg-panel: #FFFFFF;
+  --color-text-primary: #0C4A6E;
+  --color-text-secondary: #0369A1;
+  --color-text-muted: #7DD3FC;
+  --color-accent: #0284C7;
+  --color-accent-hover: #0369A1;
+  --color-accent-bg: rgba(2, 132, 199, 0.08);
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+  --color-border: #BAE6FD;
+  --color-border-subtle: #E0F2FE;
+
+  color-scheme: light;
+}
+
+/* === Sunset Glow — 따뜻한 노을 === */
+[data-theme="sunset-glow"] {
+  --color-bg-primary: #FFFBF5;
+  --color-bg-secondary: #FEF3E2;
+  --color-bg-tertiary: #FDE6C4;
+  --color-bg-panel: #FFFFFF;
+  --color-text-primary: #431407;
+  --color-text-secondary: #9A3412;
+  --color-text-muted: #FDBA74;
+  --color-accent: #EA580C;
+  --color-accent-hover: #C2410C;
+  --color-accent-bg: rgba(234, 88, 12, 0.07);
+  --color-success: #16A34A;
+  --color-warning: #CA8A04;
+  --color-error: #DC2626;
+  --color-border: #FDE6C4;
+  --color-border-subtle: #FEF3E2;
+
+  color-scheme: light;
+}
+
+/* === Forest Night — 깊은 숲 === */
+[data-theme="forest-night"] {
+  --color-bg-primary: #071A0F;
+  --color-bg-secondary: #0D2818;
+  --color-bg-tertiary: #1A3F28;
+  --color-bg-panel: #0D2818;
+  --color-text-primary: #ECFDF5;
+  --color-text-secondary: #6EE7B7;
+  --color-text-muted: #34D399;
+  --color-accent: #10B981;
+  --color-accent-hover: #34D399;
+  --color-accent-bg: rgba(16, 185, 129, 0.12);
+  --color-success: #4ADE80;
+  --color-warning: #FBBF24;
+  --color-error: #FB7185;
+  --color-border: #1A3F28;
+  --color-border-subtle: #0D2818;
+
+  color-scheme: dark;
+}
+
+/* === Lavender Dream — 보라빛 꿈 === */
+[data-theme="lavender-dream"] {
+  --color-bg-primary: #FAF5FF;
+  --color-bg-secondary: #F3E8FF;
+  --color-bg-tertiary: #E9D5FF;
+  --color-bg-panel: #FFFFFF;
+  --color-text-primary: #3B0764;
+  --color-text-secondary: #7C3AED;
+  --color-text-muted: #C4B5FD;
+  --color-accent: #7C3AED;
+  --color-accent-hover: #6D28D9;
+  --color-accent-bg: rgba(124, 58, 237, 0.07);
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-border: #E9D5FF;
+  --color-border-subtle: #F3E8FF;
+
+  color-scheme: light;
+}
+
+/* === Midnight Purple — 자정의 보라 === */
+[data-theme="midnight-purple"] {
+  --color-bg-primary: #13081F;
+  --color-bg-secondary: #1E1033;
+  --color-bg-tertiary: #2E1A4A;
+  --color-bg-panel: #1E1033;
+  --color-text-primary: #F5F3FF;
+  --color-text-secondary: #C4B5FD;
+  --color-text-muted: #8B5CF6;
+  --color-accent: #A78BFA;
+  --color-accent-hover: #C4B5FD;
+  --color-accent-bg: rgba(167, 139, 250, 0.12);
+  --color-success: #34D399;
+  --color-warning: #FBBF24;
+  --color-error: #FB7185;
+  --color-border: #2E1A4A;
+  --color-border-subtle: #1E1033;
+
+  color-scheme: dark;
+}
+
+/* === Rose Garden — 장미 정원 === */
+[data-theme="rose-garden"] {
+  --color-bg-primary: #FFF1F2;
+  --color-bg-secondary: #FFE4E6;
+  --color-bg-tertiary: #FECDD3;
+  --color-bg-panel: #FFFFFF;
+  --color-text-primary: #4C0519;
+  --color-text-secondary: #BE123C;
+  --color-text-muted: #FDA4AF;
+  --color-accent: #E11D48;
+  --color-accent-hover: #BE123C;
+  --color-accent-bg: rgba(225, 29, 72, 0.07);
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-error: #DC2626;
+  --color-border: #FECDD3;
+  --color-border-subtle: #FFE4E6;
+
+  color-scheme: light;
+}
+
+/* === Cyber Neon — 사이버 네온 === */
+[data-theme="cyber-neon"] {
+  --color-bg-primary: #0A0A0F;
+  --color-bg-secondary: #12121C;
+  --color-bg-tertiary: #1C1C2E;
+  --color-bg-panel: #12121C;
+  --color-text-primary: #E0F2FE;
+  --color-text-secondary: #22D3EE;
+  --color-text-muted: #06B6D4;
+  --color-accent: #06B6D4;
+  --color-accent-hover: #22D3EE;
+  --color-accent-bg: rgba(6, 182, 212, 0.12);
+  --color-success: #4ADE80;
+  --color-warning: #FACC15;
+  --color-error: #F43F5E;
+  --color-border: #1C1C2E;
+  --color-border-subtle: #12121C;
+
+  color-scheme: dark;
+}
+
 /* === 글로벌 스타일 === */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -159,7 +306,10 @@ code, pre { font-family: var(--font-mono); letter-spacing: -0.02em; }
   filter: blur(40px);
 }
 
-[data-theme="deep-dark"] .hero-bg::before { opacity: 0.15; }
+[data-theme="deep-dark"] .hero-bg::before,
+[data-theme="forest-night"] .hero-bg::before,
+[data-theme="midnight-purple"] .hero-bg::before,
+[data-theme="cyber-neon"] .hero-bg::before { opacity: 0.15; }
 
 /* === 카테고리 카드 === */
 .category-card {
