@@ -380,7 +380,7 @@ export function processBatch(commands, scene) {
         break;
       }
       case 'sound':
-        processSoundCommand(cmd);
+        try { processSoundCommand(cmd); } catch (_) { /* 사운드 에러가 3D 렌더링을 막지 않도록 */ }
         break;
       case 'chart':
         renderChart(cmd, scene);
