@@ -329,13 +329,14 @@ export default function Sandbox() {
           onClick={() => setTheaterMode(false)}
           style={{
             position: 'fixed', top: 16, left: 16, zIndex: 100,
-            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10,
+            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+            border: 'none', borderRadius: 10,
             color: 'white', padding: '8px 14px', fontSize: 13, fontWeight: 600,
-            cursor: 'pointer', transition: 'background 0.2s',
+            cursor: 'pointer', transition: 'opacity 0.2s',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
           }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+          onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
         >
           {'</>'} 코드 보기
         </button>
@@ -343,7 +344,7 @@ export default function Sandbox() {
         {/* 좌하단: 정지 버튼 (실행 중일 때만) */}
         {isRunning && (
           <button
-            onClick={() => { handleStop(); setTheaterMode(false); }}
+            onClick={handleStop}
             style={{
               position: 'fixed', bottom: 16, left: 16, zIndex: 100,
               background: 'rgba(239,68,68,0.8)', backdropFilter: 'blur(8px)',
