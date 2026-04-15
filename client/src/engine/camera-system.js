@@ -32,7 +32,7 @@ const DEFAULTS = {
 
   // Smooth Follow
   followUpdateInterval: 1,   // 추적 모드에서 바운딩 갱신 주기 (프레임)
-  followZoomEnabled: false,  // 추적 중 자동 줌 사용 여부
+  zoomLocked: true,           // 줌 고정 (자동/추적 모두 적용)
   lerpFactor: 0.05,          // 카메라 이동 보간 속도 (0=안움직임, 1=즉시)
   zoomLerpFactor: 0.03,      // 줌 보간 속도
   followThreshold: 0.01,     // Auto-Fit → Follow 전환 감지 임계값
@@ -237,16 +237,18 @@ export default class CameraSystem {
         const nextDistance = this._distanceForBounds(state.radius);
 
         if (this.mode === MODE.AUTO_FIT) {
-          // 자동 모드: 전체 물체가 화면에 담기도록 중심+줌 계속 업데이트
+          // 자동 모드: 전체 물체가 화면에 담기도록 중심 업데이트
           this._targetCenter.copy(state.center);
-          this._targetDistance = nextDistance;
+          if (!this.options.zoomLocked) {
+            this._targetDistance = nextDistance;
+          }
         } else if (this.mode === MODE.FOLLOW) {
           const centerDiff = state.focusCenter.distanceTo(this._targetCenter);
           if (centerDiff > this.options.followCenterDeadzone) {
             this._targetCenter.copy(state.focusCenter);
           }
 
-          if (this.options.followZoomEnabled) {
+          if (!this.options.zoomLocked) {
             const distanceRatio = Math.abs(nextDistance - this._targetDistance)
               / Math.max(this._targetDistance, 1);
             if (distanceRatio > this.options.zoomThreshold) {
@@ -331,25 +333,26 @@ export default class CameraSystem {
   }
 
   /**
-   * 추적 중 자동 줌 설정
+   * 줌 고정 설정
    */
-  setFollowZoomEnabled(enabled) {
-    this.options.followZoomEnabled = Boolean(enabled);
+  setZoomLocked(locked) {
+    this.options.zoomLocked = Boolean(locked);
 
-    if (!this.options.followZoomEnabled) return;
-
-    this.scene.updateMatrixWorld(true);
-    const state = this._computeCameraState();
-    if (state) {
-      this._targetDistance = this._distanceForBounds(state.radius);
+    // 줌 고정 해제 시 현재 상태에 맞게 거리 재계산
+    if (!locked) {
+      this.scene.updateMatrixWorld(true);
+      const state = this._computeCameraState();
+      if (state) {
+        this._targetDistance = this._distanceForBounds(state.radius);
+      }
     }
   }
 
   /**
-   * 추적 중 자동 줌 설정 조회
+   * 줌 고정 상태 조회
    */
-  isFollowZoomEnabled() {
-    return this.options.followZoomEnabled;
+  isZoomLocked() {
+    return this.options.zoomLocked;
   }
 
   /**

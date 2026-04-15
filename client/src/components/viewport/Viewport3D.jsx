@@ -60,7 +60,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
 
     // 하이브리드 카메라 시스템
     const camSystem = new CameraSystem(camera, controls, scene, {
-      followZoomEnabled: !lockFollowZoom,
+      zoomLocked: lockFollowZoom,
     });
     cameraSystemRef.current = camSystem;
 
@@ -155,9 +155,9 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     if (axesRef.current) axesRef.current.visible = showAxes;
   }, [showAxes]);
 
-  // 추적 중 자동 줌 잠금 토글
+  // 줌 고정 토글
   useEffect(() => {
-    cameraSystemRef.current?.setFollowZoomEnabled(!lockFollowZoom);
+    cameraSystemRef.current?.setZoomLocked(lockFollowZoom);
   }, [lockFollowZoom]);
 
   // cameraSystemRef를 외부에 노출 (Sandbox/MissionPlay에서 사용)
@@ -226,7 +226,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
             backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
             border: lockFollowZoom ? '1px solid var(--color-accent)' : 'none',
           }}
-          title="추적 중에는 카메라 거리를 고정해 어지러움을 줄입니다"
+          title="카메라 줌 거리를 현재 상태로 고정합니다"
         >
           <input
             type="checkbox"

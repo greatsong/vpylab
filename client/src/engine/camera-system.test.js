@@ -86,7 +86,7 @@ describe('camera-system', () => {
     scene.add(mesh);
 
     const system = new CameraSystem(camera, controls, scene, {
-      followZoomEnabled: true,
+      zoomLocked: false,
       zoomThreshold: 0.2,
     });
 
@@ -128,11 +128,11 @@ describe('camera-system', () => {
     mesh.geometry = new THREE.BoxGeometry(4, 4, 4);
     system.update();
 
-    expect(system.isFollowZoomEnabled()).toBe(false);
+    expect(system.isZoomLocked()).toBe(true);
     expect(system._targetDistance).toBeCloseTo(initialDistance, 5);
   });
 
-  it('자동 줌을 다시 켜면 추적 거리 계산을 재개한다', () => {
+  it('줌 고정 해제하면 거리 계산을 재개한다', () => {
     const scene = new THREE.Scene();
     const camera = createCamera();
     const controls = createControls();
@@ -151,9 +151,9 @@ describe('camera-system', () => {
 
     mesh.geometry.dispose();
     mesh.geometry = new THREE.BoxGeometry(4, 4, 4);
-    system.setFollowZoomEnabled(true);
+    system.setZoomLocked(false);
 
-    expect(system.isFollowZoomEnabled()).toBe(true);
+    expect(system.isZoomLocked()).toBe(false);
     expect(system._targetDistance).toBeGreaterThan(initialDistance);
   });
 });
