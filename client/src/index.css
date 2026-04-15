@@ -111,6 +111,16 @@ button, [role="button"] {
 
 #root { min-height: 100vh; display: flex; flex-direction: column; }
 
+/* === 공통 컨테이너 — 페이지 중앙 정렬 === */
+.container-main {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
 code, pre { font-family: var(--font-mono); letter-spacing: -0.02em; }
 
 /* === 히어로 배경 — 도트 그리드 === */

@@ -53,7 +53,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="container-main py-8">
         <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--color-text-primary)' }}>
           {t('dashboard.title')}
         </h1>

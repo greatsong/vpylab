@@ -30,7 +30,7 @@ export default function Home() {
       <main className="flex-1">
         {/* ===== 히어로 ===== */}
         <section className="hero-bg relative" style={{ padding: '4.5rem 0 4rem' }}>
-          <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="container-main relative z-10">
             <div className="text-center max-w-xl mx-auto">
               <h1 className="font-display text-4xl md:text-5xl font-black tracking-tight mb-4 animate-slide-up"
                 style={{ color: 'var(--color-text-primary)', lineHeight: 1.1 }}>
@@ -66,7 +66,7 @@ export default function Home() {
 
         {/* ===== 카테고리 ===== */}
         <section className="py-16" style={{ backgroundColor: 'var(--color-bg-panel)' }}>
-          <div className="max-w-7xl mx-auto px-6">
+          <div className="container-main">
             <div className="flex items-end justify-between mb-8">
               <div>
                 <h2 className="font-display text-xl md:text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
@@ -126,7 +126,7 @@ export default function Home() {
         {/* ===== 갤러리 하이라이트 ===== */}
         {featuredWorks.length > 0 && (
           <section className="py-16" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
-            <div className="max-w-7xl mx-auto px-6">
+            <div className="container-main">
               <div className="flex items-end justify-between mb-8">
                 <div>
                   <h2 className="font-display text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
