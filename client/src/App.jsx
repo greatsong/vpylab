@@ -7,16 +7,26 @@ import AuthModal from './components/auth/AuthModal';
 import useAuthStore from './stores/authStore';
 import './index.css';
 
+// 배포 후 구 청크 404 → 자동 새로고침 (Vite + SPA 배포 공통 이슈)
+function lazyWithRetry(importFn) {
+  return lazy(() =>
+    importFn().catch(() => {
+      window.location.reload();
+      return new Promise(() => {}); // 새로고침 중 렌더 방지
+    })
+  );
+}
+
 // Code splitting — Monaco + Three.js는 Sandbox/Mission 진입 시에만 로드
-const Sandbox = lazy(() => import('./pages/Sandbox'));
-const Missions = lazy(() => import('./pages/Missions'));
-const MissionPlay = lazy(() => import('./pages/MissionPlay'));
-const About = lazy(() => import('./pages/About'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Gallery = lazy(() => import('./pages/Gallery'));
-const GalleryDetail = lazy(() => import('./pages/GalleryDetail'));
-const SharedCodeLoader = lazy(() => import('./pages/SharedCodeLoader'));
-const Docs = lazy(() => import('./pages/Docs'));
+const Sandbox = lazyWithRetry(() => import('./pages/Sandbox'));
+const Missions = lazyWithRetry(() => import('./pages/Missions'));
+const MissionPlay = lazyWithRetry(() => import('./pages/MissionPlay'));
+const About = lazyWithRetry(() => import('./pages/About'));
+const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'));
+const Gallery = lazyWithRetry(() => import('./pages/Gallery'));
+const GalleryDetail = lazyWithRetry(() => import('./pages/GalleryDetail'));
+const SharedCodeLoader = lazyWithRetry(() => import('./pages/SharedCodeLoader'));
+const Docs = lazyWithRetry(() => import('./pages/Docs'));
 
 function AppContent() {
   const initialize = useAuthStore((s) => s.initialize);

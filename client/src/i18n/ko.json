@@ -178,15 +178,25 @@
   },
   "about": {
     "title": "VPyLab",
-    "vision": "VPyLab은 GlowScript을 대체하는 3D 프로그래밍 교육 플랫폼입니다. Pyodide(Python 3) + Three.js + Web Audio API 기반으로 제로 빌드. 다국어 UI, 자동 채점, 사운드, 미션 커리큘럼을 제공합니다. 전 세계 모든 학교에 도입될 수 있는 오픈소스 교육 플랫폼을 지향합니다.",
+    "vision": "VPyLab은 GlowScript을 대체하는 오픈소스 3D 프로그래밍 교육 플랫폼입니다. Pyodide(Python 3) + Three.js + Web Audio API 기반으로 제로 빌드. 다국어 UI, 자동 채점, 사운드, 미션 커리큘럼을 제공합니다. GitHub 기반 협력 개발로 전 세계 교사와 학생이 미션·예제·번역을 함께 만들어갈 수 있습니다.",
     "whyTitle": "왜 VPyLab인가?",
     "feature": "기능",
     "compare": {
       "python": { "name": "Python 실행", "old": "Skulpt (Python 2 잔재)", "new": "Pyodide (Python 3)" },
       "language": { "name": "언어", "old": "영문 전용", "new": "다국어 (한/영)" },
       "grading": { "name": "채점", "old": "없음", "new": "자동 채점" },
-      "sound": { "name": "사운드", "old": "없음", "new": "Web Audio" }
+      "sound": { "name": "사운드", "old": "없음", "new": "Web Audio" },
+      "collab": { "name": "협력 개발", "old": "폐쇄적 운영", "new": "GitHub 오픈소스" }
     },
+    "collabTitle": "GitHub 기반 오픈소스 협력",
+    "collabDesc": "VPyLab은 단순한 교육 도구가 아니라, GitHub을 통해 전 세계가 함께 만들어가는 프로젝트입니다.",
+    "collabItems": [
+      "누구나 미션을 만들어 Pull Request로 기여할 수 있습니다",
+      "학생 작품을 GitHub Pages로 발행하고 공유할 수 있습니다",
+      "갤러리에서 다른 사람의 작품을 Remix하여 새로운 작품을 만들 수 있습니다",
+      "Issue로 버그 리포트와 기능 제안을 하고, 직접 코드를 고칠 수 있습니다",
+      "번역 파일(ko.json, en.json)을 수정하여 새 언어를 추가할 수 있습니다"
+    ],
     "techTitle": "기술 스택",
     "techReact": "최신 프론트엔드 프레임워크",
     "techPyodide": "브라우저에서 실행되는 Python 3",

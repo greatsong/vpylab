@@ -178,15 +178,25 @@
   },
   "about": {
     "title": "VPyLab",
-    "vision": "VPyLab is a 3D programming education platform replacing GlowScript. Built on Pyodide (Python 3) + Three.js + Web Audio API with zero build. Multilingual UI, auto-grading, sound, and mission curriculum. An open-source platform for schools worldwide.",
+    "vision": "VPyLab is an open-source 3D programming education platform replacing GlowScript. Built on Pyodide (Python 3) + Three.js + Web Audio API with zero build. Multilingual UI, auto-grading, sound, and mission curriculum. Through GitHub-based collaboration, teachers and students worldwide can build missions, examples, and translations together.",
     "whyTitle": "Why VPyLab?",
     "feature": "Feature",
     "compare": {
       "python": { "name": "Python", "old": "Skulpt (Python 2 legacy)", "new": "Pyodide (Python 3)" },
       "language": { "name": "Language", "old": "English only", "new": "Multilingual (KO/EN)" },
       "grading": { "name": "Grading", "old": "None", "new": "Auto-grading" },
-      "sound": { "name": "Sound", "old": "None", "new": "Web Audio" }
+      "sound": { "name": "Sound", "old": "None", "new": "Web Audio" },
+      "collab": { "name": "Collaboration", "old": "Closed platform", "new": "GitHub Open Source" }
     },
+    "collabTitle": "GitHub-Based Open Source Collaboration",
+    "collabDesc": "VPyLab is not just a teaching tool — it's a project the whole world builds together through GitHub.",
+    "collabItems": [
+      "Anyone can create missions and contribute via Pull Requests",
+      "Students can publish their work to GitHub Pages and share it",
+      "Remix others' creations in the Gallery to build something new",
+      "Report bugs and suggest features via Issues, or fix the code yourself",
+      "Add new languages by editing translation files (ko.json, en.json)"
+    ],
     "techTitle": "Tech Stack",
     "techReact": "Modern frontend framework",
     "techPyodide": "Python 3 running in the browser",
