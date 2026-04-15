@@ -41,6 +41,7 @@ export default function Sandbox() {
   const [remixFrom, setRemixFrom] = useState(null);
   const [remixInfo, setRemixInfo] = useState(null);
   const [editMode, setEditMode] = useState(null); // { id, githubRepo, title }
+  const [theaterMode, setTheaterMode] = useState(false);
   const sceneRef = useRef(null);
   const pendingBatchRef = useRef([]);  // 모바일: sceneRef 미 mount 시 버퍼
   const { user } = useAuthStore();
@@ -52,7 +53,13 @@ export default function Sandbox() {
   useEffect(() => {
     if (location.state?.sharedCode) {
       setCode(location.state.sharedCode);
-      setOutputs([{ text: t('share.externalCode'), type: 'warning', id: Date.now() }]);
+      if (location.state?.autoPlay) {
+        // 극장 모드: 전체 화면 자동 실행
+        setTheaterMode(true);
+        pendingPlayRef.current = location.state.sharedCode;
+      } else {
+        setOutputs([{ text: t('share.externalCode'), type: 'warning', id: Date.now() }]);
+      }
       // state 정리 (뒤로가기 시 다시 로드 방지)
       window.history.replaceState({}, '');
       return;
@@ -307,6 +314,49 @@ export default function Sandbox() {
       <div className="h-screen flex flex-col">
         <Header />
         <LoadingScreen progress={progress} message={progressMessage} />
+      </div>
+    );
+  }
+
+  // 극장 모드: 3D 뷰포트만 전체 화면
+  if (theaterMode) {
+    return (
+      <div className="h-screen w-screen relative" style={{ backgroundColor: '#000' }}>
+        <Viewport3D sceneRef={sceneRef} />
+
+        {/* 좌상단: 코드 보기 버튼 */}
+        <button
+          onClick={() => setTheaterMode(false)}
+          style={{
+            position: 'fixed', top: 16, left: 16, zIndex: 100,
+            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10,
+            color: 'white', padding: '8px 14px', fontSize: 13, fontWeight: 600,
+            cursor: 'pointer', transition: 'background 0.2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+        >
+          {'</>'} 코드 보기
+        </button>
+
+        {/* 좌하단: 정지 버튼 (실행 중일 때만) */}
+        {isRunning && (
+          <button
+            onClick={() => { handleStop(); setTheaterMode(false); }}
+            style={{
+              position: 'fixed', bottom: 16, left: 16, zIndex: 100,
+              background: 'rgba(239,68,68,0.8)', backdropFilter: 'blur(8px)',
+              border: 'none', borderRadius: 10,
+              color: 'white', padding: '8px 14px', fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.8)'}
+          >
+            ⏹ 정지
+          </button>
+        )}
       </div>
     );
   }

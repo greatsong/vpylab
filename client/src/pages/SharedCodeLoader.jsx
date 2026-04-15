@@ -17,7 +17,7 @@ export default function SharedCodeLoader() {
         return;
       }
       // state로 코드 전달하며 Sandbox로 이동
-      navigate('/sandbox', { state: { sharedCode: code, sharedTitle: title }, replace: true });
+      navigate('/sandbox', { state: { sharedCode: code, sharedTitle: title, autoPlay: true }, replace: true });
     });
   }, [id, navigate]);
 
