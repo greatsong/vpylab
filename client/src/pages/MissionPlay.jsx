@@ -14,7 +14,6 @@ import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture } f
 import { getMissionById } from '../data/missions';
 import missions from '../data/missions';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
 import useAppStore from '../stores/appStore';
 import useCodeStore from '../stores/codeStore';
 import useAuthStore from '../stores/authStore';
@@ -36,8 +35,6 @@ export default function MissionPlay() {
   const [outputs, setOutputs] = useState([]);
   const [gradeResult, setGradeResult] = useState(null);
   const [hintIndex, setHintIndex] = useState(-1);
-  const [aiHint, setAiHint] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('editor');
   const sceneRef = useRef(null);
   const pendingBatchRef = useRef([]);  // 모바일: sceneRef 미 mount 시 버퍼
@@ -148,26 +145,37 @@ export default function MissionPlay() {
     } else if (mission.gradeType === 'code') {
       // 코드 검사형 미션: 특정 패턴이 코드에 있는지 확인
       const checks = mission.codeChecks || [];
-      const results = [];
-      for (const check of checks) {
-        const matches = code.match(new RegExp(check.pattern, 'g'));
-        const count = matches ? matches.length : 0;
-        const passed = count >= (check.minCount || 1);
-        results.push({
-          passed,
-          message: passed
-            ? `✅ ${check.message} (${count}개 사용)`
-            : `❌ ${check.message} (현재 ${count}개)`,
-        });
+      if (checks.length === 0) {
+        // 검사 조건이 없으면 0점 (빈 배열 방어)
+        result = {
+          grade: 'code',
+          passed: false,
+          score: 0,
+          results: [],
+          message: '채점 기준이 설정되지 않았습니다.',
+        };
+      } else {
+        const results = [];
+        for (const check of checks) {
+          const matches = code.match(new RegExp(check.pattern, 'g'));
+          const count = matches ? matches.length : 0;
+          const passed = count >= (check.minCount || 1);
+          results.push({
+            passed,
+            message: passed
+              ? `✅ ${check.message} (${count}개 사용)`
+              : `❌ ${check.message} (현재 ${count}개)`,
+          });
+        }
+        const passedAll = results.every(r => r.passed);
+        result = {
+          grade: 'code',
+          passed: passedAll,
+          score: passedAll ? 100 : Math.round((results.filter(r => r.passed).length / results.length) * 100),
+          results,
+          message: passedAll ? '✅ 코드 검사 통과!' : '코드를 더 작성해 보세요.',
+        };
       }
-      const passedAll = results.every(r => r.passed);
-      result = {
-        grade: 'code',
-        passed: passedAll,
-        score: passedAll ? 100 : Math.round((results.filter(r => r.passed).length / results.length) * 100),
-        results,
-        message: passedAll ? '✅ 코드 검사 통과!' : '코드를 더 작성해 보세요.',
-      };
     } else if (mission.gradeType === 'run') {
       // 탐험형 미션: 코드 실행 자체가 목표 (실행했으면 통과)
       result = { grade: 'run', passed: true, score: 100, message: '✅ 실행 완료!' };
@@ -190,6 +198,33 @@ export default function MissionPlay() {
         };
       } else {
         result = aResult;
+      }
+    }
+
+    // codeChecks 병행 검사: A, A+B 등에서도 codeChecks가 있으면 추가 검증
+    if (mission.gradeType !== 'code' && mission.codeChecks && mission.codeChecks.length > 0 && result.passed) {
+      const codeResults = [];
+      for (const check of mission.codeChecks) {
+        const matches = code.match(new RegExp(check.pattern, 'g'));
+        const count = matches ? matches.length : 0;
+        const passed = count >= (check.minCount || 1);
+        codeResults.push({
+          passed,
+          message: passed
+            ? `✅ ${check.message} (${count}개 사용)`
+            : `❌ ${check.message} (현재 ${count}개)`,
+        });
+      }
+      const codePassedAll = codeResults.every(r => r.passed);
+      if (!codePassedAll) {
+        const codeScore = Math.round((codeResults.filter(r => r.passed).length / codeResults.length) * 100);
+        result = {
+          ...result,
+          passed: false,
+          score: Math.round((result.score + codeScore) / 2),
+          results: [...(result.results || []), ...codeResults],
+          message: '코드를 더 완성해 보세요.',
+        };
       }
     }
 
@@ -233,34 +268,6 @@ export default function MissionPlay() {
     handleGradeInternal();
   };
 
-  // AI 힌트
-  const handleAiHint = async () => {
-    if (aiLoading) return;
-    setAiLoading(true);
-    setAiHint('');
-    try {
-      const res = await fetch(`${API_BASE}/api/ai/hint`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code,
-          missionId: mission.id,
-          hintLevel: hintIndex + 2,
-          language: lang,
-        }),
-      });
-      const data = await res.json();
-      if (data.hint) {
-        setAiHint(data.hint);
-      } else {
-        setAiHint(data.error || t('ai.cooldown'));
-      }
-    } catch {
-      setAiHint(t('ai.cooldown'));
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
   // 다음 미션
   const currentIdx = missions.findIndex(m => m.id === missionId);
@@ -438,38 +445,6 @@ export default function MissionPlay() {
               </div>
             </section>
 
-            <div style={{ borderTop: '1px solid var(--color-border)' }} />
-
-            {/* AI 힌트 */}
-            <section>
-              <button
-                onClick={handleAiHint}
-                disabled={aiLoading}
-                className="w-full py-2.5 px-3 rounded-lg text-sm font-semibold cursor-pointer transition-colors flex items-center justify-center gap-2"
-                style={{
-                  backgroundColor: 'var(--color-accent-bg)',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--color-accent)',
-                }}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/>
-                </svg>
-                {aiLoading ? t('ai.thinking') : t('ai.askHint')}
-              </button>
-              {aiHint && (
-                <div className="mt-2.5 text-[13px] p-3 rounded-lg leading-relaxed" style={{
-                  backgroundColor: 'var(--color-bg-panel)',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--color-text-secondary)',
-                }}>
-                  {aiHint}
-                </div>
-              )}
-              <p className="text-xs mt-2 text-center" style={{ color: 'var(--color-text-muted)' }}>
-                {t('ai.disclaimer')}
-              </p>
-            </section>
 
             {/* 채점 결과 */}
             {gradeResult && (

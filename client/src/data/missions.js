@@ -718,9 +718,10 @@ sleep(0.5)
 
 print("3D 피아노 완성!")
 `,
-    assertions: [
-      { type: 'box', property: 'pos.x', operator: '<', value: 0, index: 0 },
-      { type: 'box', property: 'pos.x', operator: '>', value: 0, index: 6 },
+    gradeType: 'code',
+    codeChecks: [
+      { pattern: '화음\\s*\\(|chord\\s*\\(', minCount: 1, message: '화음()을 사용하여 도-미-솔 화음을 연주하세요' },
+      { pattern: 'sound\\s*\\(|음표\\s*\\(', minCount: 3, message: '3개 이상의 음을 재생하세요' },
     ],
     hints: [
       { ko: 'note.C4, note.D4 등으로 주파수 상수를 사용하세요.', en: 'Use note.C4, note.D4 etc. for frequency constants.' },
@@ -802,6 +803,9 @@ while True:
 효과음("success")
 print("시뮬레이션 완료!")
 `,
+    codeChecks: [
+      { pattern: '효과음\\s*\\(|sfx\\s*\\(', minCount: 1, message: '바운스 시 효과음()을 추가하세요' },
+    ],
     assertions: [
       { type: 'sphere', property: 'pos.y', operator: '<', value: 0 },
       { type: 'box', property: 'pos.y', operator: '==', value: -5, index: 0 },
@@ -844,7 +848,7 @@ print("시뮬레이션 완료!")
       ko: '음계를 연주하면서 3D 표면이 파동으로 변하는 미디어아트를 만드세요.',
       en: 'Create media art where a 3D surface ripples as musical notes play.',
     },
-    gradeType: 'A',
+    gradeType: 'run',
     starterCode: `from vpython import *
 import math
 
@@ -989,12 +993,6 @@ export const categories = {
     title: { ko: '사운드 코딩', en: 'Sound Coding' },
     icon: '🎵',
     color: '#D9694A',
-  },
-  AI: {
-    id: 'AI',
-    title: { ko: '인공지능 원리', en: 'AI Principles' },
-    icon: '🤖',
-    color: '#4AD9D9',
   },
 };
 

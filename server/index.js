@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -22,27 +21,14 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '1mb' }));
 
-// AI 프록시 레이트 리밋 (학생당 분당 5회)
-const aiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 5,
-  message: { error: '잠시 후 다시 시도해주세요. (분당 5회 제한)' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 // === 라우트 ===
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    version: '0.2.0',
+    version: '0.3.0',
   });
 });
-
-// AI 힌트 프록시 (Solar Pro 3)
-import aiRoutes from './routes/ai.js';
-app.use('/api/ai', aiLimiter, aiRoutes);
 
 // GitHub Pages 발행 API
 import publishRoutes from './routes/publish.js';

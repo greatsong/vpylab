@@ -13,7 +13,6 @@
 - **3D**: Three.js
 - **Python**: Pyodide (Web Worker)
 - **DB/인증**: Supabase Pro
-- **AI**: Upstage Solar Pro 3 (서버 프록시)
 - **호스팅**: Railway (백엔드), Vercel (프론트)
 
 ## 코딩 컨벤션

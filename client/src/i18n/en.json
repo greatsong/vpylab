@@ -12,7 +12,6 @@
     "dashboard": "Dashboard",
     "gallery": "Gallery",
     "docs": "Docs",
-    "aiLab": "AI Lab",
     "settings": "Settings"
   },
   "gallery": {
@@ -65,8 +64,7 @@
     "MA": "Mathematical Exploration",
     "SC": "Science Simulation",
     "AR": "Art & Code",
-    "SN": "Sound Coding",
-    "AI": "AI Principles"
+    "SN": "Sound Coding"
   },
   "editor": {
     "run": "Run",
@@ -106,13 +104,6 @@
     "showHint": "Show Hint",
     "congratulations": "Congratulations!",
     "notYet": "Not passed yet"
-  },
-  "ai": {
-    "askHint": "Ask AI for a hint",
-    "thinking": "Thinking...",
-    "cooldown": "Take a moment to think",
-    "dailyLimit": "You've used all AI hints for today",
-    "disclaimer": "AI responses are for reference only. Try to think and solve it yourself."
   },
   "theme": {
     "creativeLight": "Creative Light",
@@ -187,14 +178,13 @@
   },
   "about": {
     "title": "VPyLab",
-    "vision": "VPyLab is a 3D programming education platform replacing GlowScript. Built on Pyodide (Python 3) + Three.js + Web Audio API with zero build. Multilingual UI, auto-grading, AI feedback, sound, and mission curriculum. An open-source platform for schools worldwide.",
+    "vision": "VPyLab is a 3D programming education platform replacing GlowScript. Built on Pyodide (Python 3) + Three.js + Web Audio API with zero build. Multilingual UI, auto-grading, sound, and mission curriculum. An open-source platform for schools worldwide.",
     "whyTitle": "Why VPyLab?",
     "feature": "Feature",
     "compare": {
       "python": { "name": "Python", "old": "Skulpt (Python 2 legacy)", "new": "Pyodide (Python 3)" },
       "language": { "name": "Language", "old": "English only", "new": "Multilingual (KO/EN)" },
       "grading": { "name": "Grading", "old": "None", "new": "Auto-grading" },
-      "ai": { "name": "AI", "old": "None", "new": "AI hints/review" },
       "sound": { "name": "Sound", "old": "None", "new": "Web Audio" }
     },
     "techTitle": "Tech Stack",
@@ -211,40 +201,6 @@
     "licenseContent": "Mission Content",
     "creditsTitle": "Credits",
     "credits": "Danggok High School · Seok Ri-song · Built with Claude Code"
-  },
-  "aiLab": {
-    "title": "AI Lab",
-    "subtitle": "Experience AI hands-on in the browser with TensorFlow.js",
-    "back": "\u2190 AI Lab",
-    "teachable": {
-      "title": "Teach Your AI",
-      "desc": "Collect data from your webcam and train a model to control the 3D world"
-    },
-    "rl": {
-      "title": "RL Playground",
-      "desc": "Design rewards and watch an AI agent learn step by step"
-    },
-    "neuralViz": {
-      "title": "Living Neurons",
-      "desc": "Explore neural network internals in 3D and feel the learning process"
-    },
-    "pose": {
-      "title": "AI Dance Party",
-      "desc": "Move your body to control a 3D avatar and dance to the beat"
-    },
-    "physics": {
-      "title": "AI vs Me: Physics",
-      "desc": "Compete with AI to predict projectile motion outcomes"
-    },
-    "startLab": "Start Lab",
-    "loading": "Loading AI engine...",
-    "cameraPermission": "Camera permission required",
-    "train": "Train",
-    "training": "Training...",
-    "predict": "Predict",
-    "reset": "Reset",
-    "score": "Score",
-    "epoch": "Epoch"
   },
   "docs": {
     "title": "API Docs",
