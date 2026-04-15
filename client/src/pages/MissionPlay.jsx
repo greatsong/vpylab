@@ -41,6 +41,7 @@ export default function MissionPlay() {
   const [activeTab, setActiveTab] = useState('editor');
   const sceneRef = useRef(null);
   const pendingBatchRef = useRef([]);  // 모바일: sceneRef 미 mount 시 버퍼
+  const pendingGradeRef = useRef(false);  // 채점 버튼 → 실행 완료 후 자동 채점
 
   // 미션이 없으면 목록으로 이동
   useEffect(() => {
@@ -128,10 +129,15 @@ export default function MissionPlay() {
     stopBgm();
     setActiveTab('editor');  // 정지 시 코드 에디터로 복귀
     addOutput('⏹ 실행 중지됨', 'warning');
+    // 채점 대기 중이면 정지 후 자동 채점 (무한 루프 미션 대응)
+    if (pendingGradeRef.current) {
+      pendingGradeRef.current = false;
+      setTimeout(() => handleGradeInternal(), 100);
+    }
   };
 
-  // 채점
-  const handleGrade = () => {
+  // 채점 (내부 로직)
+  const handleGradeInternal = () => {
     if (!mission) return;
 
     let result;
@@ -211,6 +217,20 @@ export default function MissionPlay() {
         addOutput(`📝 ${result.message || t('mission.notYet')}`, 'warning');
       }
     }
+  };
+
+  // 채점 (외부 진입점)
+  const handleGrade = () => {
+    if (!mission) return;
+
+    // 실행 중이면 정지 후 채점 (무한 루프 미션 대응)
+    if (isRunning) {
+      pendingGradeRef.current = true;
+      handleStop();
+      return;
+    }
+
+    handleGradeInternal();
   };
 
   // AI 힌트
