@@ -66,7 +66,7 @@ export default class CameraSystem {
 
     // 추적 모드용: 이전 프레임의 물체 위치 기록
     this._prevPositions = new Map(); // object.uuid → Vector3
-    this._lastObjectCount = 0;       // Auto-Fit: 물체 수 변화 감지용
+    this._followZoomLocked = false;   // Follow 모드 내부 줌 고정 플래그
 
     // 사용자 조작 감지 — 마우스 이벤트로 수동 모드 전환
     this._onUserInteraction = () => {
@@ -272,39 +272,25 @@ export default class CameraSystem {
       this.scene.updateMatrixWorld(true);
 
       if (this.mode === MODE.AUTO_FIT) {
-        const objects = this._getVPythonObjects();
-        const objectCount = objects.length;
-
-        // 물체 수가 변했을 때만 재프레이밍 (추가/제거 감지)
-        // 물체가 이동해도 카메라는 고정 — 이것이 Follow와의 핵심 차이
-        if (objectCount !== this._lastObjectCount) {
-          this._lastObjectCount = objectCount;
-          const state = this._computeCameraState();
-          if (state) {
-            this._targetCenter.copy(state.center);
-            if (!this.options.zoomLocked) {
-              this._targetDistance = this._distanceForBounds(state.radius);
-            }
-            this._lastBounds = state;
+        // 자동 모드: 전체 물체가 항상 화면 안에 담기도록 중심 + 줌 조절
+        const state = this._computeCameraState();
+        if (state) {
+          this._targetCenter.copy(state.center);
+          if (!this.options.zoomLocked) {
+            this._targetDistance = this._distanceForBounds(state.radius);
           }
+          this._lastBounds = state;
         }
       } else if (this.mode === MODE.FOLLOW) {
+        // 추적 모드: 움직이는 물체의 중심만 따라감 (줌은 고정)
         const state = this._computeMovingObjectsState();
         if (state) {
-          // 추적 모드: 움직이는 물체의 중심을 따라감
           const centerDiff = state.center.distanceTo(this._targetCenter);
           if (centerDiff > this.options.followCenterDeadzone) {
             this._targetCenter.copy(state.center);
           }
-
-          if (!this.options.zoomLocked) {
-            const nextDistance = this._distanceForBounds(state.radius);
-            const distanceRatio = Math.abs(nextDistance - this._targetDistance)
-              / Math.max(this._targetDistance, 1);
-            if (distanceRatio > this.options.zoomThreshold) {
-              this._targetDistance = nextDistance;
-            }
-          }
+          // Follow는 줌을 고정 — 움직이는 물체 중심만 추적
+          // Auto-Fit과의 핵심 차이: 정적 물체가 화면 밖으로 나갈 수 있음
           this._lastBounds = state;
         }
       }
@@ -343,7 +329,6 @@ export default class CameraSystem {
     this.mode = MODE.AUTO_FIT;
     this._userInteracted = false;
     this._autoFit();
-    this._lastObjectCount = this._getVPythonObjects().length;
   }
 
   /**
@@ -370,14 +355,11 @@ export default class CameraSystem {
     this._userInteracted = false;
     this._frameCount = 0;
     this._prevPositions.clear();
-    this._lastObjectCount = 0; // 리셋하여 첫 프레임에서 반드시 프레이밍
 
     // 약간의 딜레이 후 Auto-Fit (물체 생성 시간 확보)
     clearTimeout(this._fitTimer);
     this._fitTimer = setTimeout(() => {
       this._autoFit();
-      // Auto-Fit 후 현재 물체 수 기록
-      this._lastObjectCount = this._getVPythonObjects().length;
     }, this.options.fitDelay);
   }
 
