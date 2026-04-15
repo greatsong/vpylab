@@ -30,6 +30,22 @@ function getAudioContext() {
 }
 
 /**
+ * AudioContext가 'running' 상태일 때만 콜백 실행.
+ * suspended 상태면 resume 후 콜백 실행 (모바일에서 필수).
+ * 데스크톱(이미 running)에선 동기 실행 — 지연 없음.
+ */
+function withRunningContext(fn) {
+  const ctx = getAudioContext();
+  if (ctx.state === 'running') {
+    fn(ctx);
+  } else {
+    ctx.resume().then(() => {
+      if (ctx.state === 'running') fn(ctx);
+    }).catch(() => {});
+  }
+}
+
+/**
  * 모바일 브라우저 오디오 잠금 해제
  * 사용자 제스처(클릭/터치/키)에서 AudioContext를 생성하고 resume한다.
  * - touchend 사용 (iOS에서 touchstart는 스크롤로 간주될 수 있어 불안정)
@@ -99,23 +115,24 @@ export function ensureAudioResumed() {
  * @param {number} volume - 볼륨 (0~1)
  */
 export function beep(frequency = 440, duration = 0.3, type = 'sine', volume = 0.3) {
-  const ctx = getAudioContext();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
+  withRunningContext(ctx => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-  osc.type = type;
-  osc.frequency.value = frequency;
-  gain.gain.value = volume;
+    osc.type = type;
+    osc.frequency.value = frequency;
+    gain.gain.value = volume;
 
-  // 페이드 아웃으로 클릭 방지
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    // 페이드 아웃으로 클릭 방지
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
 
-  osc.connect(gain);
-  gain.connect(ctx.destination);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
 
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  });
 }
 
 /**
@@ -242,21 +259,22 @@ export function levelUpSound() {
  * 점프 효과음 — 상승 주파수 스윕
  */
 export function sfxJump() {
-  const ctx = getAudioContext();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
+  withRunningContext(ctx => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-  osc.type = 'square';
-  osc.frequency.setValueAtTime(300, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(300, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15);
 
-  gain.gain.setValueAtTime(0.2, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
 
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+  });
 }
 
 /**
@@ -291,44 +309,46 @@ export function sfxDeath() {
  * 파이어볼 효과음 — 빠른 하강 스윕
  */
 export function sfxFireball() {
-  const ctx = getAudioContext();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
+  withRunningContext(ctx => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(900, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(900, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
 
-  gain.gain.setValueAtTime(0.15, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
 
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  });
 }
 
 /**
  * 파이프/워프 효과음 — 하강 후 상승
  */
 export function sfxPipe() {
-  const ctx = getAudioContext();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
+  withRunningContext(ctx => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-  osc.type = 'square';
-  osc.frequency.setValueAtTime(500, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.2);
-  osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.4);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(500, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.2);
+    osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.4);
 
-  gain.gain.setValueAtTime(0.15, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.3);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
 
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.4);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  });
 }
 
 /**
@@ -361,55 +381,56 @@ export function sfxWarning() {
  * 폭발 효과음 — 노이즈 기반
  */
 export function sfxExplosion() {
-  const ctx = getAudioContext();
+  withRunningContext(ctx => {
+    // 화이트 노이즈 버퍼 생성
+    const bufferSize = ctx.sampleRate * 0.4;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
 
-  // 화이트 노이즈 버퍼 생성
-  const bufferSize = ctx.sampleRate * 0.4;
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = Math.random() * 2 - 1;
-  }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
 
-  const noise = ctx.createBufferSource();
-  noise.buffer = buffer;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
 
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.3, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    // 로우패스 필터로 둔탁한 느낌
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1000, ctx.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.4);
 
-  // 로우패스 필터로 둔탁한 느낌
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(1000, ctx.currentTime);
-  filter.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.4);
-
-  noise.connect(filter);
-  filter.connect(gain);
-  gain.connect(ctx.destination);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + 0.4);
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start(ctx.currentTime);
+    noise.stop(ctx.currentTime + 0.4);
+  });
 }
 
 /**
  * 레이저 효과음 — 하강 톤
  */
 export function sfxLaser() {
-  const ctx = getAudioContext();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
+  withRunningContext(ctx => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(1500, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.2);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1500, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.2);
 
-  gain.gain.setValueAtTime(0.15, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
 
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+  });
 }
 
 // 이름으로 효과음 호출하는 매핑
