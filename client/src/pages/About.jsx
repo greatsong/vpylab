@@ -64,7 +64,7 @@ export default function About() {
                 </tr>
               </thead>
               <tbody style={{ color: 'var(--color-text-secondary)' }}>
-                {['python', 'language', 'grading', 'ai', 'sound'].map((key) => (
+                {['python', 'language', 'grading', 'sound'].map((key) => (
                   <tr key={key} className="border-t" style={{ borderColor: 'var(--color-border)' }}>
                     <td className="py-2.5 text-xs font-medium" style={{ color: 'var(--color-text-primary)' }}>
                       {t(`about.compare.${key}.name`)}
