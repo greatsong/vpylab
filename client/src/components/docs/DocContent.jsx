@@ -28,7 +28,7 @@ export default function DocContent({ doc, t }) {
   const example = doc.code || (typeof doc.example === 'object' ? (doc.example[locale] || doc.example['en']) : doc.example);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       {/* 제목 */}
       <h1
         className="text-2xl font-bold mb-3 tracking-tight"

@@ -148,7 +148,7 @@ export default function Docs() {
         {/* 콘텐츠 영역 */}
         <main
           className="flex-1"
-          style={{ overflowY: 'auto', padding: '24px 32px' }}
+          style={{ overflowY: 'auto', padding: '32px 48px' }}
         >
           <DocContent doc={selectedDoc} t={t} />
         </main>
