@@ -233,6 +233,48 @@ export function ensureAudioResumed() {
   void ensureAudioReady();
 }
 
+/**
+ * 클릭 핸들러에서 AudioContext를 resume하고, running 확인 후 콜백 실행.
+ * - 동기적으로 resume() 호출 (사용자 제스처 콜스택 안)
+ * - 최대 500ms 대기 후 상태 무관하게 콜백 실행 (3D 차단 방지)
+ * - iOS에서 suspended→running 전환 시간을 확보하면서도 실행을 보장
+ */
+export function resumeAndRun(callback) {
+  const ctx = getAudioContext();
+  if (!ctx) { callback(); return; }
+
+  // 이미 running이면 즉시 실행
+  if (ctx.state === 'running') {
+    audioUnlocked = true;
+    callback();
+    return;
+  }
+
+  // 사용자 제스처 콜스택에서 동기적으로 resume 호출
+  const resumePromise = ctx.resume().catch(() => {});
+
+  // 무음 버퍼 재생 — iOS 잠금 해제 트릭
+  try {
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch (_) {}
+
+  // resume 완료되면 즉시 실행, 최대 500ms 후 강제 실행
+  let done = false;
+  const run = () => {
+    if (done) return;
+    done = true;
+    if (ctx.state === 'running') audioUnlocked = true;
+    callback();
+  };
+
+  resumePromise.then(run);
+  setTimeout(run, 500);
+}
+
 // ===================================================================
 // 1) 기본 재생
 // ===================================================================

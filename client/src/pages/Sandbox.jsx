@@ -9,7 +9,7 @@ import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, isAudioUnlocked, isTouchPlaybackEnvironment } from '../engine/sound-system';
+import { runSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
@@ -199,16 +199,15 @@ export default function Sandbox() {
     setOutputs([]);
     setActiveTab('3d');
     runSound();
-    addOutput('실행 중.....', 'log');
+    addOutput('실행 중....', 'log');
     runCode(sourceCode);
   }, [addOutput, runCode]);
 
   const handleRun = () => {
     if (!isReady) return;
-    // 오디오 잠금 해제 시도 (fire-and-forget — 실행을 차단하지 않음)
-    ensureAudioReady().catch(() => {});
     setPlayStartRequired(false);
-    startProgram(code);
+    // 클릭 제스처에서 AudioContext resume 후 코드 실행 (최대 500ms 대기)
+    resumeAndRun(() => startProgram(code));
   };
 
   // pendingPlay: Play 모드 코드 로드 + Pyodide 준비 모두 완료 시 자동 실행

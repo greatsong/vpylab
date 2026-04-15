@@ -10,7 +10,7 @@ import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { gradeA, gradeB, gradeNotes } from '../engine/grading-engine';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady } from '../engine/sound-system';
+import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, resumeAndRun } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
 import missions from '../data/missions';
 
@@ -107,8 +107,8 @@ export default function MissionPlay() {
 
   const handleRun = () => {
     if (!isReady) return;
-    // 오디오 잠금 해제 시도 (fire-and-forget — 실행을 차단하지 않음)
-    ensureAudioReady().catch(() => {});
+    // 클릭 제스처에서 AudioContext resume 후 코드 실행 (최대 500ms 대기)
+    resumeAndRun(() => {
     if (sceneRef.current) clearScene(sceneRef.current);
     // 카메라 자동 시스템 리셋
     if (sceneRef.current?._cameraSystem) {
@@ -119,8 +119,9 @@ export default function MissionPlay() {
     setGradeResult(null);
     setActiveTab('3d');  // 실행 시 3D 뷰로 자동 전환
     runSound();
-    addOutput('▶ 실행 중.....', 'log');
+    addOutput('▶ 실행 중....', 'log');
     runCode(code);
+    });
   };
 
   const handleStop = () => {
