@@ -1,7 +1,15 @@
 import { useRef, useCallback } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
+import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import useAppStore from '../../stores/appStore';
+
+// Monaco Web Worker 설정 — 누락 시 "MonacoEnvironment.getWorker" 오류 발생
+self.MonacoEnvironment = {
+  getWorker() {
+    return new editorWorker();
+  },
+};
 
 loader.config({ monaco });
 

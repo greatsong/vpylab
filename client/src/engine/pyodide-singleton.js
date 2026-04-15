@@ -44,8 +44,9 @@ function createWorker() {
 
   w.onerror = (err) => {
     status = 'idle';
+    const message = err?.message || err?.reason || (typeof err === 'string' ? err : '알 수 없는 오류');
     for (const listener of listeners) {
-      listener.onMessage({ type: 'error', error: `Worker 오류: ${err.message}` });
+      listener.onMessage({ type: 'error', error: `Worker 오류: ${message}` });
     }
   };
 
