@@ -33,8 +33,8 @@ function highlightPython(code) {
   result = result.replace(/("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, (m) =>
     ph(`<span style="color:var(--color-success)">${m}</span>`));
 
-  // 숫자
-  result = result.replace(/\b(\d+\.?\d*)\b/g, (m) =>
+  // 숫자 (토큰 플레이스홀더 \x00N\x00 내부의 숫자는 제외)
+  result = result.replace(/(?<!\x00)\b(\d+\.?\d*)\b(?!\x00)/g, (m) =>
     ph(`<span style="color:var(--color-warning)">${m}</span>`));
 
   // 키워드 (단어 경계 기준)
