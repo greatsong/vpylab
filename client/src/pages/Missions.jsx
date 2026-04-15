@@ -33,7 +33,7 @@ export default function Missions() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
 
-      <main className="flex-1 max-w-5xl mx-auto px-6 py-8 w-full">
+      <main className="flex-1 max-w-7xl mx-auto px-6 py-8 w-full">
         {/* 제목 + 진행 요약 */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1.5">

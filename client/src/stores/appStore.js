@@ -13,7 +13,7 @@ const useAppStore = create((set) => ({
   },
 
   // 언어
-  locale: localStorage.getItem('vpylab-locale') || 'en',
+  locale: localStorage.getItem('vpylab-locale') || 'ko',
   setLocale: (locale) => {
     localStorage.setItem('vpylab-locale', locale);
     set({ locale });

@@ -89,7 +89,7 @@ export default function GalleryDetail() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
 
-      <main className="flex-1 max-w-5xl mx-auto px-6 py-8 w-full">
+      <main className="flex-1 max-w-7xl mx-auto px-6 py-8 w-full">
         {/* 뒤로가기 */}
         <Link to="/gallery" className="inline-flex items-center gap-1.5 text-sm no-underline mb-6"
           style={{ color: 'var(--color-text-muted)' }}>
