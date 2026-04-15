@@ -79,7 +79,7 @@ export default function Header() {
           <Link
             key={key}
             to={path}
-            className="nav-link text-[13px] no-underline px-4 py-1.5 rounded-full transition-all font-semibold"
+            className="nav-link text-[13px] no-underline px-4 py-1.5 rounded transition-all font-semibold"
             style={{
               color: isActive(path) ? 'var(--color-accent)' : 'var(--color-text-secondary)',
               backgroundColor: isActive(path) ? 'var(--color-accent-bg)' : 'transparent',

@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import useGalleryStore from '../stores/galleryStore';
 import useAuthStore from '../stores/authStore';
-import GalleryCard from '../components/gallery/GalleryCard';
+import GalleryCard, { CATEGORY_STYLES } from '../components/gallery/GalleryCard';
 import { useI18n } from '../i18n';
 
 export default function GalleryDetail() {
@@ -102,21 +102,19 @@ export default function GalleryDetail() {
         {/* 메인 */}
         <div className="detail-layout mb-8">
           {/* 카테고리 비주얼 */}
-          <div className="rounded-xl overflow-hidden flex items-center justify-center" style={{
-            aspectRatio: '16/10',
-            background: {
-              computing: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              math: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-              science: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-              art: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-              sound: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-              free: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-            }[currentWork.category] || 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-          }}>
-            <span style={{ fontSize: '4rem', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.2))' }}>
-              {{ computing: '💻', math: '📐', science: '🔬', art: '🎨', sound: '🎵', free: '🚀' }[currentWork.category] || '🚀'}
-            </span>
-          </div>
+          {(() => {
+            const catStyle = CATEGORY_STYLES[currentWork.category] || CATEGORY_STYLES.free;
+            return (
+              <div className="rounded-xl overflow-hidden flex items-center justify-center" style={{
+                aspectRatio: '16/10',
+                background: catStyle.gradient,
+              }}>
+                <span style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.2))' }}>
+                  {catStyle.icon}
+                </span>
+              </div>
+            );
+          })()}
 
           {/* 정보 */}
           <div>

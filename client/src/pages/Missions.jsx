@@ -71,7 +71,7 @@ export default function Missions() {
                 data-active={selectedCategory === cat.id || undefined}
                 style={selectedCategory === cat.id ? { '--filter-color': color } : {}}
               >
-                {cat.id}
+                {cat.title[lang] || cat.id}
                 <span className="opacity-50 ml-1">{count}</span>
               </button>
             );
@@ -89,7 +89,7 @@ export default function Missions() {
               <Link
                 key={mission.id}
                 to={`/mission/${mission.id}`}
-                className="no-underline block rounded-xl p-5 transition-all"
+                className="no-underline block rounded-md p-5 transition-all"
                 style={{
                   backgroundColor: 'var(--color-bg-panel)',
                   border: '1px solid var(--color-border)',
@@ -138,7 +138,7 @@ export default function Missions() {
 
                 {/* 하단: 카테고리 + 점수 */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded"
                     style={{ backgroundColor: `${color}12`, color }}>
                     {t(`categories.${mission.category}`)}
                   </span>
