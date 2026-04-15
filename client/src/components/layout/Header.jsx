@@ -75,7 +75,7 @@ export default function Header() {
 
       {/* 네비게이션 (데스크톱) */}
       <nav
-        className="hidden md:flex items-center gap-1 px-1.5 py-1 rounded-xl"
+        className="hidden md:flex items-center gap-3 px-2 py-1 rounded-xl"
         style={{
           border: '1px solid var(--color-border)',
           backgroundColor: 'var(--color-bg-primary)',
