@@ -15,6 +15,9 @@
 let audioCtx = null;
 let audioUnlocked = false;
 let audioUnlockPending = null;
+let iosMediaUnlocked = false;
+let iosMediaUnlockPending = null;
+let silentMediaDataUri = null;
 
 // 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
 let _onNotePlay = null;
@@ -32,6 +35,93 @@ function getAudioContext() {
   return audioCtx;
 }
 
+function isIOSDevice() {
+  const nav = globalThis.navigator;
+  if (!nav) return false;
+
+  const ua = nav.userAgent || '';
+  const platform = nav.platform || '';
+  const touchPoints = nav.maxTouchPoints || 0;
+
+  return /iPad|iPhone|iPod/.test(ua) || (platform === 'MacIntel' && touchPoints > 1);
+}
+
+export function isTouchPlaybackEnvironment() {
+  if (isIOSDevice()) return true;
+  if (typeof globalThis.matchMedia === 'function') {
+    return globalThis.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  }
+  return false;
+}
+
+function writeWavString(view, offset, value) {
+  for (let i = 0; i < value.length; i++) {
+    view.setUint8(offset + i, value.charCodeAt(i));
+  }
+}
+
+function getSilentMediaDataUri() {
+  if (silentMediaDataUri) return silentMediaDataUri;
+
+  const sampleRate = 8000;
+  const durationSeconds = 0.2;
+  const sampleCount = Math.floor(sampleRate * durationSeconds);
+  const dataSize = sampleCount * 2;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  writeWavString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeWavString(view, 8, 'WAVE');
+  writeWavString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeWavString(view, 36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+
+  silentMediaDataUri = `data:audio/wav;base64,${btoa(binary)}`;
+  return silentMediaDataUri;
+}
+
+async function ensureIOSMediaPlayback() {
+  if (!isIOSDevice()) return true;
+  if (iosMediaUnlocked) return true;
+
+  if (!iosMediaUnlockPending) {
+    iosMediaUnlockPending = (async () => {
+      try {
+        const audio = document.createElement('audio');
+        audio.src = getSilentMediaDataUri();
+        audio.preload = 'auto';
+        audio.playsInline = true;
+        audio.setAttribute('playsinline', '');
+        audio.setAttribute('webkit-playsinline', '');
+        await audio.play();
+        iosMediaUnlocked = true;
+      } catch (_) {
+        // 사용자 제스처가 아니면 재생이 거절될 수 있으므로 다음 제스처에서 재시도
+      }
+
+      return iosMediaUnlocked;
+    })().finally(() => {
+      iosMediaUnlockPending = null;
+    });
+  }
+
+  return iosMediaUnlockPending;
+}
+
 function playSilentUnlockBuffer(ctx) {
   try {
     const buf = ctx.createBuffer(1, 1, 22050);
@@ -46,9 +136,12 @@ export async function ensureAudioReady() {
   const ctx = getAudioContext();
   if (!ctx) return false;
 
+  const iosReadyPromise = ensureIOSMediaPlayback();
+
   if (ctx.state === 'running') {
     audioUnlocked = true;
-    return true;
+    const iosReady = await iosReadyPromise;
+    return isIOSDevice() ? iosReady : true;
   }
 
   if (!audioUnlockPending) {
@@ -60,12 +153,13 @@ export async function ensureAudioReady() {
       }
 
       playSilentUnlockBuffer(ctx);
+      const iosReady = await iosReadyPromise;
 
       if (ctx.state === 'running') {
         audioUnlocked = true;
       }
 
-      return ctx.state === 'running';
+      return isIOSDevice() ? (ctx.state === 'running' && iosReady) : ctx.state === 'running';
     })().finally(() => {
       audioUnlockPending = null;
     });
@@ -75,6 +169,9 @@ export async function ensureAudioReady() {
 }
 
 export function isAudioUnlocked() {
+  if (isIOSDevice()) {
+    return (audioUnlocked || audioCtx?.state === 'running') && iosMediaUnlocked;
+  }
   return audioUnlocked || audioCtx?.state === 'running';
 }
 

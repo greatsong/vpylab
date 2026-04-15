@@ -9,7 +9,7 @@ import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, isAudioUnlocked } from '../engine/sound-system';
+import { runSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, isAudioUnlocked, isTouchPlaybackEnvironment } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
@@ -43,6 +43,7 @@ export default function Sandbox() {
   const [editMode, setEditMode] = useState(null); // { id, githubRepo, title }
   const [theaterMode, setTheaterMode] = useState(false);
   const [theaterWaiting, setTheaterWaiting] = useState(false); // 클릭 대기 중
+  const [playStartRequired, setPlayStartRequired] = useState(false);
   const sceneRef = useRef(null);
   const pendingBatchRef = useRef([]);  // 모바일: sceneRef 미 mount 시 버퍼
   const { user } = useAuthStore();
@@ -189,49 +190,47 @@ export default function Sandbox() {
     initWorker();
   }, [initWorker]);
 
-  const handleRun = async () => {
-    if (!isReady) return;
-    await ensureAudioReady();
-    // 씬 + 레지스트리 초기화
+  const startProgram = useCallback((sourceCode) => {
     if (sceneRef.current) clearScene(sceneRef.current);
     clearRegistry();
-    // 카메라 자동 시스템 리셋
     if (sceneRef.current?._cameraSystem) {
       sceneRef.current._cameraSystem.onCodeStart();
     }
     setOutputs([]);
-    setActiveTab('3d');  // 실행 시 3D 뷰로 자동 전환
+    setActiveTab('3d');
     runSound();
     addOutput('실행 중...', 'log');
-    runCode(code);
+    runCode(sourceCode);
+  }, [addOutput, runCode]);
+
+  const handleRun = async () => {
+    if (!isReady) return;
+    await ensureAudioReady();
+    setPlayStartRequired(false);
+    startProgram(code);
   };
 
   // pendingPlay: Play 모드 코드 로드 + Pyodide 준비 모두 완료 시 자동 실행
   useEffect(() => {
     if (isReady && pendingPlayRef.current) {
       const playCode = pendingPlayRef.current;
-      pendingPlayRef.current = null;
-      if (!isAudioUnlocked() && (globalThis.navigator?.maxTouchPoints || 0) > 0) {
-        setOutputs([{
-          text: '모바일에서는 소리를 위해 실행 버튼을 한 번 눌러 시작해 주세요.',
-          type: 'warning',
-          id: Date.now(),
-        }]);
+      if (isTouchPlaybackEnvironment() && !isAudioUnlocked()) {
+        setPlayStartRequired(true);
         return;
       }
+      pendingPlayRef.current = null;
       // 다음 프레임에서 실행 (코드 state 반영 보장)
-      requestAnimationFrame(() => {
-        if (sceneRef.current) clearScene(sceneRef.current);
-        clearRegistry();
-        if (sceneRef.current?._cameraSystem) sceneRef.current._cameraSystem.onCodeStart();
-        setOutputs([]);
-        setActiveTab('3d');
-        runSound();
-        addOutput('실행 중...', 'log');
-        runCode(playCode);
-      });
+      requestAnimationFrame(() => startProgram(playCode));
     }
-  }, [isReady, code]);
+  }, [isReady, code, startProgram]);
+
+  const handlePendingPlayStart = async () => {
+    const playCode = pendingPlayRef.current || code;
+    await ensureAudioReady();
+    setPlayStartRequired(false);
+    pendingPlayRef.current = null;
+    requestAnimationFrame(() => startProgram(playCode));
+  };
 
   const handleStop = () => {
     stopExecution();
@@ -583,6 +582,38 @@ export default function Sandbox() {
           borderRadius: 8, fontSize: 13, zIndex: 50, backdropFilter: 'blur(8px)',
         }}>
           수정 모드: "{editMode.title}" — 수정 후 "업데이트"를 눌러주세요
+        </div>
+      )}
+
+      {playStartRequired && (
+        <div
+          onClick={handlePendingPlayStart}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 120,
+            background: 'rgba(13,17,23,0.72)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24, cursor: 'pointer',
+          }}
+        >
+          <div
+            style={{
+              width: 'min(420px, 100%)',
+              background: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 18,
+              padding: '28px 24px',
+              textAlign: 'center',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.24)',
+            }}
+          >
+            <div style={{ fontSize: 48, lineHeight: 1, marginBottom: 14 }}>▶</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 10 }}>
+              탭하여 소리와 함께 시작
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
+              모바일과 태블릿에서는 첫 탭에서 오디오를 먼저 활성화해야 합니다.
+            </div>
+          </div>
         </div>
       )}
 

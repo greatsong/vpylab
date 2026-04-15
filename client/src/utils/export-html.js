@@ -128,12 +128,51 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
   let audioCtx = null;
   let audioUnlocked = false;
   let audioUnlockPending = null;
+  let iosMediaUnlocked = false;
+  let iosMediaUnlockPending = null;
+  let silentMediaDataUri = null;
   function getAudioCtx() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return null;
     if (!audioCtx) audioCtx = new AudioContextClass();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
+  }
+  function isIOSDevice() {
+    const ua = navigator.userAgent || '';
+    const platform = navigator.platform || '';
+    const touchPoints = navigator.maxTouchPoints || 0;
+    return /iPad|iPhone|iPod/.test(ua) || (platform === 'MacIntel' && touchPoints > 1);
+  }
+  function writeWavString(view, offset, value) {
+    for (let i = 0; i < value.length; i++) view.setUint8(offset + i, value.charCodeAt(i));
+  }
+  function getSilentMediaDataUri() {
+    if (silentMediaDataUri) return silentMediaDataUri;
+    const sampleRate = 8000;
+    const durationSeconds = 0.2;
+    const sampleCount = Math.floor(sampleRate * durationSeconds);
+    const dataSize = sampleCount * 2;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+    writeWavString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeWavString(view, 8, 'WAVE');
+    writeWavString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeWavString(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    silentMediaDataUri = 'data:audio/wav;base64,' + btoa(binary);
+    return silentMediaDataUri;
   }
   function playSilentUnlockBuffer(ctx) {
     try {
@@ -144,19 +183,42 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
       s.start(0);
     } catch (_) {}
   }
+  async function ensureIOSMediaPlayback() {
+    if (!isIOSDevice()) return true;
+    if (iosMediaUnlocked) return true;
+    if (!iosMediaUnlockPending) {
+      iosMediaUnlockPending = (async () => {
+        try {
+          const audio = document.createElement('audio');
+          audio.src = getSilentMediaDataUri();
+          audio.preload = 'auto';
+          audio.playsInline = true;
+          audio.setAttribute('playsinline', '');
+          audio.setAttribute('webkit-playsinline', '');
+          await audio.play();
+          iosMediaUnlocked = true;
+        } catch (_) {}
+        return iosMediaUnlocked;
+      })().finally(() => { iosMediaUnlockPending = null; });
+    }
+    return iosMediaUnlockPending;
+  }
   async function ensureAudioReady() {
     const ctx = getAudioCtx();
     if (!ctx) return false;
+    const iosReadyPromise = ensureIOSMediaPlayback();
     if (ctx.state === 'running') {
       audioUnlocked = true;
-      return true;
+      const iosReady = await iosReadyPromise;
+      return isIOSDevice() ? iosReady : true;
     }
     if (!audioUnlockPending) {
       audioUnlockPending = (async () => {
         try { await ctx.resume(); } catch (_) {}
         playSilentUnlockBuffer(ctx);
+        const iosReady = await iosReadyPromise;
         if (ctx.state === 'running') audioUnlocked = true;
-        return ctx.state === 'running';
+        return isIOSDevice() ? (ctx.state === 'running' && iosReady) : ctx.state === 'running';
       })().finally(() => { audioUnlockPending = null; });
     }
     return audioUnlockPending;
