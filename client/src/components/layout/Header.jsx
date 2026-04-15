@@ -74,28 +74,25 @@ export default function Header() {
       </Link>
 
       {/* 네비게이션 (데스크톱) */}
-      <nav className="hidden md:flex items-center gap-1">
-        {navItems.map(({ key, path }, idx) => (
-          <span key={key} className="flex items-center">
-            {idx > 0 && (
-              <span
-                className="w-px h-3.5 mx-1"
-                style={{ backgroundColor: 'var(--color-border)' }}
-              />
-            )}
-            <Link
-              to={path}
-              className="text-[13px] no-underline px-3 py-1.5 rounded-lg transition-colors font-medium"
-              style={{
-                color: isActive(path) ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                backgroundColor: isActive(path) ? 'var(--color-accent-bg)' : 'transparent',
-              }}
-              onMouseEnter={() => handlePrewarm(path)}
-              onFocus={() => handlePrewarm(path)}
-            >
-              {t(`nav.${key}`)}
-            </Link>
-          </span>
+      <nav
+        className="hidden md:flex items-center gap-1 px-1 py-1 rounded-xl"
+        style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+      >
+        {navItems.map(({ key, path }) => (
+          <Link
+            key={key}
+            to={path}
+            className="text-[13px] no-underline px-4 py-1.5 rounded-lg transition-all font-semibold"
+            style={{
+              color: isActive(path) ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+              backgroundColor: isActive(path) ? 'var(--color-bg-panel)' : 'transparent',
+              boxShadow: isActive(path) ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+            }}
+            onMouseEnter={() => handlePrewarm(path)}
+            onFocus={() => handlePrewarm(path)}
+          >
+            {t(`nav.${key}`)}
+          </Link>
         ))}
       </nav>
 
