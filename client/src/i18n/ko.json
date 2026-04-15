@@ -11,6 +11,7 @@
     "about": "프로젝트 소개",
     "dashboard": "대시보드",
     "gallery": "갤러리",
+    "docs": "문서",
     "aiLab": "AI 실험실",
     "settings": "설정"
   },
@@ -244,6 +245,20 @@
     "reset": "\ucd08\uae30\ud654",
     "score": "\uc810\uc218",
     "epoch": "\uc5d0\ud3ed"
+  },
+  "docs": {
+    "title": "API 문서",
+    "search": "검색... (예: sphere, 색상, sound)",
+    "noResults": "검색 결과가 없습니다",
+    "selectTopic": "왼쪽에서 항목을 선택하세요",
+    "params": "매개변수",
+    "example": "예제",
+    "copyCode": "코드 복사",
+    "copied": "복사됨!",
+    "default": "기본값",
+    "name": "이름",
+    "type": "타입",
+    "description": "설명"
   },
   "common": {
     "loading": "로딩 중...",

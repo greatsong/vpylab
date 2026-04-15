@@ -11,6 +11,7 @@
     "about": "About",
     "dashboard": "Dashboard",
     "gallery": "Gallery",
+    "docs": "Docs",
     "aiLab": "AI Lab",
     "settings": "Settings"
   },
@@ -244,6 +245,20 @@
     "reset": "Reset",
     "score": "Score",
     "epoch": "Epoch"
+  },
+  "docs": {
+    "title": "API Docs",
+    "search": "Search... (e.g. sphere, color, sound)",
+    "noResults": "No results found",
+    "selectTopic": "Select a topic from the sidebar",
+    "params": "Parameters",
+    "example": "Example",
+    "copyCode": "Copy Code",
+    "copied": "Copied!",
+    "default": "Default",
+    "name": "Name",
+    "type": "Type",
+    "description": "Description"
   },
   "common": {
     "loading": "Loading...",

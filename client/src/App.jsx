@@ -16,6 +16,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Gallery = lazy(() => import('./pages/Gallery'));
 const GalleryDetail = lazy(() => import('./pages/GalleryDetail'));
 const SharedCodeLoader = lazy(() => import('./pages/SharedCodeLoader'));
+const Docs = lazy(() => import('./pages/Docs'));
 
 function AppContent() {
   const initialize = useAuthStore((s) => s.initialize);
@@ -39,6 +40,7 @@ function AppContent() {
           <Route path="/sandbox" element={<Sandbox />} />
           <Route path="/missions" element={<Missions />} />
           <Route path="/mission/:missionId" element={<MissionPlay />} />
+          <Route path="/docs" element={<Docs />} />
           <Route path="/about" element={<About />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/gallery" element={<Gallery />} />
