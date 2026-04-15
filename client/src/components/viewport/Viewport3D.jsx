@@ -181,24 +181,43 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
 
       {/* 카메라 모드 표시 + 옵션 토글 */}
       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-        {/* 카메라 모드 뱃지 */}
-        <button
-          onClick={() => {
-            if (cameraSystemRef.current) {
-              cameraSystemRef.current.resetToAutoFit();
-              setCameraMode('auto-fit');
-            }
-          }}
-          className="text-xs px-2 py-0.5 rounded cursor-pointer"
-          style={{
-            color: cameraMode === 'manual' ? 'var(--color-text-muted)' : 'var(--color-accent)',
-            backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
-            border: cameraMode === 'manual' ? 'none' : '1px solid var(--color-accent)',
-          }}
-          title="더블클릭 또는 이 버튼으로 자동 카메라 복귀"
-        >
-          📷 {modeLabels[cameraMode] || '자동'}
-        </button>
+        {/* 카메라 모드 선택 */}
+        <div className="flex gap-0.5">
+          <button
+            onClick={() => {
+              if (cameraSystemRef.current) {
+                cameraSystemRef.current.resetToAutoFit();
+                setCameraMode('auto-fit');
+              }
+            }}
+            className="text-xs px-2 py-0.5 rounded-l cursor-pointer"
+            style={{
+              color: cameraMode === 'auto-fit' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+              backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
+              border: cameraMode === 'auto-fit' ? '1px solid var(--color-accent)' : '1px solid transparent',
+            }}
+            title="전체 물체가 화면에 담기도록 자동 줌"
+          >
+            자동
+          </button>
+          <button
+            onClick={() => {
+              if (cameraSystemRef.current) {
+                cameraSystemRef.current.switchToFollow();
+                setCameraMode('follow');
+              }
+            }}
+            className="text-xs px-2 py-0.5 rounded-r cursor-pointer"
+            style={{
+              color: cameraMode === 'follow' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+              backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
+              border: cameraMode === 'follow' ? '1px solid var(--color-accent)' : '1px solid transparent',
+            }}
+            title="움직이는 물체 중심을 따라감"
+          >
+            추적
+          </button>
+        </div>
 
         <label
           className="flex items-center gap-1.5 text-xs cursor-pointer select-none px-2 py-1 rounded"

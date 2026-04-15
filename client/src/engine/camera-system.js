@@ -237,18 +237,10 @@ export default class CameraSystem {
         const nextDistance = this._distanceForBounds(state.radius);
 
         if (this.mode === MODE.AUTO_FIT) {
+          // 자동 모드: 전체 물체가 화면에 담기도록 중심+줌 계속 업데이트
           this._targetCenter.copy(state.center);
           this._targetDistance = nextDistance;
-
-          // Follow 전환은 실제 렌더 박스가 아니라 객체 앵커 이동으로 감지한다.
-          if (this._lastBounds) {
-            const centerDiff = state.focusCenter.distanceTo(this._lastBounds.focusCenter);
-            if (centerDiff > this.options.followThreshold) {
-              this.mode = MODE.FOLLOW;
-              this._targetCenter.copy(state.focusCenter);
-            }
-          }
-        } else {
+        } else if (this.mode === MODE.FOLLOW) {
           const centerDiff = state.focusCenter.distanceTo(this._targetCenter);
           if (centerDiff > this.options.followCenterDeadzone) {
             this._targetCenter.copy(state.focusCenter);
@@ -300,6 +292,20 @@ export default class CameraSystem {
     this.mode = MODE.AUTO_FIT;
     this._userInteracted = false;
     this._autoFit();
+  }
+
+  /**
+   * Follow 모드로 전환 (UI 버튼 등)
+   */
+  switchToFollow() {
+    this.mode = MODE.FOLLOW;
+    this._userInteracted = false;
+    // 현재 상태에서 추적 대상 초기화
+    this.scene.updateMatrixWorld(true);
+    const state = this._computeCameraState();
+    if (state) {
+      this._targetCenter.copy(state.focusCenter);
+    }
   }
 
   /**
