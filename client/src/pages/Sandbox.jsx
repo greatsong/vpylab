@@ -546,7 +546,7 @@ export default function Sandbox() {
         <div className={`${activeTab === 'editor' ? 'hidden' : 'flex'} md:flex flex-1 flex-col min-h-0 min-w-0`}>
           {/* 3D 뷰포트 — 모바일: 100%, 데스크톱: 항상 60% */}
           <div
-            className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex`}
+            className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex w-full`}
             style={{ height: '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
             <Viewport3D sceneRef={sceneRef} />
@@ -557,7 +557,7 @@ export default function Sandbox() {
 
           {/* 콘솔 — 데스크톱: 항상 표시 */}
           <div
-            className={`${activeTab === 'console' || activeTab === '3d' ? 'flex' : 'hidden'} md:flex flex-col`}
+            className={`${activeTab === 'console' || activeTab === '3d' ? 'flex' : 'hidden'} md:flex flex-col w-full`}
             style={{ flex: 1, minHeight: 0 }}
           >
             <OutputConsole outputs={outputs} onClear={() => setOutputs([])} />

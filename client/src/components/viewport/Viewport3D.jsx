@@ -42,7 +42,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     scene.background = new THREE.Color(THEME_BG[theme] || 0xf7f8fa);
 
     // 카메라 — 기본 거리를 8로 줄여 가까이에서 시작
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(45, (width / height) || 1, 0.1, 1000);
     camera.position.set(0, 0, 8);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;

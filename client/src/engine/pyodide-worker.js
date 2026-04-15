@@ -214,6 +214,9 @@ sys.stdout = StringIO()
 sys.stderr = StringIO()
 `);
 
+    // 학생 코드 실행 전 heartbeat — 모바일에서 초기화 지연으로 인한 타임아웃 방지
+    self.postMessage({ type: 'batch', commands: [] });
+
     // 학생 코드 실행
     await pyodide.runPythonAsync(code);
 
