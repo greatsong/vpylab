@@ -18,6 +18,10 @@ import useCodeStore from '../stores/codeStore';
 import useGalleryStore from '../stores/galleryStore';
 import SavedCodeList from '../components/code/SavedCodeList';
 import PublishModal from '../components/gallery/PublishModal';
+import SendCodeModal from '../components/codeshare/SendCodeModal';
+import CodeSharePanel from '../components/codeshare/CodeSharePanel';
+import CodeShareToast from '../components/codeshare/CodeShareToast';
+import useCodeShareStore from '../stores/codeShareStore';
 import EXAMPLES, { EXAMPLE_CATEGORIES } from '../data/examples';
 
 /**
@@ -46,8 +50,14 @@ export default function Sandbox() {
   const [playStartRequired, setPlayStartRequired] = useState(false);
   const sceneRef = useRef(null);
   const pendingBatchRef = useRef([]);  // 모바일: sceneRef 미 mount 시 버퍼
-  const { user } = useAuthStore();
+  const { user, profile, isTeacher } = useAuthStore();
   const { saveCode, autoSave, clearAutoSave, saveStatus } = useCodeStore();
+  const {
+    sharedCodes, unreadCount, panelOpen, sendModalOpen, lastReceivedAt,
+    initialize: initCodeShare, unsubscribe: unsubCodeShare,
+    setPanelOpen, setSendModalOpen, clearCodes, selectedClassId,
+  } = useCodeShareStore();
+  const [codeShareToast, setCodeShareToast] = useState(false);
   const [searchParams] = useSearchParams();
   const location = useLocation();
 
@@ -85,6 +95,19 @@ export default function Sandbox() {
 
   // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => () => clearAutoSave(), []);
+
+  // 코드 공유 초기화 + 정리
+  useEffect(() => {
+    if (user && profile) initCodeShare(user, profile);
+    return () => unsubCodeShare();
+  }, [user, profile]);
+
+  // 코드 수신 토스트
+  useEffect(() => {
+    if (lastReceivedAt && !panelOpen) {
+      setCodeShareToast(true);
+    }
+  }, [lastReceivedAt]);
   useEffect(() => { initAudioOnUserGesture(); }, []);
 
   const addOutput = useCallback((text, type = 'log') => {
@@ -465,6 +488,44 @@ export default function Sandbox() {
           >
             {t('gallery.publish') || '갤러리에 올리기'}
           </button>
+          {/* 교사: 코드 전송 + 비우기 */}
+          {isTeacher() && (
+            <>
+              <button onClick={() => setSendModalOpen(true)} className="toolbar-btn" style={{ background: '#F59E0B', color: 'white', fontWeight: 600, border: '1px solid #F59E0B' }}>
+                {t('codeShare.sendToStudents')}
+              </button>
+              {sharedCodes.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (window.confirm(t('codeShare.clearConfirm'))) {
+                      clearCodes(selectedClassId);
+                    }
+                  }}
+                  className="toolbar-btn"
+                  style={{ color: 'var(--color-error, #FF6B6B)' }}
+                >
+                  {t('codeShare.clearAll')}
+                </button>
+              )}
+            </>
+          )}
+          {/* 학생: 코드 우편함 */}
+          {!isTeacher() && profile?.class_id && sharedCodes.length > 0 && (
+            <button onClick={() => setPanelOpen(true)} className="toolbar-btn" style={{ position: 'relative' }}>
+              {t('codeShare.mailbox')}
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: -4, right: -4,
+                  background: 'var(--color-error, #FF6B6B)', color: 'white',
+                  borderRadius: '50%', width: 16, height: 16,
+                  fontSize: 10, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* 모바일 더보기 메뉴 */}
@@ -491,10 +552,15 @@ export default function Sandbox() {
                 { label: saveMsg || t('code.saveAs') || '다른 이름으로 저장', action: () => { handleSaveAs(); setMobileMore(false); } },
                 { label: t('editor.examples') || '예제', action: () => { setShowExamples(true); setMobileMore(false); } },
                 { label: t('code.myCodes'), action: () => { setShowSavedCodes(true); setMobileMore(false); } },
-                { label: t('gallery.publish') || '갤러리에 올리기', action: () => {
-                  openPublishModal();
-                  setMobileMore(false);
-                }},
+                { label: t('gallery.publish') || '갤러리에 올리기', action: () => { openPublishModal(); setMobileMore(false); } },
+                // 교사: 코드 전송
+                ...(isTeacher() ? [
+                  { label: `📤 ${t('codeShare.sendToStudents')}`, action: () => { setSendModalOpen(true); setMobileMore(false); } },
+                ] : []),
+                // 학생: 코드 우편함
+                ...(!isTeacher() && profile?.class_id && sharedCodes.length > 0 ? [
+                  { label: `📬 ${t('codeShare.mailbox')}${unreadCount > 0 ? ` (${unreadCount})` : ''}`, action: () => { setPanelOpen(true); setMobileMore(false); } },
+                ] : []),
               ].map((item, i) => (
                 <button
                   key={i}
@@ -723,6 +789,35 @@ export default function Sandbox() {
         code={code}
         thumbnail={publishThumbnail}
         remixFrom={remixFrom}
+      />
+
+      {/* 코드 전송 모달 (교사) */}
+      <SendCodeModal
+        isOpen={sendModalOpen}
+        onClose={() => setSendModalOpen(false)}
+        currentCode={code}
+      />
+
+      {/* 코드 수신 패널 (학생) */}
+      {panelOpen && (
+        <CodeSharePanel
+          onClose={() => setPanelOpen(false)}
+          onReplaceCode={(newCode) => {
+            setCode(newCode);
+            setOutputs(prev => [...prev, { text: t('codeShare.replaced'), type: 'success', id: Date.now() }]);
+          }}
+          onAppendCode={(newCode) => {
+            setCode(prev => prev + '\n\n# --- ' + t('codeShare.teacherCode') + ' ---\n' + newCode);
+            setOutputs(prev => [...prev, { text: t('codeShare.appended'), type: 'success', id: Date.now() }]);
+          }}
+        />
+      )}
+
+      {/* 코드 수신 토스트 */}
+      <CodeShareToast
+        visible={codeShareToast}
+        onDismiss={() => setCodeShareToast(false)}
+        onOpen={() => { setCodeShareToast(false); setPanelOpen(true); }}
       />
     </div>
   );

@@ -25,20 +25,6 @@ const TIPS_VPYTHON_KO = [
   '💡 sleep(0.5)로 0.5초 동안 멈출 수 있어요',
 ];
 
-// 카테고리: 과학/프로그래밍 지식
-const TIPS_SCIENCE_KO = [
-  '🔬 뉴턴의 운동 법칙: F = ma, 코드 한 줄로 표현할 수 있어요',
-  '🔬 빛의 3원색은 빨강, 초록, 파랑 — 모니터도 같은 원리예요',
-  '🔬 지구의 중력 가속도 9.8 m/s²는 VPython에서도 똑같이 적용돼요',
-  '🔬 포물선 운동 = 수평 등속 운동 + 수직 자유 낙하',
-  '🔬 행성이 태양 주위를 도는 것도 중력 시뮬레이션으로 구현할 수 있어요',
-  '🔬 벡터는 크기와 방향을 가진 양 — 물리에서 가장 중요한 개념이에요',
-  '🔬 단진자의 주기는 길이에만 영향을 받아요 — 시뮬레이션으로 확인해보세요',
-  '🔬 탄성 충돌에서는 운동량과 에너지가 모두 보존돼요',
-  '🔬 파동은 sin() 함수로 표현할 수 있어요',
-  '🔬 만유인력 법칙: 모든 물체는 서로 끌어당기고 있어요',
-];
-
 // 카테고리: 교육적 조언
 const TIPS_ADVICE_KO = [
   '📝 에러 메시지를 꼼꼼히 읽으면 해결의 실마리가 보여요',
@@ -53,37 +39,47 @@ const TIPS_ADVICE_KO = [
   '📝 코딩은 생각을 표현하는 또 하나의 언어예요',
 ];
 
-// 카테고리: 영감을 주는 명언
+// 카테고리: 영감을 주는 명언 (한영 병기)
 const TIPS_QUOTES_KO = [
-  '✨ "상상력은 지식보다 중요하다" — 알베르트 아인슈타인',
-  '✨ "한 번도 실수한 적 없는 사람은 새로운 것을 시도한 적 없는 사람이다" — 아인슈타인',
-  '✨ "모든 전문가도 처음엔 초보자였다" — 헬렌 헤이즈',
-  '✨ "코드는 시(詩)처럼 아름다울 수 있다" — 도널드 크누스',
-  '✨ "가장 좋은 학습 방법은 직접 만들어 보는 것이다" — 시모어 패퍼트',
-  '✨ "컴퓨터가 강력한 이유는 질문할 수 있기 때문이다" — 할 에이벌슨',
-  '✨ "세상 모든 사람이 코딩을 배워야 한다. 생각하는 법을 가르쳐주니까" — 스티브 잡스',
-  '✨ "우주의 언어는 수학이고, 수학의 언어는 코드다"',
-  '✨ "실패는 성공의 반대가 아니라 성공의 일부다"',
-  '✨ "무엇이든 충분히 깊이 파고들면 수학이 나온다" — 미야모토 시게루',
-  '✨ "어려운 일을 해낼 수 있다는 사실이 우리를 성장시킨다"',
-  '✨ "호기심은 가장 강력한 학습 엔진이다"',
+  '✨ "상상력은 지식보다 중요하다" "Imagination is more important than knowledge" — 알베르트 아인슈타인(Albert Einstein)',
+  '✨ "실수한 적 없는 사람은 새로운 것을 시도한 적 없는 사람이다" "A person who never made a mistake never tried anything new" — 알베르트 아인슈타인(Albert Einstein)',
+  '✨ "가장 좋은 학습 방법은 직접 만들어 보는 것이다" "The best way to learn is to build" — 시모어 패퍼트(Seymour Papert)',
+  '✨ "창의성은 연결하는 능력이다" "Creativity is just connecting things" — 스티브 잡스(Steve Jobs)',
+  '✨ "모든 전문가도 처음엔 초보자였다" "Every expert was once a beginner" — 헬렌 헤이즈(Helen Hayes)',
+  '✨ "천 리 길도 한 걸음부터" "A journey of a thousand miles begins with a single step" — 노자(Lao Tzu)',
+  '✨ "모든 사람이 코딩을 배워야 한다. 생각하는 법을 가르쳐주니까" "Everybody should learn to code. It teaches you how to think" — 스티브 잡스(Steve Jobs)',
+  '✨ "코드는 시처럼 아름다울 수 있다" "Code can be beautiful, just like poetry" — 도널드 크누스(Donald Knuth)',
+  '✨ "컴퓨터가 강력한 이유는 질문할 수 있기 때문이다" "Computers are powerful because you can ask questions" — 할 에이벌슨(Hal Abelson)',
+  '✨ "깊이 파고들면 수학이 나온다" "Dig deep into anything and you\'ll find math" — 미야모토 시게루(Shigeru Miyamoto)',
 ];
 
 // 카테고리: 재미있는 사실
 const TIPS_FUN_KO = [
-  '🎮 최초의 컴퓨터 버그는 진짜 나방이 컴퓨터에 끼어서 생긴 거예요!',
-  '🎮 파이썬의 이름은 뱀이 아니라 영국 코미디 쇼에서 따왔어요',
-  '🎮 NASA도 파이썬으로 우주 데이터를 분석해요',
-  '🎮 Minecraft의 원래 이름은 "Cave Game"이었어요',
-  '🎮 세계 최초의 프로그래머는 에이다 러브레이스라는 여성이에요',
-  '🎮 1GB 저장장치가 1971년에는 냉장고만큼 컸어요',
-  '🎮 인류가 달에 간 컴퓨터보다 여러분의 스마트폰이 수백만 배 빨라요',
-  '🎮 구글의 첫 서버는 레고 블록으로 만든 케이스에 들어있었어요',
+  '🎮 1947년에 진짜 나방이 컴퓨터에 끼었어요. "버그"라는 말이 여기서 유명해졌죠!',
+  '🎮 파이썬(Python)은 뱀이 아니라 영국 코미디 쇼 "몬티 파이썬"에서 이름을 따왔어요',
+  '🎮 NASA는 제임스 웹 우주 망원경 데이터를 파이썬으로 분석해요',
+  '🎮 Minecraft의 원래 이름은 "Cave Game"이었어요. 일주일도 안 돼서 바뀌었죠',
+  '🎮 세계 최초의 프로그래머는 1840년대의 에이다 러브레이스(Ada Lovelace)예요',
+  '🎮 1980년에 1GB 저장장치는 냉장고만큼 크고 무게가 455kg이었어요',
+  '🎮 여러분의 스마트폰은 아폴로 11호의 컴퓨터보다 수백만 배 빨라요',
+  '🎮 구글의 첫 서버 케이스는 레고 블록으로 만들었어요. 지금도 전시 중!',
+  '🎮 유튜브의 첫 영상 "Me at the zoo"는 동물원에서 찍은 19초짜리예요',
+  '🎮 이모지(emoji)는 일본어 絵(그림) + 文字(문자)에서 온 말이에요',
+  '🎮 팀 버너스리가 만든 세계 최초의 웹사이트(1991년)는 아직도 접속할 수 있어요',
+  '🎮 Wi-Fi는 약자가 아니에요. "Hi-Fi"처럼 기억하기 좋은 이름으로 지은 거예요',
+  '🎮 하루에 전 세계에서 약 5억 개의 트윗이 올라와요. 초당 약 6,000개!',
+  '🎮 최초의 마우스(1964년)는 나무로 만들었어요. 선이 꼬리처럼 생겨서 "마우스"!',
+  '🎮 "Hello, World!"는 1972년부터 프로그래머의 첫 코드 전통이 되었어요',
+  '🎮 로블록스 창작자의 75%가 24세 미만이에요. 10대 개발자도 아주 많아요',
+  '🎮 우주정거장(ISS)에서도 Astro Pi 프로젝트로 파이썬 코드를 돌려요',
+  '🎮 QR코드는 도요타 자동차 부품을 추적하려고 1994년에 만들어졌어요',
+  '🎮 세상에는 수천 개의 프로그래밍 언어가 있지만, 널리 쓰이는 건 약 50개예요',
+  '🎮 인터넷 해저 케이블의 총 길이는 지구를 35바퀴 이상 감을 수 있어요',
 ];
 
 const ALL_TIPS_KO = [
   ...TIPS_VPYTHON_KO,
-  ...TIPS_SCIENCE_KO,
+
   ...TIPS_ADVICE_KO,
   ...TIPS_QUOTES_KO,
   ...TIPS_FUN_KO,
@@ -113,19 +109,6 @@ const TIPS_VPYTHON_EN = [
   '💡 Use sleep(0.5) to pause for half a second',
 ];
 
-const TIPS_SCIENCE_EN = [
-  "🔬 Newton's law: F = ma — you can express it in one line of code",
-  '🔬 The three primary colors of light are red, green, blue — monitors work the same way',
-  '🔬 Earth\'s gravity (9.8 m/s²) works the same in VPython',
-  '🔬 Projectile motion = horizontal constant velocity + vertical free fall',
-  '🔬 You can simulate planets orbiting the sun with gravity!',
-  '🔬 Vectors have magnitude and direction — the most important concept in physics',
-  '🔬 A pendulum\'s period depends only on its length — try simulating it!',
-  '🔬 In elastic collisions, both momentum and energy are conserved',
-  '🔬 Waves can be represented using the sin() function',
-  '🔬 Universal gravitation: every object attracts every other object',
-];
-
 const TIPS_ADVICE_EN = [
   '📝 Read error messages carefully — they contain clues to the solution',
   '📝 Change one line at a time and observe the result to learn faster',
@@ -141,33 +124,43 @@ const TIPS_ADVICE_EN = [
 
 const TIPS_QUOTES_EN = [
   '✨ "Imagination is more important than knowledge" — Albert Einstein',
-  '✨ "Anyone who has never made a mistake has never tried anything new" — Einstein',
+  '✨ "A person who never made a mistake never tried anything new" — Albert Einstein',
+  '✨ "The best way to learn is to build" — Seymour Papert',
+  '✨ "Creativity is just connecting things" — Steve Jobs',
   '✨ "Every expert was once a beginner" — Helen Hayes',
-  '✨ "Code can be beautiful, just like poetry" — Donald Knuth',
-  '✨ "The best way to learn is to build something" — Seymour Papert',
-  '✨ "Computers are powerful because you can ask questions" — Hal Abelson',
+  '✨ "A journey of a thousand miles begins with a single step" — Lao Tzu',
   '✨ "Everybody should learn to code. It teaches you how to think" — Steve Jobs',
-  '✨ "The language of the universe is math, and the language of math is code"',
-  '✨ "Failure is not the opposite of success — it\'s part of it"',
+  '✨ "Code can be beautiful, just like poetry" — Donald Knuth',
+  '✨ "Computers are powerful because you can ask questions" — Hal Abelson',
   '✨ "Dig deep into anything and you\'ll find math" — Shigeru Miyamoto',
-  '✨ "Doing hard things is what makes us grow"',
-  '✨ "Curiosity is the most powerful learning engine"',
 ];
 
 const TIPS_FUN_EN = [
-  '🎮 The first computer bug was a real moth stuck in a machine!',
+  '🎮 In 1947, a real moth got stuck in a computer — that\'s how we got the word "bug"!',
   '🎮 Python is named after a British comedy show, not the snake',
   '🎮 NASA uses Python to analyze space data',
   '🎮 Minecraft was originally called "Cave Game"',
   '🎮 The first programmer was Ada Lovelace, a woman, in the 1840s',
-  '🎮 In 1971, a 1GB storage device was as big as a refrigerator',
+  '🎮 In 1980, a 1GB storage device was as big as a refrigerator',
   '🎮 Your phone is millions of times faster than the computer that landed on the moon',
   '🎮 Google\'s first server was housed in a case made of LEGO bricks',
+  '🎮 YouTube\'s first video was a 19-second clip filmed at a zoo',
+  '🎮 Emoji was invented in Japan — it means "picture character"',
+  '🎮 The world\'s first website (1991) is still online today',
+  '🎮 Wi-Fi isn\'t actually an acronym — it\'s just a catchy brand name',
+  '🎮 About 500 million tweets are posted worldwide every day',
+  '🎮 The first computer mouse was made of wood (1964)',
+  '🎮 "Hello, World!" has been the first program since 1972',
+  '🎮 Many Roblox developers are teenagers',
+  '🎮 Python code runs on the International Space Station (ISS)',
+  '🎮 QR codes were invented to track car parts',
+  '🎮 There are thousands of programming languages — about 50 are widely used',
+  '🎮 Undersea internet cables can wrap around the Earth 35+ times',
 ];
 
 const ALL_TIPS_EN = [
   ...TIPS_VPYTHON_EN,
-  ...TIPS_SCIENCE_EN,
+
   ...TIPS_ADVICE_EN,
   ...TIPS_QUOTES_EN,
   ...TIPS_FUN_EN,
