@@ -22,10 +22,10 @@ let silentMediaDataUri = null;
 // suspended 상태에서 대기 중인 오디오 콜백 큐
 let pendingAudioQueue = [];
 
-// 디버그 로그 콜백 (UI 출력용, 임시)
-let _debugLog = null;
-export function setAudioDebugLog(fn) { _debugLog = fn; }
-function dlog(msg) { console.log('[Audio]', msg); _debugLog?.('[Audio] ' + msg); }
+// 디버그 (임시)
+export function getAudioDebugInfo() {
+  return `ctx=${audioCtx ? audioCtx.state : 'null'} unlocked=${audioUnlocked} ios=${iosMediaUnlocked} q=${pendingAudioQueue.length}`;
+}
 let stateChangeRegistered = false;
 
 // 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
@@ -207,12 +207,12 @@ function withRunningContext(fn) {
   if (!ctx) return;
 
   if (ctx.state === 'running') {
-    dlog('withRC: running → 즉시 실행');
+
     fn(ctx);
     return;
   }
 
-  dlog('withRC: state=' + ctx.state + ', 큐+즉시 실행');
+
   pendingAudioQueue.push(fn);
   fn(ctx);
 }
@@ -268,22 +268,16 @@ export function ensureAudioResumed() {
  */
 export function resumeAndRun(callback) {
   const ctx = getAudioContext();
-  if (!ctx) { dlog('no ctx'); callback(); return; }
+  if (!ctx) { callback(); return; }
 
-  dlog('resumeAndRun start, state:', ctx.state);
-
-  // 이미 running이면 즉시 실행
   if (ctx.state === 'running') {
     audioUnlocked = true;
-    dlog('already running');
     callback();
     return;
   }
 
   // 사용자 제스처 콜스택에서 동기적으로 resume 호출
-  const resumePromise = ctx.resume().catch((e) => {
-    dlog('resume error:', e);
-  });
+  const resumePromise = ctx.resume().catch(() => {});
 
   // 무음 버퍼 재생 — Web Audio 잠금 해제 트릭
   try {
@@ -292,8 +286,7 @@ export function resumeAndRun(callback) {
     src.buffer = buf;
     src.connect(ctx.destination);
     src.start(0);
-    dlog('silent buffer played');
-  } catch (e) { dlog('silent buffer error:', e); }
+  } catch (_) {}
 
   // iOS: HTMLAudioElement로 오디오 세션 활성화
   ensureIOSMediaPlayback().catch(() => {});
@@ -303,20 +296,15 @@ export function resumeAndRun(callback) {
   const run = () => {
     if (done) return;
     done = true;
-    dlog('run() called, state:', ctx.state);
     if (ctx.state === 'running') audioUnlocked = true;
     callback();
   };
 
   resumePromise.then(() => {
-    dlog('resume resolved, state:', ctx.state);
     run();
     flushAudioQueue();
   });
-  setTimeout(() => {
-    dlog('timeout 500ms, state:', ctx.state);
-    run();
-  }, 500);
+  setTimeout(run, 500);
 }
 
 // ===================================================================
