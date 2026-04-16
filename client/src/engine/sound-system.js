@@ -206,19 +206,13 @@ function withRunningContext(fn) {
     return;
   }
 
-  // suspended → 큐에 저장, running 전환 시 flush
-  pendingAudioQueue.push(fn);
-
-  if (!stateChangeRegistered) {
-    stateChangeRegistered = true;
-    ctx.addEventListener('statechange', () => {
-      if (ctx.state === 'running') {
-        audioUnlocked = true;
-        const queue = pendingAudioQueue.splice(0);
-        queue.forEach(f => { try { f(ctx); } catch (_) {} });
-      }
-    });
-  }
+  // Plan B: 매 호출마다 resume 재시도, 성공 시 즉시 실행
+  ctx.resume().then(() => {
+    if (ctx.state === 'running') {
+      audioUnlocked = true;
+      fn(ctx);
+    }
+  }).catch(() => {});
 }
 
 /**
