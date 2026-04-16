@@ -9,7 +9,7 @@ import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, errorSound, stopBgm, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
+import { runSound, errorSound, stopBgm, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun, setAudioDebugLog } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
@@ -89,6 +89,14 @@ export default function Sandbox() {
 
   const addOutput = useCallback((text, type = 'log') => {
     setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
+  }, []);
+
+  // 디버그: 오디오 상태 로그를 출력 패널에 표시 (임시)
+  useEffect(() => {
+    setAudioDebugLog((msg) => {
+      setOutputs((prev) => [...prev, { text: msg, type: 'warning', id: Date.now() + Math.random() }]);
+    });
+    return () => setAudioDebugLog(null);
   }, []);
 
   // Remix 파라미터 처리 (?remix=galleryId)
