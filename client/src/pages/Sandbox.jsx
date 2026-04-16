@@ -9,7 +9,7 @@ import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
+import { runSound, errorSound, stopBgm, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
@@ -199,7 +199,7 @@ export default function Sandbox() {
     setOutputs([]);
     setActiveTab('3d');
     runSound();
-    addOutput('실행 중....', 'log');
+    addOutput('실행 중.', 'log');
     runCode(sourceCode);
   }, [addOutput, runCode]);
 
@@ -226,10 +226,9 @@ export default function Sandbox() {
 
   const handlePendingPlayStart = () => {
     const playCode = pendingPlayRef.current || code;
-    ensureAudioReady().catch(() => {});
     setPlayStartRequired(false);
     pendingPlayRef.current = null;
-    requestAnimationFrame(() => startProgram(playCode));
+    resumeAndRun(() => startProgram(playCode));
   };
 
   const handleStop = () => {
@@ -330,21 +329,20 @@ export default function Sandbox() {
   // 극장 모드: 3D 뷰포트만 전체 화면
   if (theaterMode) {
     const handleTheaterStart = () => {
-      ensureAudioReady().catch(() => {});
       setTheaterWaiting(false);
-      // 코드 자동 실행
       pendingPlayRef.current = code;
-      // pendingPlay useEffect가 isReady일 때 실행 처리
-      if (isReady) {
-        requestAnimationFrame(() => {
-          if (sceneRef.current) clearScene(sceneRef.current);
-          clearRegistry();
-          if (sceneRef.current?._cameraSystem) sceneRef.current._cameraSystem.onCodeStart();
-          setOutputs([]);
-          runSound();
-          runCode(code);
-        });
-      }
+      resumeAndRun(() => {
+        if (isReady) {
+          requestAnimationFrame(() => {
+            if (sceneRef.current) clearScene(sceneRef.current);
+            clearRegistry();
+            if (sceneRef.current?._cameraSystem) sceneRef.current._cameraSystem.onCodeStart();
+            setOutputs([]);
+            runSound();
+            runCode(code);
+          });
+        }
+      });
     };
 
     return (

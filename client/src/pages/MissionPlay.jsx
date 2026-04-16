@@ -119,7 +119,7 @@ export default function MissionPlay() {
     setGradeResult(null);
     setActiveTab('3d');  // 실행 시 3D 뷰로 자동 전환
     runSound();
-    addOutput('▶ 실행 중....', 'log');
+    addOutput('▶ 실행 중.', 'log');
     runCode(code);
     });
   };

@@ -5,7 +5,7 @@ import useGalleryStore from '../stores/galleryStore';
 import useAuthStore from '../stores/authStore';
 import GalleryCard, { CATEGORY_STYLES } from '../components/gallery/GalleryCard';
 import { useI18n } from '../i18n';
-import { ensureAudioReady } from '../engine/sound-system';
+
 
 export default function GalleryDetail() {
   const { id } = useParams();
@@ -47,8 +47,7 @@ export default function GalleryDetail() {
   };
 
   const handleRemix = () => navigate(`/sandbox?remix=${id}`);
-  const handlePlay = async () => {
-    await ensureAudioReady();
+  const handlePlay = () => {
     navigate(`/sandbox?play=${id}`);
   };
   const handleEdit = () => navigate(`/sandbox?edit=${id}`);

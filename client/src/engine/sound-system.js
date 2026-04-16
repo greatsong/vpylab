@@ -19,6 +19,10 @@ let iosMediaUnlocked = false;
 let iosMediaUnlockPending = null;
 let silentMediaDataUri = null;
 
+// suspended 상태에서 대기 중인 오디오 콜백 큐
+let pendingAudioQueue = [];
+let stateChangeRegistered = false;
+
 // 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
 let _onNotePlay = null;
 export function setNotePlayCallback(cb) { _onNotePlay = cb; }
@@ -196,7 +200,25 @@ export function isAudioUnlocked() {
 function withRunningContext(fn) {
   const ctx = getAudioContext();
   if (!ctx) return;
-  fn(ctx);
+
+  if (ctx.state === 'running') {
+    fn(ctx);
+    return;
+  }
+
+  // suspended → 큐에 저장, running 전환 시 flush
+  pendingAudioQueue.push(fn);
+
+  if (!stateChangeRegistered) {
+    stateChangeRegistered = true;
+    ctx.addEventListener('statechange', () => {
+      if (ctx.state === 'running') {
+        audioUnlocked = true;
+        const queue = pendingAudioQueue.splice(0);
+        queue.forEach(f => { try { f(ctx); } catch (_) {} });
+      }
+    });
+  }
 }
 
 /**
