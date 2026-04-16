@@ -210,18 +210,14 @@ export default function Sandbox() {
     setOutputs([]);
     setActiveTab('3d');
     runSound();
-    addOutput('실행 중.....', 'log');
+    addOutput('실행 중 | ' + getAudioDebugInfo(), 'log');
     runCode(sourceCode);
   }, [addOutput, runCode]);
 
   const handleRun = () => {
     if (!isReady) return;
     setPlayStartRequired(false);
-    addOutput('🔊 before: ' + getAudioDebugInfo(), 'warning');
-    resumeAndRun(() => {
-      addOutput('🔊 after: ' + getAudioDebugInfo(), 'warning');
-      startProgram(code);
-    });
+    resumeAndRun(() => startProgram(code));
   };
 
   // pendingPlay: Play 모드 코드 로드 + Pyodide 준비 모두 완료 시 자동 실행
