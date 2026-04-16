@@ -206,13 +206,19 @@ function withRunningContext(fn) {
     return;
   }
 
-  // Plan B: 매 호출마다 resume 재시도, 성공 시 즉시 실행
-  ctx.resume().then(() => {
-    if (ctx.state === 'running') {
-      audioUnlocked = true;
-      fn(ctx);
-    }
-  }).catch(() => {});
+  // suspended: 큐에 저장 (resumeAndRun의 resume 완료 시 flush)
+  // + 즉시 스케줄 (Web Audio spec: resume 후 재생됨, iOS 대비 이중 보험)
+  pendingAudioQueue.push(fn);
+  fn(ctx);
+}
+
+/** 큐에 쌓인 오디오 콜백을 flush (resume 완료 후 호출) */
+function flushAudioQueue() {
+  const ctx = audioCtx;
+  if (!ctx || ctx.state !== 'running') return;
+  audioUnlocked = true;
+  const queue = pendingAudioQueue.splice(0);
+  queue.forEach(f => { try { f(ctx); } catch (_) {} });
 }
 
 /**
@@ -289,6 +295,9 @@ export function resumeAndRun(callback) {
 
   resumePromise.then(run);
   setTimeout(run, 500);
+
+  // resume 완료 후 큐에 쌓인 오디오 콜백도 flush (run과 별개)
+  resumePromise.then(() => flushAudioQueue());
 }
 
 // ===================================================================
