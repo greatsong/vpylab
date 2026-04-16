@@ -10,7 +10,7 @@ import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { gradeA, gradeB, gradeNotes } from '../engine/grading-engine';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, resumeAndRun } from '../engine/sound-system';
+import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, resumeAndRun, getAudioDebugInfo } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
 import missions from '../data/missions';
 
@@ -129,7 +129,7 @@ export default function MissionPlay() {
     setGradeResult(null);
     setActiveTab('3d');  // 실행 시 3D 뷰로 자동 전환
     runSound();
-    addOutput('▶ 실행 중.....', 'log');
+    addOutput('▶ ' + getAudioDebugInfo(), 'log');
     runCode(code);
     });
   };
