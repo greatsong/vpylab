@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import { useI18n } from '../i18n';
 import useAuthStore from '../stores/authStore';
@@ -54,25 +55,30 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
-      <div className="container-main py-8">
-        <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--color-text-primary)' }}>
-          {t('dashboard.title')}
-        </h1>
+      <main className="flex-1 container-main py-8 w-full">
+        {/* 브레드크럼 + 제목 */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Link to="/" className="text-xs no-underline" style={{ color: 'var(--color-text-muted)' }}>
+              {t('nav.home')}
+            </Link>
+            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>/</span>
+          </div>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+            {t('dashboard.title')}
+          </h1>
+        </div>
 
-        {/* 탭 */}
-        <div className="flex gap-2 mb-6">
+        {/* 탭 — mission-filter-btn 스타일 */}
+        <div className="flex gap-2 flex-wrap mb-8">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="px-4 py-2 rounded-lg text-sm cursor-pointer border-none transition-all"
-              style={{
-                backgroundColor: activeTab === tab.id ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
-                color: activeTab === tab.id ? '#fff' : 'var(--color-text-secondary)',
-                fontWeight: activeTab === tab.id ? 600 : 400,
-              }}
+              className="mission-filter-btn"
+              data-active={activeTab === tab.id || undefined}
             >
               {tab.label}
             </button>
@@ -83,7 +89,7 @@ export default function Dashboard() {
         {activeTab === 'classes' && <ClassManager />}
         {activeTab === 'progress' && <StudentProgress />}
         {activeTab === 'users' && <UserManagement />}
-      </div>
+      </main>
     </div>
   );
 }
@@ -110,8 +116,8 @@ function StudentView() {
     <div>
       {profile?.class_id ? (
         <div
-          className="rounded-xl p-6"
-          style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
+          className="rounded-md p-5"
+          style={{ backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}
         >
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             {t('dashboard.alreadyJoined')}
@@ -119,8 +125,8 @@ function StudentView() {
         </div>
       ) : (
         <div
-          className="rounded-xl p-6"
-          style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
+          className="rounded-md p-5"
+          style={{ backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}
         >
           <h3 className="text-base font-medium mb-4" style={{ color: 'var(--color-text-primary)' }}>
             {t('dashboard.joinClass')}

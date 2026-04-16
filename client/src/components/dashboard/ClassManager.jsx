@@ -10,6 +10,7 @@ export default function ClassManager() {
   const [studentCounts, setStudentCounts] = useState({}); // { classId: count }
   const [newClassName, setNewClassName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
 
   const fetchClasses = async () => {
     if (!user) return;
@@ -52,7 +53,8 @@ export default function ClassManager() {
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const createClass = async () => {
-    if (!newClassName.trim() || !user) return;
+    if (!newClassName.trim() || !user || creating) return;
+    setCreating(true);
     const { error } = await supabase
       .from('vpylab_classes')
       .insert({ name: newClassName.trim(), teacher_id: user.id });
@@ -60,6 +62,7 @@ export default function ClassManager() {
       setNewClassName('');
       fetchClasses();
     }
+    setCreating(false);
   };
 
   const copyInviteCode = (code) => {
@@ -70,10 +73,10 @@ export default function ClassManager() {
     <div>
       {/* 학급 생성 */}
       <div
-        className="rounded-xl p-6 mb-6"
-        style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
+        className="rounded-md p-5 mb-6"
+        style={{ backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}
       >
-        <h3 className="text-base font-medium mb-4" style={{ color: 'var(--color-text-primary)' }}>
+        <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text-primary)' }}>
           {t('dashboard.createClass')}
         </h3>
         <div className="flex gap-3">
@@ -88,10 +91,11 @@ export default function ClassManager() {
           />
           <button
             onClick={createClass}
+            disabled={creating}
             className="px-4 py-2 rounded-lg text-sm cursor-pointer border-none font-medium"
-            style={{ background: 'var(--brand-gradient)', color: '#fff' }}
+            style={{ background: 'var(--brand-gradient)', color: '#fff', opacity: creating ? 0.5 : 1 }}
           >
-            {t('dashboard.create')}
+            {creating ? '...' : t('dashboard.create')}
           </button>
         </div>
       </div>
@@ -117,30 +121,36 @@ function ClassCard({ cls, studentCount, onCopyCode }) {
 
   return (
     <div
-      className="rounded-xl p-5"
-      style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
+      className="rounded-md p-5 transition-all"
+      style={{
+        backgroundColor: 'var(--color-bg-panel)',
+        border: '1px solid var(--color-border)',
+        borderLeft: '3px solid var(--color-accent)',
+        boxShadow: 'var(--shadow-sm)',
+      }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-base font-medium" style={{ color: 'var(--color-text-primary)' }}>
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
           {cls.name}
         </h4>
-        <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+        <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded"
+          style={{ backgroundColor: 'var(--color-accent-bg, rgba(108,92,231,0.1))', color: 'var(--color-accent)' }}>
           {studentCount}{t('dashboard.studentsUnit')}
         </span>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+      <div className="flex items-center gap-2">
+        <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
           {t('dashboard.inviteCode')}:
         </span>
         <code
-          className="text-sm px-3 py-1 rounded-lg font-mono"
+          className="text-xs px-2 py-0.5 rounded font-mono"
           style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-accent)' }}
         >
           {cls.invite_code}
         </code>
         <button
           onClick={() => onCopyCode(cls.invite_code)}
-          className="text-xs px-2.5 py-1 rounded-lg cursor-pointer border-none"
+          className="text-[11px] px-2 py-0.5 rounded cursor-pointer border-none transition-all"
           style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
         >
           {t('common.copy')}

@@ -95,16 +95,13 @@ export default function StudentProgress() {
   return (
     <div>
       {/* 학급 선택 */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 flex-wrap mb-6">
         {classes.map((cls) => (
           <button
             key={cls.id}
             onClick={() => setSelectedClassId(cls.id)}
-            className="px-3 py-1.5 rounded-lg text-xs cursor-pointer border-none transition-all"
-            style={{
-              backgroundColor: selectedClassId === cls.id ? 'var(--brand-primary)' : 'var(--color-bg-tertiary)',
-              color: selectedClassId === cls.id ? '#fff' : 'var(--color-text-secondary)',
-            }}
+            className="mission-filter-btn"
+            data-active={selectedClassId === cls.id || undefined}
           >
             {cls.name}
           </button>
@@ -118,12 +115,12 @@ export default function StudentProgress() {
         <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{t('dashboard.noStudents')}</p>
       ) : (
         <div
-          className="rounded-xl overflow-hidden"
-          style={{ border: '1px solid var(--color-border)' }}
+          className="rounded-md overflow-hidden"
+          style={{ backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}
         >
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
+              <tr style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-muted)' }}>
                   {t('dashboard.student')}
                 </th>

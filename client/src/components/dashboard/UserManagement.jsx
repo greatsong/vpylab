@@ -46,8 +46,8 @@ export default function UserManagement() {
     <div>
       {/* 검색 */}
       <div
-        className="rounded-xl p-6 mb-6"
-        style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
+        className="rounded-md p-5 mb-6"
+        style={{ backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}
       >
         <input
           type="text"
@@ -66,12 +66,12 @@ export default function UserManagement() {
         <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{t('dashboard.noUsers')}</p>
       ) : (
         <div
-          className="rounded-xl overflow-hidden"
-          style={{ border: '1px solid var(--color-border)' }}
+          className="rounded-md overflow-hidden"
+          style={{ backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }}
         >
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
+              <tr style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--color-text-muted)' }}>
                   {t('dashboard.student')}
                 </th>
