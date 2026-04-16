@@ -26,7 +26,10 @@ let pendingAudioQueue = [];
 let _beepCount = 0;
 let _beepError = '';
 export function getAudioDebugInfo() {
-  return `ctx=${audioCtx ? audioCtx.state : 'null'} unlocked=${audioUnlocked} ios=${iosMediaUnlocked} beeps=${_beepCount} err=${_beepError || 'none'}`;
+  const t = audioCtx ? audioCtx.currentTime.toFixed(2) : '-';
+  const sr = audioCtx ? audioCtx.sampleRate : '-';
+  const dest = audioCtx?.destination ? audioCtx.destination.channelCount : '-';
+  return `state=${audioCtx?.state || 'null'} t=${t} sr=${sr} ch=${dest} beeps=${_beepCount} err=${_beepError || 'none'}`;
 }
 let stateChangeRegistered = false;
 
