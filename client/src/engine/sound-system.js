@@ -25,7 +25,7 @@ let pendingAudioQueue = [];
 // 디버그 로그 콜백 (UI 출력용, 임시)
 let _debugLog = null;
 export function setAudioDebugLog(fn) { _debugLog = fn; }
-function dlog(msg) { dlog('[Audio]', msg); _debugLog?.('[Audio] ' + msg); }
+function dlog(msg) { console.log('[Audio]', msg); _debugLog?.('[Audio] ' + msg); }
 let stateChangeRegistered = false;
 
 // 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
