@@ -166,6 +166,16 @@ export default function Sandbox() {
     }
   }, []);
 
+  // Viewport3D 마운트 시 대기 중인 배치 즉시 flush (정적 씬 대응)
+  const handleSceneReady = useCallback((scene) => {
+    if (pendingBatchRef.current.length > 0) {
+      for (const pending of pendingBatchRef.current) {
+        processBatch(pending, scene);
+      }
+      pendingBatchRef.current = [];
+    }
+  }, []);
+
   const {
     progress, progressMessage,
     initWorker, runCode, stopExecution,
@@ -199,7 +209,7 @@ export default function Sandbox() {
     setOutputs([]);
     setActiveTab('3d');
     runSound();
-    addOutput('실행 중..', 'log');
+    addOutput('실행 중...', 'log');
     runCode(sourceCode);
   }, [addOutput, runCode]);
 
@@ -347,7 +357,7 @@ export default function Sandbox() {
 
     return (
       <div className="h-screen w-screen relative" style={{ backgroundColor: '#000' }}>
-        <Viewport3D sceneRef={sceneRef} />
+        <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} />
 
         {/* 클릭하여 시작 오버레이 */}
         {theaterWaiting && (
@@ -546,7 +556,7 @@ export default function Sandbox() {
             className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex w-full`}
             style={{ height: '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
-            <Viewport3D sceneRef={sceneRef} />
+            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} />
           </div>
 
           {/* 리사이저 (데스크톱) */}
