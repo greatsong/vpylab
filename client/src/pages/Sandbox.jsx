@@ -209,7 +209,7 @@ export default function Sandbox() {
     setOutputs([]);
     setActiveTab('3d');
     runSound();
-    addOutput('실행 중....', 'log');
+    addOutput('실행 중.....', 'log');
     runCode(sourceCode);
   }, [addOutput, runCode]);
 

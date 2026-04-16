@@ -202,12 +202,12 @@ function withRunningContext(fn) {
   if (!ctx) return;
 
   if (ctx.state === 'running') {
+    console.log('[Audio] withRC: running → 즉시 실행');
     fn(ctx);
     return;
   }
 
-  // suspended: 큐에 저장 (resumeAndRun의 resume 완료 시 flush)
-  // + 즉시 스케줄 (Web Audio spec: resume 후 재생됨, iOS 대비 이중 보험)
+  console.log('[Audio] withRC: state=' + ctx.state + ', 큐+즉시 실행');
   pendingAudioQueue.push(fn);
   fn(ctx);
 }
@@ -263,41 +263,55 @@ export function ensureAudioResumed() {
  */
 export function resumeAndRun(callback) {
   const ctx = getAudioContext();
-  if (!ctx) { callback(); return; }
+  if (!ctx) { console.log('[Audio] no ctx'); callback(); return; }
+
+  console.log('[Audio] resumeAndRun start, state:', ctx.state);
 
   // 이미 running이면 즉시 실행
   if (ctx.state === 'running') {
     audioUnlocked = true;
+    console.log('[Audio] already running');
     callback();
     return;
   }
 
   // 사용자 제스처 콜스택에서 동기적으로 resume 호출
-  const resumePromise = ctx.resume().catch(() => {});
+  const resumePromise = ctx.resume().catch((e) => {
+    console.log('[Audio] resume error:', e);
+  });
 
-  // 무음 버퍼 재생 — iOS 잠금 해제 트릭
+  // 무음 버퍼 재생 — Web Audio 잠금 해제 트릭
   try {
     const buf = ctx.createBuffer(1, 1, 22050);
     const src = ctx.createBufferSource();
     src.buffer = buf;
     src.connect(ctx.destination);
     src.start(0);
-  } catch (_) {}
+    console.log('[Audio] silent buffer played');
+  } catch (e) { console.log('[Audio] silent buffer error:', e); }
+
+  // iOS: HTMLAudioElement로 오디오 세션 활성화
+  ensureIOSMediaPlayback().catch(() => {});
 
   // resume 완료되면 즉시 실행, 최대 500ms 후 강제 실행
   let done = false;
   const run = () => {
     if (done) return;
     done = true;
+    console.log('[Audio] run() called, state:', ctx.state);
     if (ctx.state === 'running') audioUnlocked = true;
     callback();
   };
 
-  resumePromise.then(run);
-  setTimeout(run, 500);
-
-  // resume 완료 후 큐에 쌓인 오디오 콜백도 flush (run과 별개)
-  resumePromise.then(() => flushAudioQueue());
+  resumePromise.then(() => {
+    console.log('[Audio] resume resolved, state:', ctx.state);
+    run();
+    flushAudioQueue();
+  });
+  setTimeout(() => {
+    console.log('[Audio] timeout 500ms, state:', ctx.state);
+    run();
+  }, 500);
 }
 
 // ===================================================================
