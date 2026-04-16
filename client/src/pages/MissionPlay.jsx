@@ -119,16 +119,27 @@ export default function MissionPlay() {
   const handleRun = () => {
     if (!isReady) return;
     // 클릭 제스처에서 AudioContext resume 후 코드 실행 (최대 500ms 대기)
+    // Raw 테스트: Web Audio 우회하여 직접 소리 생성
+    try {
+      const testCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = testCtx.createOscillator();
+      const g = testCtx.createGain();
+      g.gain.value = 1.0;
+      o.frequency.value = 660;
+      o.connect(g).connect(testCtx.destination);
+      o.start();
+      setTimeout(() => { o.stop(); testCtx.close(); }, 500);
+    } catch (_) {}
+
     resumeAndRun(() => {
     if (sceneRef.current) clearScene(sceneRef.current);
-    // 카메라 자동 시스템 리셋
     if (sceneRef.current?._cameraSystem) {
       sceneRef.current._cameraSystem.onCodeStart();
     }
     clearRegistry();
     setOutputs([]);
     setGradeResult(null);
-    setActiveTab('3d');  // 실행 시 3D 뷰로 자동 전환
+    setActiveTab('3d');
     runSound();
     addOutput('▶ ' + getAudioDebugInfo(), 'log');
     runCode(code);
