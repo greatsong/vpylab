@@ -23,8 +23,10 @@ let silentMediaDataUri = null;
 let pendingAudioQueue = [];
 
 // 디버그 (임시)
+let _beepCount = 0;
+let _beepError = '';
 export function getAudioDebugInfo() {
-  return `ctx=${audioCtx ? audioCtx.state : 'null'} unlocked=${audioUnlocked} ios=${iosMediaUnlocked} q=${pendingAudioQueue.length}`;
+  return `ctx=${audioCtx ? audioCtx.state : 'null'} unlocked=${audioUnlocked} ios=${iosMediaUnlocked} beeps=${_beepCount} err=${_beepError || 'none'}`;
 }
 let stateChangeRegistered = false;
 
@@ -320,22 +322,26 @@ export function resumeAndRun(callback) {
  */
 export function beep(frequency = 440, duration = 0.3, type = 'sine', volume = 0.3) {
   withRunningContext(ctx => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-    osc.type = type;
-    osc.frequency.value = frequency;
-    gain.gain.value = volume;
+      osc.type = type;
+      osc.frequency.value = frequency;
+      gain.gain.value = volume;
 
-    // 페이드 아웃으로 클릭 방지
-    gain.gain.setValueAtTime(volume, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + duration);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+      _beepCount++;
+    } catch (e) {
+      _beepError = e.message;
+    }
   });
 }
 

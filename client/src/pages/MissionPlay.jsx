@@ -107,6 +107,7 @@ export default function MissionPlay() {
     onReady: () => addOutput('Python 엔진 준비 완료!', 'success'),
     onDone: () => {
       stopBgm();
+      addOutput('🔊 done: ' + getAudioDebugInfo(), 'warning');
       setActiveTab('editor');
     },
   });
