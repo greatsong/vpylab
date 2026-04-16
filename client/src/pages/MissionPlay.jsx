@@ -10,7 +10,7 @@ import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { gradeA, gradeB, gradeNotes } from '../engine/grading-engine';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, resumeAndRun, getAudioDebugInfo } from '../engine/sound-system';
+import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, resumeAndRun } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
 import missions from '../data/missions';
 
@@ -107,8 +107,6 @@ export default function MissionPlay() {
     onReady: () => addOutput('Python 엔진 준비 완료!', 'success'),
     onDone: () => {
       stopBgm();
-      addOutput('🔊 done: ' + getAudioDebugInfo(), 'warning');
-      setActiveTab('editor');
     },
   });
 
@@ -119,18 +117,6 @@ export default function MissionPlay() {
   const handleRun = () => {
     if (!isReady) return;
     // 클릭 제스처에서 AudioContext resume 후 코드 실행 (최대 500ms 대기)
-    // Raw 테스트: Web Audio 우회하여 직접 소리 생성
-    try {
-      const testCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = testCtx.createOscillator();
-      const g = testCtx.createGain();
-      g.gain.value = 1.0;
-      o.frequency.value = 660;
-      o.connect(g).connect(testCtx.destination);
-      o.start();
-      setTimeout(() => { o.stop(); testCtx.close(); }, 500);
-    } catch (_) {}
-
     resumeAndRun(() => {
     if (sceneRef.current) clearScene(sceneRef.current);
     if (sceneRef.current?._cameraSystem) {
@@ -141,7 +127,7 @@ export default function MissionPlay() {
     setGradeResult(null);
     setActiveTab('3d');
     runSound();
-    addOutput('▶ ' + getAudioDebugInfo(), 'log');
+    addOutput('▶ 실행 중', 'log');
     runCode(code);
     });
   };

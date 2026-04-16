@@ -22,15 +22,6 @@ let silentMediaDataUri = null;
 // suspended 상태에서 대기 중인 오디오 콜백 큐
 let pendingAudioQueue = [];
 
-// 디버그 (임시)
-let _beepCount = 0;
-let _beepError = '';
-export function getAudioDebugInfo() {
-  const t = audioCtx ? audioCtx.currentTime.toFixed(2) : '-';
-  const sr = audioCtx ? audioCtx.sampleRate : '-';
-  const dest = audioCtx?.destination ? audioCtx.destination.channelCount : '-';
-  return `state=${audioCtx?.state || 'null'} t=${t} sr=${sr} ch=${dest} beeps=${_beepCount} err=${_beepError || 'none'}`;
-}
 let stateChangeRegistered = false;
 
 // 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
@@ -325,26 +316,21 @@ export function resumeAndRun(callback) {
  */
 export function beep(frequency = 440, duration = 0.3, type = 'sine', volume = 0.3) {
   withRunningContext(ctx => {
-    try {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-      osc.type = type;
-      osc.frequency.value = frequency;
-      gain.gain.value = volume;
+    osc.type = type;
+    osc.frequency.value = frequency;
+    gain.gain.value = volume;
 
-      gain.gain.setValueAtTime(volume, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
 
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + duration);
-      _beepCount++;
-    } catch (e) {
-      _beepError = e.message;
-    }
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
   });
 }
 

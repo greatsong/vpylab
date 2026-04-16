@@ -9,7 +9,7 @@ import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, errorSound, stopBgm, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun, getAudioDebugInfo } from '../engine/sound-system';
+import { runSound, errorSound, stopBgm, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
@@ -191,8 +191,7 @@ export default function Sandbox() {
     onBatch: handleBatch,
     onReady: () => addOutput('Python 엔진 준비 완료!', 'success'),
     onDone: () => {
-      stopBgm();  // 코드 정상 완료 시 BGM 자동 정지
-      setActiveTab('editor');  // 코드 에디터로 복귀
+      stopBgm();
     },
   });
 
@@ -210,7 +209,7 @@ export default function Sandbox() {
     setOutputs([]);
     setActiveTab('3d');
     runSound();
-    addOutput('실행 중 | ' + getAudioDebugInfo(), 'log');
+    addOutput('실행 중', 'log');
     runCode(sourceCode);
   }, [addOutput, runCode]);
 
