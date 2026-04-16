@@ -45,10 +45,11 @@ sphere(color=color.red)
     assertions: [
       { type: 'sphere', property: 'color.r', operator: '==', value: 1 },
       { type: 'sphere', property: 'color.g', operator: '==', value: 0 },
+      { type: 'sphere', property: 'color.b', operator: '==', value: 0 },
     ],
     hints: [
       { ko: 'sphere() 함수를 사용하면 구를 만들 수 있어요.', en: 'Use the sphere() function to create a sphere.' },
-      { ko: 'color=color.red 로 빨간색을 지정해요.', en: 'Set color=color.red for red color.' },
+      { ko: '색상은 color.red, color.blue 등으로 지정합니다.', en: 'Colors are set with color.red, color.blue, etc.' },
     ],
   },
 
@@ -90,6 +91,198 @@ sphere(pos=vector(0, 0, 0), color=color.green, radius=0.4)
     hints: [
       { ko: '각 구의 y 좌표를 다르게 설정하세요.', en: 'Set different y positions for each sphere.' },
       { ko: 'color.yellow, color.green을 사용하세요.', en: 'Use color.yellow and color.green.' },
+    ],
+  },
+
+  {
+    id: 'CT-3',
+    category: 'CT',
+    level: 2,
+    title: {
+      ko: '함수로 도형 찍기',
+      en: 'Stamp Shapes with Functions',
+    },
+    description: {
+      ko: '함수를 만들어 원하는 위치에 나무를 "찍는" 도장을 만드세요. def로 함수를 정의하면 코드를 재사용할 수 있습니다.',
+      en: 'Create a function that "stamps" trees at any position. Use def to define reusable code.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+# 나무를 만드는 함수를 정의하세요
+def 나무(x, z):
+    # 줄기
+    cylinder(pos=vector(x, 0, z), axis=vector(0, 2, 0), radius=0.2, color=color.orange)
+    # 잎
+    cone(pos=vector(x, 2, z), axis=vector(0, 2, 0), radius=1, color=color.green)
+
+# 바닥
+box(pos=vector(0, -0.1, 0), size=vector(20, 0.2, 20), color=vector(0.3, 0.6, 0.2))
+
+# 함수를 호출하여 나무 3그루를 심으세요
+나무(0, 0)      # 중앙
+# 여기에 2그루 더 심으세요 (위치를 바꿔서)
+`,
+    solutionCode: `from vpython import *
+
+def 나무(x, z):
+    cylinder(pos=vector(x, 0, z), axis=vector(0, 2, 0), radius=0.2, color=color.orange)
+    cone(pos=vector(x, 2, z), axis=vector(0, 2, 0), radius=1, color=color.green)
+
+box(pos=vector(0, -0.1, 0), size=vector(20, 0.2, 20), color=vector(0.3, 0.6, 0.2))
+
+나무(0, 0)
+나무(-4, 3)
+나무(5, -2)
+`,
+    assertions: [
+      { type: 'cone', property: 'pos.y', operator: '==', value: 2, index: 0 },
+      { type: 'cone', property: 'pos.y', operator: '==', value: 2, index: 2 },
+      { type: 'cylinder', property: 'pos.x', operator: '!=', value: 0, index: 1 },
+    ],
+    hints: [
+      { ko: '나무(-4, 3)처럼 x, z 좌표를 바꿔서 호출하세요.', en: 'Call 나무(-4, 3) with different x, z coordinates.' },
+      { ko: 'def 함수이름(매개변수): 로 함수를 정의합니다.', en: 'Define functions with def name(params):' },
+    ],
+  },
+
+  {
+    id: 'CT-4',
+    category: 'CT',
+    level: 2,
+    title: {
+      ko: '함수로 색상 결정하기',
+      en: 'Choose Colors with Functions',
+    },
+    description: {
+      ko: '높이에 따라 색상을 반환하는 함수를 만들고, 20개의 구를 무지개 탑으로 쌓으세요.',
+      en: 'Create a function that returns colors based on height, then stack 20 spheres as a rainbow tower.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+# 높이(y)에 따라 색상을 반환하는 함수
+def 높이색상(y):
+    if y < 3:
+        return color.red
+    elif y < 6:
+        return color.yellow
+    else:
+        return color.cyan
+
+# 20개 구를 쌓으세요
+for i in range(20):
+    y = i * 0.5
+    c = 높이색상(y)
+    # 여기에 sphere를 만드세요
+`,
+    solutionCode: `from vpython import *
+
+def 높이색상(y):
+    if y < 3:
+        return color.red
+    elif y < 6:
+        return color.yellow
+    else:
+        return color.cyan
+
+for i in range(20):
+    y = i * 0.5
+    c = 높이색상(y)
+    sphere(pos=vector(0, y, 0), radius=0.3, color=c)
+`,
+    assertions: [
+      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 0 },
+      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 5 },
+      { type: 'sphere', property: 'pos.y', operator: 'approx', value: 9.5, index: 19 },
+    ],
+    hints: [
+      { ko: 'sphere(pos=vector(0, y, 0), color=c)로 구를 쌓으세요.', en: 'Stack with sphere(pos=vector(0, y, 0), color=c).' },
+      { ko: 'c = 높이색상(y)로 함수를 호출하여 색상을 받습니다.', en: 'Call c = ��이색상(y) to get the color.' },
+    ],
+  },
+
+  {
+    id: 'CT-5',
+    category: 'CT',
+    level: 3,
+    title: {
+      ko: '파티클 폭죽',
+      en: 'Particle Fireworks',
+    },
+    description: {
+      ko: '랜덤 방향으로 50개의 파티클을 발사하고, 중력으로 떨어지게 만드세요. 리스트에 파티클을 저장하고 반복문으로 업데이트합니다.',
+      en: 'Launch 50 particles in random directions, then let them fall with gravity. Store particles in a list and update with loops.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+import random
+
+# 50개 파티클을 랜덤 방향으로 발사
+particles = []
+velocities = []
+
+for i in range(50):
+    # 랜덤 방향, 랜덤 색상
+    vx = random.uniform(-3, 3)
+    vy = random.uniform(3, 8)  # 위쪽으로
+    vz = random.uniform(-3, 3)
+    c = vector(random.random(), random.random(), random.random())
+
+    p = sphere(pos=vector(0, 0, 0), radius=0.1, color=c, make_trail=True)
+    particles.append(p)
+    velocities.append(vector(vx, vy, vz))
+
+# 애니메이션: 중력으로 떨어지기
+g = vector(0, -9.8, 0)
+dt = 0.02
+
+for frame in range(150):
+    rate(60)
+    for i in range(len(particles)):
+        # 여기에 속도/위치 업데이트 코드를 작성하세요
+        # velocities[i] = velocities[i] + g * dt
+        # particles[i].pos = particles[i].pos + velocities[i] * dt
+        pass
+
+효과음("fireball")
+print("폭죽 완성!")
+`,
+    solutionCode: `from vpython import *
+import random
+
+particles = []
+velocities = []
+
+for i in range(50):
+    vx = random.uniform(-3, 3)
+    vy = random.uniform(3, 8)
+    vz = random.uniform(-3, 3)
+    c = vector(random.random(), random.random(), random.random())
+    p = sphere(pos=vector(0, 0, 0), radius=0.1, color=c, make_trail=True)
+    particles.append(p)
+    velocities.append(vector(vx, vy, vz))
+
+g = vector(0, -9.8, 0)
+dt = 0.02
+
+for frame in range(150):
+    rate(60)
+    for i in range(len(particles)):
+        velocities[i] = velocities[i] + g * dt
+        particles[i].pos = particles[i].pos + velocities[i] * dt
+
+효과음("fireball")
+print("폭죽 완성!")
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.y', operator: '<', value: 0, index: 0 },
+      { type: 'sphere', property: 'pos.y', operator: '<', value: 0, index: 49 },
+    ],
+    hints: [
+      { ko: 'velocities[i] = velocities[i] + g * dt 로 속도를 업데이트합니다.', en: 'Update velocity: velocities[i] = velocities[i] + g * dt' },
+      { ko: 'particles[i].pos = particles[i].pos + velocities[i] * dt 로 위치를 이동합니다.', en: 'Update position: particles[i].pos = particles[i].pos + velocities[i] * dt' },
+      { ko: 'pass를 지우고 위 두 줄을 작성하세요.', en: 'Remove pass and write the two lines above.' },
     ],
   },
 
@@ -183,6 +376,144 @@ cylinder(pos=vector(1.5, 0.5, 0), axis=vector(1, 0, 0), radius=0.2, color=color.
     ],
   },
 
+  {
+    id: 'CR-3',
+    category: 'CR',
+    level: 2,
+    title: {
+      ko: '나무 만들기',
+      en: 'Build a Tree',
+    },
+    description: {
+      ko: 'cylinder로 줄기, cone으로 잎을 만들어 나무를 완성하세요.',
+      en: 'Use cylinder for trunk and cone for leaves to build a tree.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+# 줄기 (cylinder)
+cylinder(pos=vector(0, 0, 0), axis=vector(0, 3, 0), radius=0.3, color=color.orange)
+
+# 잎 (cone) — 줄기 위에 올려주세요
+# cone(pos=..., axis=..., radius=..., color=color.green)
+`,
+    solutionCode: `from vpython import *
+
+cylinder(pos=vector(0, 0, 0), axis=vector(0, 3, 0), radius=0.3, color=color.orange)
+cone(pos=vector(0, 3, 0), axis=vector(0, 3, 0), radius=1.5, color=color.green)
+`,
+    assertions: [
+      { type: 'cylinder', property: 'pos.y', operator: '==', value: 0, index: 0 },
+      { type: 'cone', property: 'pos.y', operator: '>=', value: 2, index: 0 },
+      { type: 'cone', property: 'color.g', operator: '>', value: 0, index: 0 },
+    ],
+    hints: [
+      { ko: 'cone(pos=vector(0, 3, 0))으로 줄기 위에 올리세요.', en: 'Place cone at pos=vector(0, 3, 0) above trunk.' },
+      { ko: 'axis=vector(0, 3, 0)으로 위를 향하게 하세요.', en: 'Use axis=vector(0, 3, 0) pointing up.' },
+    ],
+  },
+
+  {
+    id: 'CR-4',
+    category: 'CR',
+    level: 2,
+    title: {
+      ko: '집 만들기',
+      en: 'Build a House',
+    },
+    description: {
+      ko: 'box로 벽, pyramid(cone)로 지붕, cylinder로 굴뚝을 만들어 집을 완성하세요.',
+      en: 'Use box for walls, cone for roof, cylinder for chimney.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+# 벽 (box)
+box(pos=vector(0, 1, 0), size=vector(4, 2, 3), color=color.white)
+
+# 지붕 (cone) — 벽 위에
+# 여기에 코드를 작성하세요
+
+# 굴뚝 (cylinder) — 지붕 옆에
+# 여기에 코드를 작성하세요
+
+# 문 (box) — 벽 앞에 작은 box
+box(pos=vector(0, 0.5, 1.51), size=vector(0.8, 1, 0.1), color=color.orange)
+`,
+    solutionCode: `from vpython import *
+
+box(pos=vector(0, 1, 0), size=vector(4, 2, 3), color=color.white)
+cone(pos=vector(0, 2, 0), axis=vector(0, 2, 0), radius=2.5, color=color.red)
+cylinder(pos=vector(1.2, 2.5, -0.5), axis=vector(0, 1.5, 0), radius=0.2, color=color.gray)
+box(pos=vector(0, 0.5, 1.51), size=vector(0.8, 1, 0.1), color=color.orange)
+`,
+    assertions: [
+      { type: 'box', property: 'pos.y', operator: '==', value: 1, index: 0 },
+      { type: 'cone', property: 'pos.y', operator: '>=', value: 2, index: 0 },
+      { type: 'cylinder', property: 'pos.y', operator: '>', value: 2, index: 0 },
+    ],
+    hints: [
+      { ko: 'cone(pos=vector(0, 2, 0))으로 벽 위에 지붕을 올리세요.', en: 'Place cone at y=2 for the roof.' },
+      { ko: 'cylinder로 굴뚝을 지붕 옆에 세우세요.', en: 'Use cylinder for a chimney beside the roof.' },
+    ],
+  },
+
+  {
+    id: 'CR-5',
+    category: 'CR',
+    level: 3,
+    title: {
+      ko: '태양계 모형',
+      en: 'Solar System Model',
+    },
+    description: {
+      ko: '태양(노란 구)과 4개 행성을 만드세요. 각 행성은 태양으로부터 다른 거리에 놓이고, 크기와 색이 다릅니다.',
+      en: 'Create a sun and 4 planets at different distances, each with unique size and color.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+# 태양
+sphere(pos=vector(0, 0, 0), radius=1.5, color=color.yellow, emissive=True)
+
+# 수성 — 작고 회색, 거리 3
+# 여기에 코드를 작성하세요
+
+# 금성 — 중간, 주황, 거리 5
+# 여기에 코드를 작성하세요
+
+# 지구 — 중간, 파랑+초록, 거리 7
+# 여기에 코드를 작성하세요
+
+# 화성 — 작고 빨강, 거리 9
+# 여기에 코드를 작성하세요
+
+# 궤도 링 (선택)
+for r in [3, 5, 7, 9]:
+    ring(pos=vector(0, 0, 0), axis=vector(0, 1, 0), radius=r, thickness=0.02, color=color.gray)
+`,
+    solutionCode: `from vpython import *
+
+sphere(pos=vector(0, 0, 0), radius=1.5, color=color.yellow, emissive=True)
+sphere(pos=vector(3, 0, 0), radius=0.3, color=color.gray)
+sphere(pos=vector(5, 0, 0), radius=0.6, color=color.orange)
+sphere(pos=vector(7, 0, 0), radius=0.65, color=color.cyan)
+sphere(pos=vector(9, 0, 0), radius=0.4, color=color.red)
+
+for r in [3, 5, 7, 9]:
+    ring(pos=vector(0, 0, 0), axis=vector(0, 1, 0), radius=r, thickness=0.02, color=color.gray)
+`,
+    assertions: [
+      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 0 },
+      { type: 'sphere', property: 'pos.x', operator: '==', value: 3, index: 1 },
+      { type: 'sphere', property: 'pos.x', operator: '==', value: 9, index: 4 },
+    ],
+    hints: [
+      { ko: '각 행성을 sphere(pos=vector(거리, 0, 0))로 만드세요.', en: 'Create each planet with sphere(pos=vector(dist, 0, 0)).' },
+      { ko: '태양은 emissive=True로 빛나게 합니다.', en: 'Use emissive=True for the glowing sun.' },
+    ],
+  },
+
   // ═══════════════════════════════════════════
   // MA: Mathematics (수학)
   // ═══════════════════════════════════════════
@@ -191,24 +522,27 @@ cylinder(pos=vector(1.5, 0.5, 0), axis=vector(1, 0, 0), radius=0.2, color=color.
     category: 'MA',
     level: 1,
     title: {
-      ko: '좌표 탐험',
-      en: 'Coordinate Explorer',
+      ko: '3D 보물찾기',
+      en: '3D Treasure Hunt',
     },
     description: {
-      ko: '구를 (3, 2, 1) 위치에 놓아 3D 좌표계를 이해하세요.',
-      en: 'Place a sphere at position (3, 2, 1) to understand 3D coordinates.',
+      ko: '보물 상자가 (3, 2, 1)에 숨어 있습니다. 빨간 구를 보물 위치로 이동시켜 찾으세요!',
+      en: 'A treasure chest is hidden at (3, 2, 1). Move the red sphere to find it!',
     },
     gradeType: 'A',
     starterCode: `from vpython import *
 
-# (3, 2, 1) 위치에 구를 만드세요
-# vector(x, y, z) 로 위치를 지정합니다
-# x: 오른쪽, y: 위쪽, z: 앞쪽
-sphere(pos=vector(0, 0, 0), color=color.cyan)
+# 보물 상자 (움직이지 마세요!)
+box(pos=vector(3, 2, 1), size=vector(0.5, 0.5, 0.5), color=color.yellow)
+
+# 탐색 구: 보물 위치 (3, 2, 1)로 옮기세요
+# vector(x, y, z) → x: 오른쪽, y: 위, z: 앞
+sphere(pos=vector(0, 0, 0), radius=0.3, color=color.red)
 `,
     solutionCode: `from vpython import *
 
-sphere(pos=vector(3, 2, 1), color=color.cyan)
+box(pos=vector(3, 2, 1), size=vector(0.5, 0.5, 0.5), color=color.yellow)
+sphere(pos=vector(3, 2, 1), radius=0.3, color=color.red)
 `,
     assertions: [
       { type: 'sphere', property: 'pos.x', operator: '==', value: 3 },
@@ -217,7 +551,7 @@ sphere(pos=vector(3, 2, 1), color=color.cyan)
     ],
     hints: [
       { ko: 'vector(3, 2, 1)로 위치를 지정하세요.', en: 'Use vector(3, 2, 1) for position.' },
-      { ko: 'pos=vector(x, y, z) 형식입니다.', en: 'Format: pos=vector(x, y, z).' },
+      { ko: 'x는 오른쪽, y는 위쪽, z는 앞쪽입니다.', en: 'x is right, y is up, z is forward.' },
     ],
   },
 
@@ -268,6 +602,153 @@ for i in range(N):
     hints: [
       { ko: 'sphere(pos=vector(x, 0, z))로 구를 생성하세요.', en: 'Create sphere with pos=vector(x, 0, z).' },
       { ko: 'cos과 sin을 사용하여 원 위의 좌표를 계산합니다.', en: 'Use cos and sin for circle coordinates.' },
+    ],
+  },
+
+  {
+    id: 'MA-3',
+    category: 'MA',
+    level: 2,
+    title: {
+      ko: '나선 계단',
+      en: 'Spiral Staircase',
+    },
+    description: {
+      ko: '삼각함수와 반복문으로 나선형 계단을 만드세요. 구가 나선을 따라 올라갑니다.',
+      en: 'Use trigonometry and loops to create a spiral staircase of spheres.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+import math
+
+# 나선 계단: 30개 구가 나선을 그리며 올라감
+R = 3      # 나선 반지름
+N = 30     # 구 개수
+
+for i in range(N):
+    angle = i * 0.4        # 점점 회전
+    y = i * 0.3            # 점점 위로
+    x = R * math.cos(angle)
+    z = R * math.sin(angle)
+    # 여기에 sphere를 만드세요
+`,
+    solutionCode: `from vpython import *
+import math
+
+R = 3
+N = 30
+
+for i in range(N):
+    angle = i * 0.4
+    y = i * 0.3
+    x = R * math.cos(angle)
+    z = R * math.sin(angle)
+    sphere(pos=vector(x, y, z), radius=0.2, color=color.cyan)
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.y', operator: '==', value: 0, index: 0 },
+      { type: 'sphere', property: 'pos.y', operator: '>', value: 5, index: 29 },
+    ],
+    hints: [
+      { ko: 'sphere(pos=vector(x, y, z))로 구를 만드세요.', en: 'Create sphere(pos=vector(x, y, z)).' },
+      { ko: 'cos과 sin으로 원형 궤적, y로 높이를 올립니다.', en: 'cos/sin for circular path, y for height.' },
+    ],
+  },
+
+  {
+    id: 'MA-4',
+    category: 'MA',
+    level: 3,
+    title: {
+      ko: '3D 함수 그래프',
+      en: '3D Function Graph',
+    },
+    description: {
+      ko: 'z = sin(x) * cos(y) 함수를 3D 구슬 격자로 시각화하세요.',
+      en: 'Visualize z = sin(x) * cos(y) as a 3D grid of spheres.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+import math
+
+# z = sin(x) * cos(y) 시각화
+# -3 <= x <= 3, -3 <= y <= 3 범위
+
+for i in range(15):
+    for j in range(15):
+        x = -3 + i * 0.4
+        y = -3 + j * 0.4
+        z = math.sin(x) * math.cos(y)
+        # 여기에 sphere를 만드세요
+        # z 값에 따라 색상을 바꿔보세요
+`,
+    solutionCode: `from vpython import *
+import math
+
+for i in range(15):
+    for j in range(15):
+        x = -3 + i * 0.4
+        y = -3 + j * 0.4
+        z = math.sin(x) * math.cos(y)
+        c = vector((z + 1) / 2, 0.3, (1 - z) / 2)
+        sphere(pos=vector(x, z, y), radius=0.12, color=c)
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.x', operator: 'approx', value: -3, index: 0 },
+      { type: 'sphere', property: 'pos.x', operator: '>', value: 2, index: 224 },
+    ],
+    hints: [
+      { ko: 'z 값을 y 축에 놓으면 입체적으로 보입니다.', en: 'Map z values to the y-axis for 3D effect.' },
+      { ko: 'vector((z+1)/2, 0.3, (1-z)/2)로 높이에 따른 색상을 만드세요.', en: 'Use vector((z+1)/2, 0.3, (1-z)/2) for height-based color.' },
+    ],
+  },
+
+  {
+    id: 'MA-5',
+    category: 'MA',
+    level: 3,
+    title: {
+      ko: '피보나치 나선',
+      en: 'Fibonacci Spiral',
+    },
+    description: {
+      ko: '피보나치 수열의 비율(황금비)로 꽃잎 배치 패턴을 3D로 구현하세요.',
+      en: 'Create a sunflower-like pattern using the golden ratio from the Fibonacci sequence.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+import math
+
+# 해바라기 씨앗 패턴 (페르마 나선)
+# 황금각 = 137.508도
+golden_angle = 137.508 * math.pi / 180
+
+for i in range(200):
+    r = 0.3 * math.sqrt(i)  # 반지름: sqrt(i)에 비례
+    theta = i * golden_angle  # 각도: 황금각만큼 회전
+    x = r * math.cos(theta)
+    z = r * math.sin(theta)
+    # 여기에 sphere를 만드세요 (radius=0.1)
+`,
+    solutionCode: `from vpython import *
+import math
+
+golden_angle = 137.508 * math.pi / 180
+
+for i in range(200):
+    r = 0.3 * math.sqrt(i)
+    theta = i * golden_angle
+    x = r * math.cos(theta)
+    z = r * math.sin(theta)
+    sphere(pos=vector(x, 0, z), radius=0.1, color=color.yellow)
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.x', operator: '==', value: 0, index: 0 },
+      { type: 'sphere', property: 'pos.y', operator: '==', value: 0, index: 199 },
+    ],
+    hints: [
+      { ko: 'sphere(pos=vector(x, 0, z), radius=0.1)로 씨앗을 배치하세요.', en: 'Place seeds with sphere(pos=vector(x, 0, z), radius=0.1).' },
+      { ko: '황금각(137.508도)이 핵심입니다.', en: 'The golden angle (137.508 degrees) is the key.' },
     ],
   },
 
@@ -381,6 +862,241 @@ while ball.pos.y > 0:
     ],
   },
 
+  {
+    id: 'SC-3',
+    category: 'SC',
+    level: 2,
+    title: {
+      ko: '포물선 운동',
+      en: 'Projectile Motion',
+    },
+    description: {
+      ko: '공을 45도 각도로 발사하여 포물선 운동을 시뮬레이션하세요.',
+      en: 'Launch a ball at 45 degrees to simulate projectile motion.',
+    },
+    gradeType: 'A+B',
+    starterCode: `from vpython import *
+import math
+
+# 바닥
+box(pos=vector(0, -0.1, 0), size=vector(20, 0.2, 4), color=color.green)
+
+ball = sphere(pos=vector(-8, 0, 0), color=color.red, radius=0.3, make_trail=True)
+
+# 45도 발사, 초속 10
+angle = 45 * math.pi / 180
+speed = 10
+vx = speed * math.cos(angle)
+vy = speed * math.sin(angle)
+v = vector(vx, vy, 0)
+g = vector(0, -9.8, 0)
+dt = 0.01
+
+while ball.pos.y >= 0:
+    rate(100)
+    # 속도와 위치를 업데이트하세요
+    # v = v + g * dt
+    # ball.pos = ball.pos + v * dt
+`,
+    solutionCode: `from vpython import *
+import math
+
+box(pos=vector(0, -0.1, 0), size=vector(20, 0.2, 4), color=color.green)
+ball = sphere(pos=vector(-8, 0, 0), color=color.red, radius=0.3, make_trail=True)
+
+angle = 45 * math.pi / 180
+speed = 10
+vx = speed * math.cos(angle)
+vy = speed * math.sin(angle)
+v = vector(vx, vy, 0)
+g = vector(0, -9.8, 0)
+dt = 0.01
+
+while ball.pos.y >= 0:
+    rate(100)
+    v = v + g * dt
+    ball.pos = ball.pos + v * dt
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.x', operator: '>', value: -5 },
+      { type: 'sphere', property: 'pos.y', operator: '<=', value: 0 },
+    ],
+    referenceTrajectory: (() => {
+      const t = [];
+      let x = -8, y = 0, vx = 10 * Math.cos(Math.PI/4), vy = 10 * Math.sin(Math.PI/4);
+      while (y >= 0 || t.length === 0) {
+        t.push([x, y, 0]);
+        vy += -9.8 * 0.01;
+        x += vx * 0.01;
+        y += vy * 0.01;
+        if (t.length > 2000) break;
+      }
+      return t;
+    })(),
+    hints: [
+      { ko: 'v = v + g * dt, ball.pos = ball.pos + v * dt', en: 'v = v + g * dt, ball.pos = ball.pos + v * dt' },
+      { ko: 'make_trail=True로 궤적을 볼 수 있어요.', en: 'make_trail=True shows the path.' },
+    ],
+  },
+
+  {
+    id: 'SC-4',
+    category: 'SC',
+    level: 2,
+    title: {
+      ko: '용수철 진동',
+      en: 'Spring Oscillation',
+    },
+    description: {
+      ko: '훅의 법칙(F = -kx)으로 용수철에 매달린 공의 진동을 시뮬레이션하세요.',
+      en: "Simulate spring oscillation using Hooke's law (F = -kx).",
+    },
+    gradeType: 'A+B',
+    starterCode: `from vpython import *
+
+# 고정점
+box(pos=vector(0, 5, 0), size=vector(2, 0.2, 2), color=color.gray)
+
+ball = sphere(pos=vector(0, 2, 0), radius=0.4, color=color.red)
+spring = cylinder(pos=vector(0, 5, 0), axis=vector(0, -3, 0), radius=0.05, color=color.yellow)
+
+v = vector(0, 0, 0)
+rest_y = 3  # 평형 위치
+k = 10      # 용수철 상수
+m = 1       # 질량
+dt = 0.01
+
+for i in range(500):
+    rate(100)
+    # 훅의 법칙: F = -k * (y - rest_y)
+    displacement = ball.pos.y - rest_y
+    F = vector(0, -k * displacement, 0)
+    # 여기에 가속도, 속도, 위치를 업데이트하세요
+    # a = F / m
+    # v = v + a * dt
+    # ball.pos = ball.pos + v * dt
+
+    # 용수철 연결 업데이트
+    spring.axis = ball.pos - vector(0, 5, 0)
+`,
+    solutionCode: `from vpython import *
+
+box(pos=vector(0, 5, 0), size=vector(2, 0.2, 2), color=color.gray)
+ball = sphere(pos=vector(0, 2, 0), radius=0.4, color=color.red)
+spring = cylinder(pos=vector(0, 5, 0), axis=vector(0, -3, 0), radius=0.05, color=color.yellow)
+
+v = vector(0, 0, 0)
+rest_y = 3
+k = 10
+m = 1
+dt = 0.01
+
+for i in range(500):
+    rate(100)
+    displacement = ball.pos.y - rest_y
+    F = vector(0, -k * displacement, 0)
+    a = F / m
+    v = v + a * dt
+    ball.pos = ball.pos + v * dt
+    spring.axis = ball.pos - vector(0, 5, 0)
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.y', operator: '<', value: 3 },
+    ],
+    referenceTrajectory: (() => {
+      const t = [];
+      let y = 2, vy = 0;
+      for (let i = 0; i < 500; i++) {
+        t.push([0, y, 0]);
+        const F = -10 * (y - 3);
+        vy += F * 0.01;
+        y += vy * 0.01;
+      }
+      return t;
+    })(),
+    hints: [
+      { ko: 'a = F / m, v = v + a * dt, ball.pos = ball.pos + v * dt', en: 'a = F/m, v = v + a*dt, pos = pos + v*dt' },
+      { ko: '변위 = 현재 위치 - 평형 위치', en: 'displacement = current position - equilibrium' },
+    ],
+  },
+
+  {
+    id: 'SC-5',
+    category: 'SC',
+    level: 3,
+    title: {
+      ko: '행성 공전',
+      en: 'Planetary Orbit',
+    },
+    description: {
+      ko: '만유인력으로 행성이 태양 주위를 공전하는 시뮬레이션을 만드세요.',
+      en: 'Simulate a planet orbiting a star using gravitational force.',
+    },
+    gradeType: 'A+B',
+    starterCode: `from vpython import *
+
+# 태양
+sun = sphere(pos=vector(0, 0, 0), radius=0.5, color=color.yellow, emissive=True)
+
+# 행성 (원궤도 초기조건)
+planet = sphere(pos=vector(5, 0, 0), radius=0.2, color=color.cyan, make_trail=True)
+v = vector(0, 0, 1.4)  # 초기 속도 (접선 방향)
+
+G = 10  # 중력 상수 (간소화)
+M = 10  # 태양 질량
+dt = 0.01
+
+for i in range(2000):
+    rate(200)
+    # 태양→행성 방향 벡터
+    r_vec = planet.pos - sun.pos
+    r = r_vec.mag  # 거리
+    # 만유인력: F = -G*M / r^2 방향
+    F = -G * M / (r * r) * (r_vec / r)
+    # 여기에 속도와 위치를 업데이트하세요
+    # v = v + F * dt
+    # planet.pos = planet.pos + v * dt
+`,
+    solutionCode: `from vpython import *
+
+sun = sphere(pos=vector(0, 0, 0), radius=0.5, color=color.yellow, emissive=True)
+planet = sphere(pos=vector(5, 0, 0), radius=0.2, color=color.cyan, make_trail=True)
+v = vector(0, 0, 1.4)
+
+G = 10
+M = 10
+dt = 0.01
+
+for i in range(2000):
+    rate(200)
+    r_vec = planet.pos - sun.pos
+    r = r_vec.mag
+    F = -G * M / (r * r) * (r_vec / r)
+    v = v + F * dt
+    planet.pos = planet.pos + v * dt
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.x', operator: '!=', value: 5, index: 1 },
+    ],
+    referenceTrajectory: (() => {
+      const t = [];
+      let px = 5, py = 0, pz = 0, vx = 0, vy = 0, vz = 1.4;
+      for (let i = 0; i < 2000; i++) {
+        if (i % 5 === 0) t.push([px, py, pz]);
+        const r = Math.sqrt(px*px + py*py + pz*pz);
+        const F = -10 * 10 / (r * r);
+        const fx = F * px / r, fy = F * py / r, fz = F * pz / r;
+        vx += fx * 0.01; vy += fy * 0.01; vz += fz * 0.01;
+        px += vx * 0.01; py += vy * 0.01; pz += vz * 0.01;
+      }
+      return t;
+    })(),
+    hints: [
+      { ko: 'v = v + F * dt, planet.pos = planet.pos + v * dt', en: 'v = v + F * dt, planet.pos = planet.pos + v * dt' },
+      { ko: 'r_vec.mag는 거리, r_vec/r은 단위벡터입니다.', en: 'r_vec.mag is distance, r_vec/r is unit vector.' },
+    ],
+  },
+
   // ═══════════════════════════════════════════
   // AR: Art (예술)
   // ═══════════════════════════════════════════
@@ -433,12 +1149,12 @@ for i in range(7):
     category: 'AR',
     level: 2,
     title: {
-      ko: '회전하는 큐브',
-      en: 'Spinning Cube',
+      ko: '정육면체 꼭짓점',
+      en: 'Cube Vertices',
     },
     description: {
-      ko: '8개의 구로 정육면체 꼭짓점을 만들고, 회전시키세요.',
-      en: 'Create cube vertices with 8 spheres and rotate them.',
+      ko: '8개의 구를 리스트에 저장하여 정육면체 꼭짓점을 완성하세요. 리스트와 반복문을 함께 사용합니다.',
+      en: 'Store 8 spheres in a list to form cube vertices. Practice using lists with loops.',
     },
     gradeType: 'A',
     starterCode: `from vpython import *
@@ -484,6 +1200,122 @@ for v in vertices:
       { ko: 'balls.append(b)로 리스트에 저장하세요.', en: 'Store in list with balls.append(b).' },
     ],
   },
+  {
+    id: 'AR-4',
+    category: 'AR',
+    level: 2,
+    title: {
+      ko: '별이 빛나는 밤',
+      en: 'Starry Night',
+    },
+    description: {
+      ko: '랜덤 위치에 200개의 작은 구를 배치하여 별이 빛나는 밤하늘을 만드세요.',
+      en: 'Place 200 small spheres at random positions to create a starry night sky.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+import random
+
+# 배경을 검정으로
+scene_background(색상['검정'])
+
+# 200개 별 만들기
+for i in range(200):
+    x = random.uniform(-10, 10)
+    y = random.uniform(0, 10)
+    z = random.uniform(-10, 10)
+    크기 = random.uniform(0.02, 0.1)
+    밝기 = random.uniform(0.5, 1.0)
+    # 여기에 sphere를 만드세요
+    # emissive=True로 빛나게 하세요
+`,
+    solutionCode: `from vpython import *
+import random
+
+scene_background(색상['검정'])
+
+for i in range(200):
+    x = random.uniform(-10, 10)
+    y = random.uniform(0, 10)
+    z = random.uniform(-10, 10)
+    크기 = random.uniform(0.02, 0.1)
+    밝기 = random.uniform(0.5, 1.0)
+    sphere(pos=vector(x, y, z), radius=크기, color=vector(밝기, 밝기, 밝기), emissive=True)
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.y', operator: '>=', value: 0, index: 0 },
+      { type: 'sphere', property: 'pos.y', operator: '>=', value: 0, index: 199 },
+    ],
+    hints: [
+      { ko: 'sphere(pos=vector(x,y,z), radius=크기, emissive=True)', en: 'sphere(pos=vector(x,y,z), radius=size, emissive=True)' },
+      { ko: 'color=vector(밝기,밝기,밝기)로 밝기를 조절하세요.', en: 'Use color=vector(b,b,b) to vary brightness.' },
+    ],
+  },
+
+  {
+    id: 'AR-5',
+    category: 'AR',
+    level: 3,
+    title: {
+      ko: 'DNA 이중나선',
+      en: 'DNA Double Helix',
+    },
+    description: {
+      ko: '두 개의 나선을 만들고 가로대로 연결하여 DNA 이중나선 구조를 시각화하세요.',
+      en: 'Create two helices connected by rungs to visualize a DNA double helix.',
+    },
+    gradeType: 'A',
+    starterCode: `from vpython import *
+import math
+
+# DNA 이중나선
+N = 40  # 점 개수
+
+for i in range(N):
+    t = i * 0.3
+    y = i * 0.3 - 6
+
+    # 나선 1
+    x1 = 1.5 * math.cos(t)
+    z1 = 1.5 * math.sin(t)
+    sphere(pos=vector(x1, y, z1), radius=0.15, color=color.cyan)
+
+    # 나선 2 (180도 반대편)
+    x2 = 1.5 * math.cos(t + math.pi)
+    z2 = 1.5 * math.sin(t + math.pi)
+    sphere(pos=vector(x2, y, z2), radius=0.15, color=color.orange)
+
+    # 5개마다 가로대(cylinder)로 연결
+    if i % 5 == 0:
+        pass  # 여기에 cylinder를 만드세요
+        # cylinder(pos=vector(x1, y, z1), axis=vector(x2-x1, 0, z2-z1), radius=0.05, color=color.white)
+`,
+    solutionCode: `from vpython import *
+import math
+
+N = 40
+for i in range(N):
+    t = i * 0.3
+    y = i * 0.3 - 6
+    x1 = 1.5 * math.cos(t)
+    z1 = 1.5 * math.sin(t)
+    sphere(pos=vector(x1, y, z1), radius=0.15, color=color.cyan)
+    x2 = 1.5 * math.cos(t + math.pi)
+    z2 = 1.5 * math.sin(t + math.pi)
+    sphere(pos=vector(x2, y, z2), radius=0.15, color=color.orange)
+    if i % 5 == 0:
+        cylinder(pos=vector(x1, y, z1), axis=vector(x2-x1, 0, z2-z1), radius=0.05, color=color.white)
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.y', operator: '<', value: -5, index: 0 },
+      { type: 'cylinder', property: 'pos.y', operator: '<', value: 0, index: 0 },
+    ],
+    hints: [
+      { ko: 'cylinder(pos=..., axis=vector(x2-x1, 0, z2-z1))로 연결하세요.', en: 'Connect with cylinder(pos=..., axis=vector(x2-x1, 0, z2-z1)).' },
+      { ko: 'cos(t + pi)는 180도 반대편입니다.', en: 'cos(t + pi) is the opposite side.' },
+    ],
+  },
+
   // ═══════════════════════════════════════════
   // SN: Sound (사운드)
   // ═══════════════════════════════════════════
@@ -672,7 +1504,7 @@ print("멜로디 연주 완료!")
       ko: '3D 건반을 만들고, 각 건반 위치에서 소리를 재생하는 시각화를 만드세요.',
       en: 'Create 3D piano keys and play sounds at each key position.',
     },
-    gradeType: 'A',
+    gradeType: 'code',
     starterCode: `from vpython import *
 
 # 흰 건반 7개 (도레미파솔라시)
@@ -718,7 +1550,6 @@ sleep(0.5)
 
 print("3D 피아노 완성!")
 `,
-    gradeType: 'code',
     codeChecks: [
       { pattern: '화음\\s*\\(|chord\\s*\\(', minCount: 1, message: '화음()을 사용하여 도-미-솔 화음을 연주하세요' },
       { pattern: 'sound\\s*\\(|음표\\s*\\(', minCount: 3, message: '3개 이상의 음을 재생하세요' },
@@ -853,7 +1684,8 @@ print("시뮬레이션 완료!")
 import math
 
 # === 음악 파동 시각화 ===
-# 음계를 연주하면서 3D 표면이 실시간으로 변합니다
+# 음계를 연주하면서 3D 구슬들이 파동으로 춤춥니다!
+# 이미 완성된 코드입니다. 숫자를 바꿔서 파동을 변형해보세요!
 
 배경음악("peaceful")
 scene_background(색상['검정'])

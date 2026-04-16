@@ -163,6 +163,11 @@ const useAuthStore = create((set, get) => ({
     const profile = get().profile;
     return profile?.role === 'teacher' || profile?.role === 'admin';
   },
+
+  isAdmin: () => {
+    const profile = get().profile;
+    return profile?.role === 'admin';
+  },
 }));
 
 export default useAuthStore;

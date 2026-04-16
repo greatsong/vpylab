@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import useGalleryStore from '../stores/galleryStore';
 import useAuthStore from '../stores/authStore';
 import GalleryCard, { CATEGORY_STYLES } from '../components/gallery/GalleryCard';
 import { useI18n } from '../i18n';
+
+const GalleryPreview = lazy(() => import('../components/gallery/GalleryPreview'));
 
 
 export default function GalleryDetail() {
@@ -17,6 +19,7 @@ export default function GalleryDetail() {
   const isGitHubUser = useAuthStore(s => s.isGitHubUser);
   const [isLiked, setIsLiked] = useState(false);
   const [showCode, setShowCode] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [forking, setForking] = useState(false);
 
   useEffect(() => { fetchWork(id); }, [id]);
@@ -277,6 +280,30 @@ export default function GalleryDetail() {
             </pre>
           </div>
         )}
+
+        {/* 3D 미리보기 */}
+        <div className="mb-8">
+          <button onClick={() => setShowPreview(!showPreview)}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full cursor-pointer font-semibold text-sm text-white transition-all mb-4"
+            style={{ backgroundColor: showPreview ? 'var(--color-text-muted)' : 'var(--brand-primary, var(--color-accent))' }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2v12h12V2H2zm1 1h10v10H3V3z"/><path d="M5 5l6 3-6 3V5z"/></svg>
+            {showPreview
+              ? (lang === 'ko' ? '미리보기 닫기' : 'Close Preview')
+              : (lang === 'ko' ? '3D 미리보기' : '3D Preview')}
+          </button>
+          {showPreview && (
+            <Suspense fallback={
+              <div className="rounded-xl flex items-center justify-center"
+                style={{ height: '500px', backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
+                {lang === 'ko' ? 'Python 엔진 로딩 중...' : 'Loading Python engine...'}
+              </div>
+            }>
+              <GalleryPreview code={currentWork.code} />
+            </Suspense>
+          )}
+        </div>
 
         {/* Remix 목록 */}
         {currentWork.remixes?.length > 0 && (

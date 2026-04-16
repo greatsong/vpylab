@@ -42,7 +42,8 @@
     "all": "전체",
     "free": "자유",
     "featured": "인기 작품",
-    "remixes": "이 작품에서 영감을 받은 Remix"
+    "remixes": "이 작품에서 영감을 받은 Remix",
+    "preview": "3D 미리보기"
   },
   "home": {
     "serverConnected": "서버 연결됨",
@@ -174,7 +175,14 @@
     "student": "학생",
     "completedMissions": "완료 미션",
     "totalScore": "총점",
-    "noStudents": "아직 학생이 없습니다. 초대 코드를 공유하세요."
+    "noStudents": "아직 학생이 없습니다. 초대 코드를 공유하세요.",
+    "userManagement": "사용자 관리",
+    "searchUsers": "이름으로 검색",
+    "role": "역할",
+    "changeRole": "역할 변경",
+    "makeTeacher": "교사로 변경",
+    "makeStudent": "학생으로 변경",
+    "noUsers": "사용자가 없습니다"
   },
   "about": {
     "title": "VPyLab",

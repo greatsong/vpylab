@@ -42,7 +42,8 @@
     "all": "All",
     "free": "Free",
     "featured": "Featured",
-    "remixes": "Remixes inspired by this project"
+    "remixes": "Remixes inspired by this project",
+    "preview": "3D Preview"
   },
   "home": {
     "serverConnected": "Server connected",
@@ -174,7 +175,14 @@
     "student": "Student",
     "completedMissions": "Completed",
     "totalScore": "Total Score",
-    "noStudents": "No students yet. Share the invite code."
+    "noStudents": "No students yet. Share the invite code.",
+    "userManagement": "User Management",
+    "searchUsers": "Search by name",
+    "role": "Role",
+    "changeRole": "Change Role",
+    "makeTeacher": "Make Teacher",
+    "makeStudent": "Make Student",
+    "noUsers": "No users found"
   },
   "about": {
     "title": "VPyLab",

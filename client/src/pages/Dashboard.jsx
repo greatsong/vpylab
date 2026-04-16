@@ -4,10 +4,12 @@ import { useI18n } from '../i18n';
 import useAuthStore from '../stores/authStore';
 import ClassManager from '../components/dashboard/ClassManager';
 import StudentProgress from '../components/dashboard/StudentProgress';
+import UserManagement from '../components/dashboard/UserManagement';
 
 export default function Dashboard() {
   const { user } = useAuthStore();
   const isTeacher = useAuthStore((s) => s.isTeacher());
+  const isAdmin = useAuthStore((s) => s.isAdmin());
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('classes');
 
@@ -48,6 +50,7 @@ export default function Dashboard() {
   const tabs = [
     { id: 'classes', label: t('dashboard.classes') },
     { id: 'progress', label: t('dashboard.studentProgress') },
+    ...(isAdmin ? [{ id: 'users', label: t('dashboard.userManagement') }] : []),
   ];
 
   return (
@@ -79,6 +82,7 @@ export default function Dashboard() {
         {/* 콘텐츠 */}
         {activeTab === 'classes' && <ClassManager />}
         {activeTab === 'progress' && <StudentProgress />}
+        {activeTab === 'users' && <UserManagement />}
       </div>
     </div>
   );
