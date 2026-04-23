@@ -27,6 +27,7 @@ const Gallery = lazyWithRetry(() => import('./pages/Gallery'));
 const GalleryDetail = lazyWithRetry(() => import('./pages/GalleryDetail'));
 const SharedCodeLoader = lazyWithRetry(() => import('./pages/SharedCodeLoader'));
 const Docs = lazyWithRetry(() => import('./pages/Docs'));
+const Privacy = lazyWithRetry(() => import('./pages/Privacy'));
 
 function AppContent() {
   const initialize = useAuthStore((s) => s.initialize);
@@ -56,6 +57,7 @@ function AppContent() {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/gallery/:id" element={<GalleryDetail />} />
           <Route path="/s/:id" element={<SharedCodeLoader />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
         </Routes>
       </Suspense>
