@@ -493,11 +493,35 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
     trail.line.geometry.computeBoundingSphere();
   }
 
+  function cloneColor(color) {
+    return typeof color?.clone === 'function'
+      ? color.clone()
+      : new THREE.Color(color?.r ?? 0, color?.g ?? 0, color?.b ?? 0);
+  }
+
+  function setMaterialEmissive(material, enabled) {
+    if (!material || !('emissive' in material)) return;
+    material.emissive = enabled ? cloneColor(material.color) : new THREE.Color(0, 0, 0);
+    material.emissiveIntensity = enabled ? 0.8 : 0;
+    material.needsUpdate = true;
+  }
+
+  function updateMaterialColor(material, color) {
+    if (!material) return;
+    material.color = color;
+    if ('emissiveIntensity' in material && material.emissiveIntensity > 0) {
+      material.emissive = cloneColor(color);
+    }
+  }
+
   function processCmd(cmd) {
     if (cmd.action === 'create') {
       let mesh;
+      const baseColor = toColor(cmd.color || [1,1,1]);
       const mat = new THREE.MeshStandardMaterial({
-        color: toColor(cmd.color || [1,1,1]), roughness: 0.4, metalness: 0.1,
+        color: baseColor, roughness: 0.4, metalness: 0.1,
+        emissive: cmd.emissive ? cloneColor(baseColor) : new THREE.Color(0,0,0),
+        emissiveIntensity: cmd.emissive ? 0.8 : 0,
         transparent: (cmd.opacity ?? 1) < 1, opacity: cmd.opacity ?? 1,
       });
       switch (cmd.type) {
@@ -523,7 +547,10 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
         }
         case 'cone': {
           const r = cmd.radius||0.5; const a = cmd.axis||[1,0,0]; const l = Math.hypot(...a)||1;
-          mesh = new THREE.Mesh(new THREE.ConeGeometry(r,l,32), mat); break;
+          mesh = new THREE.Mesh(new THREE.ConeGeometry(r,l,32), mat);
+          const dir = new THREE.Vector3(...a).normalize();
+          mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+          break;
         }
         case 'ring': mesh = new THREE.Mesh(new THREE.TorusGeometry(cmd.radius||1, cmd.thickness||0.1, 16, 48), mat); break;
         case 'local_light': {
@@ -547,8 +574,8 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
       if (cmd.pos) m.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
       if (cmd.color) {
         if (m.isLight) m.color = toColor(cmd.color);
-        else if (m.isGroup) m.traverse(c => { if(c.material) c.material.color = toColor(cmd.color); });
-        else if (m.material) m.material.color = toColor(cmd.color);
+        else if (m.isGroup) m.traverse(c => { if(c.material) updateMaterialColor(c.material, toColor(cmd.color)); });
+        else if (m.material) updateMaterialColor(m.material, toColor(cmd.color));
       }
       if (cmd.intensity !== undefined && m.isLight) m.intensity = cmd.intensity;
       if (cmd.direction !== undefined && m.isDirectionalLight) m.position.set(-cmd.direction[0]*10,-cmd.direction[1]*10,-cmd.direction[2]*10);
@@ -556,6 +583,10 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
       if (cmd.opacity !== undefined) {
         if (m.isGroup) m.traverse(c => { if(c.material){c.material.opacity=cmd.opacity;c.material.transparent=cmd.opacity<1;} });
         else if (m.material) { m.material.opacity=cmd.opacity; m.material.transparent=cmd.opacity<1; }
+      }
+      if (cmd.emissive !== undefined && !m.isLight) {
+        if (m.isGroup) m.traverse(c => { if(c.material) setMaterialEmissive(c.material, cmd.emissive); });
+        else if (m.material) setMaterialEmissive(m.material, cmd.emissive);
       }
       if (cmd.radius !== undefined && m.geometry) {
         let ng;
@@ -633,7 +664,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
 import sys, types
 vpython_module = types.ModuleType('vpython')
 _vpython_names = [
-    'vector', 'color', '색상', 'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
+    'vector', 'vec', 'color', '색상', 'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
     'local_light', 'distant_light',
     'rate', 'sleep', 'scene_background',
     'mag', 'mag2', 'hat', 'dot', 'cross', 'norm',
@@ -781,6 +812,7 @@ class vector:
     def to_list(self): return [self.x, self.y, self.z]
     def clone(self): return vector(self.x, self.y, self.z)
 
+vec = vector
 
 # === 30색 팔레트 ===
 class _ColorPalette:
@@ -831,6 +863,7 @@ class _GObject:
         self._color = kwargs.get('color', color.white)
         self._visible = kwargs.get('visible', True)
         self._opacity = kwargs.get('opacity', 1.0)
+        self._emissive = kwargs.get('emissive', False)
         self._velocity = kwargs.get('velocity', vector(0,0,0))
         _add_command({
             "action":"create","id":self._id,"type":obj_type,
@@ -871,6 +904,12 @@ class _GObject:
     def opacity(self, v):
         self._opacity = v
         _add_command({"action":"update","id":self._id,"opacity":v})
+    @property
+    def emissive(self): return self._emissive
+    @emissive.setter
+    def emissive(self, v):
+        self._emissive = v
+        _add_command({"action":"update","id":self._id,"emissive":v})
 
 
 class sphere(_GObject):

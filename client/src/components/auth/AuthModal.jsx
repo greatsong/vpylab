@@ -1,4 +1,4 @@
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/useI18n';
 import useAuthStore from '../../stores/authStore';
 
 export default function AuthModal() {

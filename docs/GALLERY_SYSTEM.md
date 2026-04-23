@@ -6,11 +6,21 @@ VPy Lab 학생 작품 공유 및 교사 미션 공유를 위한 갤러리 시스
 
 ### 1.1 공유 링크 시스템 (현재)
 
-VPy Lab은 LZ-String으로 코드를 압축하여 URL 파라미터로 공유합니다.
+VPy Lab의 기본 공유 방식은 서버 경유 짧은 URL입니다. 클라이언트는 `POST /api/share`로 코드를 저장하고, 서버는 Supabase `vpylab_shares`에 저장한 뒤 `/s/<8자리 ID>` 형태의 링크를 반환합니다. 기존 LZ-String `#code=` 링크는 하위 호환용으로만 유지합니다.
 
 ```
-https://vpylab.pages.dev/sandbox?code=<LZ-String-compressed-code>
+https://vpylab.pages.dev/s/<share-id>
+
+# 하위 호환
+https://vpylab.pages.dev/sandbox#code=<LZ-String-compressed-code>
 ```
+
+현재 공유 흐름의 보안 기준:
+
+- 서버에서 50KB 코드 크기 상한 검증
+- 공유 생성 API에 rate-limit 적용
+- 클라이언트는 `VITE_API_URL`을 통해 서버 API 호출
+- LZ-String 링크 디코딩 후에도 50KB 상한 재검증
 
 ### 1.2 GitHub Pages 갤러리 (제안)
 
@@ -106,7 +116,7 @@ jobs:
 ```
 vpylab/
   client/src/data/
-    missions.js              # 공식 미션 (16개, 엄격한 리뷰)
+    missions.js              # 공식 미션 (현재 30개, 엄격한 리뷰)
     community-missions/      # 커뮤니티 미션 (교사 기여)
       index.js               # 커뮤니티 미션 로더
       physics/

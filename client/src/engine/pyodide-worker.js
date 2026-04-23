@@ -53,7 +53,7 @@ import types
 vpython_module = types.ModuleType('vpython')
 # 현재 전역에 정의된 VPython 클래스/함수를 모듈에 복사
 _vpython_names = [
-    'vector', 'color', '\uc0c9\uc0c1', 'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
+    'vector', 'vec', 'color', '\uc0c9\uc0c1', 'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
     'local_light', 'distant_light',
     'rate', 'sleep', 'scene_background',
     'mag', 'mag2', 'hat', 'dot', 'cross', 'norm',

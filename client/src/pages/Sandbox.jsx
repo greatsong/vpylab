@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { useI18n } from '../i18n';
+import { useI18n } from '../i18n/useI18n';
 import Header from '../components/layout/Header';
 import CodeEditor, { DEFAULT_CODE } from '../components/editor/CodeEditor';
 import Viewport3D from '../components/viewport/Viewport3D';

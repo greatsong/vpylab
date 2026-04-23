@@ -37,6 +37,45 @@ function toThreeColor(arr) {
 }
 
 /**
+ * 채점 레지스트리에 저장할 객체 속성 추출
+ */
+function getRegistryProps(cmd) {
+  const props = {
+    pos: cmd.pos || [0, 0, 0],
+    color: cmd.color || [1, 1, 1],
+    visible: cmd.visible !== false,
+    opacity: cmd.opacity ?? 1,
+  };
+
+  for (const key of ['radius', 'size', 'axis', 'thickness', 'shaftwidth', 'intensity', 'direction', 'emissive']) {
+    if (cmd[key] !== undefined) props[key] = cmd[key];
+  }
+
+  return props;
+}
+
+function cloneThreeColor(color) {
+  return typeof color?.clone === 'function'
+    ? color.clone()
+    : new THREE.Color(color?.r ?? 0, color?.g ?? 0, color?.b ?? 0);
+}
+
+function setMaterialEmissive(material, enabled) {
+  if (!material || !('emissive' in material)) return;
+  material.emissive = enabled ? cloneThreeColor(material.color) : new THREE.Color(0, 0, 0);
+  material.emissiveIntensity = enabled ? 0.8 : 0;
+  material.needsUpdate = true;
+}
+
+function updateMaterialColor(material, color) {
+  if (!material) return;
+  material.color = color;
+  if ('emissiveIntensity' in material && material.emissiveIntensity > 0) {
+    material.emissive = cloneThreeColor(color);
+  }
+}
+
+/**
  * 3D 객체 생성
  */
 function createObject(cmd, scene) {
@@ -47,6 +86,8 @@ function createObject(cmd, scene) {
   const col = toThreeColor(cmd.color || [1, 1, 1]);
   material = new THREE.MeshStandardMaterial({
     color: col,
+    emissive: cmd.emissive ? cloneThreeColor(col) : new THREE.Color(0, 0, 0),
+    emissiveIntensity: cmd.emissive ? 0.8 : 0,
     ...DEFAULT_MATERIAL_PARAMS,
     transparent: cmd.opacity < 1,
     opacity: cmd.opacity ?? 1,
@@ -113,6 +154,9 @@ function createObject(cmd, scene) {
       const len = Math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2) || 1;
       geometry = new THREE.ConeGeometry(r, len, 32);
       mesh = new THREE.Mesh(geometry, material);
+      const dir = new THREE.Vector3(...axis).normalize();
+      const up = new THREE.Vector3(0, 1, 0);
+      mesh.quaternion.setFromUnitVectors(up, dir);
       break;
     }
 
@@ -133,7 +177,7 @@ function createObject(cmd, scene) {
       if (cmd.pos) light.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
       scene.add(light);
       meshRegistry.set(cmd.id, light);
-      registerObject('local_light', { pos: cmd.pos || [0, 0, 0], color: cmd.color || [1, 1, 1] }, cmd.id);
+      registerObject('local_light', getRegistryProps(cmd), cmd.id);
       return;
     }
 
@@ -149,7 +193,7 @@ function createObject(cmd, scene) {
       scene.add(light);
       scene.add(light.target);
       meshRegistry.set(cmd.id, light);
-      registerObject('distant_light', { direction: dir, color: cmd.color || [1, 1, 1] }, cmd.id);
+      registerObject('distant_light', getRegistryProps({ ...cmd, direction: dir }), cmd.id);
       return;
     }
 
@@ -176,10 +220,7 @@ function createObject(cmd, scene) {
   }
 
   // 객체 레지스트리에 등록 (Python Worker의 cmd.id를 그대로 사용)
-  registerObject(cmd.type, {
-    pos: cmd.pos || [0, 0, 0],
-    color: cmd.color || [1, 1, 1],
-  }, cmd.id);
+  registerObject(cmd.type, getRegistryProps(cmd), cmd.id);
 }
 
 /**
@@ -234,9 +275,11 @@ function updateMesh(cmd) {
   const mesh = meshRegistry.get(cmd.id);
   if (!mesh) return;
 
+  const registryUpdates = {};
+
   if (cmd.pos) {
     mesh.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
-    updateObject(cmd.id, { pos: cmd.pos });
+    registryUpdates.pos = cmd.pos;
   }
 
   if (cmd.color) {
@@ -245,23 +288,27 @@ function updateMesh(cmd) {
     } else if (mesh.isGroup) {
       // compound(Group) — 모든 자식 재질 색상 변경
       mesh.traverse((child) => {
-        if (child.material) child.material.color = toThreeColor(cmd.color);
+        if (child.material) updateMaterialColor(child.material, toThreeColor(cmd.color));
       });
     } else if (mesh.material) {
-      mesh.material.color = toThreeColor(cmd.color);
+      updateMaterialColor(mesh.material, toThreeColor(cmd.color));
     }
+    registryUpdates.color = cmd.color;
   }
 
   if (cmd.intensity !== undefined && mesh.isLight) {
     mesh.intensity = cmd.intensity;
+    registryUpdates.intensity = cmd.intensity;
   }
 
   if (cmd.direction !== undefined && mesh.isDirectionalLight) {
     mesh.position.set(-cmd.direction[0] * 10, -cmd.direction[1] * 10, -cmd.direction[2] * 10);
+    registryUpdates.direction = cmd.direction;
   }
 
   if (cmd.visible !== undefined) {
     mesh.visible = cmd.visible;
+    registryUpdates.visible = cmd.visible;
   }
 
   if (cmd.opacity !== undefined) {
@@ -277,9 +324,22 @@ function updateMesh(cmd) {
       mesh.material.opacity = cmd.opacity;
       mesh.material.transparent = cmd.opacity < 1;
     }
+    registryUpdates.opacity = cmd.opacity;
+  }
+
+  if (cmd.emissive !== undefined && !mesh.isLight) {
+    if (mesh.isGroup) {
+      mesh.traverse((child) => {
+        if (child.material) setMaterialEmissive(child.material, cmd.emissive);
+      });
+    } else if (mesh.material) {
+      setMaterialEmissive(mesh.material, cmd.emissive);
+    }
+    registryUpdates.emissive = cmd.emissive;
   }
 
   if (cmd.radius !== undefined && mesh.geometry) {
+    registryUpdates.radius = cmd.radius;
     // geometry 재생성 (sphere, cone, cylinder, ring)
     let newGeom;
     if (mesh.geometry.type === 'SphereGeometry') {
@@ -301,11 +361,16 @@ function updateMesh(cmd) {
   }
 
   if (cmd.size !== undefined && mesh.geometry) {
+    registryUpdates.size = cmd.size;
     // box의 경우 geometry 재생성
     const s = cmd.size;
     const newGeom = new THREE.BoxGeometry(s[0], s[1], s[2]);
     mesh.geometry.dispose();
     mesh.geometry = newGeom;
+  }
+
+  if (cmd.thickness !== undefined) {
+    registryUpdates.thickness = cmd.thickness;
   }
 
   if (cmd.thickness !== undefined && mesh.geometry?.type === 'TorusGeometry') {
@@ -320,6 +385,15 @@ function updateMesh(cmd) {
     const dir = new THREE.Vector3(...cmd.axis).normalize();
     const up = new THREE.Vector3(0, 1, 0);
     mesh.quaternion.setFromUnitVectors(up, dir);
+    registryUpdates.axis = cmd.axis;
+  }
+
+  if (cmd.shaftwidth !== undefined) {
+    registryUpdates.shaftwidth = cmd.shaftwidth;
+  }
+
+  if (Object.keys(registryUpdates).length > 0) {
+    updateObject(cmd.id, registryUpdates);
   }
 }
 
@@ -376,11 +450,11 @@ export function processBatch(commands, scene) {
           createTrail(cmd, scene);
         }
 
-        registerObject('compound', { pos: cmd.pos || [0, 0, 0] }, cmd.id);
+        registerObject('compound', getRegistryProps(cmd), cmd.id);
         break;
       }
       case 'sound':
-        try { processSoundCommand(cmd); } catch (_) { /* 사운드 에러가 3D 렌더링을 막지 않도록 */ }
+        try { processSoundCommand(cmd); } catch { /* 사운드 에러가 3D 렌더링을 막지 않도록 */ }
         break;
       case 'chart':
         renderChart(cmd, scene);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/useI18n';
 
 // 카테고리: vpython 기능 팁
 const TIPS_VPYTHON_KO = [

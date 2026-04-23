@@ -22,8 +22,6 @@ let silentMediaDataUri = null;
 // suspended 상태에서 대기 중인 오디오 콜백 큐
 let pendingAudioQueue = [];
 
-let stateChangeRegistered = false;
-
 // 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
 let _onNotePlay = null;
 export function setNotePlayCallback(cb) { _onNotePlay = cb; }
@@ -120,7 +118,7 @@ async function ensureIOSMediaPlayback() {
         audio.setAttribute('webkit-playsinline', '');
         await audio.play();
         iosMediaUnlocked = true;
-      } catch (_) {
+      } catch {
         // 사용자 제스처가 아니면 재생이 거절될 수 있으므로 다음 제스처에서 재시도
       }
 
@@ -140,7 +138,7 @@ function playSilentUnlockBuffer(ctx) {
     src.buffer = buf;
     src.connect(ctx.destination);
     src.start(0);
-  } catch (_) { /* 중복 호출 시 무시 */ }
+  } catch { /* 중복 호출 시 무시 */ }
 }
 
 export async function ensureAudioReady() {
@@ -159,7 +157,7 @@ export async function ensureAudioReady() {
     audioUnlockPending = (async () => {
       try {
         await ctx.resume();
-      } catch (_) {
+      } catch {
         // 모바일 정책으로 실패하면 다음 사용자 제스처에서 다시 시도
       }
 
@@ -219,7 +217,13 @@ function flushAudioQueue() {
   if (!ctx || ctx.state !== 'running') return;
   audioUnlocked = true;
   const queue = pendingAudioQueue.splice(0);
-  queue.forEach(f => { try { f(ctx); } catch (_) {} });
+  queue.forEach(f => {
+    try {
+      f(ctx);
+    } catch {
+      // 실패한 오디오 콜백은 다음 재생을 막지 않도록 건너뜁니다.
+    }
+  });
 }
 
 /**
@@ -282,7 +286,9 @@ export function resumeAndRun(callback) {
     src.buffer = buf;
     src.connect(ctx.destination);
     src.start(0);
-  } catch (_) {}
+  } catch {
+    // 중복 호출 또는 브라우저 정책 실패는 실행 흐름을 막지 않습니다.
+  }
 
   // iOS: HTMLAudioElement로 오디오 세션 활성화
   ensureIOSMediaPlayback().catch(() => {});

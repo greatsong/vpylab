@@ -133,6 +133,8 @@ vi.mock('three', () => {
 });
 
 import { processBatch, clearScene, getMesh } from './vpython-bridge';
+import { gradeA } from './grading-engine';
+import { getSnapshot } from './object-registry';
 import * as THREE from 'three';
 
 describe('vpython-bridge: processBatch', () => {
@@ -351,6 +353,75 @@ describe('vpython-bridge: processBatch', () => {
     expect(mesh.position.x).toBe(1);
     expect(mesh.position.y).toBe(2);
     expect(mesh.position.z).toBe(3);
+  });
+
+  it('create 커맨드의 채점 속성을 레지스트리에 저장한다', () => {
+    processBatch([{
+      action: 'create',
+      id: 'obj_1',
+      type: 'sphere',
+      pos: [1, 2, 3],
+      color: [1, 0, 0],
+      visible: true,
+      opacity: 0.8,
+      radius: 0.5,
+    }], scene);
+
+    const [snapshot] = getSnapshot();
+    expect(snapshot.props.radius).toBe(0.5);
+    expect(snapshot.props.opacity).toBe(0.8);
+
+    const result = gradeA([
+      { type: 'sphere', property: 'radius', operator: '==', value: 0.5 },
+    ]);
+    expect(result.passed).toBe(true);
+  });
+
+  it('update 커맨드의 색상과 크기 변경을 레지스트리에 반영한다', () => {
+    processBatch([
+      {
+        action: 'create',
+        id: 'obj_1',
+        type: 'sphere',
+        pos: [0, 0, 0],
+        color: [1, 0, 0],
+        visible: true,
+        opacity: 1,
+        radius: 0.5,
+      },
+      { action: 'update', id: 'obj_1', color: [0, 0.8, 0], radius: 2 },
+    ], scene);
+
+    const result = gradeA([
+      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01 },
+      { type: 'sphere', property: 'radius', operator: '==', value: 2 },
+    ]);
+
+    expect(result.passed).toBe(true);
+  });
+
+  it('emissive 생성/업데이트를 재질과 레지스트리에 반영한다', () => {
+    processBatch([
+      {
+        action: 'create',
+        id: 'obj_1',
+        type: 'sphere',
+        pos: [0, 0, 0],
+        color: [1, 0, 0],
+        radius: 0.5,
+        emissive: true,
+      },
+      { action: 'update', id: 'obj_1', emissive: false },
+    ], scene);
+
+    const mesh = getMesh('obj_1');
+    expect(mesh.material.emissiveIntensity).toBe(0);
+
+    const result = gradeA([
+      { type: 'sphere', property: 'emissive', operator: '==', value: false },
+    ]);
+
+    expect(result.passed).toBe(true);
   });
 
   // === 조명 객체 ===

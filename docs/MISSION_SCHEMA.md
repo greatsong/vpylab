@@ -19,14 +19,16 @@ VPy Lab 미션의 데이터 구조와 작성 규칙을 정의합니다.
     ko: string,          // 한국어 설명 (필수)
     en: string,          // 영어 설명 (필수)
   },
-  gradeType: string,     // 'A'|'B'|'A+B'
+  gradeType: string,     // 'A'|'B'|'A+B'|'notes'|'code'|'run'
   starterCode: string,   // 학생 시작 코드
   solutionCode: string,  // 모범 답안 (교사 전용)
   assertions: Array,     // A등급 채점 조건 (SN 카테고리는 빈 배열 허용)
   hints: Array,          // 단계별 힌트 [{ko, en}, ...]
 
   // === 조건부 필수 ===
-  referenceTrajectory: Array,  // B등급 미션 전용: 좌표 배열 [[x,y,z], ...]
+  referenceTrajectory: Array,  // B/A+B 미션 전용: 좌표 배열 [[x,y,z], ...]
+  expectedNotes: Array,        // notes 미션 전용: 정답 음표 시퀀스
+  codeChecks: Array,           // code 미션 전용: 코드 패턴 검사 조건
 }
 ```
 
@@ -66,6 +68,9 @@ VPy Lab 미션의 데이터 구조와 작성 규칙을 정의합니다.
 | A | 정적 검사 | 오브젝트 속성(위치, 색상, 크기) 확인 |
 | B | 궤적 비교 | 애니메이션 경로 비교 |
 | A+B | 복합 | 정적 검사 + 궤적 비교 |
+| notes | 음표 시퀀스 검사 | 멜로디/음계 미션 |
+| code | 코드 패턴 검사 | 특정 API/개념 사용 여부 확인 |
+| run | 실행 결과 검사 | 탐험형 미션. 객체 생성 또는 assertion으로 실행 결과 확인 |
 
 ### assertions (A등급)
 
@@ -93,6 +98,26 @@ referenceTrajectory: (() => {
 })(),
 ```
 
+### expectedNotes (notes)
+
+```javascript
+expectedNotes: ['G4', 'G4', 'A4', 'A4']
+```
+
+### codeChecks (code)
+
+```javascript
+codeChecks: [
+  {
+    pattern: '효과음\\s*\\(|sfx\\s*\\(',
+    minCount: 3,
+    message: '효과음()을 3종류 이상 사용하세요',
+  },
+]
+```
+
+`codeChecks`는 주석을 제외한 실제 코드만 검사합니다. 시작 코드가 바로 통과하지 않도록 `starterCode`와 `solutionCode`를 함께 테스트해야 합니다.
+
 ### hints
 
 ```javascript
@@ -115,7 +140,10 @@ hints: [
   - `# 여기에 코드를 작성하세요` 또는
   - `# Write your code here`
 - solutionCode: 실제 실행 가능한 완성 코드
-- 한글 함수명 지원: `음표()`, `효과음()`, `배경음악()` 등
+- 한글 함수명 지원: `소리()`, `음표()`, `화음()`, `효과음()`, `배경음악()`, `배경음악정지()`, `악기()` 등
+- 한글 상수/리스트 지원: `색상`, `음계`, `높은음계`, `낮은음계`, `무지개`, `따뜻한색`, `차가운색`, `기본색`, `파스텔`
+- `rate()`, `sleep()`, `음표()`, `악기()`는 편집기에서 자동으로 `await` 처리되므로 미션 코드에는 학생 친화적으로 그대로 작성합니다.
+- 음악/미디어아트/수학/과학 예제는 정답 채점보다 변형 포인트와 갤러리 공유를 우선하고, 채점형 미션은 주로 CT 개념 확인에 배치합니다.
 
 ## 미션 추가 예시
 
@@ -209,9 +237,11 @@ CI에서 자동 검증되는 항목:
 2. `id` 고유성
 3. `category`가 유효한 값
 4. `level`이 1~4 범위
-5. `gradeType`이 A, B, A+B 중 하나
+5. `gradeType`이 A, B, A+B, notes, code, run 중 하나
 6. `title`, `description`에 `ko`, `en` 키 존재
 7. `hints` 배열에 1개 이상의 항목
 8. `hints` 각 항목에 `ko`, `en` 키 존재
 9. `assertions` 배열 존재 (SN 카테고리는 빈 배열 허용)
 10. B등급 미션에 `referenceTrajectory` 존재
+11. notes 미션에 `expectedNotes` 존재
+12. code 미션에 `codeChecks` 존재, 시작 코드는 미통과·모범 답안은 통과

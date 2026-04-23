@@ -175,13 +175,6 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     }
   });
 
-  // 카메라 모드 라벨
-  const modeLabels = {
-    'auto-fit': '자동',
-    'follow': '추적',
-    'manual': '수동',
-  };
-
   return (
     <div className="w-full h-full relative" style={{ touchAction: 'none' }}>
       <div ref={containerRef} className="w-full h-full" />

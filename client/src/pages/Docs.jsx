@@ -4,7 +4,7 @@ import Header from '../components/layout/Header';
 import DocSidebar from '../components/docs/DocSidebar';
 import DocContent from '../components/docs/DocContent';
 import docs, { docCategories, getDocsByCategory, getDocById, searchDocs } from '../data/docs';
-import { useI18n } from '../i18n';
+import { useI18n } from '../i18n/useI18n';
 import useAppStore from '../stores/appStore';
 
 export default function Docs() {
@@ -13,18 +13,12 @@ export default function Docs() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [selectedDocId, setSelectedDocId] = useState(null);
+  const [selectedDocId, setSelectedDocId] = useState(() => {
+    const hash = location.hash.replace('#', '');
+    return hash && getDocById(hash) ? hash : null;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // URL 해시에서 초기 선택 문서 읽기
-  useEffect(() => {
-    const hash = location.hash.replace('#', '');
-    if (hash) {
-      const doc = getDocById(hash);
-      if (doc) setSelectedDocId(hash);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 선택 변경 시 해시 업데이트
   useEffect(() => {
@@ -43,10 +37,10 @@ export default function Docs() {
   const categoriesArray = useMemo(
     () => Object.entries(docCategories).map(([id, cat]) => ({
       id,
-      name: cat[locale] || cat.en,
+      name: cat.ko && cat.en && cat.ko !== cat.en ? `${cat.ko} / ${cat.en}` : (cat.ko || cat.en),
       icon: cat.icon,
     })),
-    [locale],
+    [],
   );
 
   // 카테고리별 문서 그룹 메모이제이션

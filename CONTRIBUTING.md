@@ -97,7 +97,7 @@ GitHub에서 Pull Request를 생성하면 자동으로 CI 검사가 실행됩니
     ko: '미션 설명 (한국어)',
     en: 'Mission description (English)',
   },
-  gradeType: 'A',           // 'A'=정적 검사, 'B'=궤적 비교, 'A+B'=복합
+  gradeType: 'A',           // 'A'=정적 검사, 'B'=궤적 비교, 'A+B'=복합, 'notes'|'code'|'run'
   starterCode: `from vpython import *\n\n# 시작 코드`,
   solutionCode: `from vpython import *\n\n# 정답 코드`,
   assertions: [
@@ -129,7 +129,8 @@ GitHub에서 Pull Request를 생성하면 자동으로 CI 검사가 실행됩니
 - [ ] `title`, `description`, `hints`에 한국어(`ko`)와 영어(`en`)가 모두 있는가?
 - [ ] `starterCode`에 학생이 채워야 할 부분이 주석으로 표시되어 있는가?
 - [ ] `solutionCode`가 실제로 실행 가능한가?
-- [ ] `assertions`가 정답을 올바르게 검증하는가?
+- [ ] `assertions`/`codeChecks`/`expectedNotes`가 정답을 올바르게 검증하는가?
+- [ ] 시작 코드는 바로 통과하지 않고, 모범 답안은 통과하는가?
 - [ ] `level`이 적절한가? (1=따라하기, 2=변형하기, 3=설계하기, 4=창작하기)
 - [ ] B등급 미션이면 `referenceTrajectory`가 있는가?
 - [ ] 콘텐츠가 교육적으로 적절한가? (폭력적/차별적 내용 없음)
@@ -161,7 +162,7 @@ title: {
 
 #### 번역 가이드라인
 
-- 프로그래밍 용어(sphere, vector 등)는 번역하지 않고 원문 유지
+- `sphere`, `vector` 같은 VPython 기본 용어는 원문을 유지하되, `음표()`, `효과음()`, `색상`, `음계`, `무지개`처럼 VPyLab이 공식 제공하는 한글 API는 그대로 사용
 - 자연스러운 표현 사용 (직역보다 의역)
 - 코드 주석의 번역은 해당 언어 사용자가 이해할 수 있도록 작성
 - `starterCode`/`solutionCode` 내 주석도 번역 대상
@@ -173,7 +174,8 @@ title: {
 #### 코드 컨벤션
 
 - UI 텍스트와 주석은 한국어 (영문 병기 가능)
-- 코드 변수명/함수명은 영어
+- 앱/서버 JavaScript 코드의 변수명/함수명은 영어
+- 학생용 Python 예제와 미션 코드는 한글 변수명과 공식 한글 API 사용 가능 (`크기`, `구슬들`, `음표()`, `화음()` 등)
 - React 함수형 컴포넌트 + Hooks 사용
 - Tailwind CSS (v4) 사용
 - ESLint 규칙 준수

@@ -1,6 +1,16 @@
 import useAppStore from '../../stores/appStore';
 import DocCodeBlock from './DocCodeBlock';
 
+function getBilingualParts(value) {
+  if (!value || typeof value !== 'object') {
+    return { ko: value, en: null };
+  }
+
+  const ko = value.ko || null;
+  const en = value.en || null;
+  return { ko: ko || en, en: en && en !== ko ? en : null };
+}
+
 /**
  * 문서 우측 콘텐츠 패널.
  * Props: { doc, t }
@@ -23,8 +33,8 @@ export default function DocContent({ doc, t }) {
     );
   }
 
-  const title = typeof doc.title === 'object' ? (doc.title[locale] || doc.title['en']) : doc.title;
-  const description = typeof doc.description === 'object' ? (doc.description[locale] || doc.description['en']) : doc.description;
+  const title = getBilingualParts(doc.title);
+  const description = getBilingualParts(doc.description);
   const example = doc.code || (typeof doc.example === 'object' ? (doc.example[locale] || doc.example['en']) : doc.example);
 
   return (
@@ -34,14 +44,28 @@ export default function DocContent({ doc, t }) {
         className="text-2xl font-bold mb-3 tracking-tight"
         style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text-primary)' }}
       >
-        {title}
+        {title.ko}
       </h1>
+      {title.en && !title.ko?.toLowerCase?.().includes(title.en.toLowerCase()) && (
+        <p className="text-sm mb-3" style={{ color: 'var(--color-text-muted)' }}>
+          {title.en}
+        </p>
+      )}
 
       {/* 설명 */}
-      {description && (
-        <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--color-text-secondary)' }}>
-          {description}
-        </p>
+      {(description.ko || description.en) && (
+        <div className="mb-5">
+          {description.ko && (
+            <p className="text-sm leading-relaxed mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+              {description.ko}
+            </p>
+          )}
+          {description.en && (
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+              {description.en}
+            </p>
+          )}
+        </div>
       )}
 
       {/* 시그니처 */}
@@ -76,10 +100,10 @@ export default function DocContent({ doc, t }) {
               <thead>
                 <tr style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
                   {[
-                    locale === 'ko' ? '이름' : 'Name',
-                    locale === 'ko' ? '타입' : 'Type',
-                    locale === 'ko' ? '기본값' : 'Default',
-                    locale === 'ko' ? '설명' : 'Description',
+                    '이름 / Name',
+                    '타입 / Type',
+                    '기본값 / Default',
+                    '설명 / Description',
                   ].map((h) => (
                     <th
                       key={h}
@@ -94,9 +118,7 @@ export default function DocContent({ doc, t }) {
               <tbody>
                 {doc.params.map((p, i) => {
                   const descField = p.desc || p.description;
-                  const paramDesc = typeof descField === 'object'
-                    ? (descField[locale] || descField['en'])
-                    : descField;
+                  const paramDesc = getBilingualParts(descField);
                   return (
                     <tr
                       key={p.name}
@@ -115,7 +137,12 @@ export default function DocContent({ doc, t }) {
                         {p.default ?? '-'}
                       </td>
                       <td className="px-3 py-2" style={{ color: 'var(--color-text-secondary)' }}>
-                        {paramDesc}
+                        {paramDesc.ko && <div>{paramDesc.ko}</div>}
+                        {paramDesc.en && (
+                          <div className="mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                            {paramDesc.en}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/useI18n';
 import { supabase } from '../../lib/supabase';
 
 export default function UserManagement() {
@@ -9,17 +9,23 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null); // 변경 중인 user id
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    const { data } = await supabase
+  useEffect(() => {
+    let active = true;
+
+    supabase
       .from('vpylab_profiles')
       .select('id, display_name, avatar_url, role, created_at')
-      .order('created_at', { ascending: false });
-    setUsers(data || []);
-    setLoading(false);
-  };
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (!active) return;
+        setUsers(data || []);
+        setLoading(false);
+      });
 
-  useEffect(() => { fetchUsers(); }, []);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const toggleRole = async (userId, currentRole) => {
     const newRole = currentRole === 'teacher' ? 'student' : 'teacher';

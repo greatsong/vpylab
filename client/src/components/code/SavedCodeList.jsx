@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/useI18n';
 import useCodeStore from '../../stores/codeStore';
 import useAuthStore from '../../stores/authStore';
 

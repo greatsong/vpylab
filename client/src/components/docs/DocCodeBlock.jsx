@@ -16,7 +16,7 @@ function highlightPython(code) {
   const ph = (html) => {
     const idx = tokens.length;
     tokens.push(html);
-    return `\x00${idx}\x00`;
+    return `__VPYLAB_TOKEN_${idx}__`;
   };
 
   let result = code
@@ -33,8 +33,8 @@ function highlightPython(code) {
   result = result.replace(/("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g, (m) =>
     ph(`<span style="color:var(--color-success)">${m}</span>`));
 
-  // 숫자 (토큰 플레이스홀더 \x00N\x00 내부의 숫자는 제외)
-  result = result.replace(/(?<!\x00)\b(\d+\.?\d*)\b(?!\x00)/g, (m) =>
+  // 숫자 (토큰 플레이스홀더 내부의 숫자는 제외)
+  result = result.replace(/(?<!__VPYLAB_TOKEN_)\b(\d+\.?\d*)\b(?!__)/g, (m) =>
     ph(`<span style="color:var(--color-warning)">${m}</span>`));
 
   // 키워드 (단어 경계 기준)
@@ -44,7 +44,7 @@ function highlightPython(code) {
       : m);
 
   // 토큰 복원
-  result = result.replace(/\x00(\d+)\x00/g, (_, i) => tokens[i]);
+  result = result.replace(/__VPYLAB_TOKEN_(\d+)__/g, (_, i) => tokens[i]);
 
   return result;
 }

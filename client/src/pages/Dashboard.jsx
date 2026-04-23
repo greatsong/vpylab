@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
-import { useI18n } from '../i18n';
+import { useI18n } from '../i18n/useI18n';
 import useAuthStore from '../stores/authStore';
 import ClassManager from '../components/dashboard/ClassManager';
 import StudentProgress from '../components/dashboard/StudentProgress';

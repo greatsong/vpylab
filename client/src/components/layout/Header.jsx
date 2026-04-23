@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/useI18n';
 import useAppStore from '../../stores/appStore';
 import useAuthStore from '../../stores/authStore';
 import { prewarm } from '../../engine/pyodide-singleton';

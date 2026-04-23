@@ -1,9 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/useI18n';
 import useCodeShareStore from '../../stores/codeShareStore';
 
 export default function SendCodeModal({ isOpen, onClose, currentCode }) {
+  if (!isOpen) return null;
+
+  return (
+    <SendCodeModalContent
+      onClose={onClose}
+      currentCode={currentCode}
+    />
+  );
+}
+
+function SendCodeModalContent({ onClose, currentCode }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const {
@@ -11,24 +22,12 @@ export default function SendCodeModal({ isOpen, onClose, currentCode }) {
     sendCode, generateTitle,
   } = useCodeShareStore();
 
-  const [title, setTitle] = useState('');
-  const [code, setCode] = useState('');
-  const [classId, setClassId] = useState('');
+  const initialClassId = selectedClassId || (teacherClasses.length === 1 ? teacherClasses[0].id : '');
+  const [title, setTitle] = useState(() => generateTitle());
+  const [code, setCode] = useState(currentCode || '');
+  const [classId, setClassId] = useState(initialClassId);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      setCode(currentCode || '');
-      setError(null);
-      setSending(false);
-      const cid = selectedClassId || (teacherClasses.length === 1 ? teacherClasses[0].id : '');
-      setClassId(cid);
-      setTitle(generateTitle());
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
 
   // 학급이 없는 경우
   if (teacherClasses.length === 0) {

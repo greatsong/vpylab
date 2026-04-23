@@ -9,7 +9,7 @@
 **프로그래밍을 잘 모르는 선생님**도 VPyLab을 직접 배포해서 수업에 사용할 수 있도록 안내합니다.  
 모든 단계를 **스크린샷 없이도 따라할 수 있게** 최대한 쉽게 설명했습니다.
 
-AI에게 배포를 맡기고 싶다면 → [`README_AI.md`](README_AI.md) 를 AI에게 보여주세요.
+AI에게 배포를 맡기고 싶다면 이 README 전체를 보여주고, Supabase/Render/Vercel 계정 정보는 직접 확인하면서 진행하세요.
 
 ---
 
@@ -101,6 +101,8 @@ supabase/migrations/003_shares.sql
 supabase/migrations/004_shares_rls_fix.sql
 supabase/migrations/005_gallery_search_index.sql
 supabase/migrations/006_gallery_collaboration.sql
+supabase/migrations/007_admin_features.sql
+supabase/migrations/008_code_shares.sql
 ```
 
 > **주의:** 반드시 001 → 002 → ... 순서대로 실행해야 합니다.  
@@ -202,7 +204,7 @@ supabase/migrations/006_gallery_collaboration.sql
 |-----|-------|
 | `VITE_SUPABASE_URL` | Step 1에서 메모한 **Project URL** |
 | `VITE_SUPABASE_ANON_KEY` | Step 1에서 메모한 **anon public** 키 |
-| `VITE_API_BASE_URL` | Step 2에서 받은 Render URL (예: `https://vpylab-server-xxxx.onrender.com`) |
+| `VITE_API_URL` | Step 2에서 받은 Render URL (예: `https://vpylab-server-xxxx.onrender.com`) |
 
 ### 3-4. 배포
 
@@ -232,11 +234,14 @@ supabase/migrations/006_gallery_collaboration.sql
 ```python
 from vpython import *
 
-box(color=color.red)
-sphere(pos=vector(2, 0, 0), color=color.blue)
+scene_background(색상['검정'])
+sphere(color=색상['빨강'], emissive=True)
+음표("도4", 0.3)
+음표("미4", 0.3)
+음표("솔4", 0.5)
 ```
 
-3. 3D 화면에 빨간 상자와 파란 구가 나타나면 **성공**입니다!
+3. 3D 화면에 빛나는 빨간 구가 나타나고 도-미-솔 소리가 나면 **성공**입니다!
 
 ### 추가 확인 (선택)
 

@@ -3,10 +3,24 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import useGalleryStore from '../stores/galleryStore';
 import useAuthStore from '../stores/authStore';
-import GalleryCard, { CATEGORY_STYLES } from '../components/gallery/GalleryCard';
-import { useI18n } from '../i18n';
+import GalleryCard from '../components/gallery/GalleryCard';
+import { useI18n } from '../i18n/useI18n';
 
 const GalleryPreview = lazy(() => import('../components/gallery/GalleryPreview'));
+
+const DETAIL_CATEGORY_STYLES = {
+  computing: { icon: 'CT', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  CT: { icon: 'CT', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  math: { icon: 'MA', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  MA: { icon: 'MA', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+  science: { icon: 'SC', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  SC: { icon: 'SC', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  art: { icon: 'AR', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+  AR: { icon: 'AR', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+  sound: { icon: 'SN', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)' },
+  SN: { icon: 'SN', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)' },
+  free: { icon: 'VP', gradient: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
+};
 
 
 export default function GalleryDetail() {
@@ -107,13 +121,20 @@ export default function GalleryDetail() {
         <div className="detail-layout mb-8">
           {/* 카테고리 비주얼 */}
           {(() => {
-            const catStyle = CATEGORY_STYLES[currentWork.category] || CATEGORY_STYLES.free;
+            const catStyle = DETAIL_CATEGORY_STYLES[currentWork.category] || DETAIL_CATEGORY_STYLES.free;
             return (
               <div className="rounded-xl overflow-hidden flex items-center justify-center" style={{
                 aspectRatio: '16/10',
                 background: catStyle.gradient,
               }}>
-                <span style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.2))' }}>
+                <span
+                  className="text-5xl font-bold tracking-normal"
+                  style={{
+                    color: 'white',
+                    filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.2))',
+                    fontFamily: 'var(--font-display)',
+                  }}
+                >
                   {catStyle.icon}
                 </span>
               </div>

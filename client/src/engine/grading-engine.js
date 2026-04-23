@@ -227,6 +227,140 @@ export function gradeNotes(expectedNotes) {
 }
 
 /**
+ * 코드 검사형 채점: 주석을 제외한 실제 코드에서 패턴 사용 횟수 확인
+ *
+ * @param {string} code - 학생 Python 코드
+ * @param {{pattern: string, minCount?: number, message: string}[]} checks
+ * @returns {{grade: string, passed: boolean, score: number, results: object[], message: string}}
+ */
+export function gradeCodeChecks(code, checks = []) {
+  if (!checks || checks.length === 0) {
+    return {
+      grade: 'code',
+      passed: false,
+      score: 0,
+      results: [],
+      message: '채점 기준이 설정되지 않았습니다.',
+    };
+  }
+
+  const codeWithoutComments = stripPythonComments(code || '');
+  const results = [];
+
+  for (const check of checks) {
+    let count = 0;
+
+    try {
+      const matches = codeWithoutComments.match(new RegExp(check.pattern, 'g'));
+      count = matches ? matches.length : 0;
+    } catch {
+      results.push({
+        passed: false,
+        message: `❌ 잘못된 채점 패턴입니다: ${check.message}`,
+      });
+      continue;
+    }
+
+    const passed = count >= (check.minCount || 1);
+    results.push({
+      passed,
+      message: passed
+        ? `✅ ${check.message} (${count}개 사용)`
+        : `❌ ${check.message} (현재 ${count}개)`,
+    });
+  }
+
+  const passedAll = results.every(r => r.passed);
+  const passedCount = results.filter(r => r.passed).length;
+
+  return {
+    grade: 'code',
+    passed: passedAll,
+    score: passedAll ? 100 : Math.round((passedCount / results.length) * 100),
+    results,
+    message: passedAll ? '✅ 코드 검사 통과!' : '코드를 더 작성해 보세요.',
+  };
+}
+
+/**
+ * 실행형 미션 채점: 실제 객체 생성 후, 선택적 assertion으로 결과 확인
+ */
+export function gradeRun(assertions = []) {
+  const snapshot = getSnapshot();
+
+  if (snapshot.length === 0) {
+    return {
+      grade: 'run',
+      passed: false,
+      score: 0,
+      message: '코드를 먼저 실행한 뒤 채점하세요.',
+    };
+  }
+
+  if (assertions.length > 0) {
+    const result = gradeA(assertions);
+    return {
+      ...result,
+      grade: 'run',
+      message: result.passed
+        ? '✅ 실행 결과 확인 완료!'
+        : '실행은 되었지만 목표 조건을 아직 만족하지 못했습니다.',
+    };
+  }
+
+  return {
+    grade: 'run',
+    passed: true,
+    score: 100,
+    message: '✅ 실행 완료!',
+  };
+}
+
+/**
+ * Python 한 줄에서 문자열 바깥의 주석만 제거
+ */
+export function stripPythonComments(code) {
+  const lines = code.split('\n');
+  return lines.map(stripCommentFromLine).join('\n');
+}
+
+function stripCommentFromLine(line) {
+  let inSingle = false;
+  let inDouble = false;
+  let escaped = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if ((inSingle || inDouble) && char === '\\') {
+      escaped = true;
+      continue;
+    }
+
+    if (!inDouble && char === "'") {
+      inSingle = !inSingle;
+      continue;
+    }
+
+    if (!inSingle && char === '"') {
+      inDouble = !inDouble;
+      continue;
+    }
+
+    if (!inSingle && !inDouble && char === '#') {
+      return line.slice(0, i);
+    }
+  }
+
+  return line;
+}
+
+/**
  * 비교 연산
  */
 function compare(actual, operator, expected, tolerance = 0) {

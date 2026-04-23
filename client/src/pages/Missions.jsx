@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useI18n } from '../i18n';
+import { useI18n } from '../i18n/useI18n';
 import Header from '../components/layout/Header';
 import missions, { categories, getMissionsByCategory } from '../data/missions';
 import useAppStore from '../stores/appStore';

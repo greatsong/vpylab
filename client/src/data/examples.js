@@ -189,8 +189,11 @@ while True:
     rate(30)
     for s in stars:
         s.angle += 0.003 / max(s.dist, 0.5)
-        s.pos.x = s.dist * math.cos(s.angle)
-        s.pos.z = s.dist * math.sin(s.angle)
+        s.pos = vector(
+            s.dist * math.cos(s.angle),
+            s.pos.y,
+            s.dist * math.sin(s.angle)
+        )
 `
   },
   {
@@ -229,15 +232,14 @@ for i in range(30):
 while True:
     rate(60)
     for d in drops:
-        d.pos.y -= d.speed
+        d.pos = vector(d.pos.x, d.pos.y - d.speed, d.pos.z)
 
         # 바닥에 닿으면 위로 리셋 + 소리
         if d.pos.y < -3:
             if random.random() < 0.3:
                 freq = random.uniform(800, 2000)
                 play_sound(freq, 0.05, 'sine', 0.1)
-            d.pos.y = 8
-            d.pos.x = random.uniform(-5, 5)
+            d.pos = vector(random.uniform(-5, 5), 8, d.pos.z)
             d.speed = random.uniform(0.15, 0.3)
 `
   },
@@ -282,14 +284,14 @@ while True:
 
     # 해당 음판 두드리기
     p = plates[note_idx]
-    p.pos.y = p.base_y - 0.2
+    p.pos = vector(p.pos.x, p.base_y - 0.2, p.pos.z)
     악기('피아노', p.note, 0.4)
 
     # 드럼 회전
     drum.pos = vector(-3, 2 + 0.05 * math.sin(idx * 0.5), 0)
 
     await rate(8)
-    p.pos.y = p.base_y  # 음판 복귀
+    p.pos = vector(p.pos.x, p.base_y, p.pos.z)  # 음판 복귀
 
     idx += 1
 `
@@ -445,12 +447,12 @@ while True:
     for i, b in enumerate(balls):
         vol = pattern[i][idx]
         if vol > 0:
-            b.pos.y = b.base_y + vol * 2
+            b.pos = vector(b.pos.x, b.base_y + vol * 2, b.pos.z)
             play_sound(b.freq, 0.1, 'square', vol * 0.3)
 
     await rate(16)
     for b in balls:
-        b.pos.y = b.base_y
+        b.pos = vector(b.pos.x, b.base_y, b.pos.z)
 
     step += 1
 `
@@ -610,7 +612,7 @@ while True:
             # 원형 파동
             y = 0.8 * math.sin(dist * 1.5 - t * 3) / (1 + dist * 0.3)
 
-            dots[i][j].pos.y = y
+            dots[i][j].pos = vector(dots[i][j].pos.x, y, dots[i][j].pos.z)
 
             # 높이에 따라 색 변경
             if y > 0.2:
@@ -873,9 +875,11 @@ while True:
         # 반지름도 미세하게 변동
         r = s.ring_r + 0.3 * math.sin(t * 2 + s.idx)
 
-        s.pos.x = r * math.cos(angle)
-        s.pos.z = r * math.sin(angle)
-        s.pos.y = 0.5 * math.sin(t * 3 + s.ring_r)
+        s.pos = vector(
+            r * math.cos(angle),
+            0.5 * math.sin(t * 3 + s.ring_r),
+            r * math.sin(angle)
+        )
 
         # 색 순환
         hue = (t * 0.1 + s.ring_r * 0.3 + s.idx * 0.2) % 7

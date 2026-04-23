@@ -5,7 +5,7 @@ import usePyodide from '../../hooks/usePyodide';
 import { processBatch, clearScene } from '../../engine/vpython-bridge';
 import { clearRegistry } from '../../engine/object-registry';
 import { stopBgm } from '../../engine/sound-system';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/useI18n';
 
 /**
  * 갤러리 상세 페이지용 3D 미리보기

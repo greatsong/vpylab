@@ -128,7 +128,7 @@ sleep(0.5)
 print("신호가 바뀌었습니다!")
 `,
     assertions: [
-      { type: 'sphere', property: 'color.g', operator: '==', value: 1, index: 2 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01, index: 2 },
       { type: 'box', property: 'pos.y', operator: 'approx', value: 1.5, index: 0 },
     ],
     hints: [
@@ -1191,7 +1191,7 @@ for t in range(100):
         y = 3 * math.sin((t + i * 10) * 0.1)
         if y < 0:
             y = 0
-        balls[i].pos.y = y
+        balls[i].pos = vector(balls[i].pos.x, y, balls[i].pos.z)
 
 효과음("coin")
 print("무지개 분수 완성!")
@@ -1216,7 +1216,7 @@ for t in range(100):
         y = 3 * math.sin((t + i * 10) * 0.1)
         if y < 0:
             y = 0
-        balls[i].pos.y = y
+        balls[i].pos = vector(balls[i].pos.x, y, balls[i].pos.z)
 
 효과음("coin")
 print("무지개 분수 완성!")
@@ -1638,9 +1638,10 @@ sleep(0.5)
 
 print("3D 피아노 완성!")
 `,
+    assertions: [],
     codeChecks: [
       { pattern: '화음\\s*\\(|chord\\s*\\(', minCount: 1, message: '화음()을 사용하여 도-미-솔 화음을 연주하세요' },
-      { pattern: 'sound\\s*\\(|음표\\s*\\(', minCount: 3, message: '3개 이상의 음을 재생하세요' },
+      { pattern: 'sound\\s*\\(|음표\\s*\\(', minCount: 1, message: '건반 소리를 재생하세요' },
     ],
     hints: [
       { ko: '화음()은 여러 음을 동시에 내는 함수예요. 리스트로 음을 묶어 넣습니다.', en: 'chord() plays multiple notes at once. Pass a list of notes.' },

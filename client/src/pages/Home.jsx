@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useI18n } from '../i18n';
+import { useI18n } from '../i18n/useI18n';
 import Header from '../components/layout/Header';
 import { categories, getMissionsByCategory } from '../data/missions';
 import useAppStore from '../stores/appStore';

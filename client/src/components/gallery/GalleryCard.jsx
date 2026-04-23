@@ -117,7 +117,7 @@ const IconFree = () => (
   </svg>
 );
 
-export const CATEGORY_STYLES = {
+const CATEGORY_STYLES = {
   computing:  { icon: <IconComputing />,  gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
   math:       { icon: <IconMath />,       gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
   science:    { icon: <IconScience />,    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },

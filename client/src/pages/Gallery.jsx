@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import useGalleryStore from '../stores/galleryStore';
 import GalleryCard from '../components/gallery/GalleryCard';
 import Header from '../components/layout/Header';
-import { useI18n } from '../i18n';
+import { useI18n } from '../i18n/useI18n';
 
 const CATEGORIES = [
   { value: 'all', label: '전체', en: 'All' },

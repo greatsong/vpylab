@@ -32,7 +32,7 @@ const DEFAULTS = {
 
   // Smooth Follow
   followUpdateInterval: 1,   // 추적 모드에서 바운딩 갱신 주기 (프레임)
-  zoomLocked: false,           // 줌 고정 (자동/추적 모두 적용)
+  zoomLocked: true,            // 추적 모드 기본값: 줌 고정
   lerpFactor: 0.05,          // 카메라 이동 보간 속도 (0=안움직임, 1=즉시)
   zoomLerpFactor: 0.03,      // 줌 보간 속도
   followThreshold: 0.01,     // Auto-Fit → Follow 전환 감지 임계값
@@ -209,13 +209,21 @@ export default class CameraSystem {
 
     if (!hasBounds || box.isEmpty()) return null;
 
-    const center = new THREE.Vector3();
     const size = new THREE.Vector3();
-    box.getCenter(center);
     box.getSize(size);
 
+    // 추적 중심은 렌더 바운딩 중심이 아니라 객체 앵커 위치를 사용한다.
+    // Group 내부 자식 위치가 치우쳐도 학생이 움직이는 주 객체를 따라가게 하기 위함.
+    const anchorCenter = new THREE.Vector3();
+    const anchorPos = new THREE.Vector3();
+    for (const obj of targetObjects) {
+      obj.getWorldPosition(anchorPos);
+      anchorCenter.add(anchorPos);
+    }
+    anchorCenter.divideScalar(targetObjects.length);
+
     return {
-      center,
+      center: anchorCenter,
       size,
       radius: size.length() / 2,
       hasMovingObjects: movingObjects.length > 0,
@@ -289,8 +297,14 @@ export default class CameraSystem {
           if (centerDiff > this.options.followCenterDeadzone) {
             this._targetCenter.copy(state.center);
           }
-          // Follow는 줌을 고정 — 움직이는 물체 중심만 추적
-          // Auto-Fit과의 핵심 차이: 정적 물체가 화면 밖으로 나갈 수 있음
+          if (!this.options.zoomLocked) {
+            const nextDistance = this._distanceForBounds(state.radius);
+            const distanceDiffRatio = Math.abs(nextDistance - this._targetDistance)
+              / Math.max(this._targetDistance, 1);
+            if (distanceDiffRatio > this.options.zoomThreshold) {
+              this._targetDistance = nextDistance;
+            }
+          }
           this._lastBounds = state;
         }
       }

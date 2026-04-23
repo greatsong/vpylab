@@ -1,5 +1,13 @@
 import { useState, useMemo } from 'react';
 
+function formatBilingualTitle(title) {
+  if (!title || typeof title !== 'object') return title;
+  const ko = title.ko || title.en || '';
+  const en = title.en || '';
+  if (!en || en === ko || ko.toLowerCase().includes(en.toLowerCase())) return ko;
+  return `${ko} / ${en}`;
+}
+
 /**
  * 문서 좌측 사이드바 — 검색 + 카테고리 네비게이션.
  *
@@ -106,7 +114,7 @@ export default function DocSidebar({
                       }}
                     >
                       {cat?.icon && <span className="text-xs flex-shrink-0">{cat.icon}</span>}
-                      <span className="truncate">{typeof doc.title === 'object' ? (doc.title.ko || doc.title.en) : doc.title}</span>
+                      <span className="truncate">{formatBilingualTitle(doc.title)}</span>
                     </button>
                   </li>
                 );
@@ -163,7 +171,7 @@ export default function DocSidebar({
                               fontFamily: 'var(--font-body)',
                             }}
                           >
-                            {typeof doc.title === 'object' ? (doc.title.ko || doc.title.en) : doc.title}
+                            {formatBilingualTitle(doc.title)}
                           </button>
                         </li>
                       );

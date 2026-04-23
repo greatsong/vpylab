@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/useI18n';
 import useCodeShareStore from '../../stores/codeShareStore';
 
 export default function CodeSharePanel({ onClose, onReplaceCode, onAppendCode }) {

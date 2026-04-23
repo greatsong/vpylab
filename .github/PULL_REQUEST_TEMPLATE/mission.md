@@ -5,7 +5,7 @@
 - **ID**: <!-- 예: SC-3 -->
 - **카테고리**: <!-- CT|CR|MA|SC|AR|SN|AI -->
 - **난이도**: <!-- Lv.1~4 -->
-- **채점 방식**: <!-- A|B|A+B -->
+- **채점 방식**: <!-- A|B|A+B|notes|code|run -->
 
 ### 설명
 
@@ -21,7 +21,8 @@
 - [ ] `title`, `description`, `hints`에 `ko`/`en` 텍스트가 모두 있음
 - [ ] `starterCode`에 학생이 채울 부분이 주석으로 표시됨
 - [ ] `solutionCode`가 실행 가능함 (로컬에서 테스트 완료)
-- [ ] `assertions`가 정답을 올바르게 검증함
+- [ ] `assertions`/`codeChecks`/`expectedNotes`가 정답을 올바르게 검증함
+- [ ] 시작 코드는 바로 통과하지 않고, 모범 답안은 통과함
 - [ ] B등급 미션이면 `referenceTrajectory` 포함됨
 - [ ] `npm test` 통과
 - [ ] 콘텐츠가 교육적으로 적절함 (폭력적/차별적 내용 없음)

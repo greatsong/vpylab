@@ -4,7 +4,7 @@
  * B등급: 궤적 유사도 비교
  */
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { gradeA, gradeB } from './grading-engine';
+import { gradeA, gradeB, gradeCodeChecks, gradeRun, stripPythonComments } from './grading-engine';
 import {
   registerObject, updateObject, clearRegistry,
 } from './object-registry';
@@ -232,5 +232,72 @@ describe('gradeB — 궤적 유사도 비교', () => {
     // 낮은 threshold로 통과
     const resultLow = gradeB(id, reference, 0.5);
     expect(resultLow.passed).toBe(true);
+  });
+});
+
+describe('gradeCodeChecks — 코드 패턴 검사', () => {
+  it('주석에 있는 함수명은 채점에 포함하지 않는다', () => {
+    const result = gradeCodeChecks(`
+# 효과음("coin")
+효과음("jump")
+# sfx("powerup")
+`, [
+      { pattern: '효과음\\s*\\(|sfx\\s*\\(', minCount: 2, message: '효과음()을 2종류 이상 사용하세요' },
+    ]);
+
+    expect(result.passed).toBe(false);
+    expect(result.results[0].message).toContain('현재 1개');
+  });
+
+  it('문자열 내부의 #은 주석으로 자르지 않는다', () => {
+    const stripped = stripPythonComments('음표("솔#4", 0.4)  # 샵 음');
+
+    expect(stripped).toContain('솔#4');
+    expect(stripped).not.toContain('샵 음');
+  });
+
+  it('검사 조건이 모두 맞으면 통과한다', () => {
+    const result = gradeCodeChecks(`
+효과음("jump")
+sfx("coin")
+`, [
+      { pattern: '효과음\\s*\\(|sfx\\s*\\(', minCount: 2, message: '효과음()을 2종류 이상 사용하세요' },
+    ]);
+
+    expect(result.passed).toBe(true);
+    expect(result.score).toBe(100);
+  });
+});
+
+describe('gradeRun — 실행형 미션 검사', () => {
+  beforeEach(() => {
+    clearRegistry();
+  });
+
+  it('실행 결과 객체가 없으면 실패한다', () => {
+    const result = gradeRun([]);
+
+    expect(result.passed).toBe(false);
+    expect(result.message).toContain('먼저 실행');
+  });
+
+  it('객체가 있고 assertion이 없으면 통과한다', () => {
+    registerObject('sphere', { pos: [0, 0, 0] });
+
+    const result = gradeRun([]);
+
+    expect(result.passed).toBe(true);
+    expect(result.score).toBe(100);
+  });
+
+  it('assertion이 있으면 실행 결과 조건까지 확인한다', () => {
+    registerObject('sphere', { pos: [0, 1, 0] });
+
+    const result = gradeRun([
+      { type: 'sphere', property: 'pos.y', operator: '>', value: 0 },
+    ]);
+
+    expect(result.passed).toBe(true);
+    expect(result.grade).toBe('run');
   });
 });

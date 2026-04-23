@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useI18n } from '../i18n';
+import { useI18n } from '../i18n/useI18n';
 import Header from '../components/layout/Header';
 import CodeEditor from '../components/editor/CodeEditor';
 import Viewport3D from '../components/viewport/Viewport3D';
@@ -8,9 +8,9 @@ import OutputConsole from '../components/console/OutputConsole';
 import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
-import { gradeA, gradeB, gradeNotes } from '../engine/grading-engine';
+import { gradeA, gradeB, gradeCodeChecks, gradeNotes, gradeRun } from '../engine/grading-engine';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, ensureAudioReady, resumeAndRun } from '../engine/sound-system';
+import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, resumeAndRun } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
 import missions from '../data/missions';
 
@@ -155,41 +155,10 @@ export default function MissionPlay() {
       result = gradeNotes(mission.expectedNotes);
     } else if (mission.gradeType === 'code') {
       // 코드 검사형 미션: 특정 패턴이 코드에 있는지 확인
-      const checks = mission.codeChecks || [];
-      if (checks.length === 0) {
-        // 검사 조건이 없으면 0점 (빈 배열 방어)
-        result = {
-          grade: 'code',
-          passed: false,
-          score: 0,
-          results: [],
-          message: '채점 기준이 설정되지 않았습니다.',
-        };
-      } else {
-        const results = [];
-        for (const check of checks) {
-          const matches = code.match(new RegExp(check.pattern, 'g'));
-          const count = matches ? matches.length : 0;
-          const passed = count >= (check.minCount || 1);
-          results.push({
-            passed,
-            message: passed
-              ? `✅ ${check.message} (${count}개 사용)`
-              : `❌ ${check.message} (현재 ${count}개)`,
-          });
-        }
-        const passedAll = results.every(r => r.passed);
-        result = {
-          grade: 'code',
-          passed: passedAll,
-          score: passedAll ? 100 : Math.round((results.filter(r => r.passed).length / results.length) * 100),
-          results,
-          message: passedAll ? '✅ 코드 검사 통과!' : '코드를 더 작성해 보세요.',
-        };
-      }
+      result = gradeCodeChecks(code, mission.codeChecks || []);
     } else if (mission.gradeType === 'run') {
-      // 탐험형 미션: 코드 실행 자체가 목표 (실행했으면 통과)
-      result = { grade: 'run', passed: true, score: 100, message: '✅ 실행 완료!' };
+      // 탐험형 미션: 실제 실행 결과 또는 assertion을 확인
+      result = gradeRun(mission.assertions || []);
     } else if (mission.gradeType === 'A') {
       result = gradeA(mission.assertions);
     } else if (mission.gradeType === 'B') {
@@ -214,26 +183,13 @@ export default function MissionPlay() {
 
     // codeChecks 병행 검사: A, A+B 등에서도 codeChecks가 있으면 추가 검증
     if (mission.gradeType !== 'code' && mission.codeChecks && mission.codeChecks.length > 0 && result.passed) {
-      const codeResults = [];
-      for (const check of mission.codeChecks) {
-        const matches = code.match(new RegExp(check.pattern, 'g'));
-        const count = matches ? matches.length : 0;
-        const passed = count >= (check.minCount || 1);
-        codeResults.push({
-          passed,
-          message: passed
-            ? `✅ ${check.message} (${count}개 사용)`
-            : `❌ ${check.message} (현재 ${count}개)`,
-        });
-      }
-      const codePassedAll = codeResults.every(r => r.passed);
-      if (!codePassedAll) {
-        const codeScore = Math.round((codeResults.filter(r => r.passed).length / codeResults.length) * 100);
+      const codeResult = gradeCodeChecks(code, mission.codeChecks);
+      if (!codeResult.passed) {
         result = {
           ...result,
           passed: false,
-          score: Math.round((result.score + codeScore) / 2),
-          results: [...(result.results || []), ...codeResults],
+          score: Math.round((result.score + codeResult.score) / 2),
+          results: [...(result.results || []), ...codeResult.results],
           message: '코드를 더 완성해 보세요.',
         };
       }

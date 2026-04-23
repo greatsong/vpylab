@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/useI18n';
 
 /**
  * 콘솔 출력 패널

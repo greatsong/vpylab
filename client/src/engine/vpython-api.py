@@ -212,6 +212,7 @@ class _GObject:
         self._color = kwargs.get('color', color.white)
         self._visible = kwargs.get('visible', True)
         self._opacity = kwargs.get('opacity', 1.0)
+        self._emissive = kwargs.get('emissive', False)
         self._velocity = kwargs.get('velocity', vector(0, 0, 0))
 
         # 객체 생성 커맨드
@@ -297,6 +298,19 @@ class _GObject:
             "action": "update",
             "id": self._id,
             "opacity": value,
+        })
+
+    @property
+    def emissive(self):
+        return self._emissive
+
+    @emissive.setter
+    def emissive(self, value):
+        self._emissive = value
+        _add_command({
+            "action": "update",
+            "id": self._id,
+            "emissive": value,
         })
 
 
