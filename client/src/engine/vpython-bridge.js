@@ -29,6 +29,27 @@ const DEFAULT_MATERIAL_PARAMS = {
   metalness: 0.1,
 };
 
+const DEFAULT_OBJECT_PROPS = {
+  sphere: { radius: 1 },
+  box: { size: [1, 1, 1] },
+  cylinder: { radius: 1, axis: [1, 0, 0] },
+  arrow: { axis: [1, 0, 0], shaftwidth: 0.1 },
+  cone: { radius: 1, axis: [1, 0, 0] },
+  ring: { radius: 1, thickness: 0.1 },
+  local_light: { intensity: 1 },
+  distant_light: { direction: [0, -1, 0], intensity: 1 },
+};
+
+function cloneDefaultProps(type) {
+  const defaults = DEFAULT_OBJECT_PROPS[type] || {};
+  return Object.fromEntries(
+    Object.entries(defaults).map(([key, value]) => [
+      key,
+      Array.isArray(value) ? [...value] : value,
+    ]),
+  );
+}
+
 /**
  * VPython 색상 배열 [r,g,b] (0~1) → Three.js Color
  */
@@ -45,6 +66,7 @@ function getRegistryProps(cmd) {
     color: cmd.color || [1, 1, 1],
     visible: cmd.visible !== false,
     opacity: cmd.opacity ?? 1,
+    ...cloneDefaultProps(cmd.type),
   };
 
   for (const key of ['radius', 'size', 'axis', 'thickness', 'shaftwidth', 'intensity', 'direction', 'emissive']) {
@@ -95,7 +117,7 @@ function createObject(cmd, scene) {
 
   switch (cmd.type) {
     case 'sphere':
-      geometry = new THREE.SphereGeometry(cmd.radius || 0.5, 32, 16);
+      geometry = new THREE.SphereGeometry(cmd.radius ?? DEFAULT_OBJECT_PROPS.sphere.radius, 32, 16);
       mesh = new THREE.Mesh(geometry, material);
       break;
 
@@ -107,8 +129,8 @@ function createObject(cmd, scene) {
     }
 
     case 'cylinder': {
-      const r = cmd.radius || 0.5;
-      const axis = cmd.axis || [1, 0, 0];
+      const r = cmd.radius ?? DEFAULT_OBJECT_PROPS.cylinder.radius;
+      const axis = cmd.axis || DEFAULT_OBJECT_PROPS.cylinder.axis;
       const len = Math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2) || 1;
       geometry = new THREE.CylinderGeometry(r, r, len, 32);
       mesh = new THREE.Mesh(geometry, material);
@@ -122,9 +144,9 @@ function createObject(cmd, scene) {
     }
 
     case 'arrow': {
-      const axis = cmd.axis || [1, 0, 0];
+      const axis = cmd.axis || DEFAULT_OBJECT_PROPS.arrow.axis;
       const len = Math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2) || 1;
-      const sw = cmd.shaftwidth || 0.1;
+      const sw = cmd.shaftwidth ?? DEFAULT_OBJECT_PROPS.arrow.shaftwidth;
 
       // 화살대 + 화살촉 그룹
       const group = new THREE.Group();
@@ -149,8 +171,8 @@ function createObject(cmd, scene) {
     }
 
     case 'cone': {
-      const r = cmd.radius || 0.5;
-      const axis = cmd.axis || [1, 0, 0];
+      const r = cmd.radius ?? DEFAULT_OBJECT_PROPS.cone.radius;
+      const axis = cmd.axis || DEFAULT_OBJECT_PROPS.cone.axis;
       const len = Math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2) || 1;
       geometry = new THREE.ConeGeometry(r, len, 32);
       mesh = new THREE.Mesh(geometry, material);
@@ -161,8 +183,8 @@ function createObject(cmd, scene) {
     }
 
     case 'ring': {
-      const r = cmd.radius || 1;
-      const t = cmd.thickness || 0.1;
+      const r = cmd.radius ?? DEFAULT_OBJECT_PROPS.ring.radius;
+      const t = cmd.thickness ?? DEFAULT_OBJECT_PROPS.ring.thickness;
       geometry = new THREE.TorusGeometry(r, t, 16, 48);
       mesh = new THREE.Mesh(geometry, material);
       break;

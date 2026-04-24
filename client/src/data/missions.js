@@ -54,7 +54,7 @@ scene_background(색상['검정'])
 )
 `,
     assertions: [
-      { type: 'sphere', property: 'radius', operator: '>=', value: 1 },
+      { type: 'sphere', property: 'radius', operator: '>', value: 1 },
       { type: 'sphere', property: 'emissive', operator: '==', value: true },
       { type: 'sphere', property: 'color.b', operator: '>', value: 0.3 },
     ],

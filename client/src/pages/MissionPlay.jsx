@@ -102,11 +102,24 @@ export default function MissionPlay() {
       addOutput(err, 'error');
       stopBgm();  // 에러 시 BGM 자동 정지
       errorSound();
+      if (pendingGradeRef.current) {
+        pendingGradeRef.current = false;
+        setGradeResult({
+          grade: mission?.gradeType || 'run',
+          passed: false,
+          score: 0,
+          message: '실행 오류가 있어 채점할 수 없습니다.',
+        });
+      }
     },
     onBatch: handleBatch,
     onReady: () => addOutput('Python 엔진 준비 완료!', 'success'),
     onDone: () => {
       stopBgm();
+      if (pendingGradeRef.current) {
+        pendingGradeRef.current = false;
+        setTimeout(() => handleGradeInternal(), 100);
+      }
     },
   });
 
@@ -118,17 +131,18 @@ export default function MissionPlay() {
     if (!isReady) return;
     // 클릭 제스처에서 AudioContext resume 후 코드 실행 (최대 500ms 대기)
     resumeAndRun(() => {
-    if (sceneRef.current) clearScene(sceneRef.current);
-    if (sceneRef.current?._cameraSystem) {
-      sceneRef.current._cameraSystem.onCodeStart();
-    }
-    clearRegistry();
-    setOutputs([]);
-    setGradeResult(null);
-    setActiveTab('3d');
-    runSound();
-    addOutput('▶ 실행 중', 'log');
-    runCode(code);
+      pendingGradeRef.current = false;
+      if (sceneRef.current) clearScene(sceneRef.current);
+      if (sceneRef.current?._cameraSystem) {
+        sceneRef.current._cameraSystem.onCodeStart();
+      }
+      clearRegistry();
+      setOutputs([]);
+      setGradeResult(null);
+      setActiveTab('3d');
+      runSound();
+      addOutput('▶ 실행 중', 'log');
+      runCode(code);
     });
   };
 
@@ -223,7 +237,7 @@ export default function MissionPlay() {
 
   // 채점 (외부 진입점)
   const handleGrade = () => {
-    if (!mission) return;
+    if (!mission || (!isReady && !isRunning)) return;
 
     // 실행 중이면 정지 후 채점 (무한 루프 미션 대응)
     if (isRunning) {
@@ -232,7 +246,20 @@ export default function MissionPlay() {
       return;
     }
 
-    handleGradeInternal();
+    resumeAndRun(() => {
+      if (sceneRef.current) clearScene(sceneRef.current);
+      if (sceneRef.current?._cameraSystem) {
+        sceneRef.current._cameraSystem.onCodeStart();
+      }
+      clearRegistry();
+      setOutputs([]);
+      setGradeResult(null);
+      setActiveTab('3d');
+      pendingGradeRef.current = true;
+      runSound();
+      addOutput('▶ 채점을 위해 현재 코드를 실행 중', 'log');
+      runCode(code);
+    });
   };
 
 
@@ -271,7 +298,7 @@ export default function MissionPlay() {
         <button onClick={handleStop} disabled={!isRunning} className="toolbar-btn --stop">
           {t('editor.stop')}
         </button>
-        <button onClick={handleGrade} disabled={isRunning} className="toolbar-btn --grade">
+        <button onClick={handleGrade} disabled={!isReady && !isRunning} className="toolbar-btn --grade">
           {t('mission.submit')}
         </button>
 

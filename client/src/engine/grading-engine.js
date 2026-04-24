@@ -381,7 +381,7 @@ function compare(actual, operator, expected, tolerance = 0) {
     case '<=':
       return actual <= expected;
     case 'approx':
-      return Math.abs(actual - expected) <= (tolerance || expected * 0.1);
+      return Math.abs(actual - expected) <= (tolerance || Math.abs(expected) * 0.1);
     default:
       return false;
   }

@@ -317,7 +317,7 @@ class _GObject:
 # === 구체적 3D 객체 ===
 class sphere(_GObject):
     def __init__(self, **kwargs):
-        self._radius = kwargs.pop('radius', 0.5)
+        self._radius = kwargs.pop('radius', 1.0)
         super().__init__('sphere', radius=self._radius, **kwargs)
 
     @property
@@ -348,7 +348,7 @@ class box(_GObject):
 
 class cylinder(_GObject):
     def __init__(self, **kwargs):
-        self._radius = kwargs.pop('radius', 0.5)
+        self._radius = kwargs.pop('radius', 1.0)
         self._axis = kwargs.pop('axis', vector(1, 0, 0))
         super().__init__('cylinder', radius=self._radius, axis=self._axis.to_list(), **kwargs)
 
@@ -398,7 +398,7 @@ class arrow(_GObject):
 
 class cone(_GObject):
     def __init__(self, **kwargs):
-        self._radius = kwargs.pop('radius', 0.5)
+        self._radius = kwargs.pop('radius', 1.0)
         self._axis = kwargs.pop('axis', vector(1, 0, 0))
         super().__init__('cone', radius=self._radius, axis=self._axis.to_list(), **kwargs)
 

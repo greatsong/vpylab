@@ -377,6 +377,46 @@ describe('vpython-bridge: processBatch', () => {
     expect(result.passed).toBe(true);
   });
 
+  it('생성 커맨드에 빠진 기본 속성도 레지스트리에 저장한다', () => {
+    processBatch([
+      {
+        action: 'create',
+        id: 'obj_1',
+        type: 'sphere',
+        pos: [0, 0, 0],
+        color: [1, 1, 1],
+        visible: true,
+        opacity: 1,
+      },
+      {
+        action: 'create',
+        id: 'obj_2',
+        type: 'cylinder',
+        pos: [0, 0, 0],
+        color: [1, 1, 1],
+      },
+      {
+        action: 'create',
+        id: 'obj_3',
+        type: 'cone',
+        pos: [0, 0, 0],
+        color: [1, 1, 1],
+      },
+    ], scene);
+
+    const snapshot = getSnapshot();
+    expect(snapshot.find(o => o.id === 'obj_1').props.radius).toBe(1);
+    expect(snapshot.find(o => o.id === 'obj_2').props.radius).toBe(1);
+    expect(snapshot.find(o => o.id === 'obj_2').props.axis).toEqual([1, 0, 0]);
+    expect(snapshot.find(o => o.id === 'obj_3').props.radius).toBe(1);
+    expect(snapshot.find(o => o.id === 'obj_3').props.axis).toEqual([1, 0, 0]);
+
+    const result = gradeA([
+      { type: 'sphere', property: 'radius', operator: '==', value: 1 },
+    ]);
+    expect(result.passed).toBe(true);
+  });
+
   it('update 커맨드의 색상과 크기 변경을 레지스트리에 반영한다', () => {
     processBatch([
       {

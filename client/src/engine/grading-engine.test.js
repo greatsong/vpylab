@@ -83,6 +83,16 @@ describe('gradeA — 정적 assertion 검사', () => {
     expect(result.passed).toBe(true);
   });
 
+  it('approx 연산자는 음수 기대값도 절댓값 기준 허용 오차로 비교한다', () => {
+    registerObject('sphere', { pos: [-2.5, 0, 0] });
+
+    const result = gradeA([
+      { type: 'sphere', property: 'pos.x', operator: 'approx', value: -2.5 },
+    ]);
+
+    expect(result.passed).toBe(true);
+  });
+
   it('== with tolerance로 근사값 비교', () => {
     registerObject('sphere', { pos: [3.001, 0, 0] });
 
