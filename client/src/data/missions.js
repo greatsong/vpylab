@@ -1,1877 +1,2082 @@
 /**
- * VPyLab MVP 미션 데이터 (10개)
+ * VPyLab 리뉴얼 미션 데이터 (확장형)
  *
- * 카테고리: CT(2) + CR(2) + MA(2) + SC(2) + AR(2)
- * 난이도: Lv.1~2
- *
- * 미션 구조:
- * - id: 카테고리-번호 (예: CT-1)
- * - category: CT | CR | MA | SC | AR | AI
- * - level: 1~4 (따라하기 | 변형하기 | 설계하기 | 창작하기)
- * - gradeType: 'A' (정적 검사) | 'B' (궤적 비교) | 'A+B' (복합)
- * - starterCode: 학생 시작 코드
- * - solutionCode: 모범 답안 (교사 전용)
- * - assertions: A등급 채점 조건
- * - referenceTrajectory: B등급 모범 궤적 (해당 시)
- * - hints: 단계별 힌트
+ * 설계 원칙:
+ * - CT: 컴퓨팅 사고력을 정확히 확인하는 채점형 코어
+ * - CR/MA/SC: 정답보다 관찰과 변형을 돕는 튜토리얼형 예제
+ * - AR/SN: 음악과 미디어아트를 가장 풍부하게 경험하는 창작형 튜토리얼
+ * - 모든 학생용 Python 예제는 한글 API를 먼저 보여주고, 필요한 곳에 영어 API를 병기
  */
+
+const text = (ko, en) => ({ ko, en });
+
+function tutorialMission(data) {
+  return {
+    ...data,
+    gradeType: 'run',
+    assertions: [],
+    solutionCode: data.solutionCode || data.starterCode,
+  };
+}
 
 const missions = [
   // ═══════════════════════════════════════════
-  // CT: Computational Thinking (컴퓨팅 사고)
+  // CT: Computational Thinking (정확 채점형 코어)
   // ═══════════════════════════════════════════
   {
     id: 'CT-1',
     category: 'CT',
     level: 1,
-    title: {
-      ko: '나만의 행성 만들기',
-      en: 'Create Your Own Planet',
-    },
-    description: {
-      ko: '우주 공간에 나만의 행성을 만들어 보세요! 크기, 색상, 위치를 자유롭게 바꿔보세요. VPyLab에서의 첫 3D 프로그래밍입니다.',
-      en: 'Create your own planet in space! Change size, color, and position freely. Your first 3D programming!',
-    },
+    title: text('첫 3D 객체: 빛나는 행성', 'First 3D Object: Glowing Planet'),
+    description: text(
+      'sphere()로 구를 만들고, 위치(pos), 크기(radius), 색상(color), 빛남(emissive)을 지정합니다.',
+      'Create a sphere and set its position, radius, color, and emissive glow.',
+    ),
     gradeType: 'A',
     starterCode: `from vpython import *
 
-# 우주 배경
 scene_background(색상['검정'])
 
-# 나만의 행성을 만들어 보세요!
-# sphere(radius=크기, color=색상, pos=vector(x, y, z))
+# 목표: 빛나는 행성 하나를 만드세요.
+# 힌트: sphere(pos=vector(...), radius=..., color=..., emissive=True)
 
-# 아래에 sphere()로 행성을 만들어 보세요!
-# radius=크기, color=색상, emissive=True 로 빛나게
+# 여기에 코드를 작성하세요.
 `,
     solutionCode: `from vpython import *
 
 scene_background(색상['검정'])
-sphere(radius=2, color=color.red, emissive=True)
+
+행성 = sphere(
+    pos=vector(0, 0, 0),
+    radius=1.2,
+    color=색상['보라'],
+    emissive=True
+)
 `,
     assertions: [
-      { type: 'sphere', property: 'radius', operator: '>', value: 0 },
+      { type: 'sphere', property: 'radius', operator: '>=', value: 1 },
+      { type: 'sphere', property: 'emissive', operator: '==', value: true },
+      { type: 'sphere', property: 'color.b', operator: '>', value: 0.3 },
     ],
     hints: [
-      { ko: 'sphere()를 호출하면 구가 만들어져요.', en: 'Call sphere() to create a sphere.' },
-      { ko: 'radius=2 로 크기를, color=color.red 로 색을 정합니다.', en: 'Use radius=2 for size, color=color.red for color.' },
-      { ko: 'emissive=True 를 추가하면 스스로 빛나는 행성이 됩니다!', en: 'Add emissive=True to make it glow!' },
+      text('sphere()는 3D 구를 만듭니다.', 'sphere() creates a 3D sphere.'),
+      text('radius=1.2처럼 크기를 정할 수 있어요.', 'Set size with radius=1.2.'),
+      text("emissive=True를 넣으면 행성이 스스로 빛납니다.", 'Add emissive=True to make it glow.'),
     ],
   },
-
   {
     id: 'CT-2',
     category: 'CT',
     level: 1,
-    title: {
-      ko: '움직이는 신호등',
-      en: 'Animated Traffic Light',
-    },
-    description: {
-      ko: '신호등을 만들고 빨강→노랑→초록 순서로 켜지게 하세요! 효과음도 넣어보세요.',
-      en: 'Build a traffic light and animate it: red→yellow→green with sound effects!',
-    },
+    title: text('상태 바꾸기: 신호등', 'Changing State: Traffic Light'),
+    description: text(
+      '변수에 담긴 객체의 color와 emissive 속성을 바꾸며 순차 실행을 연습합니다.',
+      'Practice sequential execution by changing an object variable’s color and emissive state.',
+    ),
     gradeType: 'A',
     starterCode: `from vpython import *
 
-# 신호등 기둥
-box(pos=vector(0, 1.5, 0), size=vector(1.2, 3.5, 0.5), color=color.gray)
+box(pos=vector(0, 1.5, 0), size=vector(1.2, 3.5, 0.4), color=색상['회색'])
 
-# 3개 구 (처음엔 어두운 색)
-빨강 = sphere(pos=vector(0, 2.5, 0.3), radius=0.35, color=vector(0.3, 0, 0))
-노랑 = sphere(pos=vector(0, 1.5, 0.3), radius=0.35, color=vector(0.3, 0.3, 0))
-초록 = sphere(pos=vector(0, 0.5, 0.3), radius=0.35, color=vector(0, 0.3, 0))
+빨강 = sphere(pos=vector(0, 2.5, 0.25), radius=0.35, color=vector(0.25, 0, 0))
+노랑 = sphere(pos=vector(0, 1.5, 0.25), radius=0.35, color=vector(0.25, 0.25, 0))
+초록 = sphere(pos=vector(0, 0.5, 0.25), radius=0.35, color=vector(0, 0.25, 0))
 
-# 빨간불 켜기
 빨강.color = color.red
 빨강.emissive = True
-효과음("warning")
-sleep(1)
-
-# 빨간불 끄고, 노란불 켜기
-빨강.color = vector(0.3, 0, 0)
-빨강.emissive = False
-# 여기에 노란불을 켜는 코드를 작성하세요
-
 sleep(0.5)
 
-# 노란불 끄고, 초록불 켜기
-# 여기에 코드를 작성하세요
+빨강.color = vector(0.25, 0, 0)
+빨강.emissive = False
 
-효과음("success")
-print("신호가 바뀌었습니다!")
+# 목표 1: 노란불을 켜고 잠시 기다리세요.
+
+
+# 목표 2: 노란불을 끄고 초록불을 켜세요.
+
+
+print("신호등 완성")
 `,
     solutionCode: `from vpython import *
 
-box(pos=vector(0, 1.5, 0), size=vector(1.2, 3.5, 0.5), color=color.gray)
-빨강 = sphere(pos=vector(0, 2.5, 0.3), radius=0.35, color=vector(0.3, 0, 0))
-노랑 = sphere(pos=vector(0, 1.5, 0.3), radius=0.35, color=vector(0.3, 0.3, 0))
-초록 = sphere(pos=vector(0, 0.5, 0.3), radius=0.35, color=vector(0, 0.3, 0))
+box(pos=vector(0, 1.5, 0), size=vector(1.2, 3.5, 0.4), color=색상['회색'])
+
+빨강 = sphere(pos=vector(0, 2.5, 0.25), radius=0.35, color=vector(0.25, 0, 0))
+노랑 = sphere(pos=vector(0, 1.5, 0.25), radius=0.35, color=vector(0.25, 0.25, 0))
+초록 = sphere(pos=vector(0, 0.5, 0.25), radius=0.35, color=vector(0, 0.25, 0))
 
 빨강.color = color.red
 빨강.emissive = True
-효과음("warning")
-sleep(1)
+sleep(0.5)
 
-빨강.color = vector(0.3, 0, 0)
+빨강.color = vector(0.25, 0, 0)
 빨강.emissive = False
 노랑.color = color.yellow
 노랑.emissive = True
-효과음("select")
 sleep(0.5)
 
-노랑.color = vector(0.3, 0.3, 0)
+노랑.color = vector(0.25, 0.25, 0)
 노랑.emissive = False
 초록.color = color.green
 초록.emissive = True
-효과음("success")
-print("신호가 바뀌었습니다!")
+
+print("신호등 완성")
 `,
     assertions: [
       { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01, index: 2 },
-      { type: 'box', property: 'pos.y', operator: 'approx', value: 1.5, index: 0 },
+      { type: 'sphere', property: 'emissive', operator: '==', value: true, index: 2 },
+      { type: 'sphere', property: 'emissive', operator: '==', value: false, index: 1 },
     ],
     hints: [
-      { ko: '변수명.color 로 색을, 변수명.emissive 로 빛남을 바꿀 수 있어요.', en: 'Change color with name.color, glow with name.emissive.' },
-      { ko: '빨간불을 끌 때처럼 노랑.color = color.yellow, 노랑.emissive = True 순서로 켜세요.', en: 'Like turning off red: set 노랑.color = color.yellow, 노랑.emissive = True.' },
-      { ko: '초록불도 같은 패턴! 노랑을 끄고(False) → 초록을 켜세요(True).', en: 'Same pattern for green! Turn off yellow (False) → turn on green (True).' },
+      text('노랑.color = color.yellow로 노란불을 켭니다.', 'Use 노랑.color = color.yellow to turn on yellow.'),
+      text('빛남은 노랑.emissive = True처럼 바꿉니다.', 'Change glow with 노랑.emissive = True.'),
+      text('마지막 상태는 초록불만 켜진 상태여야 합니다.', 'The final state should leave only green glowing.'),
     ],
   },
-
   {
     id: 'CT-3',
     category: 'CT',
     level: 2,
-    title: {
-      ko: '함수로 도형 찍기',
-      en: 'Stamp Shapes with Functions',
-    },
-    description: {
-      ko: '함수를 만들어 원하는 위치에 나무를 "찍는" 도장을 만드세요. def로 함수를 정의하면 코드를 재사용할 수 있습니다.',
-      en: 'Create a function that "stamps" trees at any position. Use def to define reusable code.',
-    },
+    title: text('함수로 스탬프 찍기', 'Stamp with a Function'),
+    description: text(
+      'def로 함수를 만들고, 같은 모양을 다른 위치에 여러 번 배치합니다.',
+      'Define a reusable function and place the same shape in multiple positions.',
+    ),
     gradeType: 'A',
     starterCode: `from vpython import *
 
-# 나무를 만드는 함수를 정의하세요
-def 나무(x, z):
-    # 줄기
-    cylinder(pos=vector(x, 0, z), axis=vector(0, 2, 0), radius=0.2, color=color.orange)
-    # 잎
-    cone(pos=vector(x, 2, z), axis=vector(0, 2, 0), radius=1, color=color.green)
+def 스탬프(x, z, 색):
+    sphere(pos=vector(x, 0, z), radius=0.35, color=색, emissive=True)
+    ring(pos=vector(x, 0, z), axis=vector(0, 1, 0), radius=0.55, thickness=0.04, color=색)
 
-# 바닥
-box(pos=vector(0, -0.1, 0), size=vector(20, 0.2, 20), color=vector(0.3, 0.6, 0.2))
+# 첫 번째 스탬프
+스탬프(0, 0, 색상['하늘'])
 
-# 함수를 호출하여 나무 3그루를 심으세요
-나무(0, 0)      # 중앙
-# 여기에 2그루 더 심으세요 (위치를 바꿔서)
+# 목표: 위치와 색을 바꾸어 스탬프를 두 번 더 호출하세요.
 `,
     solutionCode: `from vpython import *
 
-def 나무(x, z):
-    cylinder(pos=vector(x, 0, z), axis=vector(0, 2, 0), radius=0.2, color=color.orange)
-    cone(pos=vector(x, 2, z), axis=vector(0, 2, 0), radius=1, color=color.green)
+def 스탬프(x, z, 색):
+    sphere(pos=vector(x, 0, z), radius=0.35, color=색, emissive=True)
+    ring(pos=vector(x, 0, z), axis=vector(0, 1, 0), radius=0.55, thickness=0.04, color=색)
 
-box(pos=vector(0, -0.1, 0), size=vector(20, 0.2, 20), color=vector(0.3, 0.6, 0.2))
-
-나무(0, 0)
-나무(-4, 3)
-나무(5, -2)
+스탬프(0, 0, 색상['하늘'])
+스탬프(-2, 1.5, 색상['분홍'])
+스탬프(2, -1.5, 색상['노랑'])
 `,
     assertions: [
-      { type: 'cone', property: 'pos.y', operator: '==', value: 2, index: 0 },
-      { type: 'cone', property: 'pos.y', operator: '==', value: 2, index: 2 },
-      { type: 'cylinder', property: 'pos.x', operator: '!=', value: 0, index: 1 },
+      { type: 'sphere', property: 'emissive', operator: '==', value: true, index: 0 },
+      { type: 'sphere', property: 'pos.x', operator: '<', value: 0, index: 1 },
+      { type: 'sphere', property: 'pos.x', operator: '>', value: 0, index: 2 },
+    ],
+    codeChecks: [
+      { pattern: 'def\\s+스탬프\\s*\\(', minCount: 1, message: '스탬프() 함수를 정의하세요' },
+      { pattern: '스탬프\\s*\\(', minCount: 4, message: '스탬프()를 세 번 호출하세요' },
     ],
     hints: [
-      { ko: '나무(-4, 3)처럼 x, z 좌표를 바꿔서 호출하세요.', en: 'Call 나무(-4, 3) with different x, z coordinates.' },
-      { ko: 'def 함수이름(매개변수): 로 함수를 정의합니다.', en: 'Define functions with def name(params):' },
+      text('함수 정의 1번, 호출 3번이면 코드가 훨씬 짧아집니다.', 'One function definition and three calls keep the code short.'),
+      text('스탬프(-2, 1.5, 색상[\'분홍\'])처럼 호출하세요.', 'Call it like 스탬프(-2, 1.5, 색상[\'분홍\']).'),
     ],
   },
-
   {
     id: 'CT-4',
     category: 'CT',
     level: 2,
-    title: {
-      ko: '함수로 색상 결정하기',
-      en: 'Choose Colors with Functions',
-    },
-    description: {
-      ko: '높이에 따라 색상을 반환하는 함수를 만들고, 20개의 구를 무지개 탑으로 쌓으세요.',
-      en: 'Create a function that returns colors based on height, then stack 20 spheres as a rainbow tower.',
-    },
+    title: text('조건문으로 색 고르기', 'Choose Colors with Conditions'),
+    description: text(
+      'if/elif/else로 높이에 따라 색을 고르고, 반복문으로 12층 탑을 만듭니다.',
+      'Use if/elif/else to choose colors by height and build a 12-level tower with a loop.',
+    ),
     gradeType: 'A',
     starterCode: `from vpython import *
 
-# 높이(y)에 따라 색상을 반환하는 함수
-def 높이색상(y):
-    if y < 3:
-        return color.red
-    elif y < 6:
-        return color.yellow
+def 층색(i):
+    if i < 4:
+        return 색상['파랑']
+    elif i < 8:
+        return 색상['초록']
     else:
-        return color.cyan
+        return 색상['노랑']
 
-# 20개 구를 쌓으세요
-for i in range(20):
+for i in range(12):
     y = i * 0.5
-    c = 높이색상(y)
-    # 여기에 sphere를 만드세요
+    색 = 층색(i)
+    # 목표: y 높이에 구를 하나씩 쌓으세요.
 `,
     solutionCode: `from vpython import *
 
-def 높이색상(y):
-    if y < 3:
-        return color.red
-    elif y < 6:
-        return color.yellow
+def 층색(i):
+    if i < 4:
+        return 색상['파랑']
+    elif i < 8:
+        return 색상['초록']
     else:
-        return color.cyan
+        return 색상['노랑']
 
-for i in range(20):
+for i in range(12):
     y = i * 0.5
-    c = 높이색상(y)
-    sphere(pos=vector(0, y, 0), radius=0.3, color=c)
+    색 = 층색(i)
+    sphere(pos=vector(0, y, 0), radius=0.25, color=색)
 `,
     assertions: [
-      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 0 },
-      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 5 },
-      { type: 'sphere', property: 'pos.y', operator: 'approx', value: 9.5, index: 19 },
+      { type: 'sphere', property: 'pos.y', operator: 'approx', value: 0, index: 0 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01, index: 5 },
+      { type: 'sphere', property: 'pos.y', operator: 'approx', value: 5.5, index: 11 },
+    ],
+    codeChecks: [
+      { pattern: 'if\\s+', minCount: 1, message: 'if 조건문을 사용하세요' },
+      { pattern: 'for\\s+.*range\\s*\\(', minCount: 1, message: 'for range 반복문을 사용하세요' },
     ],
     hints: [
-      { ko: 'sphere(pos=vector(0, y, 0), color=c)로 구를 쌓으세요.', en: 'Stack with sphere(pos=vector(0, y, 0), color=c).' },
-      { ko: 'c = 높이색상(y)로 함수를 호출하여 색상을 받습니다.', en: 'Call c = ��이색상(y) to get the color.' },
+      text('sphere(pos=vector(0, y, 0), color=색)로 쌓으면 됩니다.', 'Use sphere(pos=vector(0, y, 0), color=색).'),
+      text('i가 커질수록 y도 커지도록 연결하세요.', 'Make y grow as i grows.'),
     ],
   },
-
   {
     id: 'CT-5',
     category: 'CT',
     level: 3,
-    title: {
-      ko: '파티클 폭죽',
-      en: 'Particle Fireworks',
-    },
-    description: {
-      ko: '랜덤 방향으로 50개의 파티클을 발사하고, 중력으로 떨어지게 만드세요. 리스트에 파티클을 저장하고 반복문으로 업데이트합니다.',
-      en: 'Launch 50 particles in random directions, then let them fall with gravity. Store particles in a list and update with loops.',
-    },
+    title: text('리스트로 움직임 업데이트', 'Update Motion with Lists'),
+    description: text(
+      '객체와 속도를 리스트에 저장하고, 반복문 안에서 모든 객체의 위치를 갱신합니다.',
+      'Store objects and velocities in lists, then update every object in a loop.',
+    ),
     gradeType: 'A',
     starterCode: `from vpython import *
-import random
 
-# 50개 파티클을 랜덤 방향으로 발사
-particles = []
-velocities = []
+불빛들 = []
+속도들 = []
 
-for i in range(50):
-    # 랜덤 방향, 랜덤 색상
-    vx = random.uniform(-3, 3)
-    vy = random.uniform(3, 8)  # 위쪽으로
-    vz = random.uniform(-3, 3)
-    c = vector(random.random(), random.random(), random.random())
+for i in range(5):
+    x = -4 + i * 2
+    불빛 = sphere(pos=vector(x, 0, 0), radius=0.18, color=무지개[i], emissive=True, make_trail=True)
+    불빛들.append(불빛)
+    속도들.append(vector(0, i + 1, 0))
 
-    p = sphere(pos=vector(0, 0, 0), radius=0.1, color=c, make_trail=True)
-    particles.append(p)
-    velocities.append(vector(vx, vy, vz))
+dt = 0.05
 
-# 애니메이션: 중력으로 떨어지기
-g = vector(0, -9.8, 0)
-dt = 0.02
-
-for frame in range(150):
-    rate(60)
-    for i in range(len(particles)):
-        # 속도에 중력을 더하고, 위치에 속도를 더하세요
+for step in range(20):
+    rate(30)
+    for i in range(len(불빛들)):
+        # 목표: i번째 불빛의 위치를 i번째 속도만큼 업데이트하세요.
         pass
-
-효과음("fireball")
-print("폭죽 완성!")
-`,
-    solutionCode: `from vpython import *
-import random
-
-particles = []
-velocities = []
-
-for i in range(50):
-    vx = random.uniform(-3, 3)
-    vy = random.uniform(3, 8)
-    vz = random.uniform(-3, 3)
-    c = vector(random.random(), random.random(), random.random())
-    p = sphere(pos=vector(0, 0, 0), radius=0.1, color=c, make_trail=True)
-    particles.append(p)
-    velocities.append(vector(vx, vy, vz))
-
-g = vector(0, -9.8, 0)
-dt = 0.02
-
-for frame in range(150):
-    rate(60)
-    for i in range(len(particles)):
-        velocities[i] = velocities[i] + g * dt
-        particles[i].pos = particles[i].pos + velocities[i] * dt
-
-효과음("fireball")
-print("폭죽 완성!")
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.y', operator: '<', value: 0, index: 0 },
-      { type: 'sphere', property: 'pos.y', operator: '<', value: 0, index: 49 },
-    ],
-    hints: [
-      { ko: '물체가 떨어지려면 속도에 중력을 더해야 해요. "속도 = 속도 + 중력 * 시간"', en: 'To fall, add gravity to velocity: velocity = velocity + gravity * time' },
-      { ko: '위치도 같은 원리! "위치 = 위치 + 속도 * 시간". 리스트의 i번째에 접근하세요.', en: 'Same for position: pos = pos + velocity * time. Access the i-th element.' },
-      { ko: 'pass를 지우고, velocities[i]와 particles[i].pos를 각각 한 줄씩 업데이트하세요.', en: 'Remove pass and update velocities[i] and particles[i].pos, one line each.' },
-    ],
-  },
-
-  // ═══════════════════════════════════════════
-  // CR: Creative (창작)
-  // ═══════════════════════════════════════════
-  {
-    id: 'CR-1',
-    category: 'CR',
-    level: 1,
-    title: {
-      ko: '눈사람에 생명을',
-      en: 'Snowman Comes Alive',
-    },
-    description: {
-      ko: '눈사람에 당근 코(cone)와 모자(cylinder)를 달아 완성하세요! 완성하면 효과음이 울립니다.',
-      en: 'Add a carrot nose (cone) and hat (cylinder) to the snowman! A sound plays when done.',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
-
-# 몸통
-sphere(pos=vector(0, 0, 0), radius=1, color=color.white)
-# 배
-sphere(pos=vector(0, 1.3, 0), radius=0.7, color=color.white)
-# 머리
-sphere(pos=vector(0, 2.2, 0), radius=0.4, color=color.white)
-
-# 눈 (이미 완성!)
-sphere(pos=vector(-0.15, 2.35, 0.35), radius=0.05, color=color.black)
-sphere(pos=vector(0.15, 2.35, 0.35), radius=0.05, color=color.black)
-
-# 당근 코 — cone()으로 머리 앞(z=0.4)에 달아주세요!
-
-
-# 모자 — cylinder()로 머리 위(y=2.5)에 올려주세요!
-
-효과음("levelup")
-print("눈사람 완성!")
 `,
     solutionCode: `from vpython import *
 
-sphere(pos=vector(0, 0, 0), radius=1, color=color.white)
-sphere(pos=vector(0, 1.3, 0), radius=0.7, color=color.white)
-sphere(pos=vector(0, 2.2, 0), radius=0.4, color=color.white)
-sphere(pos=vector(-0.15, 2.35, 0.35), radius=0.05, color=color.black)
-sphere(pos=vector(0.15, 2.35, 0.35), radius=0.05, color=color.black)
-cone(pos=vector(0, 2.2, 0.4), axis=vector(0, 0, 0.5), radius=0.08, color=color.orange)
-cylinder(pos=vector(0, 2.5, 0), axis=vector(0, 0.5, 0), radius=0.35, color=color.black)
+불빛들 = []
+속도들 = []
 
-효과음("levelup")
-print("눈사람 완성!")
-`,
-    assertions: [
-      { type: 'cone', property: 'pos.y', operator: 'approx', value: 2.2, index: 0 },
-      { type: 'cylinder', property: 'pos.y', operator: '>', value: 2, index: 0 },
-    ],
-    hints: [
-      { ko: 'cone()은 원뿔, cylinder()는 원기둥을 만들어요.', en: 'cone() makes a cone, cylinder() makes a cylinder.' },
-      { ko: '코는 cone(pos=vector(0, 2.2, 0.4), ...) 처럼 머리 앞쪽(z 방향)에 달아요.', en: 'Place nose with cone(pos=vector(0, 2.2, 0.4), ...) in front of the head.' },
-      { ko: '코는 pos의 z를 0.4로, axis의 z를 0.5로 하면 앞으로 뾰족하게 나와요. 모자는 y를 2.5 이상으로!', en: 'Nose: set pos z=0.4, axis z=0.5 to point forward. Hat: y above 2.5!' },
-    ],
-  },
+for i in range(5):
+    x = -4 + i * 2
+    불빛 = sphere(pos=vector(x, 0, 0), radius=0.18, color=무지개[i], emissive=True, make_trail=True)
+    불빛들.append(불빛)
+    속도들.append(vector(0, i + 1, 0))
 
-  {
-    id: 'CR-2',
-    category: 'CR',
-    level: 2,
-    title: {
-      ko: '로봇 만들기',
-      en: 'Build a Robot',
-    },
-    description: {
-      ko: 'box와 sphere, cylinder를 조합하여 간단한 로봇을 만드세요. 몸통, 머리, 팔이 있어야 합니다.',
-      en: 'Combine box, sphere, and cylinder to build a simple robot with a body, head, and arms.',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
+dt = 0.05
 
-# 몸통 (box)
-box(pos=vector(0, 0, 0), size=vector(2, 3, 1), color=color.blue)
-
-# 머리 (sphere)
-# 여기에 코드를 작성하세요
-
-# 왼팔 (cylinder)
-# 여기에 코드를 작성하세요
-
-# 오른팔 (cylinder)
-# 여기에 코드를 작성하세요
-`,
-    solutionCode: `from vpython import *
-
-box(pos=vector(0, 0, 0), size=vector(2, 3, 1), color=color.blue)
-sphere(pos=vector(0, 2.2, 0), radius=0.6, color=color.gray)
-cylinder(pos=vector(-1.5, 0.5, 0), axis=vector(-1, 0, 0), radius=0.2, color=color.red)
-cylinder(pos=vector(1.5, 0.5, 0), axis=vector(1, 0, 0), radius=0.2, color=color.red)
-`,
-    assertions: [
-      { type: 'box', property: 'pos.x', operator: '==', value: 0, index: 0 },
-      { type: 'sphere', property: 'pos.y', operator: '>', value: 1, index: 0 },
-      { type: 'cylinder', property: 'pos.x', operator: '!=', value: 0, index: 0 },
-    ],
-    hints: [
-      { ko: 'sphere()로 머리를 몸통 위에 놓으세요.', en: 'Place a sphere head above the body.' },
-      { ko: 'cylinder()의 axis로 팔의 방향을 정하세요.', en: 'Use cylinder axis to set arm direction.' },
-    ],
-  },
-
-  {
-    id: 'CR-3',
-    category: 'CR',
-    level: 2,
-    title: {
-      ko: '나무 만들기',
-      en: 'Build a Tree',
-    },
-    description: {
-      ko: 'cylinder로 줄기, cone으로 잎을 만들어 나무를 완성하세요.',
-      en: 'Use cylinder for trunk and cone for leaves to build a tree.',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
-
-# 줄기 (cylinder)
-cylinder(pos=vector(0, 0, 0), axis=vector(0, 3, 0), radius=0.3, color=color.orange)
-
-# 잎 (cone) — 줄기 위에 올려주세요
-# cone(pos=..., axis=..., radius=..., color=color.green)
-`,
-    solutionCode: `from vpython import *
-
-cylinder(pos=vector(0, 0, 0), axis=vector(0, 3, 0), radius=0.3, color=color.orange)
-cone(pos=vector(0, 3, 0), axis=vector(0, 3, 0), radius=1.5, color=color.green)
-`,
-    assertions: [
-      { type: 'cylinder', property: 'pos.y', operator: '==', value: 0, index: 0 },
-      { type: 'cone', property: 'pos.y', operator: '>=', value: 2, index: 0 },
-      { type: 'cone', property: 'color.g', operator: '>', value: 0, index: 0 },
-    ],
-    hints: [
-      { ko: 'cone(pos=vector(0, 3, 0))으로 줄기 위에 올리세요.', en: 'Place cone at pos=vector(0, 3, 0) above trunk.' },
-      { ko: 'axis=vector(0, 3, 0)으로 위를 향하게 하세요.', en: 'Use axis=vector(0, 3, 0) pointing up.' },
-    ],
-  },
-
-  {
-    id: 'CR-4',
-    category: 'CR',
-    level: 2,
-    title: {
-      ko: '집 만들기',
-      en: 'Build a House',
-    },
-    description: {
-      ko: 'box로 벽, pyramid(cone)로 지붕, cylinder로 굴뚝을 만들어 집을 완성하세요.',
-      en: 'Use box for walls, cone for roof, cylinder for chimney.',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
-
-# 벽 (box)
-box(pos=vector(0, 1, 0), size=vector(4, 2, 3), color=color.white)
-
-# 지붕 (cone) — 벽 위에
-# 여기에 코드를 작성하세요
-
-# 굴뚝 (cylinder) — 지붕 옆에
-# 여기에 코드를 작성하세요
-
-# 문 (box) — 벽 앞에 작은 box
-box(pos=vector(0, 0.5, 1.51), size=vector(0.8, 1, 0.1), color=color.orange)
-`,
-    solutionCode: `from vpython import *
-
-box(pos=vector(0, 1, 0), size=vector(4, 2, 3), color=color.white)
-cone(pos=vector(0, 2, 0), axis=vector(0, 2, 0), radius=2.5, color=color.red)
-cylinder(pos=vector(1.2, 2.5, -0.5), axis=vector(0, 1.5, 0), radius=0.2, color=color.gray)
-box(pos=vector(0, 0.5, 1.51), size=vector(0.8, 1, 0.1), color=color.orange)
-`,
-    assertions: [
-      { type: 'box', property: 'pos.y', operator: '==', value: 1, index: 0 },
-      { type: 'cone', property: 'pos.y', operator: '>=', value: 2, index: 0 },
-      { type: 'cylinder', property: 'pos.y', operator: '>', value: 2, index: 0 },
-    ],
-    hints: [
-      { ko: 'cone(pos=vector(0, 2, 0))으로 벽 위에 지붕을 올리세요.', en: 'Place cone at y=2 for the roof.' },
-      { ko: 'cylinder로 굴뚝을 지붕 옆에 세우세요.', en: 'Use cylinder for a chimney beside the roof.' },
-    ],
-  },
-
-  {
-    id: 'CR-5',
-    category: 'CR',
-    level: 3,
-    title: {
-      ko: '태양계 모형',
-      en: 'Solar System Model',
-    },
-    description: {
-      ko: '태양(노란 구)과 4개 행성을 만드세요. 각 행성은 태양으로부터 다른 거리에 놓이고, 크기와 색이 다릅니다.',
-      en: 'Create a sun and 4 planets at different distances, each with unique size and color.',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
-
-# 태양
-sphere(pos=vector(0, 0, 0), radius=1.5, color=color.yellow, emissive=True)
-
-# 수성 — 작고 회색, 거리 3
-# 여기에 코드를 작성하세요
-
-# 금성 — 중간, 주황, 거리 5
-# 여기에 코드를 작성하세요
-
-# 지구 — 중간, 파랑+초록, 거리 7
-# 여기에 코드를 작성하세요
-
-# 화성 — 작고 빨강, 거리 9
-# 여기에 코드를 작성하세요
-
-# 궤도 링 (선택)
-for r in [3, 5, 7, 9]:
-    ring(pos=vector(0, 0, 0), axis=vector(0, 1, 0), radius=r, thickness=0.02, color=color.gray)
-`,
-    solutionCode: `from vpython import *
-
-sphere(pos=vector(0, 0, 0), radius=1.5, color=color.yellow, emissive=True)
-sphere(pos=vector(3, 0, 0), radius=0.3, color=color.gray)
-sphere(pos=vector(5, 0, 0), radius=0.6, color=color.orange)
-sphere(pos=vector(7, 0, 0), radius=0.65, color=color.cyan)
-sphere(pos=vector(9, 0, 0), radius=0.4, color=color.red)
-
-for r in [3, 5, 7, 9]:
-    ring(pos=vector(0, 0, 0), axis=vector(0, 1, 0), radius=r, thickness=0.02, color=color.gray)
-`,
-    assertions: [
-      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 0 },
-      { type: 'sphere', property: 'pos.x', operator: '==', value: 3, index: 1 },
-      { type: 'sphere', property: 'pos.x', operator: '==', value: 9, index: 4 },
-    ],
-    hints: [
-      { ko: '각 행성을 sphere(pos=vector(거리, 0, 0))로 만드세요.', en: 'Create each planet with sphere(pos=vector(dist, 0, 0)).' },
-      { ko: '태양은 emissive=True로 빛나게 합니다.', en: 'Use emissive=True for the glowing sun.' },
-    ],
-  },
-
-  // ═══════════════════════════════════════════
-  // MA: Mathematics (수학)
-  // ═══════════════════════════════════════════
-  {
-    id: 'MA-1',
-    category: 'MA',
-    level: 1,
-    title: {
-      ko: '3D 보물찾기',
-      en: '3D Treasure Hunt',
-    },
-    description: {
-      ko: '보물 상자가 (3, 2, 1)에 숨어 있습니다. 빨간 구를 보물 위치로 이동시켜 찾으세요!',
-      en: 'A treasure chest is hidden at (3, 2, 1). Move the red sphere to find it!',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
-
-# 보물 상자 (움직이지 마세요!)
-box(pos=vector(3, 2, 1), size=vector(0.5, 0.5, 0.5), color=color.yellow)
-
-# 탐색 구: 보물 위치 (3, 2, 1)로 옮기세요
-# vector(x, y, z) → x: 오른쪽, y: 위, z: 앞
-sphere(pos=vector(0, 0, 0), radius=0.3, color=color.red)
-`,
-    solutionCode: `from vpython import *
-
-box(pos=vector(3, 2, 1), size=vector(0.5, 0.5, 0.5), color=color.yellow)
-sphere(pos=vector(3, 2, 1), radius=0.3, color=color.red)
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.x', operator: '==', value: 3 },
-      { type: 'sphere', property: 'pos.y', operator: '==', value: 2 },
-      { type: 'sphere', property: 'pos.z', operator: '==', value: 1 },
-    ],
-    hints: [
-      { ko: 'vector(3, 2, 1)로 위치를 지정하세요.', en: 'Use vector(3, 2, 1) for position.' },
-      { ko: 'x는 오른쪽, y는 위쪽, z는 앞쪽입니다.', en: 'x is right, y is up, z is forward.' },
-    ],
-  },
-
-  {
-    id: 'MA-2',
-    category: 'MA',
-    level: 2,
-    title: {
-      ko: '정다각형 꼭짓점',
-      en: 'Regular Polygon Vertices',
-    },
-    description: {
-      ko: '반복문을 사용하여 원 위에 6개의 구를 배치하세요. 정육각형의 꼭짓점입니다.',
-      en: 'Use a loop to place 6 spheres on a circle, forming hexagon vertices.',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
-import math
-
-# 반지름 3인 원 위에 6개의 구를 배치하세요
-R = 3
-N = 6
-
-for i in range(N):
-    angle = 2 * math.pi * i / N
-    x = R * math.cos(angle)
-    z = R * math.sin(angle)
-    # 여기에 sphere를 만드세요
-`,
-    solutionCode: `from vpython import *
-import math
-
-R = 3
-N = 6
-
-for i in range(N):
-    angle = 2 * math.pi * i / N
-    x = R * math.cos(angle)
-    z = R * math.sin(angle)
-    sphere(pos=vector(x, 0, z), radius=0.3, color=color.yellow)
-`,
-    assertions: [
-      // 첫 번째 구는 (3, 0, 0) 근처
-      { type: 'sphere', property: 'pos.x', operator: 'approx', value: 3, index: 0 },
-      // 6개 구가 존재 (5번 인덱스가 있는지)
-      { type: 'sphere', property: 'pos.y', operator: '==', value: 0, index: 5 },
-    ],
-    hints: [
-      { ko: 'sphere(pos=vector(x, 0, z))로 구를 생성하세요.', en: 'Create sphere with pos=vector(x, 0, z).' },
-      { ko: 'cos과 sin을 사용하여 원 위의 좌표를 계산합니다.', en: 'Use cos and sin for circle coordinates.' },
-    ],
-  },
-
-  {
-    id: 'MA-3',
-    category: 'MA',
-    level: 2,
-    title: {
-      ko: '나선 계단',
-      en: 'Spiral Staircase',
-    },
-    description: {
-      ko: '삼각함수와 반복문으로 나선형 계단을 만드세요. 구가 나선을 따라 올라갑니다.',
-      en: 'Use trigonometry and loops to create a spiral staircase of spheres.',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
-import math
-
-# 나선 계단: 30개 구가 나선을 그리며 올라감
-R = 3      # 나선 반지름
-N = 30     # 구 개수
-
-for i in range(N):
-    angle = i * 0.4        # 점점 회전
-    y = i * 0.3            # 점점 위로
-    x = R * math.cos(angle)
-    z = R * math.sin(angle)
-    # 여기에 sphere를 만드세요
-`,
-    solutionCode: `from vpython import *
-import math
-
-R = 3
-N = 30
-
-for i in range(N):
-    angle = i * 0.4
-    y = i * 0.3
-    x = R * math.cos(angle)
-    z = R * math.sin(angle)
-    sphere(pos=vector(x, y, z), radius=0.2, color=color.cyan)
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.y', operator: '==', value: 0, index: 0 },
-      { type: 'sphere', property: 'pos.y', operator: '>', value: 5, index: 29 },
-    ],
-    hints: [
-      { ko: 'sphere(pos=vector(x, y, z))로 구를 만드세요.', en: 'Create sphere(pos=vector(x, y, z)).' },
-      { ko: 'cos과 sin으로 원형 궤적, y로 높이를 올립니다.', en: 'cos/sin for circular path, y for height.' },
-    ],
-  },
-
-  {
-    id: 'MA-4',
-    category: 'MA',
-    level: 3,
-    title: {
-      ko: '3D 함수 그래프',
-      en: '3D Function Graph',
-    },
-    description: {
-      ko: 'z = sin(x) * cos(y) 함수를 3D 구슬 격자로 시각화하세요.',
-      en: 'Visualize z = sin(x) * cos(y) as a 3D grid of spheres.',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
-import math
-
-# z = sin(x) * cos(y) 시각화
-# -3 <= x <= 3, -3 <= y <= 3 범위
-
-for i in range(15):
-    for j in range(15):
-        x = -3 + i * 0.4
-        y = -3 + j * 0.4
-        z = math.sin(x) * math.cos(y)
-        # 여기에 sphere를 만드세요
-        # z 값에 따라 색상을 바꿔보세요
-`,
-    solutionCode: `from vpython import *
-import math
-
-for i in range(15):
-    for j in range(15):
-        x = -3 + i * 0.4
-        y = -3 + j * 0.4
-        z = math.sin(x) * math.cos(y)
-        c = vector((z + 1) / 2, 0.3, (1 - z) / 2)
-        sphere(pos=vector(x, z, y), radius=0.12, color=c)
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.x', operator: 'approx', value: -3, index: 0 },
-      { type: 'sphere', property: 'pos.x', operator: '>', value: 2, index: 224 },
-    ],
-    hints: [
-      { ko: 'z 값을 y 축에 놓으면 입체적으로 보입니다.', en: 'Map z values to the y-axis for 3D effect.' },
-      { ko: 'vector((z+1)/2, 0.3, (1-z)/2)로 높이에 따른 색상을 만드세요.', en: 'Use vector((z+1)/2, 0.3, (1-z)/2) for height-based color.' },
-    ],
-  },
-
-  {
-    id: 'MA-5',
-    category: 'MA',
-    level: 3,
-    title: {
-      ko: '피보나치 나선',
-      en: 'Fibonacci Spiral',
-    },
-    description: {
-      ko: '피보나치 수열의 비율(황금비)로 꽃잎 배치 패턴을 3D로 구현하세요.',
-      en: 'Create a sunflower-like pattern using the golden ratio from the Fibonacci sequence.',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
-import math
-
-# 해바라기 씨앗 패턴 (페르마 나선)
-# 황금각 = 137.508도
-golden_angle = 137.508 * math.pi / 180
-
-for i in range(200):
-    r = 0.3 * math.sqrt(i)  # 반지름: sqrt(i)에 비례
-    theta = i * golden_angle  # 각도: 황금각만큼 회전
-    x = r * math.cos(theta)
-    z = r * math.sin(theta)
-    # 여기에 sphere를 만드세요 (radius=0.1)
-`,
-    solutionCode: `from vpython import *
-import math
-
-golden_angle = 137.508 * math.pi / 180
-
-for i in range(200):
-    r = 0.3 * math.sqrt(i)
-    theta = i * golden_angle
-    x = r * math.cos(theta)
-    z = r * math.sin(theta)
-    sphere(pos=vector(x, 0, z), radius=0.1, color=color.yellow)
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.x', operator: '==', value: 0, index: 0 },
-      { type: 'sphere', property: 'pos.y', operator: '==', value: 0, index: 199 },
-    ],
-    hints: [
-      { ko: 'sphere(pos=vector(x, 0, z), radius=0.1)로 씨앗을 배치하세요.', en: 'Place seeds with sphere(pos=vector(x, 0, z), radius=0.1).' },
-      { ko: '황금각(137.508도)이 핵심입니다.', en: 'The golden angle (137.508 degrees) is the key.' },
-    ],
-  },
-
-  // ═══════════════════════════════════════════
-  // SC: Science (과학)
-  // ═══════════════════════════════════════════
-  {
-    id: 'SC-1',
-    category: 'SC',
-    level: 1,
-    title: {
-      ko: '등속 직선 운동',
-      en: 'Uniform Linear Motion',
-    },
-    description: {
-      ko: '구를 오른쪽으로 일정한 속도로 이동시키세요. rate()를 사용하여 애니메이션합니다.',
-      en: 'Move a sphere to the right at constant velocity using rate() for animation.',
-    },
-    gradeType: 'A+B',
-    starterCode: `from vpython import *
-
-ball = sphere(pos=vector(-5, 0, 0), color=color.red, radius=0.3)
-v = vector(1, 0, 0)   # 속도: 오른쪽으로 1
-dt = 0.01
-
-while ball.pos.x < 5:
-    rate(100)
-    # 공의 위치를 업데이트하세요 (속도 * 시간)
-`,
-    solutionCode: `from vpython import *
-
-ball = sphere(pos=vector(-5, 0, 0), color=color.red, radius=0.3)
-v = vector(1, 0, 0)
-dt = 0.01
-
-while ball.pos.x < 5:
-    rate(100)
-    ball.pos = ball.pos + v * dt
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.x', operator: '>', value: 0 },
-    ],
-    referenceTrajectory: (() => {
-      const t = [];
-      for (let x = -5; x <= 5; x += 0.01) {
-        t.push([x, 0, 0]);
-      }
-      return t;
-    })(),
-    hints: [
-      { ko: '거리 = 속도 × 시간. 코드로는 "위치 = 위치 + 속도 * dt"', en: 'distance = velocity × time. In code: position = position + velocity * dt' },
-      { ko: 'ball.pos 가 위치이고, v 가 속도, dt 가 짧은 시간입니다.', en: 'ball.pos is position, v is velocity, dt is a small time step.' },
-      { ko: '"ball.위치 = ball.위치 + 속도 * 시간" 형태로 한 줄이면 됩니다!', en: '"ball.position = ball.position + velocity * time" — just one line!' },
-    ],
-  },
-
-  {
-    id: 'SC-2',
-    category: 'SC',
-    level: 2,
-    title: {
-      ko: '자유 낙하',
-      en: 'Free Fall',
-    },
-    description: {
-      ko: '중력 가속도 g=9.8로 공을 자유 낙하시키세요.',
-      en: 'Drop a ball with gravitational acceleration g=9.8.',
-    },
-    gradeType: 'A+B',
-    starterCode: `from vpython import *
-
-ball = sphere(pos=vector(0, 10, 0), color=color.orange, radius=0.3)
-v = vector(0, 0, 0)   # 초기 속도: 0
-g = vector(0, -9.8, 0) # 중력 가속도
-dt = 0.01
-
-while ball.pos.y > 0:
-    rate(100)
-    # 속도에 중력을 더하고, 위치에 속도를 더하세요
-`,
-    solutionCode: `from vpython import *
-
-ball = sphere(pos=vector(0, 10, 0), color=color.orange, radius=0.3)
-v = vector(0, 0, 0)
-g = vector(0, -9.8, 0)
-dt = 0.01
-
-while ball.pos.y > 0:
-    rate(100)
-    v = v + g * dt
-    ball.pos = ball.pos + v * dt
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.y', operator: '<', value: 5 },
-    ],
-    referenceTrajectory: (() => {
-      const t = [];
-      let y = 10, vy = 0;
-      while (y > 0) {
-        t.push([0, y, 0]);
-        vy += -9.8 * 0.01;
-        y += vy * 0.01;
-      }
-      return t;
-    })(),
-    hints: [
-      { ko: '중력이 속도를 바꾸고, 속도가 위치를 바꿉니다. 두 줄이 필요해요!', en: 'Gravity changes velocity, velocity changes position. Two lines needed!' },
-      { ko: '첫 번째 줄: v = v + g * dt (속도에 중력 더하기)', en: 'Line 1: v = v + g * dt (add gravity to velocity)' },
-      { ko: '두 번째 줄: "공의 위치 = 공의 위치 + 속도 × 시간" 을 코드로 옮기세요!', en: 'Line 2: translate "ball position = ball position + velocity × time" into code!' },
-    ],
-  },
-
-  {
-    id: 'SC-3',
-    category: 'SC',
-    level: 2,
-    title: {
-      ko: '포물선 운동',
-      en: 'Projectile Motion',
-    },
-    description: {
-      ko: '공을 45도 각도로 발사하여 포물선 운동을 시뮬레이션하세요.',
-      en: 'Launch a ball at 45 degrees to simulate projectile motion.',
-    },
-    gradeType: 'A+B',
-    starterCode: `from vpython import *
-import math
-
-# 바닥
-box(pos=vector(0, -0.1, 0), size=vector(20, 0.2, 4), color=color.green)
-
-ball = sphere(pos=vector(-8, 0, 0), color=color.red, radius=0.3, make_trail=True)
-
-# 45도 발사, 초속 10
-angle = 45 * math.pi / 180
-speed = 10
-vx = speed * math.cos(angle)
-vy = speed * math.sin(angle)
-v = vector(vx, vy, 0)
-g = vector(0, -9.8, 0)
-dt = 0.01
-
-while ball.pos.y >= 0:
-    rate(100)
-    # 속도에 중력을 더하고, 위치에 속도를 더하세요
-`,
-    solutionCode: `from vpython import *
-import math
-
-box(pos=vector(0, -0.1, 0), size=vector(20, 0.2, 4), color=color.green)
-ball = sphere(pos=vector(-8, 0, 0), color=color.red, radius=0.3, make_trail=True)
-
-angle = 45 * math.pi / 180
-speed = 10
-vx = speed * math.cos(angle)
-vy = speed * math.sin(angle)
-v = vector(vx, vy, 0)
-g = vector(0, -9.8, 0)
-dt = 0.01
-
-while ball.pos.y >= 0:
-    rate(100)
-    v = v + g * dt
-    ball.pos = ball.pos + v * dt
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.x', operator: '>', value: -5 },
-      { type: 'sphere', property: 'pos.y', operator: '<=', value: 0 },
-    ],
-    referenceTrajectory: (() => {
-      const t = [];
-      let x = -8, y = 0, vx = 10 * Math.cos(Math.PI/4), vy = 10 * Math.sin(Math.PI/4);
-      while (y >= 0 || t.length === 0) {
-        t.push([x, y, 0]);
-        vy += -9.8 * 0.01;
-        x += vx * 0.01;
-        y += vy * 0.01;
-        if (t.length > 2000) break;
-      }
-      return t;
-    })(),
-    hints: [
-      { ko: '자유 낙하와 같은 원리! 속도에 중력 더하기, 위치에 속도 더하기.', en: 'Same principle as free fall! Add gravity to velocity, velocity to position.' },
-      { ko: '자유낙하에서 쓴 코드 두 줄을 그대로 쓰면 돼요. 중력이 이미 v에 들어있어서 포물선이 됩니다!', en: 'Reuse the same two lines from free fall. Gravity is already in v, creating a parabola!' },
-      { ko: 'make_trail=True 덕분에 포물선 궤적이 보여요. 각도를 바꿔보면 궤적이 달라져요!', en: 'make_trail=True shows the parabola. Try changing the angle!' },
-    ],
-  },
-
-  {
-    id: 'SC-4',
-    category: 'SC',
-    level: 2,
-    title: {
-      ko: '용수철 진동',
-      en: 'Spring Oscillation',
-    },
-    description: {
-      ko: '훅의 법칙(F = -kx)으로 용수철에 매달린 공의 진동을 시뮬레이션하세요.',
-      en: "Simulate spring oscillation using Hooke's law (F = -kx).",
-    },
-    gradeType: 'A+B',
-    starterCode: `from vpython import *
-
-# 고정점
-box(pos=vector(0, 5, 0), size=vector(2, 0.2, 2), color=color.gray)
-
-ball = sphere(pos=vector(0, 2, 0), radius=0.4, color=color.red)
-spring = cylinder(pos=vector(0, 5, 0), axis=vector(0, -3, 0), radius=0.05, color=color.yellow)
-
-v = vector(0, 0, 0)
-rest_y = 3  # 평형 위치
-k = 10      # 용수철 상수
-m = 1       # 질량
-dt = 0.01
-
-for i in range(500):
-    rate(100)
-    # 훅의 법칙: F = -k * (y - rest_y)
-    displacement = ball.pos.y - rest_y
-    F = vector(0, -k * displacement, 0)
-    # 힘으로 가속도를 구하고, 속도와 위치를 차례로 업데이트하세요
-
-    # 용수철 연결 업데이트
-    spring.axis = ball.pos - vector(0, 5, 0)
-`,
-    solutionCode: `from vpython import *
-
-box(pos=vector(0, 5, 0), size=vector(2, 0.2, 2), color=color.gray)
-ball = sphere(pos=vector(0, 2, 0), radius=0.4, color=color.red)
-spring = cylinder(pos=vector(0, 5, 0), axis=vector(0, -3, 0), radius=0.05, color=color.yellow)
-
-v = vector(0, 0, 0)
-rest_y = 3
-k = 10
-m = 1
-dt = 0.01
-
-for i in range(500):
-    rate(100)
-    displacement = ball.pos.y - rest_y
-    F = vector(0, -k * displacement, 0)
-    a = F / m
-    v = v + a * dt
-    ball.pos = ball.pos + v * dt
-    spring.axis = ball.pos - vector(0, 5, 0)
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.y', operator: '<', value: 3 },
-    ],
-    referenceTrajectory: (() => {
-      const t = [];
-      let y = 2, vy = 0;
-      for (let i = 0; i < 500; i++) {
-        t.push([0, y, 0]);
-        const F = -10 * (y - 3);
-        vy += F * 0.01;
-        y += vy * 0.01;
-      }
-      return t;
-    })(),
-    hints: [
-      { ko: '뉴턴의 제2법칙! 힘(F)을 질량(m)으로 나누면 가속도(a)가 돼요.', en: "Newton's 2nd law: divide force (F) by mass (m) to get acceleration (a)." },
-      { ko: '세 줄이에요: ① 힘÷질량=가속도 ② 속도에 가속도 더하기 ③ 위치에 속도 더하기', en: 'Three lines: ① force÷mass=accel ② add accel to velocity ③ add velocity to position' },
-      { ko: 'k 값을 바꿔보세요! 크면 빠르게, 작으면 느리게 진동합니다.', en: 'Try changing k! Larger = faster oscillation, smaller = slower.' },
-    ],
-  },
-
-  {
-    id: 'SC-5',
-    category: 'SC',
-    level: 3,
-    title: {
-      ko: '행성 공전',
-      en: 'Planetary Orbit',
-    },
-    description: {
-      ko: '만유인력으로 행성이 태양 주위를 공전하는 시뮬레이션을 만드세요.',
-      en: 'Simulate a planet orbiting a star using gravitational force.',
-    },
-    gradeType: 'A+B',
-    starterCode: `from vpython import *
-
-# 태양
-sun = sphere(pos=vector(0, 0, 0), radius=0.5, color=color.yellow, emissive=True)
-
-# 행성 (원궤도 초기조건)
-planet = sphere(pos=vector(5, 0, 0), radius=0.2, color=color.cyan, make_trail=True)
-v = vector(0, 0, 1.4)  # 초기 속도 (접선 방향)
-
-G = 10  # 중력 상수 (간소화)
-M = 10  # 태양 질량
-dt = 0.01
-
-for i in range(2000):
-    rate(200)
-    # 태양→행성 방향 벡터
-    r_vec = planet.pos - sun.pos
-    r = r_vec.mag  # 거리
-    # 만유인력: F = -G*M / r^2 방향
-    F = -G * M / (r * r) * (r_vec / r)
-    # 힘으로 속도를 바꾸고, 속도로 위치를 바꾸세요
-`,
-    solutionCode: `from vpython import *
-
-sun = sphere(pos=vector(0, 0, 0), radius=0.5, color=color.yellow, emissive=True)
-planet = sphere(pos=vector(5, 0, 0), radius=0.2, color=color.cyan, make_trail=True)
-v = vector(0, 0, 1.4)
-
-G = 10
-M = 10
-dt = 0.01
-
-for i in range(2000):
-    rate(200)
-    r_vec = planet.pos - sun.pos
-    r = r_vec.mag
-    F = -G * M / (r * r) * (r_vec / r)
-    v = v + F * dt
-    planet.pos = planet.pos + v * dt
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.x', operator: '!=', value: 5, index: 1 },
-    ],
-    referenceTrajectory: (() => {
-      const t = [];
-      let px = 5, py = 0, pz = 0, vx = 0, vy = 0, vz = 1.4;
-      for (let i = 0; i < 2000; i++) {
-        if (i % 5 === 0) t.push([px, py, pz]);
-        const r = Math.sqrt(px*px + py*py + pz*pz);
-        const F = -10 * 10 / (r * r);
-        const fx = F * px / r, fy = F * py / r, fz = F * pz / r;
-        vx += fx * 0.01; vy += fy * 0.01; vz += fz * 0.01;
-        px += vx * 0.01; py += vy * 0.01; pz += vz * 0.01;
-      }
-      return t;
-    })(),
-    hints: [
-      { ko: '같은 패턴! 힘이 속도를 바꾸고, 속도가 위치를 바꿉니다.', en: 'Same pattern! Force changes velocity, velocity changes position.' },
-      { ko: '앞의 과학 미션과 같은 패턴 두 줄! 이번엔 g 대신 F를 쓰세요.', en: 'Same two-line pattern as previous science missions! Use F instead of g this time.' },
-      { ko: '초기 속도(1.4)를 바꾸면 궤도 모양이 달라져요. 너무 빠르면 탈출, 너무 느리면 충돌!', en: 'Change initial speed (1.4) — too fast = escape, too slow = crash!' },
-    ],
-  },
-
-  // ═══════════════════════════════════════════
-  // AR: Art (예술)
-  // ═══════════════════════════════════════════
-  {
-    id: 'AR-1',
-    category: 'AR',
-    level: 1,
-    title: {
-      ko: '무지개 분수',
-      en: 'Rainbow Fountain',
-    },
-    description: {
-      ko: '무지개 7색 구슬이 위로 솟았다가 내려오는 분수를 만드세요. 반복문과 색상 리스트를 사용합니다.',
-      en: 'Create a rainbow fountain where 7 colored spheres rise and fall. Use loops and a color list.',
-    },
-    gradeType: 'A',
-    starterCode: `from vpython import *
-
-# 무지개 7색
-colors = [color.red, color.orange, color.yellow, color.green,
-          color.cyan, color.blue, color.purple]
-
-# 7개 구슬을 원형으로 배치
-import math
-balls = []
-for i in range(7):
-    angle = 2 * math.pi * i / 7
-    x = 2 * math.cos(angle)
-    z = 2 * math.sin(angle)
-    # 여기에 sphere를 만들고 balls에 추가하세요
-    # b = sphere(pos=vector(x, 0, z), radius=0.3, color=colors[i])
-    # balls.append(b)
-
-# 분수 애니메이션: 위로 솟았다가 내려옴
-for t in range(100):
+for step in range(20):
     rate(30)
-    for i in range(len(balls)):
-        # 각 구슬이 시간차를 두고 올라갔다 내려오기
-        y = 3 * math.sin((t + i * 10) * 0.1)
-        if y < 0:
-            y = 0
-        balls[i].pos = vector(balls[i].pos.x, y, balls[i].pos.z)
-
-효과음("coin")
-print("무지개 분수 완성!")
-`,
-    solutionCode: `from vpython import *
-import math
-
-colors = [color.red, color.orange, color.yellow, color.green,
-          color.cyan, color.blue, color.purple]
-
-balls = []
-for i in range(7):
-    angle = 2 * math.pi * i / 7
-    x = 2 * math.cos(angle)
-    z = 2 * math.sin(angle)
-    b = sphere(pos=vector(x, 0, z), radius=0.3, color=colors[i])
-    balls.append(b)
-
-for t in range(100):
-    rate(30)
-    for i in range(len(balls)):
-        y = 3 * math.sin((t + i * 10) * 0.1)
-        if y < 0:
-            y = 0
-        balls[i].pos = vector(balls[i].pos.x, y, balls[i].pos.z)
-
-효과음("coin")
-print("무지개 분수 완성!")
+    for i in range(len(불빛들)):
+        불빛들[i].pos = 불빛들[i].pos + 속도들[i] * dt
 `,
     assertions: [
-      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 0 },
-      { type: 'sphere', property: 'pos.y', operator: '>=', value: 0, index: 6 },
+      { type: 'sphere', property: 'pos.y', operator: '>', value: 0.9, index: 0 },
+      { type: 'sphere', property: 'pos.y', operator: '>', value: 4.5, index: 4 },
+    ],
+    codeChecks: [
+      { pattern: '\\.append\\s*\\(', minCount: 2, message: '객체와 속도를 리스트에 append하세요' },
+      { pattern: '\\.pos\\s*=', minCount: 1, message: '리스트 속 객체의 pos를 업데이트하세요' },
     ],
     hints: [
-      { ko: '구슬을 만들고 리스트에 저장해야 나중에 움직일 수 있어요.', en: 'Create spheres and store in list so you can move them later.' },
-      { ko: 'b = sphere(pos=vector(x, 0, z), radius=0.3, color=colors[i]) 로 만들고', en: 'Create with b = sphere(pos=vector(x,0,z), radius=0.3, color=colors[i])' },
-      { ko: 'balls.append(b) 로 리스트에 추가하세요. 두 줄이면 됩니다!', en: 'Then balls.append(b) to store. Just two lines!' },
+      text('불빛들[i]는 i번째 객체, 속도들[i]는 i번째 속도입니다.', '불빛들[i] is the i-th object; 속도들[i] is the i-th velocity.'),
+      text('위치 업데이트 공식은 새 위치 = 현재 위치 + 속도 * dt 입니다.', 'Motion update: new position = current position + velocity * dt.'),
     ],
   },
-
   {
-    id: 'AR-2',
-    category: 'AR',
-    level: 2,
-    title: {
-      ko: '정육면체 꼭짓점',
-      en: 'Cube Vertices',
-    },
-    description: {
-      ko: '8개의 구를 리스트에 저장하여 정육면체 꼭짓점을 완성하세요. 리스트와 반복문을 함께 사용합니다.',
-      en: 'Store 8 spheres in a list to form cube vertices. Practice using lists with loops.',
-    },
+    id: 'CT-6',
+    category: 'CT',
+    level: 1,
+    title: text('변수로 행성 조절하기', 'Control a Planet with Variables'),
+    description: text(
+      '숫자, 색, 위치를 변수로 먼저 정하고 그 변수를 sphere()에 넣는 연습입니다.',
+      'Practice setting number, color, and position variables before passing them to sphere().',
+    ),
     gradeType: 'A',
     starterCode: `from vpython import *
-import math
 
-# 정육면체 8개 꼭짓점 좌표
-vertices = [
-    vector(-1, -1, -1), vector(1, -1, -1),
-    vector(-1, 1, -1),  vector(1, 1, -1),
-    vector(-1, -1, 1),  vector(1, -1, 1),
-    vector(-1, 1, 1),   vector(1, 1, 1),
-]
+scene_background(색상['검정'])
 
-# 각 꼭짓점에 구를 만드세요
-balls = []
-for v in vertices:
-    # 여기에 코드를 작성하세요
+# 목표: 아래 세 변수만 바꿔서 조건에 맞는 행성을 만드세요.
+크기 = 0.4
+행성색 = 색상['회색']
+위치 = vector(0, 0, 0)
+
+행성 = sphere(pos=위치, radius=크기, color=행성색, emissive=True)
+
+# 통과 조건: 크기 1 이상, x 위치 2, 파란빛이 있는 색
+`,
+    solutionCode: `from vpython import *
+
+scene_background(색상['검정'])
+
+크기 = 1.2
+행성색 = 색상['하늘']
+위치 = vector(2, 0, 0)
+
+행성 = sphere(pos=위치, radius=크기, color=행성색, emissive=True)
+`,
+    assertions: [
+      { type: 'sphere', property: 'radius', operator: '>=', value: 1 },
+      { type: 'sphere', property: 'pos.x', operator: '==', value: 2 },
+      { type: 'sphere', property: 'color.b', operator: '>', value: 0.8 },
+    ],
+    hints: [
+      text('도형을 직접 고치기 전에 변수를 먼저 고치면 코드가 읽기 쉬워집니다.', 'Changing variables first makes code easier to read.'),
+      text('위치는 vector(2, 0, 0)처럼 x, y, z를 함께 씁니다.', 'Use vector(2, 0, 0) for x, y, z position.'),
+      text("색상['하늘']은 파란빛이 강한 색입니다.", "색상['하늘'] has a strong blue component."),
+    ],
+  },
+  {
+    id: 'CT-7',
+    category: 'CT',
+    level: 1,
+    title: text('반복문으로 조명 줄 세우기', 'Line Up Lights with a Loop'),
+    description: text(
+      'for range의 숫자와 위치 공식을 조금 고쳐 같은 패턴을 여러 번 만듭니다.',
+      'Adjust a for-range count and position formula to repeat a pattern.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+scene_background(색상['검정'])
+
+# 목표: 조명 6개가 x=-2.5부터 x=2.5까지 한 줄로 놓이게 만드세요.
+# 지금은 3개만 만들어집니다.
+for i in range(3):
+    x = -2.5 + i * 1
+    sphere(pos=vector(x, 0, 0), radius=0.18, color=무지개[i % 7], emissive=True)
+`,
+    solutionCode: `from vpython import *
+
+scene_background(색상['검정'])
+
+for i in range(6):
+    x = -2.5 + i * 1
+    sphere(pos=vector(x, 0, 0), radius=0.18, color=무지개[i % 7], emissive=True)
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.x', operator: 'approx', value: -2.5, index: 0 },
+      { type: 'sphere', property: 'pos.x', operator: 'approx', value: 2.5, index: 5 },
+    ],
+    codeChecks: [
+      { pattern: 'range\\s*\\(\\s*6\\s*\\)', minCount: 1, message: 'range(6)으로 조명 6개를 만드세요' },
+    ],
+    hints: [
+      text('range(3)은 0, 1, 2 세 번 반복합니다.', 'range(3) repeats three times: 0, 1, 2.'),
+      text('6개가 필요하면 range 안의 숫자를 바꾸면 됩니다.', 'If you need six objects, change the number inside range.'),
+      text('마지막 i는 5가 되므로 x = -2.5 + 5 * 1 입니다.', 'The last i is 5, so x = -2.5 + 5 * 1.'),
+    ],
+  },
+  {
+    id: 'CT-8',
+    category: 'CT',
+    level: 2,
+    title: text('매개변수로 버튼 찍기', 'Stamp Buttons with Parameters'),
+    description: text(
+      '함수의 매개변수 x와 색을 실제 도형 속성에 연결하는 연습입니다.',
+      'Practice connecting function parameters x and color to actual object properties.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+def 버튼(x, 색):
+    # 목표: x와 색 매개변수가 실제 버튼에 반영되게 고치세요.
+    sphere(pos=vector(0, 0, 0), radius=0.25, color=색상['회색'], emissive=True)
+
+버튼(-2, 색상['빨강'])
+버튼(0, 색상['노랑'])
+버튼(2, 색상['초록'])
+`,
+    solutionCode: `from vpython import *
+
+def 버튼(x, 색):
+    sphere(pos=vector(x, 0, 0), radius=0.25, color=색, emissive=True)
+
+버튼(-2, 색상['빨강'])
+버튼(0, 색상['노랑'])
+버튼(2, 색상['초록'])
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.x', operator: '<', value: -1, index: 0 },
+      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 0 },
+      { type: 'sphere', property: 'pos.x', operator: '>', value: 1, index: 2 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01, index: 2 },
+    ],
+    codeChecks: [
+      { pattern: 'pos\\s*=\\s*vector\\s*\\(\\s*x\\s*,', minCount: 1, message: 'x 매개변수를 위치에 사용하세요' },
+      { pattern: 'color\\s*=\\s*색\\s*[,)]', minCount: 1, message: '색 매개변수를 color에 사용하세요' },
+    ],
+    hints: [
+      text('매개변수는 함수 안에서 변수처럼 사용할 수 있습니다.', 'Parameters can be used like variables inside a function.'),
+      text('vector(x, 0, 0)으로 버튼마다 다른 x 위치를 줄 수 있습니다.', 'Use vector(x, 0, 0) to give each button a different x position.'),
+      text('color=색이라고 쓰면 호출할 때 넣은 색이 적용됩니다.', 'color=색 applies the color passed into the function call.'),
+    ],
+  },
+  {
+    id: 'CT-9',
+    category: 'CT',
+    level: 2,
+    title: text('조건문으로 온도 색 정하기', 'Choose Temperature Colors with Conditions'),
+    description: text(
+      'if/elif/else로 온도 값에 따라 차가움, 적당함, 뜨거움을 색으로 표현합니다.',
+      'Use if/elif/else to represent cold, mild, and hot temperatures with colors.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+def 온도색(온도):
+    # 목표: 20보다 낮으면 파랑, 30보다 낮으면 노랑, 나머지는 빨강을 반환하세요.
+    if 온도 < 20:
+        return 색상['회색']
+    elif 온도 < 30:
+        return 색상['회색']
+    else:
+        return 색상['회색']
+
+온도들 = [15, 24, 34]
+
+for i in range(len(온도들)):
+    sphere(pos=vector(-1 + i, 0, 0), radius=0.25, color=온도색(온도들[i]), emissive=True)
+`,
+    solutionCode: `from vpython import *
+
+def 온도색(온도):
+    if 온도 < 20:
+        return 색상['파랑']
+    elif 온도 < 30:
+        return 색상['노랑']
+    else:
+        return 색상['빨강']
+
+온도들 = [15, 24, 34]
+
+for i in range(len(온도들)):
+    sphere(pos=vector(-1 + i, 0, 0), radius=0.25, color=온도색(온도들[i]), emissive=True)
+`,
+    assertions: [
+      { type: 'sphere', property: 'color.b', operator: '==', value: 1, index: 0 },
+      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 1 },
+      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 2 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 0, index: 2 },
+    ],
+    codeChecks: [
+      { pattern: 'elif\\s+', minCount: 1, message: 'elif로 중간 조건을 표현하세요' },
+      { pattern: 'else\\s*:', minCount: 1, message: 'else로 나머지 경우를 처리하세요' },
+    ],
+    hints: [
+      text('조건은 위에서 아래로 검사됩니다.', 'Conditions are checked from top to bottom.'),
+      text('15는 첫 조건, 24는 두 번째 조건, 34는 else로 가야 합니다.', '15 should use the first condition, 24 the second, and 34 the else branch.'),
+      text("노랑은 r과 g가 모두 1이고, 빨강은 r만 1입니다.", 'Yellow has r and g at 1; red has only r at 1.'),
+    ],
+  },
+  {
+    id: 'CT-10',
+    category: 'CT',
+    level: 2,
+    title: text('두 리스트 연결하기', 'Connect Two Lists'),
+    description: text(
+      '객체 리스트와 이동량 리스트를 같은 인덱스로 연결해 한 번에 위치를 업데이트합니다.',
+      'Use the same index to connect an object list and a movement list, then update positions.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+불빛들 = []
+이동량들 = [vector(0, 0.3, 0), vector(0, 0.6, 0), vector(0, 0.9, 0)]
+
+for i in range(3):
+    불빛 = sphere(pos=vector(-1 + i, 0, 0), radius=0.2, color=무지개[i], emissive=True)
+    불빛들.append(불빛)
+
+for i in range(len(불빛들)):
+    # 목표: i번째 불빛을 i번째 이동량만큼 위로 옮기세요.
     pass
 `,
     solutionCode: `from vpython import *
-import math
 
-vertices = [
-    vector(-1, -1, -1), vector(1, -1, -1),
-    vector(-1, 1, -1),  vector(1, 1, -1),
-    vector(-1, -1, 1),  vector(1, -1, 1),
-    vector(-1, 1, 1),   vector(1, 1, 1),
-]
+불빛들 = []
+이동량들 = [vector(0, 0.3, 0), vector(0, 0.6, 0), vector(0, 0.9, 0)]
 
-balls = []
-for v in vertices:
-    b = sphere(pos=v, radius=0.2, color=color.cyan)
-    balls.append(b)
+for i in range(3):
+    불빛 = sphere(pos=vector(-1 + i, 0, 0), radius=0.2, color=무지개[i], emissive=True)
+    불빛들.append(불빛)
+
+for i in range(len(불빛들)):
+    불빛들[i].pos = 불빛들[i].pos + 이동량들[i]
 `,
     assertions: [
-      { type: 'sphere', property: 'pos.x', operator: '==', value: -1, index: 0 },
-      { type: 'sphere', property: 'pos.x', operator: '==', value: 1, index: 7 },
-      // 8개 구가 존재
-      { type: 'sphere', property: 'pos.y', operator: '==', value: 1, index: 7 },
+      { type: 'sphere', property: 'pos.y', operator: '>', value: 0.25, index: 0 },
+      { type: 'sphere', property: 'pos.y', operator: '>', value: 0.55, index: 1 },
+      { type: 'sphere', property: 'pos.y', operator: '>', value: 0.85, index: 2 },
+    ],
+    codeChecks: [
+      { pattern: '불빛들\\s*\\[\\s*i\\s*\\]\\.pos\\s*=', minCount: 1, message: '불빛들[i].pos를 업데이트하세요' },
+      { pattern: '이동량들\\s*\\[\\s*i\\s*\\]', minCount: 1, message: '이동량들[i]를 사용하세요' },
     ],
     hints: [
-      { ko: 'sphere(pos=v, radius=0.2)로 각 꼭짓점에 구를 만드세요.', en: 'Create sphere(pos=v, radius=0.2) at each vertex.' },
-      { ko: 'balls.append(b)로 리스트에 저장하세요.', en: 'Store in list with balls.append(b).' },
+      text('두 리스트의 같은 번호끼리 한 쌍이라고 생각하세요.', 'Think of matching indexes in the two lists as pairs.'),
+      text('불빛들[i].pos는 i번째 불빛의 위치입니다.', '불빛들[i].pos is the position of the i-th light.'),
+      text('현재 위치에 이동량들[i]를 더하면 됩니다.', 'Add 이동량들[i] to the current position.'),
     ],
   },
   {
+    id: 'CT-11',
+    category: 'CT',
+    level: 2,
+    title: text('for와 리스트로 색 꺼내기', 'Use for with a List'),
+    description: text(
+      '색 리스트에서 i번째 색을 꺼내 구슬에 적용하며 for와 list 인덱스를 연결합니다.',
+      'Connect a for loop with list indexing by applying the i-th color to each sphere.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+색들 = [색상['빨강'], 색상['노랑'], 색상['파랑'], 색상['초록']]
+
+for i in range(len(색들)):
+    x = -1.5 + i
+    # 목표: 모든 구슬이 회색이 아니라 색들[i]의 색을 갖게 하세요.
+    sphere(pos=vector(x, 0, 0), radius=0.22, color=색상['회색'], emissive=True)
+`,
+    solutionCode: `from vpython import *
+
+색들 = [색상['빨강'], 색상['노랑'], 색상['파랑'], 색상['초록']]
+
+for i in range(len(색들)):
+    x = -1.5 + i
+    sphere(pos=vector(x, 0, 0), radius=0.22, color=색들[i], emissive=True)
+`,
+    assertions: [
+      { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 0 },
+      { type: 'sphere', property: 'color.b', operator: '==', value: 1, index: 2 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01, index: 3 },
+    ],
+    codeChecks: [
+      { pattern: '색들\\s*\\[\\s*i\\s*\\]', minCount: 1, message: '색들[i]로 리스트에서 색을 꺼내세요' },
+    ],
+    hints: [
+      text('i는 반복할 때마다 0, 1, 2, 3으로 바뀝니다.', 'i changes to 0, 1, 2, 3 during the loop.'),
+      text('색들[i]는 현재 번호에 맞는 색을 꺼냅니다.', '색들[i] gets the color for the current index.'),
+      text('color=색들[i]처럼 color 자리에 넣으면 됩니다.', 'Put it in the color slot: color=색들[i].'),
+    ],
+  },
+  {
+    id: 'CT-12',
+    category: 'CT',
+    level: 2,
+    title: text('if 두 개: 조건을 각각 적용하기', 'Two if Statements: Apply Conditions Separately'),
+    description: text(
+      '서로 독립적인 if 두 개가 모두 실행될 수 있음을 확인합니다.',
+      'See that two independent if statements can both run.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+x = 1
+y = 1
+
+점 = sphere(pos=vector(x, y, 0), radius=0.2, color=색상['회색'])
+
+# 목표: x가 양수이면 빨간색으로 바꾸세요.
+if x > 0:
+    pass
+
+# 목표: y가 양수이면 크기를 0.45로 키우세요.
+if y > 0:
+    pass
+`,
+    solutionCode: `from vpython import *
+
+x = 1
+y = 1
+
+점 = sphere(pos=vector(x, y, 0), radius=0.2, color=색상['회색'])
+
+if x > 0:
+    점.color = 색상['빨강']
+
+if y > 0:
+    점.radius = 0.45
+`,
+    assertions: [
+      { type: 'sphere', property: 'color.r', operator: '==', value: 1 },
+      { type: 'sphere', property: 'radius', operator: '>=', value: 0.45 },
+    ],
+    codeChecks: [
+      { pattern: '\\bif\\s+', minCount: 2, message: '독립적인 if 두 개를 사용하세요' },
+    ],
+    hints: [
+      text('if 두 개는 둘 다 참이면 둘 다 실행됩니다.', 'Two if statements both run when both conditions are true.'),
+      text('첫 if 안에서는 색을 바꾸고, 둘째 if 안에서는 크기를 바꿉니다.', 'Change color in the first if and size in the second.'),
+    ],
+  },
+  {
+    id: 'CT-13',
+    category: 'CT',
+    level: 2,
+    title: text('if else: 둘 중 하나 고르기', 'if else: Choose One of Two'),
+    description: text(
+      '조건이 참일 때와 거짓일 때 중 정확히 한 가지 길만 실행되는 구조를 연습합니다.',
+      'Practice a structure where exactly one of two paths runs.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+점수 = 75
+결과 = sphere(pos=vector(0, 0, 0), radius=0.3, color=색상['회색'])
+
+# 목표: 점수가 60 이상이면 초록, 아니면 빨강으로 표시하세요.
+if 점수 >= 60:
+    pass
+else:
+    pass
+`,
+    solutionCode: `from vpython import *
+
+점수 = 75
+결과 = sphere(pos=vector(0, 0, 0), radius=0.3, color=색상['회색'])
+
+if 점수 >= 60:
+    결과.color = 색상['초록']
+else:
+    결과.color = 색상['빨강']
+`,
+    assertions: [
+      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01 },
+      { type: 'sphere', property: 'color.r', operator: '==', value: 0 },
+    ],
+    codeChecks: [
+      { pattern: 'else\\s*:', minCount: 1, message: 'else로 나머지 경우를 처리하세요' },
+    ],
+    hints: [
+      text('if가 참이면 else 안쪽은 실행되지 않습니다.', 'When if is true, the else block does not run.'),
+      text("초록은 색상['초록'], 빨강은 색상['빨강']입니다.", "Green is 색상['초록']; red is 색상['빨강']."),
+    ],
+  },
+  {
+    id: 'CT-14',
+    category: 'CT',
+    level: 2,
+    title: text('if elif else: 세 단계 속도 배지', 'if elif else: Three-Speed Badge'),
+    description: text(
+      '느림, 보통, 빠름 세 단계 중 하나를 고르는 조건문을 완성합니다.',
+      'Complete a conditional that chooses one of slow, medium, and fast.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+속도 = 7
+배지 = sphere(pos=vector(0, 0, 0), radius=0.3, color=색상['회색'], emissive=True)
+
+# 목표: 속도 < 3 파랑, 속도 < 8 노랑, 나머지 빨강
+if 속도 < 3:
+    배지.color = 색상['회색']
+elif 속도 < 8:
+    배지.color = 색상['회색']
+else:
+    배지.color = 색상['회색']
+`,
+    solutionCode: `from vpython import *
+
+속도 = 7
+배지 = sphere(pos=vector(0, 0, 0), radius=0.3, color=색상['회색'], emissive=True)
+
+if 속도 < 3:
+    배지.color = 색상['파랑']
+elif 속도 < 8:
+    배지.color = 색상['노랑']
+else:
+    배지.color = 색상['빨강']
+`,
+    assertions: [
+      { type: 'sphere', property: 'color.r', operator: '==', value: 1 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 1 },
+      { type: 'sphere', property: 'color.b', operator: '==', value: 0 },
+    ],
+    codeChecks: [
+      { pattern: 'elif\\s+', minCount: 1, message: 'elif로 중간 단계를 표현하세요' },
+      { pattern: 'else\\s*:', minCount: 1, message: 'else로 마지막 단계를 처리하세요' },
+    ],
+    hints: [
+      text('속도 7은 첫 조건은 거짓, 두 번째 조건은 참입니다.', 'Speed 7 fails the first condition and passes the second.'),
+      text('elif는 앞 조건이 거짓일 때만 검사됩니다.', 'elif is checked only if earlier conditions were false.'),
+    ],
+  },
+  {
+    id: 'CT-15',
+    category: 'CT',
+    level: 2,
+    title: text('if elif elif else: 네 단계 레벨', 'if elif elif else: Four-Level Badge'),
+    description: text(
+      '조건이 네 갈래로 나뉘는 구조를 완성해 점수에 맞는 레벨 색을 만듭니다.',
+      'Complete a four-branch conditional to choose a level color by score.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+점수 = 92
+레벨 = sphere(pos=vector(0, 0, 0), radius=0.35, color=색상['회색'], emissive=True)
+
+# 목표: 40 미만 회색, 70 미만 파랑, 90 미만 보라, 나머지 금색
+if 점수 < 40:
+    레벨.color = 색상['회색']
+elif 점수 < 70:
+    레벨.color = 색상['회색']
+elif 점수 < 90:
+    레벨.color = 색상['회색']
+else:
+    레벨.color = 색상['회색']
+`,
+    solutionCode: `from vpython import *
+
+점수 = 92
+레벨 = sphere(pos=vector(0, 0, 0), radius=0.35, color=색상['회색'], emissive=True)
+
+if 점수 < 40:
+    레벨.color = 색상['회색']
+elif 점수 < 70:
+    레벨.color = 색상['파랑']
+elif 점수 < 90:
+    레벨.color = 색상['보라']
+else:
+    레벨.color = 색상['금색']
+`,
+    assertions: [
+      { type: 'sphere', property: 'color.r', operator: '==', value: 1 },
+      { type: 'sphere', property: 'color.g', operator: '>', value: 0.8 },
+      { type: 'sphere', property: 'color.b', operator: '==', value: 0 },
+    ],
+    codeChecks: [
+      { pattern: 'elif\\s+', minCount: 2, message: 'elif를 두 번 사용해 네 단계를 만드세요' },
+      { pattern: 'else\\s*:', minCount: 1, message: 'else로 최고 단계를 처리하세요' },
+    ],
+    hints: [
+      text('점수 92는 앞의 세 조건을 모두 지나 else로 갑니다.', 'Score 92 skips the first three conditions and reaches else.'),
+      text("금색은 색상['금색'] 또는 색상['금']으로 쓸 수 있습니다.", "Gold can be written as 색상['금색'] or 색상['금']."),
+    ],
+  },
+  {
+    id: 'CT-16',
+    category: 'CT',
+    level: 2,
+    title: text('list append: 만든 객체 모으기', 'list append: Collect Created Objects'),
+    description: text(
+      '반복문에서 만든 객체를 리스트에 append한 뒤, 리스트를 사용해 한 번 더 조작합니다.',
+      'Append created objects into a list, then use the list to modify them again.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+
+구슬들 = []
+
+for i in range(4):
+    구슬 = sphere(pos=vector(-1.5 + i, 0, 0), radius=0.2, color=무지개[i], emissive=True)
+    # 목표: 만든 구슬을 구슬들 리스트에 추가하세요.
+    pass
+
+for i in range(len(구슬들)):
+    구슬들[i].pos = 구슬들[i].pos + vector(0, 1, 0)
+`,
+    solutionCode: `from vpython import *
+
+구슬들 = []
+
+for i in range(4):
+    구슬 = sphere(pos=vector(-1.5 + i, 0, 0), radius=0.2, color=무지개[i], emissive=True)
+    구슬들.append(구슬)
+
+for i in range(len(구슬들)):
+    구슬들[i].pos = 구슬들[i].pos + vector(0, 1, 0)
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.y', operator: '==', value: 1, index: 0 },
+      { type: 'sphere', property: 'pos.y', operator: '==', value: 1, index: 3 },
+    ],
+    codeChecks: [
+      { pattern: '구슬들\\.append\\s*\\(\\s*구슬\\s*\\)', minCount: 1, message: '구슬들.append(구슬)을 사용하세요' },
+    ],
+    hints: [
+      text('append는 리스트 맨 뒤에 새 값을 넣습니다.', 'append adds a new value to the end of a list.'),
+      text('리스트에 넣어야 두 번째 반복문에서 다시 찾을 수 있습니다.', 'You must store objects in the list to use them in the second loop.'),
+    ],
+  },
+  {
+    id: 'CT-17',
+    category: 'CT',
+    level: 2,
+    title: text('random으로 별 흩뿌리기', 'Scatter Stars with random'),
+    description: text(
+      'random.uniform과 random.choice를 사용해 위치와 색이 조금씩 다른 별을 만듭니다.',
+      'Use random.uniform and random.choice to create stars with varied positions and colors.',
+    ),
+    gradeType: 'A',
+    starterCode: `from vpython import *
+import random
+
+scene_background(색상['검정'])
+random.seed(7)
+
+for i in range(5):
+    # 목표: x를 random.uniform(-2, 2)로 정하고, 색을 random.choice(무지개)로 고르세요.
+    x = 0
+    별색 = 색상['회색']
+    sphere(pos=vector(x, 0, 0), radius=0.12, color=별색, emissive=True)
+`,
+    solutionCode: `from vpython import *
+import random
+
+scene_background(색상['검정'])
+random.seed(7)
+
+for i in range(5):
+    x = random.uniform(-2, 2)
+    별색 = random.choice(무지개)
+    sphere(pos=vector(x, 0, 0), radius=0.12, color=별색, emissive=True)
+`,
+    assertions: [
+      { type: 'sphere', property: 'pos.x', operator: '!=', value: 0, index: 0 },
+      { type: 'sphere', property: 'pos.x', operator: '!=', value: 0, index: 4 },
+    ],
+    codeChecks: [
+      { pattern: 'random\\.uniform\\s*\\(', minCount: 1, message: 'random.uniform()으로 랜덤 위치를 만드세요' },
+      { pattern: 'random\\.choice\\s*\\(', minCount: 1, message: 'random.choice()로 랜덤 색을 고르세요' },
+    ],
+    hints: [
+      text('random.uniform(-2, 2)는 -2와 2 사이의 실수를 만듭니다.', 'random.uniform(-2, 2) creates a float between -2 and 2.'),
+      text('random.choice(무지개)는 무지개 리스트에서 하나를 고릅니다.', 'random.choice(무지개) picks one item from the rainbow list.'),
+      text('random.seed(7)은 수업에서 같은 결과를 보기 위한 장치입니다.', 'random.seed(7) keeps results reproducible in class.'),
+    ],
+  },
+
+  // ═══════════════════════════════════════════
+  // CR: Creative Gallery (튜토리얼형 창작)
+  // ═══════════════════════════════════════════
+  tutorialMission({
+    id: 'CR-1',
+    category: 'CR',
+    level: 1,
+    title: text('갤러리 씨앗: 나만의 캐릭터', 'Gallery Seed: Your Character'),
+    description: text(
+      '완성된 캐릭터 예제를 실행하고 색, 표정, 장식을 바꿔 리믹스합니다.',
+      'Run a finished character example, then remix its colors, face, and accessories.',
+    ),
+    starterCode: `from vpython import *
+
+scene_background(색상['하늘'])
+
+몸 = sphere(pos=vector(0, 0.6, 0), radius=0.9, color=색상['민트'])
+머리 = sphere(pos=vector(0, 1.8, 0), radius=0.55, color=색상['살구'])
+
+sphere(pos=vector(-0.18, 1.95, 0.5), radius=0.06, color=색상['검정'])
+sphere(pos=vector(0.18, 1.95, 0.5), radius=0.06, color=색상['검정'])
+ring(pos=vector(0, 1.72, 0.53), axis=vector(0, 0, 1), radius=0.18, thickness=0.025, color=색상['분홍'])
+
+# 바꿔보기: 몸 색, 눈 위치, 입 모양, 장식 색을 바꿔보세요.
+효과음("levelup")
+print("캐릭터 리믹스 시작!")
+`,
+    hints: [
+      text('색상[\'민트\']를 색상[\'보라\']처럼 바꾸면 분위기가 달라집니다.', 'Change 색상[\'민트\'] to 색상[\'보라\'] to shift the mood.'),
+      text('작은 sphere를 추가하면 단추, 보석, 점무늬가 됩니다.', 'Add small spheres for buttons, gems, or dots.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'CR-2',
+    category: 'CR',
+    level: 1,
+    title: text('블록으로 만드는 작은 방', 'A Tiny Room from Blocks'),
+    description: text(
+      'box의 pos와 size를 바꾸며 책상, 창문, 침대를 배치하는 공간 구성 튜토리얼입니다.',
+      'Use box positions and sizes to arrange a desk, window, and bed in a tiny room.',
+    ),
+    starterCode: `from vpython import *
+
+scene_background(색상['아이보리'])
+
+# 바닥과 벽
+box(pos=vector(0, -0.05, 0), size=vector(7, 0.1, 6), color=색상['베이지'])
+box(pos=vector(0, 1.5, -3), size=vector(7, 3, 0.1), color=색상['하늘'])
+
+# 가구
+box(pos=vector(-2, 0.35, 0.8), size=vector(2, 0.4, 1.2), color=색상['라벤더'])
+box(pos=vector(1.8, 0.5, 1), size=vector(1.3, 1, 0.7), color=색상['갈색'])
+box(pos=vector(0, 1.8, -2.9), size=vector(1.5, 1, 0.08), color=색상['노랑'])
+
+# 바꿔보기: 가구 위치를 바꾸거나 작은 소품을 추가하세요.
+print("작은 방 완성")
+`,
+    hints: [
+      text('size=vector(가로, 세로, 깊이)입니다.', 'size=vector(width, height, depth).'),
+      text('pos의 x를 바꾸면 왼쪽과 오른쪽으로 이동합니다.', 'Change pos.x to move left and right.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'CR-3',
+    category: 'CR',
+    level: 2,
+    title: text('복합 객체 리믹스', 'Compound Object Remix'),
+    description: text(
+      '여러 도형을 compound로 묶고 한 번에 움직이는 리믹스 구조를 배웁니다.',
+      'Group shapes with compound and move the whole remix as one object.',
+    ),
+    starterCode: `from vpython import *
+
+몸통 = box(pos=vector(0, 0, 0), size=vector(1.4, 0.6, 0.8), color=색상['하늘'])
+머리 = sphere(pos=vector(0.9, 0.25, 0), radius=0.35, color=색상['분홍'])
+꼬리 = cone(pos=vector(-0.8, 0, 0), axis=vector(-0.7, 0.2, 0), radius=0.25, color=색상['보라'])
+
+생명체 = compound([몸통, 머리, 꼬리], pos=vector(0, 1, 0))
+
+for i in range(40):
+    rate(30)
+    생명체.pos = vector(-2 + i * 0.1, 1, 0)
+
+# 바꿔보기: 머리 색, 꼬리 방향, 이동 경로를 바꿔보세요.
+print("복합 객체 리믹스 완료")
+`,
+    hints: [
+      text('compound([...])는 여러 도형을 하나처럼 움직이게 합니다.', 'compound([...]) lets multiple shapes move as one.'),
+      text('생명체.pos를 바꾸면 묶인 도형 전체가 움직입니다.', 'Changing 생명체.pos moves the whole group.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'CR-4',
+    category: 'CR',
+    level: 2,
+    title: text('빛으로 분위기 만들기', 'Set the Mood with Lights'),
+    description: text(
+      'local_light와 distant_light를 사용해 작품의 분위기를 바꾸는 조명 튜토리얼입니다.',
+      'Use local_light and distant_light to change the mood of a scene.',
+    ),
+    starterCode: `from vpython import *
+
+scene_background(색상['검정'])
+
+sphere(pos=vector(0, 0.7, 0), radius=0.7, color=색상['은색'])
+ring(pos=vector(0, 0.7, 0), axis=vector(0, 1, 0), radius=1.2, thickness=0.04, color=색상['금색'])
+
+local_light(pos=vector(-2, 3, 2), color=색상['분홍'], intensity=1.5)
+distant_light(direction=vector(1, -1, -0.5), color=색상['하늘'], intensity=0.8)
+
+# 바꿔보기: 조명 위치와 색을 바꾸면 같은 물체도 전혀 다르게 보입니다.
+print("조명 무대 완성")
+`,
+    hints: [
+      text('local_light는 가까운 전구처럼 특정 위치에서 빛납니다.', 'local_light behaves like a nearby bulb.'),
+      text('distant_light는 태양빛처럼 한 방향에서 옵니다.', 'distant_light acts like sunlight from one direction.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'CR-5',
+    category: 'CR',
+    level: 2,
+    title: text('오픈소스 리믹스 카드', 'Open Source Remix Card'),
+    description: text(
+      '원작 아이디어를 바탕으로 색, 모양, 설명을 바꾸는 갤러리 제출용 리믹스 연습입니다.',
+      'Practice remixing colors, shapes, and descriptions before sharing to the gallery.',
+    ),
+    starterCode: `from vpython import *
+import math
+
+scene_background(색상['남색'])
+
+# 원작 아이디어: 세 개의 행성이 춤추는 장면
+행성들 = []
+for i in range(3):
+    행성 = sphere(pos=vector(-2 + i * 2, 0, 0), radius=0.45 + i * 0.1, color=파스텔[i], emissive=True)
+    행성들.append(행성)
+
+for step in range(60):
+    rate(30)
+    for i in range(len(행성들)):
+        x = -2 + i * 2
+        y = 0.4 * math.sin(step * 0.1 + i)
+        행성들[i].pos = vector(x, y, 0)
+
+# 바꿔보기: 원작 설명을 남기고, 색/움직임/개수를 내 스타일로 바꾸세요.
+print("리믹스 포인트: 색, 리듬, 개수")
+`,
+    hints: [
+      text('리믹스할 때는 원작의 어떤 점을 바꿨는지 설명해 주세요.', 'When remixing, describe what you changed from the original.'),
+      text('행성 수를 3에서 5로 늘려도 좋은 변형입니다.', 'Changing the planet count from 3 to 5 is a good remix.'),
+    ],
+  }),
+
+  // ═══════════════════════════════════════════
+  // MA: Math Exploration (튜토리얼형 탐구)
+  // ═══════════════════════════════════════════
+  tutorialMission({
+    id: 'MA-1',
+    category: 'MA',
+    level: 1,
+    title: text('좌표 산책', 'Coordinate Walk'),
+    description: text(
+      'x, y, z 좌표가 3D 공간에서 어떤 방향을 뜻하는지 직접 관찰합니다.',
+      'Observe what x, y, and z mean in 3D space.',
+    ),
+    starterCode: `from vpython import *
+
+scene_background(색상['검정'])
+
+colors = [색상['빨강'], 색상['초록'], 색상['파랑']]
+positions = [vector(2, 0, 0), vector(0, 2, 0), vector(0, 0, 2)]
+
+sphere(pos=vector(0, 0, 0), radius=0.18, color=색상['흰색'], emissive=True)
+
+for i in range(3):
+    arrow(pos=vector(0, 0, 0), axis=positions[i], shaftwidth=0.05, color=colors[i])
+    sphere(pos=positions[i], radius=0.18, color=colors[i], emissive=True)
+
+# 바꿔보기: positions의 숫자를 바꿔 좌표 방향을 관찰하세요.
+print("빨강=x, 초록=y, 파랑=z")
+`,
+    hints: [
+      text('vector(2, 0, 0)은 x 방향으로 2만큼 이동합니다.', 'vector(2, 0, 0) moves 2 units in x.'),
+      text('색과 위치를 연결해 보며 축을 익히세요.', 'Connect colors and positions to learn axes.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'MA-2',
+    category: 'MA',
+    level: 1,
+    title: text('정다각형 생성기', 'Regular Polygon Generator'),
+    description: text(
+      '꼭짓점 수를 바꾸며 원 위의 점들이 삼각형, 육각형, 십이각형이 되는 모습을 봅니다.',
+      'Change the number of vertices and watch points form polygons on a circle.',
+    ),
+    starterCode: `from vpython import *
+import math
+
+꼭짓점수 = 6
+반지름 = 2.5
+
+for i in range(꼭짓점수):
+    각도 = 2 * math.pi * i / 꼭짓점수
+    x = 반지름 * math.cos(각도)
+    z = 반지름 * math.sin(각도)
+    sphere(pos=vector(x, 0, z), radius=0.2, color=무지개[i % 7], emissive=True)
+
+# 바꿔보기: 꼭짓점수를 3, 5, 8, 12로 바꿔보세요.
+print("정다각형 생성 완료")
+`,
+    hints: [
+      text('math.cos와 math.sin은 원 위의 좌표를 만들 때 자주 씁니다.', 'math.cos and math.sin are common for circular positions.'),
+      text('꼭짓점수가 커질수록 원에 가까워집니다.', 'More vertices make the shape closer to a circle.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'MA-3',
+    category: 'MA',
+    level: 2,
+    title: text('사인파 리본', 'Sine Wave Ribbon'),
+    description: text(
+      'sin 함수의 진폭과 주기를 바꾸며 파동의 모양을 눈으로 확인합니다.',
+      'Change amplitude and frequency to see how a sine wave changes.',
+    ),
+    starterCode: `from vpython import *
+import math
+
+진폭 = 1.0
+주기 = 1.2
+
+for i in range(40):
+    x = -4 + i * 0.2
+    y = 진폭 * math.sin(x * 주기)
+    sphere(pos=vector(x, y, 0), radius=0.09, color=파스텔[i % len(파스텔)], emissive=True)
+
+# 바꿔보기: 진폭과 주기를 바꾸고 리본 모양을 비교하세요.
+print("사인파 리본 완성")
+`,
+    hints: [
+      text('진폭은 위아래 높이를 바꿉니다.', 'Amplitude changes height.'),
+      text('주기는 물결이 얼마나 촘촘한지 바꿉니다.', 'Frequency changes how tight the wave is.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'MA-4',
+    category: 'MA',
+    level: 2,
+    title: text('함수 지형 만들기', 'Function Terrain'),
+    description: text(
+      'z = sin(x) * cos(y) 형태의 함수를 구슬 지형으로 표현합니다.',
+      'Visualize a function terrain with a grid of spheres.',
+    ),
+    starterCode: `from vpython import *
+import math
+
+for ix in range(13):
+    for iz in range(13):
+        x = (ix - 6) * 0.45
+        z = (iz - 6) * 0.45
+        y = math.sin(x * 2) * math.cos(z * 2)
+        색번호 = int((y + 1) * 3) % len(무지개)
+        sphere(pos=vector(x, y, z), radius=0.08, color=무지개[색번호])
+
+# 바꿔보기: x * 2, z * 2의 숫자를 바꿔 지형을 바꿔보세요.
+print("함수 지형 완성")
+`,
+    hints: [
+      text('이중 for문은 격자 모양을 만들 때 편합니다.', 'Nested loops are useful for grids.'),
+      text('y 공식이 지형의 높이를 결정합니다.', 'The y formula controls terrain height.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'MA-5',
+    category: 'MA',
+    level: 2,
+    title: text('피보나치 꽃밭', 'Fibonacci Garden'),
+    description: text(
+      '황금각을 조금씩 바꾸며 씨앗 배열이 어떻게 달라지는지 관찰합니다.',
+      'Change the golden angle and observe how seed patterns shift.',
+    ),
+    starterCode: `from vpython import *
+import math
+
+황금각 = 137.5
+
+for i in range(90):
+    r = 0.08 * math.sqrt(i)
+    angle = math.radians(i * 황금각)
+    x = r * math.cos(angle)
+    z = r * math.sin(angle)
+    sphere(pos=vector(x, 0, z), radius=0.055, color=파스텔[i % len(파스텔)], emissive=True)
+
+# 바꿔보기: 황금각을 120, 137.5, 150으로 바꿔보세요.
+print("피보나치 꽃밭 완성")
+`,
+    hints: [
+      text('sqrt(i)는 바깥으로 갈수록 간격이 너무 벌어지지 않게 해줍니다.', 'sqrt(i) keeps outer spacing from growing too quickly.'),
+      text('각도 하나만 바꿔도 패턴이 크게 달라집니다.', 'Changing one angle can dramatically change the pattern.'),
+    ],
+  }),
+
+  // ═══════════════════════════════════════════
+  // SC: Science Lab (튜토리얼형 실험)
+  // ═══════════════════════════════════════════
+  tutorialMission({
+    id: 'SC-1',
+    category: 'SC',
+    level: 1,
+    title: text('속도 실험실', 'Velocity Lab'),
+    description: text(
+      '속도 값을 바꾸며 물체가 같은 시간 동안 얼마나 이동하는지 관찰합니다.',
+      'Change velocity and observe how far an object moves in the same time.',
+    ),
+    starterCode: `from vpython import *
+
+공 = sphere(pos=vector(-3, 0, 0), radius=0.25, color=색상['하늘'], make_trail=True)
+속도 = vector(1.5, 0, 0)
+dt = 0.05
+
+for step in range(80):
+    rate(30)
+    공.pos = 공.pos + 속도 * dt
+
+# 바꿔보기: 속도의 x 값을 0.5, 2.0, -1.0으로 바꿔보세요.
+print("속도 실험 완료")
+`,
+    hints: [
+      text('속도가 클수록 같은 시간에 더 멀리 갑니다.', 'Higher velocity means farther movement in the same time.'),
+      text('속도가 음수이면 반대 방향으로 움직입니다.', 'Negative velocity moves the other way.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'SC-2',
+    category: 'SC',
+    level: 1,
+    title: text('다른 행성의 중력', 'Gravity on Other Worlds'),
+    description: text(
+      '달, 지구, 목성의 중력 값을 비교하며 낙하 속도가 어떻게 달라지는지 봅니다.',
+      'Compare gravity on the Moon, Earth, and Jupiter by watching falling objects.',
+    ),
+    starterCode: `from vpython import *
+
+이름들 = ["달", "지구", "목성"]
+중력들 = [1.6, 9.8, 24.8]
+공들 = []
+속도들 = []
+
+for i in range(3):
+    x = -2 + i * 2
+    공 = sphere(pos=vector(x, 3, 0), radius=0.18, color=무지개[i], make_trail=True)
+    공들.append(공)
+    속도들.append(vector(0, 0, 0))
+
+dt = 0.02
+for step in range(80):
+    rate(40)
+    for i in range(3):
+        속도들[i] = 속도들[i] + vector(0, -중력들[i], 0) * dt
+        새위치 = 공들[i].pos + 속도들[i] * dt
+        if 새위치.y < 0:
+            새위치 = vector(공들[i].pos.x, 0, 0)
+        공들[i].pos = 새위치
+
+# 바꿔보기: 중력들 숫자를 바꿔 새로운 행성을 만들어 보세요.
+print("중력 비교 완료")
+`,
+    hints: [
+      text('중력이 클수록 아래 방향 속도가 빨리 커집니다.', 'Stronger gravity increases downward velocity faster.'),
+      text('숫자를 바꿔 가상의 행성을 만들 수 있습니다.', 'You can invent a world by changing the numbers.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'SC-3',
+    category: 'SC',
+    level: 2,
+    title: text('튕기는 공 실험', 'Bouncing Ball Lab'),
+    description: text(
+      '반발 계수를 바꾸며 공이 얼마나 높이 다시 튀는지 관찰합니다.',
+      'Change the bounce coefficient and observe rebound height.',
+    ),
+    starterCode: `from vpython import *
+
+box(pos=vector(0, -0.05, 0), size=vector(6, 0.1, 3), color=색상['회색'])
+공 = sphere(pos=vector(0, 3, 0), radius=0.25, color=색상['분홍'], make_trail=True)
+
+속도 = vector(0, 0, 0)
+중력 = vector(0, -9.8, 0)
+반발 = 0.75
+dt = 0.02
+
+for step in range(160):
+    rate(50)
+    속도 = 속도 + 중력 * dt
+    공.pos = 공.pos + 속도 * dt
+    if 공.pos.y < 0.25:
+        공.pos = vector(공.pos.x, 0.25, 공.pos.z)
+        속도 = vector(속도.x, -속도.y * 반발, 속도.z)
+        효과음("jump")
+
+# 바꿔보기: 반발을 0.3, 0.75, 1.0으로 바꿔보세요.
+print("튕김 실험 완료")
+`,
+    hints: [
+      text('반발이 1에 가까우면 에너지를 덜 잃습니다.', 'A coefficient near 1 loses less energy.'),
+      text('바닥 아래로 내려가면 위치를 다시 올려 안정화합니다.', 'Clamp the ball back above the floor for stability.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'SC-4',
+    category: 'SC',
+    level: 2,
+    title: text('용수철 느낌 실험', 'Spring Feeling Lab'),
+    description: text(
+      '복원력과 감쇠를 바꾸며 흔들림이 어떻게 잦아드는지 봅니다.',
+      'Change restoring force and damping to see how oscillation fades.',
+    ),
+    starterCode: `from vpython import *
+
+고정점 = sphere(pos=vector(0, 2.5, 0), radius=0.15, color=색상['검정'])
+추 = sphere(pos=vector(0, 0.5, 0), radius=0.25, color=색상['노랑'], make_trail=True)
+arrow(pos=고정점.pos, axis=vector(0, -2, 0), shaftwidth=0.04, color=색상['회색'])
+
+속도 = vector(0, 0, 0)
+평형점 = 0.8
+k = 8
+감쇠 = 0.96
+dt = 0.02
+
+for step in range(180):
+    rate(50)
+    늘어남 = 추.pos.y - 평형점
+    힘 = vector(0, -k * 늘어남, 0)
+    속도 = (속도 + 힘 * dt) * 감쇠
+    추.pos = 추.pos + 속도 * dt
+
+# 바꿔보기: k와 감쇠를 바꾸며 진동을 비교하세요.
+print("용수철 실험 완료")
+`,
+    hints: [
+      text('k가 클수록 더 강하게 되돌아오려 합니다.', 'Larger k pulls back more strongly.'),
+      text('감쇠가 작을수록 흔들림이 빨리 줄어듭니다.', 'Smaller damping makes oscillation fade faster.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'SC-5',
+    category: 'SC',
+    level: 2,
+    title: text('궤도 실험실', 'Orbit Lab'),
+    description: text(
+      '초기 속도를 바꾸며 충돌, 공전, 탈출에 가까운 움직임을 관찰합니다.',
+      'Change initial velocity and observe paths like collision, orbit, or escape.',
+    ),
+    starterCode: `from vpython import *
+
+scene_background(색상['검정'])
+
+태양 = sphere(pos=vector(0, 0, 0), radius=0.45, color=색상['노랑'], emissive=True)
+행성 = sphere(pos=vector(2.5, 0, 0), radius=0.18, color=색상['하늘'], make_trail=True)
+
+속도 = vector(0, 1.3, 0)
+G = 4
+dt = 0.02
+
+for step in range(260):
+    rate(60)
+    방향 = 태양.pos - 행성.pos
+    거리 = max(방향.mag, 0.4)
+    가속도 = 방향.hat * (G / (거리 * 거리))
+    속도 = 속도 + 가속도 * dt
+    행성.pos = 행성.pos + 속도 * dt
+
+# 바꿔보기: 속도의 y 값을 0.7, 1.3, 1.8로 바꿔보세요.
+print("궤도 실험 완료")
+`,
+    hints: [
+      text('초기 속도가 너무 작으면 태양 쪽으로 떨어집니다.', 'Too little initial velocity falls toward the sun.'),
+      text('속도가 커지면 더 넓은 궤도나 탈출에 가까워집니다.', 'More velocity creates wider or escape-like paths.'),
+    ],
+  }),
+
+  // ═══════════════════════════════════════════
+  // AR: Media Art (음악/시각 창작 강화)
+  // ═══════════════════════════════════════════
+  tutorialMission({
+    id: 'AR-1',
+    category: 'AR',
+    level: 1,
+    title: text('파스텔 숨쉬는 구름', 'Breathing Pastel Cloud'),
+    description: text(
+      '파스텔 색과 opacity를 사용해 천천히 숨 쉬는 듯한 미디어아트를 만듭니다.',
+      'Use pastel colors and opacity to create a gently breathing media artwork.',
+    ),
+    starterCode: `from vpython import *
+import math
+
+scene_background(색상['남색'])
+
+구름 = []
+for i in range(24):
+    x = -3 + (i % 8) * 0.85
+    y = 1 + (i // 8) * 0.45
+    s = sphere(pos=vector(x, y, 0), radius=0.28, color=파스텔[i % len(파스텔)], opacity=0.65, emissive=True)
+    구름.append(s)
+
+for step in range(100):
+    rate(40)
+    숨 = 0.5 + 0.5 * math.sin(step * 0.08)
+    for i in range(len(구름)):
+        구름[i].opacity = 0.35 + 숨 * 0.55
+        구름[i].radius = 0.22 + 숨 * 0.08
+
+# 바꿔보기: 파스텔 대신 무지개를 써보거나 숨 속도를 바꿔보세요.
+print("숨쉬는 구름 완성")
+`,
+    hints: [
+      text('opacity는 투명도를 조절합니다.', 'opacity controls transparency.'),
+      text('sin을 쓰면 부드럽게 반복되는 움직임을 만들 수 있습니다.', 'sin creates smooth repeated motion.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'AR-2',
+    category: 'AR',
+    level: 1,
+    title: text('무지개 파동 바닥', 'Rainbow Wave Floor'),
+    description: text(
+      '격자 구슬을 위아래로 움직여 물결치는 무지개 바닥을 만듭니다.',
+      'Animate a grid of spheres into a rippling rainbow floor.',
+    ),
+    starterCode: `from vpython import *
+import math
+
+구슬들 = []
+크기 = 9
+
+for x칸 in range(크기):
+    for z칸 in range(크기):
+        x = (x칸 - 4) * 0.45
+        z = (z칸 - 4) * 0.45
+        s = sphere(pos=vector(x, 0, z), radius=0.12, color=무지개[(x칸 + z칸) % 7], emissive=True)
+        구슬들.append(s)
+
+for step in range(90):
+    rate(45)
+    for i in range(len(구슬들)):
+        p = 구슬들[i].pos
+        y = 0.35 * math.sin(step * 0.12 + p.x * 2 + p.z * 2)
+        구슬들[i].pos = vector(p.x, y, p.z)
+
+# 바꿔보기: 0.35를 바꾸면 파도의 높이가 바뀝니다.
+print("무지개 파동 완성")
+`,
+    hints: [
+      text('격자는 이중 반복문으로 만들 수 있습니다.', 'Use nested loops to create grids.'),
+      text('p.x와 p.z를 공식에 넣으면 위치마다 다른 높이가 됩니다.', 'Using p.x and p.z gives each point a different height.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'AR-3',
+    category: 'AR',
+    level: 2,
+    title: text('별자리 생성기', 'Constellation Generator'),
+    description: text(
+      '랜덤 위치의 별과 은은한 빛으로 나만의 밤하늘을 만듭니다.',
+      'Create a personal night sky with randomly placed stars and soft glow.',
+    ),
+    starterCode: `from vpython import *
+import random
+
+scene_background(색상['검정'])
+
+for i in range(120):
+    x = random.uniform(-5, 5)
+    y = random.uniform(-1, 4)
+    z = random.uniform(-3, 3)
+    크기 = random.uniform(0.025, 0.08)
+    별색 = random.choice([색상['흰색'], 색상['하늘'], 색상['노랑']])
+    sphere(pos=vector(x, y, z), radius=크기, color=별색, emissive=True)
+
+for i in range(5):
+    sphere(pos=vector(-2 + i, 2 + random.uniform(-0.4, 0.4), 0), radius=0.09, color=색상['분홍'], emissive=True)
+
+# 바꿔보기: 별 개수, 색 목록, 큰 별 위치를 바꿔 별자리를 만드세요.
+print("별자리 생성 완료")
+`,
+    hints: [
+      text('random.uniform(a, b)는 a와 b 사이의 랜덤 숫자를 만듭니다.', 'random.uniform(a, b) makes a random number between a and b.'),
+      text('큰 별 몇 개를 의도적으로 배치하면 별자리처럼 보입니다.', 'A few intentional large stars make a constellation.'),
+    ],
+  }),
+  tutorialMission({
     id: 'AR-4',
     category: 'AR',
     level: 2,
-    title: {
-      ko: '별이 빛나는 밤',
-      en: 'Starry Night',
-    },
-    description: {
-      ko: '랜덤 위치에 200개의 작은 구를 배치하여 별이 빛나는 밤하늘을 만드세요.',
-      en: 'Place 200 small spheres at random positions to create a starry night sky.',
-    },
-    gradeType: 'A',
+    title: text('음악 조명 무대', 'Music Light Stage'),
+    description: text(
+      '배경음악, 효과음, 조명 색 변화를 연결해 작은 공연 무대를 만듭니다.',
+      'Combine BGM, sound effects, and changing lights into a small performance stage.',
+    ),
     starterCode: `from vpython import *
-import random
-
-# 배경을 검정으로
-scene_background(색상['검정'])
-
-# 200개 별 만들기
-for i in range(200):
-    x = random.uniform(-10, 10)
-    y = random.uniform(0, 10)
-    z = random.uniform(-10, 10)
-    크기 = random.uniform(0.02, 0.1)
-    밝기 = random.uniform(0.5, 1.0)
-    # 여기에 sphere를 만드세요
-    # emissive=True로 빛나게 하세요
-`,
-    solutionCode: `from vpython import *
-import random
 
 scene_background(색상['검정'])
+배경음악("energetic")
 
-for i in range(200):
-    x = random.uniform(-10, 10)
-    y = random.uniform(0, 10)
-    z = random.uniform(-10, 10)
-    크기 = random.uniform(0.02, 0.1)
-    밝기 = random.uniform(0.5, 1.0)
-    sphere(pos=vector(x, y, z), radius=크기, color=vector(밝기, 밝기, 밝기), emissive=True)
+무대 = box(pos=vector(0, -0.1, 0), size=vector(5, 0.2, 3), color=색상['보라'])
+공 = sphere(pos=vector(0, 0.8, 0), radius=0.45, color=색상['하늘'], emissive=True)
+빛 = local_light(pos=vector(0, 3, 2), color=색상['분홍'], intensity=1.4)
+
+for i in range(7):
+    rate(2)
+    공.color = 무지개[i]
+    빛.color = 무지개[(i + 2) % 7]
+    효과음("select")
+
+배경음악정지()
+효과음("success")
+
+# 바꿔보기: energetic 대신 peaceful을 넣거나 색 순서를 바꿔보세요.
+print("음악 조명 무대 완료")
 `,
-    assertions: [
-      { type: 'sphere', property: 'pos.y', operator: '>=', value: 0, index: 0 },
-      { type: 'sphere', property: 'pos.y', operator: '>=', value: 0, index: 199 },
-    ],
     hints: [
-      { ko: 'sphere(pos=vector(x,y,z), radius=크기, emissive=True)', en: 'sphere(pos=vector(x,y,z), radius=size, emissive=True)' },
-      { ko: 'color=vector(밝기,밝기,밝기)로 밝기를 조절하세요.', en: 'Use color=vector(b,b,b) to vary brightness.' },
+      text('배경음악()은 분위기를 깔고, 효과음()은 장면 전환을 강조합니다.', '배경음악() sets mood; 효과음() highlights transitions.'),
+      text('조명 색과 물체 색을 같이 바꾸면 무대처럼 보입니다.', 'Changing light and object colors together feels stage-like.'),
     ],
-  },
-
-  {
+  }),
+  tutorialMission({
     id: 'AR-5',
     category: 'AR',
     level: 3,
-    title: {
-      ko: 'DNA 이중나선',
-      en: 'DNA Double Helix',
-    },
-    description: {
-      ko: '두 개의 나선을 만들고 가로대로 연결하여 DNA 이중나선 구조를 시각화하세요.',
-      en: 'Create two helices connected by rungs to visualize a DNA double helix.',
-    },
-    gradeType: 'A',
+    title: text('나만의 VJ 루프', 'Your Own VJ Loop'),
+    description: text(
+      '반복되는 색, 크기, 위치 변화를 조합해 갤러리에 올릴 수 있는 짧은 영상 루프를 만듭니다.',
+      'Combine looping changes in color, size, and position into a gallery-ready visual loop.',
+    ),
     starterCode: `from vpython import *
 import math
 
-# DNA 이중나선
-N = 40  # 점 개수
+scene_background(색상['검정'])
 
-for i in range(N):
-    t = i * 0.3
-    y = i * 0.3 - 6
+점들 = []
+for i in range(36):
+    angle = 2 * math.pi * i / 36
+    x = 2 * math.cos(angle)
+    z = 2 * math.sin(angle)
+    점 = sphere(pos=vector(x, 0, z), radius=0.12, color=무지개[i % 7], emissive=True)
+    점들.append(점)
 
-    # 나선 1
-    x1 = 1.5 * math.cos(t)
-    z1 = 1.5 * math.sin(t)
-    sphere(pos=vector(x1, y, z1), radius=0.15, color=color.cyan)
+for step in range(120):
+    rate(60)
+    for i in range(len(점들)):
+        angle = 2 * math.pi * i / len(점들)
+        pulse = 0.5 + 0.5 * math.sin(step * 0.08 + i * 0.3)
+        r = 1.5 + pulse * 1.0
+        점들[i].pos = vector(r * math.cos(angle), pulse, r * math.sin(angle))
+        점들[i].radius = 0.08 + pulse * 0.08
+        점들[i].color = 무지개[(i + step // 12) % 7]
 
-    # 나선 2 (180도 반대편)
-    x2 = 1.5 * math.cos(t + math.pi)
-    z2 = 1.5 * math.sin(t + math.pi)
-    sphere(pos=vector(x2, y, z2), radius=0.15, color=color.orange)
-
-    # 5개마다 가로대(cylinder)로 연결
-    if i % 5 == 0:
-        # 두 나선을 잇는 가로대(cylinder)를 만드세요
-        pass
+# 바꿔보기: 점 개수, pulse 속도, 색 순서를 바꿔 나만의 루프로 만드세요.
+print("VJ 루프 완성")
 `,
-    solutionCode: `from vpython import *
-import math
-
-N = 40
-for i in range(N):
-    t = i * 0.3
-    y = i * 0.3 - 6
-    x1 = 1.5 * math.cos(t)
-    z1 = 1.5 * math.sin(t)
-    sphere(pos=vector(x1, y, z1), radius=0.15, color=color.cyan)
-    x2 = 1.5 * math.cos(t + math.pi)
-    z2 = 1.5 * math.sin(t + math.pi)
-    sphere(pos=vector(x2, y, z2), radius=0.15, color=color.orange)
-    if i % 5 == 0:
-        cylinder(pos=vector(x1, y, z1), axis=vector(x2-x1, 0, z2-z1), radius=0.05, color=color.white)
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.y', operator: '<', value: -5, index: 0 },
-      { type: 'cylinder', property: 'pos.y', operator: '<', value: 0, index: 0 },
-    ],
     hints: [
-      { ko: 'cylinder의 pos는 시작점, axis는 끝점까지의 방향벡터입니다.', en: 'cylinder pos is start point, axis is direction vector to end point.' },
-      { ko: '나선1 위치(x1,y,z1)에서 나선2 위치(x2,y,z2)까지 연결하면 돼요.', en: 'Connect from helix1 (x1,y,z1) to helix2 (x2,y,z2).' },
-      { ko: 'pos는 나선1 좌표(x1,y,z1), axis는 나선2까지의 차이(x2-x1, 0, z2-z1)입니다.', en: 'pos is helix1 coords (x1,y,z1), axis is the difference to helix2 (x2-x1, 0, z2-z1).' },
+      text('짧고 반복되는 움직임은 갤러리에서 보기 좋은 작품이 됩니다.', 'Short repeating motion works well as gallery art.'),
+      text('점 개수를 늘리면 더 촘촘한 패턴이 됩니다.', 'More points create a denser pattern.'),
     ],
-  },
+  }),
 
   // ═══════════════════════════════════════════
-  // SN: Sound (사운드)
+  // SN: Music Coding (음악 예제 강화)
   // ═══════════════════════════════════════════
-  {
+  tutorialMission({
     id: 'SN-1',
     category: 'SN',
     level: 1,
-    title: {
-      ko: '첫 번째 소리',
-      en: 'Your First Sound',
-    },
-    description: {
-      ko: 'sound() 또는 음표()를 사용하여 도-미-솔 3개 음을 차례로 재생하세요.',
-      en: 'Use sound() to play 3 sounds (Do-Mi-Sol) in sequence.',
-    },
-    gradeType: 'notes',
-    expectedNotes: ['C4', 'E4', 'G4'],
+    title: text('세 음으로 알림음 만들기', 'Three-Note Notification'),
+    description: text(
+      '음표()로 짧은 알림음을 만들고, 소리에 맞춰 구슬이 켜지는 모습을 봅니다.',
+      'Create a short notification with 음표() and watch spheres light up with sound.',
+    ),
     starterCode: `from vpython import *
 
-# sound(주파수, 길이) — 소리 재생
-# 음표("노트이름", 길이) — 노트 이름으로 재생
-# 한글도 됩니다: 음표("도4", 0.5)
+노트들 = ["도4", "미4", "솔4"]
+구슬들 = []
 
-# 도(C4)를 재생하세요
-음표("도4", 0.5)
+for i in range(3):
+    구슬 = sphere(pos=vector(-1 + i, 0, 0), radius=0.25, color=색상['회색'])
+    구슬들.append(구슬)
 
-# 미(E4)를 재생하세요
-# 여기에 코드를 작성하세요
+for i in range(3):
+    구슬들[i].color = 무지개[i]
+    구슬들[i].emissive = True
+    음표(노트들[i], 0.35)
+    구슬들[i].emissive = False
 
-# 솔(G4)를 재생하세요
-# 여기에 코드를 작성하세요
-
-print("도-미-솔 완성!")
+# 바꿔보기: 노트들을 ["솔4", "미4", "도4"]처럼 바꿔보세요.
+print("알림음 완성")
 `,
-    solutionCode: `from vpython import *
-
-음표("도4", 0.5)
-음표("미4", 0.5)
-음표("솔4", 0.5)
-
-print("도-미-솔 완성!")
-`,
-    assertions: [],
     hints: [
-      { ko: '음표("미4", 0.5) 로 미를 재생하세요.', en: 'Use play_note("E4", 0.5) for E4.' },
-      { ko: '영어 이름도 가능해요: play_note("G4", 0.5)', en: 'English names work too: play_note("G4", 0.5).' },
+      text('음표("도4", 0.35)는 도 음을 0.35초 재생합니다.', '음표("도4", 0.35) plays Do for 0.35 seconds.'),
+      text('리스트 순서를 바꾸면 멜로디가 달라집니다.', 'Changing list order changes the melody.'),
     ],
-  },
-
-  {
+  }),
+  tutorialMission({
     id: 'SN-2',
     category: 'SN',
     level: 1,
-    title: {
-      ko: '게임 효과음 탐험',
-      en: 'Game SFX Explorer',
-    },
-    description: {
-      ko: '효과음()으로 다양한 게임 효과음을 재생해 보세요. 점프, 코인, 파워업, 폭발 등!',
-      en: 'Explore game sound effects with sfx(): jump, coin, powerup, explosion!',
-    },
-    gradeType: 'code',
-    codeChecks: [
-      { pattern: '효과음\\s*\\(|sfx\\s*\\(', minCount: 3, message: '효과음()을 3종류 이상 사용하세요' },
-    ],
+    title: text('리듬 패턴 메이커', 'Rhythm Pattern Maker'),
+    description: text(
+      '리스트에 담긴 길이를 바꾸며 같은 음도 전혀 다른 리듬이 되는 것을 듣습니다.',
+      'Change durations in a list and hear how one note becomes different rhythms.',
+    ),
     starterCode: `from vpython import *
 
-# 효과음(이름) 또는 sfx(이름) — 게임 효과음 재생
-# 사용 가능: jump, coin, powerup, death,
-#            fireball, pipe, 1up, select,
-#            warning, explosion, laser,
-#            success, error, levelup
+리듬 = [0.2, 0.2, 0.4, 0.2, 0.6]
 
-# 점프 효과음
-효과음("jump")
+for i in range(len(리듬)):
+    sphere(pos=vector(-2 + i, 0, 0), radius=0.16 + 리듬[i] * 0.15, color=파스텔[i % len(파스텔)], emissive=True)
+    악기("피아노", "도4", 리듬[i])
+    sleep(0.05)
 
-# 코인 효과음 재생 후 잠시 대기
-sleep(0.3)
-# 여기에 코인 효과음 코드를 작성하세요
-
-# 파워업 효과음
-sleep(0.5)
-# 여기에 파워업 효과음 코드를 작성하세요
-
-# 나만의 효과음 조합을 만들어 보세요!
-sleep(0.5)
-# 여기에 자유롭게 효과음을 추가하세요
-
-print("효과음 탐험 완료!")
+# 바꿔보기: 리듬 숫자를 바꾸거나 악기를 "칩튠"으로 바꿔보세요.
+print("리듬 패턴 완성")
 `,
-    solutionCode: `from vpython import *
-
-효과음("jump")
-sleep(0.3)
-효과음("coin")
-sleep(0.5)
-효과음("powerup")
-sleep(0.5)
-효과음("explosion")
-
-print("효과음 탐험 완료!")
-`,
-    assertions: [],
     hints: [
-      { ko: '효과음("coin")으로 코인 효과음을 재생하세요.', en: 'Use sfx("coin") for coin sound.' },
-      { ko: 'sleep(0.5)로 효과음 사이에 간격을 주세요.', en: 'Use sleep(0.5) to add delay between sounds.' },
+      text('짧은 숫자는 짧은 소리, 긴 숫자는 긴 소리입니다.', 'Small numbers make short sounds; large numbers make long sounds.'),
+      text('악기("칩튠", "도4", 0.2)처럼 악기 이름을 바꿔보세요.', 'Try 악기("칩튠", "도4", 0.2).'),
     ],
-  },
-
-  {
+  }),
+  tutorialMission({
     id: 'SN-3',
     category: 'SN',
     level: 2,
-    title: {
-      ko: '학교 종이 땡땡땡',
-      en: 'School Bell Melody',
-    },
-    description: {
-      ko: '음표()를 사용하여 "학교 종이 땡땡땡" 멜로디를 연주하세요. 한글 노트 이름을 사용합니다!',
-      en: 'Play the melody of a school bell song using play_note().',
-    },
-    gradeType: 'notes',
-    expectedNotes: [
-      'G4', 'G4', 'A4', 'A4', 'G4', 'G4', 'E4',
-      'G4', 'G4', 'E4', 'E4', 'D4', 'D4', 'C4',
-    ],
+    title: text('화음 분위기 바꾸기', 'Change a Chord’s Mood'),
+    description: text(
+      '화음()과 음계/높은음계를 사용해 밝고 어두운 느낌을 비교합니다.',
+      'Use 화음() with scales to compare bright and darker chord moods.',
+    ),
     starterCode: `from vpython import *
 
-# 음표("노트이름", 길이) — 한글 노트 이름 지원!
-# 도레미파솔라시 + 옥타브 번호
-# 예: 음표("도4", 0.4), 음표("솔#5", 0.3)
+scene_background(색상['남색'])
 
-# "학교 종이 땡땡땡" 멜로디
-# 솔 솔 라 라 | 솔 솔 미 |
-음표("솔4", 0.4)
-음표("솔4", 0.4)
-음표("라4", 0.4)
-음표("라4", 0.4)
-음표("솔4", 0.4)
-음표("솔4", 0.4)
-음표("미4", 0.8)
+for i in range(3):
+    sphere(pos=vector(-1 + i, 0, 0), radius=0.25, color=무지개[i], emissive=True)
 
-# 솔 솔 미 미 | 레 레 도 |
-# 여기에 이어서 작성하세요
+# 밝은 느낌: 도-미-솔
+화음([음계['도'], 음계['미'], 음계['솔']], 1.0)
+sleep(0.3)
 
-print("멜로디 연주 완료!")
+# 높은 느낌: 높은 도-미-솔
+화음([높은음계['도'], 높은음계['미'], 높은음계['솔']], 1.0)
+
+# 바꿔보기: 미를 레로 바꾸면 느낌이 어떻게 달라질까요?
+print("화음 비교 완료")
 `,
-    solutionCode: `from vpython import *
-
-# 솔 솔 라 라 | 솔 솔 미 |
-음표("솔4", 0.4)
-음표("솔4", 0.4)
-음표("라4", 0.4)
-음표("라4", 0.4)
-음표("솔4", 0.4)
-음표("솔4", 0.4)
-음표("미4", 0.8)
-
-# 솔 솔 미 미 | 레 레 도 |
-음표("솔4", 0.4)
-음표("솔4", 0.4)
-음표("미4", 0.4)
-음표("미4", 0.4)
-음표("레4", 0.4)
-음표("레4", 0.4)
-음표("도4", 0.8)
-
-print("멜로디 연주 완료!")
-`,
-    assertions: [],
     hints: [
-      { ko: '음표("솔4", 0.4)로 솔을 연주하세요.', en: 'Use play_note("G4", 0.4) for G note.' },
-      { ko: '영어도 가능: play_note("G4", 0.4)', en: 'English: play_note("G4", 0.4).' },
+      text('화음()은 여러 주파수를 동시에 재생합니다.', '화음() plays multiple frequencies at once.'),
+      text('음계[\'도\']처럼 한글 이름으로 음을 고를 수 있습니다.', 'Pick notes with Korean names like 음계[\'도\'].'),
     ],
-  },
-
-  {
+  }),
+  tutorialMission({
     id: 'SN-4',
     category: 'SN',
     level: 2,
-    title: {
-      ko: '3D 피아노',
-      en: '3D Piano',
-    },
-    description: {
-      ko: '3D 건반을 만들고, 각 건반 위치에서 소리를 재생하는 시각화를 만드세요.',
-      en: 'Create 3D piano keys and play sounds at each key position.',
-    },
-    gradeType: 'code',
+    title: text('게임 효과음 스토리보드', 'Game SFX Storyboard'),
+    description: text(
+      '점프, 코인, 성공 효과음을 장면 변화와 연결해 작은 게임 순간을 만듭니다.',
+      'Connect jump, coin, and success sound effects to tiny game moments.',
+    ),
     starterCode: `from vpython import *
+import math
 
-# 흰 건반 7개 (도레미파솔라시)
-notes_freq = [note.C4, note.D4, note.E4, note.F4, note.G4, note.A4, note.B4]
-colors_list = [color.red, color.orange, color.yellow, color.green,
-               color.cyan, color.blue, color.purple]
+플레이어 = sphere(pos=vector(-2, 0, 0), radius=0.25, color=색상['하늘'], emissive=True)
+코인 = ring(pos=vector(0, 0.7, 0), axis=vector(0, 1, 0), radius=0.35, thickness=0.06, color=색상['금색'])
+목표 = box(pos=vector(2, 0.2, 0), size=vector(0.4, 0.4, 0.4), color=색상['초록'])
 
-for i in range(7):
-    # 건반 상자 만들기
-    key = box(
-        pos=vector(i * 1.2 - 3.6, 0, 0),
-        size=vector(1, 0.3, 2),
-        color=colors_list[i]
-    )
-    # 각 건반의 소리를 재생하세요
-    sound(notes_freq[i], 0.4)
-    sleep(0.2)
+효과음("jump")
+for step in range(20):
+    rate(30)
+    x = -2 + step * 0.1
+    y = 0.8 * math.sin(step / 20 * math.pi)
+    플레이어.pos = vector(x, y, 0)
 
-# 마지막에 도-미-솔 화음을 연주하세요!
-sleep(0.5)
-# 화음() 함수에 주파수 리스트를 넣으면 됩니다
+효과음("coin")
+코인.visible = False
 
-print("3D 피아노 완성!")
+for step in range(20):
+    rate(30)
+    플레이어.pos = vector(step * 0.1, 0, 0)
+
+효과음("success")
+목표.emissive = True
+
+# 바꿔보기: 효과음 이름과 플레이어 색을 바꿔 장면을 다시 연출하세요.
+print("효과음 스토리보드 완료")
 `,
-    solutionCode: `from vpython import *
-
-notes_freq = [note.C4, note.D4, note.E4, note.F4, note.G4, note.A4, note.B4]
-colors_list = [color.red, color.orange, color.yellow, color.green,
-               color.cyan, color.blue, color.purple]
-
-for i in range(7):
-    key = box(
-        pos=vector(i * 1.2 - 3.6, 0, 0),
-        size=vector(1, 0.3, 2),
-        color=colors_list[i]
-    )
-    sound(notes_freq[i], 0.4)
-    sleep(0.2)
-
-sleep(0.5)
-화음([note.C4, note.E4, note.G4], 1.0)
-
-print("3D 피아노 완성!")
-`,
-    assertions: [],
-    codeChecks: [
-      { pattern: '화음\\s*\\(|chord\\s*\\(', minCount: 1, message: '화음()을 사용하여 도-미-솔 화음을 연주하세요' },
-      { pattern: 'sound\\s*\\(|음표\\s*\\(', minCount: 1, message: '건반 소리를 재생하세요' },
-    ],
     hints: [
-      { ko: '화음()은 여러 음을 동시에 내는 함수예요. 리스트로 음을 묶어 넣습니다.', en: 'chord() plays multiple notes at once. Pass a list of notes.' },
-      { ko: '도(C4), 미(E4), 솔(G4)의 주파수 상수는 note.C4, note.E4, note.G4 입니다.', en: 'C4, E4, G4 frequency constants are note.C4, note.E4, note.G4.' },
-      { ko: '화음([주파수1, 주파수2, 주파수3], 길이) 형식이에요. 도=C4, 미=E4, 솔=G4!', en: 'Format: chord([freq1, freq2, freq3], duration). Do=C4, Mi=E4, Sol=G4!' },
+      text('효과음("coin")은 코인을 먹는 순간에 어울립니다.', '효과음("coin") fits the moment of collecting a coin.'),
+      text('소리와 화면 변화가 같은 위치에 있으면 장면이 더 또렷합니다.', 'Sound and visual changes together make the scene clearer.'),
     ],
-  },
-
-  {
+  }),
+  tutorialMission({
     id: 'SN-5',
     category: 'SN',
     level: 3,
-    title: {
-      ko: '움직이는 공 + BGM',
-      en: 'Bouncing Ball + BGM',
-    },
-    description: {
-      ko: '공이 바닥에 튈 때마다 효과음이 나고, BGM이 흐르는 시뮬레이션을 만드세요.',
-      en: 'Create a bouncing ball simulation with sound effects on each bounce and BGM.',
-    },
-    gradeType: 'A+B',
+    title: text('BGM 위에 멜로디 얹기', 'Melody over BGM'),
+    description: text(
+      '배경음악을 깔고 짧은 멜로디와 빛나는 시각화를 얹는 음악 코딩 예제입니다.',
+      'Layer a short melody and glowing visuals over background music.',
+    ),
     starterCode: `from vpython import *
 
-# 배경음악(이름) 또는 bgm(이름) — BGM 시작
-# 사용 가능: adventure, explore, battle, peaceful, victory
-배경음악("adventure")
+scene_background(색상['검정'])
+배경음악("peaceful")
 
-# 바닥
-box(pos=vector(0, -5, 0), size=vector(10, 0.2, 4), color=color.green)
+멜로디 = ["도4", "미4", "솔4", "도5"]
+구슬들 = []
 
-ball = sphere(pos=vector(0, 5, 0), color=color.red, radius=0.4)
-v = vector(0, 0, 0)
-g = vector(0, -9.8, 0)
-dt = 0.01
+for i in range(len(멜로디)):
+    구슬 = sphere(pos=vector(-1.5 + i, 0, 0), radius=0.22, color=파스텔[i], emissive=False)
+    구슬들.append(구슬)
 
-while True:
-    rate(100)
-    v = v + g * dt
-    ball.pos = ball.pos + v * dt
+for i in range(len(멜로디)):
+    구슬들[i].emissive = True
+    구슬들[i].radius = 0.36
+    악기("벨", 멜로디[i], 0.45)
+    구슬들[i].radius = 0.22
+    구슬들[i].emissive = False
 
-    # 바닥에 닿으면 튕기기 + 효과음
-    if ball.pos.y < -4.5:
-        ball.pos = vector(ball.pos.x, -4.5, ball.pos.z)
-        v = vector(v.x, -v.y * 0.8, v.z)  # 반발 계수 0.8
-        # 여기에 바운스 효과음을 추가하세요
-        # 효과음("jump")
+화음([음계['도'], 음계['미'], 음계['솔']], 1.2)
+배경음악정지()
 
-    # 속도가 거의 0이면 종료
-    if abs(v.y) < 0.1 and ball.pos.y < -4.3:
-        break
-
-# 코드가 끝나면 BGM은 자동으로 멈춥니다
-효과음("success")
-print("시뮬레이션 완료!")
+# 바꿔보기: 멜로디 리스트와 악기를 바꿔 나만의 엔딩을 만드세요.
+print("BGM 멜로디 완성")
 `,
-    solutionCode: `from vpython import *
-
-배경음악("adventure")
-
-box(pos=vector(0, -5, 0), size=vector(10, 0.2, 4), color=color.green)
-
-ball = sphere(pos=vector(0, 5, 0), color=color.red, radius=0.4)
-v = vector(0, 0, 0)
-g = vector(0, -9.8, 0)
-dt = 0.01
-
-while True:
-    rate(100)
-    v = v + g * dt
-    ball.pos = ball.pos + v * dt
-
-    if ball.pos.y < -4.5:
-        ball.pos = vector(ball.pos.x, -4.5, ball.pos.z)
-        v = vector(v.x, -v.y * 0.8, v.z)
-        효과음("jump")
-
-    if abs(v.y) < 0.1 and ball.pos.y < -4.3:
-        break
-
-효과음("success")
-print("시뮬레이션 완료!")
-`,
-    codeChecks: [
-      { pattern: '효과음\\s*\\(|sfx\\s*\\(', minCount: 1, message: '바운스 시 효과음()을 추가하세요' },
-    ],
-    assertions: [
-      { type: 'sphere', property: 'pos.y', operator: '<', value: 0 },
-      { type: 'box', property: 'pos.y', operator: '==', value: -5, index: 0 },
-    ],
-    targetObjectId: 'obj_2',
-    referenceTrajectory: (() => {
-      const t = [];
-      let y = 5, vy = 0;
-      for (let i = 0; i < 500; i++) {
-        vy += -9.8 * 0.01;
-        y += vy * 0.01;
-        if (y < -4.5) {
-          y = -4.5;
-          vy = -vy * 0.8;
-        }
-        t.push([0, y, 0]);
-        if (Math.abs(vy) < 0.1 && y < -4.3) break;
-      }
-      return t;
-    })(),
     hints: [
-      { ko: '효과음("jump")을 바운스 조건 안에 넣으세요.', en: 'Put sfx("jump") inside the bounce condition.' },
-      { ko: '배경음악("adventure")로 BGM을 시작하세요.', en: 'Start BGM with bgm("adventure").' },
-      { ko: '코드가 끝나면 BGM은 자동으로 멈춥니다.', en: 'BGM stops automatically when code finishes.' },
+      text('배경음악은 분위기, 멜로디는 이야기의 흐름을 만듭니다.', 'BGM sets mood; melody gives the scene a storyline.'),
+      text('마지막에 배경음악정지()를 호출하면 깔끔하게 끝납니다.', 'Call 배경음악정지() at the end for a clean finish.'),
     ],
-  },
+  }),
+  tutorialMission({
+    id: 'AR-6',
+    category: 'AR',
+    level: 1,
+    title: text('빛나는 타이포 패턴', 'Glowing Typographic Pattern'),
+    description: text(
+      '글자처럼 보이는 점 배열을 만들고 색과 간격을 바꾸며 픽셀아트 감각을 익힙니다.',
+      'Build a letter-like dot pattern and remix color and spacing like pixel art.',
+    ),
+    starterCode: `from vpython import *
 
-  // ═══════════════════════════════════════════
-  // AR: Art — 미디어아트 예제
-  // ═══════════════════════════════════════════
-  {
-    id: 'AR-3',
+scene_background(색상['검정'])
+
+패턴 = [
+    "101",
+    "101",
+    "111",
+    "101",
+    "101",
+]
+
+for y in range(len(패턴)):
+    for x in range(len(패턴[y])):
+        if 패턴[y][x] == "1":
+            sphere(
+                pos=vector(x * 0.45 - 0.45, 2 - y * 0.45, 0),
+                radius=0.14,
+                color=파스텔[(x + y) % len(파스텔)],
+                emissive=True
+            )
+
+# 바꿔보기: 패턴의 0과 1을 바꿔 나만의 글자나 아이콘을 만드세요.
+print("빛나는 타이포 패턴 완성")
+`,
+    hints: [
+      text('문자열의 "1"을 점으로 해석하면 픽셀아트처럼 만들 수 있습니다.', 'Treating "1" as a dot creates pixel-art-like patterns.'),
+      text('패턴 배열을 바꾸는 것이 곧 디자인 편집입니다.', 'Editing the pattern list is the design tool here.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'AR-7',
+    category: 'AR',
+    level: 2,
+    title: text('오디오 리액티브처럼 보이는 막대', 'Audio-Reactive Style Bars'),
+    description: text(
+      '실제 분석은 아니지만 리듬 데이터처럼 보이는 숫자로 움직이는 막대를 만듭니다.',
+      'Create moving bars from rhythm-like numbers, a friendly first step toward audio-reactive visuals.',
+    ),
+    starterCode: `from vpython import *
+
+scene_background(색상['검정'])
+배경음악("energetic")
+
+막대들 = []
+높이들 = [0.4, 1.2, 0.8, 1.8, 0.6, 1.4, 1.0]
+
+for i in range(len(높이들)):
+    b = box(pos=vector(-3 + i, 높이들[i] / 2, 0), size=vector(0.5, 높이들[i], 0.5), color=무지개[i], emissive=True)
+    막대들.append(b)
+
+for step in range(80):
+    rate(20)
+    for i in range(len(막대들)):
+        h = 0.4 + ((step + i * 3) % 12) * 0.12
+        막대들[i].size = vector(0.5, h, 0.5)
+        막대들[i].pos = vector(-3 + i, h / 2, 0)
+
+배경음악정지()
+
+# 바꿔보기: 높이들 숫자와 색 순서를 바꿔 나만의 비주얼라이저를 만드세요.
+print("리듬 막대 완성")
+`,
+    hints: [
+      text('막대 높이를 바꾸려면 size.y와 pos.y를 함께 바꾸면 안정적입니다.', 'Change both size.y and pos.y to resize bars cleanly.'),
+      text('숫자 리스트는 음악의 세기처럼 상상해 볼 수 있습니다.', 'You can imagine the number list as sound intensity.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'AR-8',
+    category: 'AR',
+    level: 2,
+    title: text('입자 붓질', 'Particle Brush Stroke'),
+    description: text(
+      '작은 구슬을 연속으로 배치해 붓질 같은 흔적을 만들고 색의 흐름을 설계합니다.',
+      'Place small spheres in sequence to create a brush stroke with flowing color.',
+    ),
+    starterCode: `from vpython import *
+import math
+
+scene_background(색상['아이보리'])
+
+for i in range(90):
+    t = i * 0.12
+    x = -4 + i * 0.09
+    y = math.sin(t) * 0.8
+    z = math.cos(t * 0.7) * 0.4
+    sphere(pos=vector(x, y, z), radius=0.06 + 0.03 * math.sin(t), color=파스텔[i % len(파스텔)], opacity=0.8)
+
+# 바꿔보기: sin, cos 앞의 숫자를 바꿔 붓질의 흔들림을 바꿔보세요.
+print("입자 붓질 완성")
+`,
+    hints: [
+      text('연속된 작은 점은 선처럼 보입니다.', 'Many small dots in sequence look like a line.'),
+      text('수식의 숫자 하나만 바꿔도 붓질의 성격이 달라집니다.', 'Changing one number in a formula changes the stroke.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'AR-9',
     category: 'AR',
     level: 3,
-    title: {
-      ko: '음악 파동 시각화',
-      en: 'Music Wave Visualization',
-    },
-    description: {
-      ko: '음계를 연주하면서 3D 표면이 파동으로 변하는 미디어아트를 만드세요.',
-      en: 'Create media art where a 3D surface ripples as musical notes play.',
-    },
-    gradeType: 'run',
+    title: text('장면 전환 루프', 'Scene Transition Loop'),
+    description: text(
+      '색상 팔레트와 조명 위치를 단계적으로 바꾸며 짧은 공연 장면을 만듭니다.',
+      'Step through palettes and light positions to create a short performance loop.',
+    ),
     starterCode: `from vpython import *
-import math
 
-# === 음악 파동 시각화 ===
-# 음계를 연주하면서 3D 구슬들이 파동으로 춤춥니다!
-# 이미 완성된 코드입니다. 숫자를 바꿔서 파동을 변형해보세요!
-
-배경음악("peaceful")
 scene_background(색상['검정'])
 
-# 파동 표면 생성 (구슬 격자)
-크기 = 12
-구슬들 = []
-for i in range(크기):
-    행 = []
-    for j in range(크기):
-        x = (i - 크기/2) * 0.8
-        z = (j - 크기/2) * 0.8
-        s = sphere(
-            pos=vector(x, 0, z),
-            radius=0.15,
-            color=무지개[i % 7],
-            opacity=0.8
-        )
-        행.append(s)
-    구슬들.append(행)
+중심 = sphere(pos=vector(0, 0.8, 0), radius=0.6, color=색상['흰색'], emissive=True)
+빛 = local_light(pos=vector(0, 3, 2), color=색상['흰색'], intensity=1.2)
 
-# 음계와 시간에 따라 파동 애니메이션
-t = 0
-notes = [음계['도'], 음계['레'], 음계['미'], 음계['파'],
-         음계['솔'], 음계['라'], 음계['시']]
+팔레트 = [색상['분홍'], 색상['하늘'], 색상['노랑'], 색상['민트']]
 
-for 반복 in range(7):
-    # 음 재생
-    sound(notes[반복], 0.4, 'triangle')
+for scene in range(len(팔레트)):
+    중심.color = 팔레트[scene]
+    빛.color = 팔레트[(scene + 1) % len(팔레트)]
+    빛.pos = vector(-2 + scene * 1.3, 3, 2)
+    효과음("select")
+    sleep(0.35)
 
-    # 30프레임 동안 파동 업데이트
-    for f in range(30):
-        rate(60)
-        t += 0.1
-        for i in range(크기):
-            for j in range(크기):
-                x = (i - 크기/2) * 0.8
-                z = (j - 크기/2) * 0.8
-                # 파동 함수: 중심에서 퍼지는 원형 파동
-                거리 = math.sqrt(x*x + z*z)
-                y = math.sin(거리 * 2 - t * 3) * 0.5 * math.exp(-거리 * 0.15)
-                구슬들[i][j].pos = vector(x, y, z)
-                # 높이에 따라 색상 변화
-                밝기 = (y + 0.5) / 1.0
-                구슬들[i][j].color = 무지개[반복]
-                구슬들[i][j].opacity = 0.5 + 밝기 * 0.5
-
-효과음("success")
-print("음악 파동 시각화 완료!")
+# 바꿔보기: 팔레트 순서와 sleep 시간을 바꿔 다른 연출을 만드세요.
+print("장면 전환 루프 완성")
 `,
-    solutionCode: `from vpython import *
-import math
-
-배경음악("peaceful")
-scene_background(색상['검정'])
-
-크기 = 12
-구슬들 = []
-for i in range(크기):
-    행 = []
-    for j in range(크기):
-        x = (i - 크기/2) * 0.8
-        z = (j - 크기/2) * 0.8
-        s = sphere(pos=vector(x, 0, z), radius=0.15, color=무지개[i % 7], opacity=0.8)
-        행.append(s)
-    구슬들.append(행)
-
-t = 0
-notes = [음계['도'], 음계['레'], 음계['미'], 음계['파'], 음계['솔'], 음계['라'], 음계['시']]
-
-for 반복 in range(7):
-    sound(notes[반복], 0.4, 'triangle')
-    for f in range(30):
-        rate(60)
-        t += 0.1
-        for i in range(크기):
-            for j in range(크기):
-                x = (i - 크기/2) * 0.8
-                z = (j - 크기/2) * 0.8
-                거리 = math.sqrt(x*x + z*z)
-                y = math.sin(거리 * 2 - t * 3) * 0.5 * math.exp(-거리 * 0.15)
-                구슬들[i][j].pos = vector(x, y, z)
-                구슬들[i][j].color = 무지개[반복]
-                구슬들[i][j].opacity = 0.5 + (y + 0.5) / 1.0 * 0.5
-
-효과음("success")
-print("음악 파동 시각화 완료!")
-`,
-    assertions: [
-      { type: 'sphere', property: 'pos.y', operator: '!=', value: 0, index: 0 },
-    ],
     hints: [
-      { ko: 'math.sin(거리 - t)로 시간에 따른 파동을 만드세요.', en: 'Use math.sin(distance - t) for time-dependent waves.' },
-      { ko: '구슬의 color와 opacity를 높이(y)에 따라 변경하면 아름답습니다.', en: 'Vary color and opacity based on height for beauty.' },
+      text('팔레트 리스트는 공연의 장면 순서가 됩니다.', 'The palette list becomes the order of scenes.'),
+      text('조명 위치를 바꾸면 같은 물체도 다르게 보입니다.', 'Moving the light changes the same object dramatically.'),
     ],
-  },
+  }),
+  tutorialMission({
+    id: 'MA-6',
+    category: 'MA',
+    level: 2,
+    title: text('데이터 조각 공원', 'Data Sculpture Park'),
+    description: text(
+      '숫자 리스트를 3D 막대 조각으로 바꾸며 데이터 시각화의 첫 감각을 익힙니다.',
+      'Turn a number list into 3D bar sculptures as a first taste of data visualization.',
+    ),
+    starterCode: `from vpython import *
+
+데이터 = [3, 1, 4, 1, 5, 9, 2]
+
+for i in range(len(데이터)):
+    h = 데이터[i] * 0.25
+    box(pos=vector(-3 + i, h / 2, 0), size=vector(0.45, h, 0.45), color=무지개[i % 7])
+
+# 바꿔보기: 데이터 숫자를 내가 좋아하는 숫자나 날씨 데이터로 바꿔보세요.
+print("데이터 조각 공원 완성")
+`,
+    hints: [
+      text('숫자가 클수록 막대가 높아집니다.', 'Larger numbers make taller bars.'),
+      text('데이터를 그림으로 바꾸는 것이 시각화의 시작입니다.', 'Visualization starts by turning data into images.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'MA-7',
+    category: 'MA',
+    level: 2,
+    title: text('확률 구름', 'Probability Cloud'),
+    description: text(
+      '랜덤 숫자로 점을 뿌리고, 분포가 어떤 모양을 만드는지 관찰합니다.',
+      'Scatter points with random numbers and observe the shape of a distribution.',
+    ),
+    starterCode: `from vpython import *
+import random
+
+scene_background(색상['검정'])
+
+for i in range(180):
+    x = random.uniform(-2.5, 2.5)
+    y = random.uniform(-1.5, 1.5)
+    z = random.uniform(-1.5, 1.5)
+    sphere(pos=vector(x, y, z), radius=0.035, color=파스텔[i % len(파스텔)], opacity=0.65)
+
+# 바꿔보기: uniform 범위를 바꾸면 구름 모양이 납작하거나 길어집니다.
+print("확률 구름 완성")
+`,
+    hints: [
+      text('random.uniform(-2.5, 2.5)는 범위 안의 랜덤 값을 만듭니다.', 'random.uniform(-2.5, 2.5) creates a random value in that range.'),
+      text('범위가 넓은 축일수록 구름도 그 방향으로 길어집니다.', 'The cloud stretches along axes with wider ranges.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'SC-6',
+    category: 'SC',
+    level: 2,
+    title: text('감염 확산 미니 모델', 'Mini Spread Model'),
+    description: text(
+      '주변으로 색이 퍼지는 간단한 모델을 통해 시뮬레이션이 무엇인지 느껴봅니다.',
+      'Feel what simulation means with a simple color spread model.',
+    ),
+    starterCode: `from vpython import *
+
+칸들 = []
+for i in range(11):
+    색 = 색상['분홍'] if i == 5 else 색상['하늘']
+    칸 = sphere(pos=vector(-5 + i, 0, 0), radius=0.22, color=색, emissive=(i == 5))
+    칸들.append(칸)
+
+for step in range(5):
+    sleep(0.4)
+    왼쪽 = 5 - step - 1
+    오른쪽 = 5 + step + 1
+    if 왼쪽 >= 0:
+        칸들[왼쪽].color = 색상['분홍']
+        칸들[왼쪽].emissive = True
+    if 오른쪽 < len(칸들):
+        칸들[오른쪽].color = 색상['분홍']
+        칸들[오른쪽].emissive = True
+
+# 바꿔보기: 시작 위치와 sleep 시간을 바꿔 확산 속도를 비교하세요.
+print("확산 모델 완성")
+`,
+    hints: [
+      text('시뮬레이션은 현실을 단순한 규칙으로 흉내 내는 방법입니다.', 'A simulation imitates reality with simplified rules.'),
+      text('규칙 하나를 바꾸면 전체 결과가 달라집니다.', 'Changing one rule changes the whole result.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'SN-6',
+    category: 'SN',
+    level: 1,
+    title: text('악기 바꿔 듣기', 'Try Different Instruments'),
+    description: text(
+      '같은 멜로디를 여러 악기로 들어 보며 음색의 차이를 느낍니다.',
+      'Hear the same melody with different instruments and notice timbre.',
+    ),
+    starterCode: `from vpython import *
+
+악기들 = ["피아노", "벨", "칩튠", "기타"]
+멜로디 = ["도4", "미4", "솔4"]
+
+for i in range(len(악기들)):
+    sphere(pos=vector(-1.5 + i, 0, 0), radius=0.22, color=무지개[i], emissive=True)
+    for note_name in 멜로디:
+        악기(악기들[i], note_name, 0.22)
+    sleep(0.15)
+
+# 바꿔보기: 악기 순서나 멜로디를 바꿔보세요.
+print("악기 비교 완료")
+`,
+    hints: [
+      text('악기 이름만 바꿔도 같은 음이 다르게 들립니다.', 'Changing only the instrument changes the sound color.'),
+      text('멜로디 리스트를 바꾸면 모든 악기가 새 멜로디를 연주합니다.', 'Change the melody list and every instrument plays it.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'SN-7',
+    category: 'SN',
+    level: 2,
+    title: text('콜 앤 리스폰스', 'Call and Response'),
+    description: text(
+      '한 소절을 들려주고 다른 소절로 대답하는 음악 대화 구조를 만듭니다.',
+      'Build a musical conversation: one phrase calls, another responds.',
+    ),
+    starterCode: `from vpython import *
+
+질문 = ["도4", "레4", "미4"]
+대답 = ["미4", "레4", "도4"]
+
+for n in 질문:
+    음표(n, 0.25)
+sleep(0.25)
+효과음("select")
+for n in 대답:
+    음표(n, 0.25)
+
+for i in range(6):
+    색 = 색상['하늘'] if i < 3 else 색상['분홍']
+    sphere(pos=vector(-2.5 + i, 0, 0), radius=0.18, color=색, emissive=True)
+
+# 바꿔보기: 질문과 대답 리스트를 바꿔 나만의 음악 대화를 만드세요.
+print("콜 앤 리스폰스 완성")
+`,
+    hints: [
+      text('음악에서도 질문과 대답처럼 들리는 구조를 만들 수 있습니다.', 'Music can feel like question and answer.'),
+      text('두 리스트의 방향을 반대로 하면 거울 같은 느낌이 납니다.', 'Reversing the lists creates a mirror-like phrase.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'SN-8',
+    category: 'SN',
+    level: 2,
+    title: text('드럼머신 흉내내기', 'Tiny Drum Machine'),
+    description: text(
+      '효과음을 리듬 칸에 배치해 간단한 드럼머신처럼 연주합니다.',
+      'Place sound effects on rhythm slots like a tiny drum machine.',
+    ),
+    starterCode: `from vpython import *
+
+패턴 = ["jump", "coin", "jump", "powerup", "jump", "coin", "explosion", "success"]
+
+for i in range(len(패턴)):
+    sphere(pos=vector(-3.5 + i, 0, 0), radius=0.16, color=무지개[i % 7], emissive=True)
+    효과음(패턴[i])
+    sleep(0.18)
+
+# 바꿔보기: 패턴의 효과음 이름과 sleep 길이를 바꿔 리듬을 만드세요.
+print("드럼머신 패턴 완성")
+`,
+    hints: [
+      text('효과음도 리듬 재료가 될 수 있습니다.', 'Sound effects can be rhythm material too.'),
+      text('sleep 시간이 짧으면 빠른 리듬, 길면 느린 리듬이 됩니다.', 'Short sleep makes a fast rhythm; long sleep makes a slow one.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'SN-9',
+    category: 'SN',
+    level: 3,
+    title: text('멜로디를 색으로 번역하기', 'Translate Melody into Color'),
+    description: text(
+      '음 높이를 색과 위치에 연결해 듣는 음악을 보는 패턴으로 바꿉니다.',
+      'Map pitch to color and position so a melody becomes visible.',
+    ),
+    starterCode: `from vpython import *
+
+멜로디 = ["도4", "레4", "미4", "솔4", "미4", "레4", "도4"]
+높이 = {
+    "도4": 0,
+    "레4": 0.3,
+    "미4": 0.6,
+    "파4": 0.9,
+    "솔4": 1.2,
+}
+
+for i in range(len(멜로디)):
+    n = 멜로디[i]
+    y = 높이[n]
+    sphere(pos=vector(-3 + i, y, 0), radius=0.18, color=무지개[i % 7], emissive=True)
+    음표(n, 0.28)
+
+# 바꿔보기: 멜로디와 높이 사전을 바꿔 다른 그림을 만들어 보세요.
+print("멜로디 색 번역 완료")
+`,
+    hints: [
+      text('사전(dictionary)은 이름과 값을 연결합니다.', 'A dictionary connects names to values.'),
+      text('음 높이를 y 좌표로 바꾸면 멜로디 선처럼 보입니다.', 'Mapping pitch to y makes the melody look like a line.'),
+    ],
+  }),
+  tutorialMission({
+    id: 'SN-10',
+    category: 'SN',
+    level: 3,
+    title: text('나만의 짧은 사운드 로고', 'Your Short Sound Logo'),
+    description: text(
+      '브랜드 로고처럼 기억에 남는 3초짜리 소리와 빛 장면을 만듭니다.',
+      'Create a memorable three-second sound-and-light logo.',
+    ),
+    starterCode: `from vpython import *
+
+scene_background(색상['검정'])
+
+로고 = sphere(pos=vector(0, 0, 0), radius=0.5, color=색상['민트'], emissive=True)
+
+악기("벨", "도5", 0.25)
+로고.radius = 0.75
+악기("벨", "솔4", 0.25)
+로고.color = 색상['분홍']
+악기("벨", "도5", 0.45)
+화음([높은음계['도'], 높은음계['미'], 높은음계['솔']], 0.8)
+
+효과음("success")
+
+# 바꿔보기: 세 음, 색 변화, 마지막 화음을 바꿔 나만의 사운드 로고를 만드세요.
+print("사운드 로고 완성")
+`,
+    hints: [
+      text('짧은 소리일수록 반복되는 특징이 중요합니다.', 'Short sound logos need memorable repetition.'),
+      text('마지막 화음은 장면의 마침표처럼 들립니다.', 'The final chord works like punctuation.'),
+    ],
+  }),
 ];
 
 export default missions;
@@ -1888,31 +2093,31 @@ export const categories = {
   },
   CR: {
     id: 'CR',
-    title: { ko: '3D 창작', en: '3D Creative' },
+    title: { ko: '창작 갤러리', en: 'Creative Gallery' },
     icon: '🎨',
     color: '#D94A8C',
   },
   MA: {
     id: 'MA',
-    title: { ko: '수학 시각화', en: 'Math Visualization' },
+    title: { ko: '수학 탐구', en: 'Math Exploration' },
     icon: '📐',
     color: '#4AD99A',
   },
   SC: {
     id: 'SC',
-    title: { ko: '과학 시뮬레이션', en: 'Science Simulation' },
+    title: { ko: '과학 실험실', en: 'Science Lab' },
     icon: '🔬',
     color: '#D9A44A',
   },
   AR: {
     id: 'AR',
-    title: { ko: '코드 아트', en: 'Code Art' },
+    title: { ko: '미디어 아트', en: 'Media Art' },
     icon: '🎭',
     color: '#9A4AD9',
   },
   SN: {
     id: 'SN',
-    title: { ko: '사운드 코딩', en: 'Sound Coding' },
+    title: { ko: '음악 코딩', en: 'Music Coding' },
     icon: '🎵',
     color: '#D9694A',
   },
