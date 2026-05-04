@@ -37,8 +37,9 @@ export default function Header() {
   }, [location.pathname]);
 
   const navItems = [
-    { key: 'sandbox', path: '/sandbox' },
+    { key: 'courses', path: '/courses' },
     { key: 'missions', path: '/missions' },
+    { key: 'sandbox', path: '/sandbox' },
     { key: 'gallery', path: '/gallery' },
     { key: 'docs', path: '/docs' },
     ...(isTeacher ? [{ key: 'dashboard', path: '/dashboard' }] : []),

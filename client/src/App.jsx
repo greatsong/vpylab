@@ -21,6 +21,7 @@ function lazyWithRetry(importFn) {
 const Sandbox = lazyWithRetry(() => import('./pages/Sandbox'));
 const Missions = lazyWithRetry(() => import('./pages/Missions'));
 const MissionPlay = lazyWithRetry(() => import('./pages/MissionPlay'));
+const Courses = lazyWithRetry(() => import('./pages/Courses'));
 const About = lazyWithRetry(() => import('./pages/About'));
 const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'));
 const Gallery = lazyWithRetry(() => import('./pages/Gallery'));
@@ -48,6 +49,9 @@ function AppContent() {
       }>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/courses/:courseId" element={<Courses />} />
+          <Route path="/courses/:courseId/:lessonId" element={<Courses />} />
           <Route path="/sandbox" element={<Sandbox />} />
           <Route path="/missions" element={<Missions />} />
           <Route path="/mission/:missionId" element={<MissionPlay />} />

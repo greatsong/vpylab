@@ -23,6 +23,7 @@ import CodeSharePanel from '../components/codeshare/CodeSharePanel';
 import CodeShareToast from '../components/codeshare/CodeShareToast';
 import useCodeShareStore from '../stores/codeShareStore';
 import EXAMPLES, { EXAMPLE_CATEGORIES } from '../data/examples';
+import { getLesson } from '../data/courses';
 
 /**
  * Sandbox 페이지 — 자유 코딩 IDE
@@ -158,6 +159,26 @@ export default function Sandbox() {
       addOutput(`예제 "${ex.title}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
     } else {
       addOutput(`예제 ID "${exampleId}"를 찾을 수 없습니다.`, 'error');
+    }
+  }, [searchParams, addOutput]);
+
+  // Course lesson 파라미터 처리 (?lesson=<courseId>/<lessonId>) — 코스 차시 코드 prefill
+  useEffect(() => {
+    const lessonParam = searchParams.get('lesson');
+    if (!lessonParam) return;
+    const slash = lessonParam.indexOf('/');
+    if (slash <= 0) {
+      addOutput(`잘못된 lesson 파라미터: ${lessonParam} (형식: courseId/lessonId)`, 'error');
+      return;
+    }
+    const cid = lessonParam.slice(0, slash);
+    const lid = lessonParam.slice(slash + 1);
+    const lesson = getLesson(cid, lid);
+    if (lesson) {
+      setCode(lesson.code);
+      addOutput(`코스 차시 "${lesson.title?.ko || lid}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
+    } else {
+      addOutput(`차시를 찾을 수 없습니다: ${lessonParam}`, 'error');
     }
   }, [searchParams, addOutput]);
 

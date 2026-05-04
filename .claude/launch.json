@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "vpylab-dev",
+      "name": "vpylab-client",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:client"],
-      "port": 4033
+      "runtimeArgs": ["run", "dev"],
+      "port": 4033,
+      "cwd": "client"
     }
   ]
 }

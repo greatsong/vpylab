@@ -6,7 +6,8 @@
   },
   "nav": {
     "home": "Home",
-    "sandbox": "Sandbox",
+    "courses": "Courses",
+    "sandbox": "Projects",
     "missions": "Missions",
     "about": "About",
     "dashboard": "Dashboard",
