@@ -19,6 +19,20 @@ let vpythonApiCode = null;
 let shouldStop = false;
 let micropipLoaded = false;
 
+// === 이벤트 큐 (메인 스레드 → Python) ===
+const _eventQueue = [];
+const _widgetValues = {};   // { widgetId: latestValue }
+let _mouseState = { pos: [0, 0, 0], pick: null };
+let _pressedKeysJson = '[]';  // 현재 눌려있는 키 목록 (JSON 직렬화)
+
+self._popEvent = () => {
+  return _eventQueue.length > 0 ? _eventQueue.shift() : null;
+};
+self._getMousePos = () => _mouseState.pos;
+self._getMousePick = () => _mouseState.pick;
+self._getWidgetValue = (id) => _widgetValues[id] ?? null;
+self._getPressedKeys = () => _pressedKeysJson;
+
 function sendProgress(percent, message) {
   self.postMessage({ type: 'progress', percent, message });
 }
@@ -54,6 +68,11 @@ vpython_module = types.ModuleType('vpython')
 # 현재 전역에 정의된 VPython 클래스/함수를 모듈에 복사
 _vpython_names = [
     'vector', 'vec', 'color', '\uc0c9\uc0c1', 'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
+    'pyramid', 'ellipsoid', 'helix', 'label', 'text', 'curve', 'points', 'frame',
+    'vertex', 'triangle', 'quad', 'extrusion',
+    'graph', 'gcurve', 'gdots', 'gvbars', 'ghbars',
+    'slider', 'button', 'checkbox', 'radio', 'menu', 'winput',
+    'scene', 'keysdown',
     'local_light', 'distant_light',
     'rate', 'sleep', 'scene_background',
     'mag', 'mag2', 'hat', 'dot', 'cross', 'norm',
@@ -293,6 +312,36 @@ self.onmessage = async (event) => {
     case 'stop':
       // 소프트 스톱 — rate()에서 플래그 확인 후 Python 예외 발생
       shouldStop = true;
+      break;
+
+    case 'event':
+      // 메인 스레드의 사용자 입력 이벤트 — 큐에 적재하면 rate()에서 디스패치
+      if (event.data.payload) {
+        try {
+          _eventQueue.push(JSON.stringify(event.data.payload));
+        } catch { /* 직렬화 실패 시 무시 */ }
+      }
+      break;
+
+    case 'widget_value':
+      // 위젯 값 동기화
+      if (event.data.id !== undefined) {
+        _widgetValues[event.data.id] = event.data.value;
+      }
+      break;
+
+    case 'mouse':
+      // 마우스 좌표/픽 객체 갱신
+      if (Array.isArray(event.data.pos)) _mouseState.pos = event.data.pos;
+      if ('pick' in event.data) _mouseState.pick = event.data.pick;
+      break;
+
+    case 'keys':
+      // 현재 눌려있는 키 목록 — keysdown() 폴링용
+      if (Array.isArray(event.data.keys)) {
+        try { _pressedKeysJson = JSON.stringify(event.data.keys); }
+        catch { _pressedKeysJson = '[]'; }
+      }
       break;
 
     default:

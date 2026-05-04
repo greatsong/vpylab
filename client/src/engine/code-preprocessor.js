@@ -142,10 +142,12 @@ export function preprocessCode(code) {
 
     for (const line of processedLines) {
       const trimmed = line.trimStart();
-      if (
+      // 모듈 레벨(들여쓰기 없는) import만 추출 — 함수/클래스 내부 import는 그대로 둠
+      const isTopLevel = line === trimmed || line.length === trimmed.length;
+      const isImport =
         trimmed.startsWith('import ') ||
-        trimmed.startsWith('from ') && trimmed.includes('import')
-      ) {
+        (trimmed.startsWith('from ') && trimmed.includes('import'));
+      if (isTopLevel && isImport) {
         importLines.push(line);
       } else {
         bodyLines.push(line);

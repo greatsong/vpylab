@@ -117,6 +117,26 @@ describe('preprocessCode', () => {
     expect(code.indexOf('from vpython import *')).toBeLessThan(code.indexOf('async def'));
   });
 
+  it('함수 내부의 import는 그 자리에 유지한다 (모듈 레벨로 끌어올리지 않는다)', () => {
+    // 회귀: 들여쓴 `import random`이 모듈 레벨로 추출되어 IndentationError 발생하던 버그
+    const input = `from vpython import *
+
+def on_color(evt):
+    import random
+    palette = [color.red, color.green]
+    ball.color = random.choice(palette)
+
+button(text='change', bind=on_color)
+rate(30)`;
+    const { code } = preprocessCode(input);
+    // 모듈 레벨 'from vpython import *'는 함수 바깥
+    expect(code.indexOf('from vpython import *')).toBeLessThan(code.indexOf('async def'));
+    // 함수 내부 'import random'은 함수 안에 그대로 (들여쓰기 보존)
+    expect(code).toContain('    import random');
+    // 모듈 레벨에 잘못 끌어올려진 들여쓴 import가 없어야 함
+    expect(code).not.toMatch(/^    import random/m);
+  });
+
   it('삼중 따옴표 문자열 내부의 rate()는 변환하지 않는다', () => {
     const input = '"""rate(30) 호출"""\nrate(60)';
     const { code } = preprocessCode(input);

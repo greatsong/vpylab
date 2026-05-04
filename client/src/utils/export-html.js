@@ -1,16 +1,25 @@
 /**
- * VPyLab — 독립 HTML 내보내기 (v2: 사운드/차트/compound/trail 동기화)
+ * VPyLab — 독립 HTML 내보내기 (v3: API 확장 부분 동기화)
  * 학생 코드를 Pyodide + Three.js CDN과 함께 단일 HTML 파일로 생성
  *
- * 포함 기능:
+ * 포함 기능 (v3):
  * - 3D 객체: sphere, box, cylinder, arrow, cone, ring, local_light, distant_light, compound
+ *   + pyramid, ellipsoid, helix, label/text, curve, points, vertex, triangle, quad, extrusion
+ * - vector 확장: .proj, .comp, .diff_angle, .rotate
+ * - 객체 메서드: .clone(), .rotate(), .attach_trail(), .clear_trail()
+ * - scene 객체: scene.background (range/center/autoscale은 export에서 제한적)
+ * - frame 별칭 (= compound)
  * - 30색 팔레트 + 한글 색상 이름
- * - make_trail 궤적 시스템
- * - 사운드: beep, note, chord, sequence, sfx 12종, BGM 5종, 악기 8종
- * - 3D 차트: scatter3d, surface3d, line3d, bar3d + 5종 컬러맵
- * - NamedList (음계, 무지개 등)
- * - 한글 API 별칭 (음표, 효과음, 배경음악, 악기 등)
- * - numpy 자동 설치 (micropip)
+ * - 사운드/차트/한글 API/numpy 자동 설치 (이전 버전과 동일)
+ *
+ * 미지원 (브라우저 IDE에서만 동작):
+ * - UI 위젯 (slider, button, checkbox, radio, menu, winput) — Worker 채널 필요
+ * - 2D 그래프 (graph, gcurve, gdots, gvbars, ghbars) — DOM 패널 필요
+ * - 이벤트 (scene.bind, scene.mouse) — 양방향 이벤트 채널 필요
+ *   학생 코드가 위 기능을 사용하면 콘솔 경고 후 무시.
+ *
+ * TODO: vpython-api.py를 ?raw 임포트해 인라인 Python 중복을 제거하는 리팩터링이
+ *       별도 세션에 예정되어 있음.
  */
 
 const PYODIDE_VERSION = '0.27.0';
@@ -470,6 +479,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
   // === 브릿지: JSON 커맨드 → Three.js ===
   const meshes = new Map();
   const trails = new Map();
+  const curves = new Map();   // curve/points 동적 라인
   function toColor(arr) { return new THREE.Color(arr[0], arr[1], arr[2]); }
 
   function createTrail(cmd) {
@@ -553,6 +563,99 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
           break;
         }
         case 'ring': mesh = new THREE.Mesh(new THREE.TorusGeometry(cmd.radius||1, cmd.thickness||0.1, 16, 48), mat); break;
+        case 'pyramid': {
+          const sz = cmd.size || [1,1,1]; const a = cmd.axis||[1,0,0];
+          const baseR = Math.max(sz[1], sz[2])/2 || 0.5;
+          mesh = new THREE.Mesh(new THREE.ConeGeometry(baseR, sz[0]||1, 4), mat);
+          mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), new THREE.Vector3(...a).normalize());
+          break;
+        }
+        case 'ellipsoid': {
+          const sz = cmd.size || [1,1,1];
+          mesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 16), mat);
+          mesh.scale.set(sz[0], sz[1], sz[2]);
+          break;
+        }
+        case 'helix': {
+          const r = cmd.radius||1; const a = cmd.axis||[1,0,0]; const len = cmd.length ?? 1;
+          const coils = cmd.coils||5; const seg = Math.max(64, coils*32);
+          const positions = [];
+          for (let i=0;i<=seg;i++){const t=i/seg;const ang=t*coils*Math.PI*2;positions.push(t*len, r*Math.cos(ang), r*Math.sin(ang));}
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+          mesh = new THREE.Line(g, new THREE.LineBasicMaterial({color: baseColor, transparent:(cmd.opacity??1)<1, opacity:cmd.opacity??1}));
+          mesh.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0), new THREE.Vector3(...a).normalize());
+          break;
+        }
+        case 'label': {
+          // 캔버스 텍스처 → Sprite (항상 카메라를 향함)
+          const text = String(cmd.text||''); const fontPx = cmd.height||16;
+          const measure = document.createElement('canvas').getContext('2d');
+          measure.font = (fontPx*2) + 'px sans-serif';
+          const tw = Math.max(32, Math.ceil(measure.measureText(text||' ').width)+12);
+          const th = Math.max(32, Math.ceil(fontPx*2*1.4)+12);
+          const cv = document.createElement('canvas'); cv.width=tw; cv.height=th;
+          const ctx = cv.getContext('2d');
+          if (cmd.background) { const c=cmd.background; ctx.fillStyle = 'rgba('+Math.round(c[0]*255)+','+Math.round(c[1]*255)+','+Math.round(c[2]*255)+',0.85)'; ctx.fillRect(0,0,tw,th); }
+          const c = cmd.color||[1,1,1];
+          ctx.fillStyle = 'rgb('+Math.round(c[0]*255)+','+Math.round(c[1]*255)+','+Math.round(c[2]*255)+')';
+          ctx.font = (fontPx*2) + 'px sans-serif';
+          ctx.textBaseline='middle'; ctx.textAlign='center';
+          ctx.fillText(text, tw/2, th/2);
+          const tex = new THREE.CanvasTexture(cv);
+          const sm = new THREE.SpriteMaterial({map:tex, transparent:true, opacity:cmd.opacity??1, depthTest:false, depthWrite:false});
+          mesh = new THREE.Sprite(sm);
+          const ws = fontPx/32;
+          mesh.scale.set((tw/th)*ws, ws, 1);
+          break;
+        }
+        case 'curve': {
+          const pts = (cmd.points||[]).flat();
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
+          mesh = new THREE.Line(g, new THREE.LineBasicMaterial({color: baseColor, transparent:(cmd.opacity??1)<1, opacity:cmd.opacity??1}));
+          curves.set(cmd.id, {line: mesh, positions: pts.slice()});
+          break;
+        }
+        case 'points': {
+          const pts = (cmd.points||[]).flat();
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
+          mesh = new THREE.Points(g, new THREE.PointsMaterial({color: baseColor, size:(cmd.size??5)*0.02, sizeAttenuation:true, transparent:(cmd.opacity??1)<1, opacity:cmd.opacity??1}));
+          curves.set(cmd.id, {line: mesh, positions: pts.slice()});
+          break;
+        }
+        case 'triangle':
+        case 'quad': {
+          const verts = cmd.vertices || [];
+          const positions = []; const colors = [];
+          const indices = cmd.type === 'triangle' ? [0,1,2] : [0,1,2,0,2,3];
+          for (const i of indices) {
+            const v = verts[i] || {pos:[0,0,0], color:[1,1,1]};
+            positions.push(v.pos[0], v.pos[1], v.pos[2]);
+            colors.push(v.color[0], v.color[1], v.color[2]);
+          }
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+          g.setAttribute('color', new THREE.Float32BufferAttribute(colors,3));
+          g.computeVertexNormals();
+          mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({vertexColors:true, side:THREE.DoubleSide, roughness:0.5, metalness:0.05}));
+          break;
+        }
+        case 'extrusion': {
+          const path = cmd.path || []; const shape = cmd.shape || [];
+          if (path.length >= 2 && shape.length >= 3) {
+            const sh = new THREE.Shape();
+            sh.moveTo(shape[0][0], shape[0][1]);
+            for (let i=1;i<shape.length;i++) sh.lineTo(shape[i][0], shape[i][1]);
+            sh.closePath();
+            const cv = new THREE.CatmullRomCurve3(path.map(p => new THREE.Vector3(p[0], p[1], p[2]??0)));
+            mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, {steps: Math.max(path.length*4,12), extrudePath: cv}), mat);
+          } else {
+            mesh = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), mat);
+          }
+          break;
+        }
         case 'local_light': {
           const lt = new THREE.PointLight(toColor(cmd.color||[1,1,1]), cmd.intensity??1, 50);
           if(cmd.pos) lt.position.set(...cmd.pos); scene.add(lt); meshes.set(cmd.id, lt); return;
@@ -603,6 +706,17 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
       scene.background = toColor(cmd.value);
     } else if (cmd.action === 'trail_update') {
       updateTrail(cmd);
+    } else if (cmd.action === 'trail_clear') {
+      const t = trails.get(cmd.id);
+      if (t) { t.positions.length = 0; t.line.geometry.setAttribute('position', new THREE.Float32BufferAttribute([], 3)); t.line.geometry.computeBoundingSphere(); }
+    } else if (cmd.action === 'trail_attach') {
+      if (!trails.has(cmd.id) && meshes.has(cmd.id)) createTrail({id:cmd.id, pos: cmd.pos||[0,0,0], color:[1,1,1], trail_color: cmd.trail_color});
+    } else if (cmd.action === 'curve_append') {
+      const c = curves.get(cmd.id);
+      if (c) { c.positions.push(cmd.pos[0], cmd.pos[1], cmd.pos[2]); c.line.geometry.setAttribute('position', new THREE.Float32BufferAttribute(c.positions, 3)); c.line.geometry.computeBoundingSphere(); }
+    } else if (cmd.action === 'curve_clear') {
+      const c = curves.get(cmd.id);
+      if (c) { c.positions.length = 0; c.line.geometry.setAttribute('position', new THREE.Float32BufferAttribute([], 3)); c.line.geometry.computeBoundingSphere(); }
     } else if (cmd.action === 'compound') {
       const group = new THREE.Group();
       for (const subId of (cmd.sub_ids||[])) {
@@ -665,6 +779,9 @@ import sys, types
 vpython_module = types.ModuleType('vpython')
 _vpython_names = [
     'vector', 'vec', 'color', '색상', 'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
+    'pyramid', 'ellipsoid', 'helix', 'label', 'text', 'curve', 'points', 'frame',
+    'vertex', 'triangle', 'quad', 'extrusion',
+    'scene', 'keysdown',
     'local_light', 'distant_light',
     'rate', 'sleep', 'scene_background',
     'mag', 'mag2', 'hat', 'dot', 'cross', 'norm',
@@ -799,6 +916,13 @@ class vector:
     def __rmul__(self, s): return self.__mul__(s)
     def __truediv__(self, s): return vector(self.x/s, self.y/s, self.z/s)
     def __neg__(self): return vector(-self.x, -self.y, -self.z)
+    def __eq__(self, o):
+        if not isinstance(o, vector): return NotImplemented
+        return self.x==o.x and self.y==o.y and self.z==o.z
+    def __ne__(self, o):
+        e = self.__eq__(o)
+        return NotImplemented if e is NotImplemented else not e
+    def __hash__(self): return hash((self.x, self.y, self.z))
     @property
     def mag(self): return (self.x**2 + self.y**2 + self.z**2)**0.5
     @property
@@ -811,6 +935,23 @@ class vector:
     def cross(self, o): return vector(self.y*o.z-self.z*o.y, self.z*o.x-self.x*o.z, self.x*o.y-self.y*o.x)
     def to_list(self): return [self.x, self.y, self.z]
     def clone(self): return vector(self.x, self.y, self.z)
+    def proj(self, b): bh = b.hat; return bh * self.dot(bh)
+    def comp(self, b): return self.dot(b.hat)
+    def diff_angle(self, b):
+        import math
+        m1=self.mag; m2=b.mag
+        if m1==0 or m2==0: return 0.0
+        c = self.dot(b)/(m1*m2)
+        if c>1.0: c=1.0
+        elif c<-1.0: c=-1.0
+        return math.acos(c)
+    def rotate(self, angle, axis=None):
+        import math
+        if axis is None: axis = vector(0,0,1)
+        k = axis.hat
+        ca = math.cos(angle); sa = math.sin(angle)
+        v = self
+        return v*ca + k.cross(v)*sa + k*(k.dot(v)*(1-ca))
 
 vec = vector
 
@@ -910,6 +1051,33 @@ class _GObject:
     def emissive(self, v):
         self._emissive = v
         _add_command({"action":"update","id":self._id,"emissive":v})
+
+    # === v3 공통 메서드 ===
+    def _clone_kwargs(self):
+        return {
+            'pos': self._pos.clone() if isinstance(self._pos, vector) else self._pos,
+            'color': self._color.clone() if isinstance(self._color, vector) else self._color,
+            'visible': self._visible, 'opacity': self._opacity, 'emissive': self._emissive,
+        }
+    def clone(self, **kwargs):
+        args = self._clone_kwargs(); args.update(kwargs)
+        return self.__class__(**args)
+    def rotate(self, angle, axis=None, origin=None):
+        if axis is None: axis = vector(0,1,0)
+        if origin is None: origin = self._pos
+        rel = self._pos - origin
+        new_rel = rel.rotate(angle, axis=axis)
+        self.pos = origin + new_rel
+        if hasattr(self, '_axis') and isinstance(self._axis, vector):
+            self.axis = self._axis.rotate(angle, axis=axis)
+    def clear_trail(self):
+        _add_command({"action":"trail_clear","id":self._id})
+    def attach_trail(self, color=None, retain=10000):
+        self._make_trail = True
+        if color is not None: self._trail_color = color
+        _add_command({"action":"trail_attach","id":self._id,
+                      "trail_color": color.to_list() if isinstance(color, vector) else None,
+                      "pos": self._pos.to_list(), "retain": int(retain)})
 
 
 class sphere(_GObject):
@@ -1056,6 +1224,247 @@ class compound:
     def opacity(self, v):
         self._opacity = v
         _add_command({"action":"update","id":self._id,"opacity":v})
+
+
+# === 새 프리미티브 (v3) ===
+class pyramid(_GObject):
+    def __init__(self, **kw):
+        self._size = kw.pop('size', vector(1,1,1))
+        self._axis = kw.pop('axis', vector(1,0,0))
+        s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
+        super().__init__('pyramid', size=s, axis=self._axis.to_list(), **kw)
+
+class ellipsoid(_GObject):
+    def __init__(self, **kw):
+        self._size = kw.pop('size', vector(1,1,1))
+        s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
+        super().__init__('ellipsoid', size=s, **kw)
+
+class helix(_GObject):
+    def __init__(self, **kw):
+        self._radius = kw.pop('radius', 1.0)
+        self._axis = kw.pop('axis', vector(1,0,0))
+        self._length = kw.pop('length', None)
+        self._coils = kw.pop('coils', 5)
+        self._thickness = kw.pop('thickness', 0.05)
+        length = self._length if self._length is not None else self._axis.mag
+        super().__init__('helix', radius=self._radius, axis=self._axis.to_list(),
+                         length=float(length), coils=int(self._coils), thickness=float(self._thickness), **kw)
+
+class label:
+    def __init__(self, **kw):
+        self._id = _new_id()
+        self._pos = kw.get('pos', vector(0,0,0))
+        self._text = str(kw.get('text', ''))
+        self._color = kw.get('color', color.white)
+        self._height = kw.get('height', 16)
+        self._visible = kw.get('visible', True)
+        self._opacity = kw.get('opacity', 1.0)
+        self._background = kw.get('background', None)
+        _add_command({"action":"create","id":self._id,"type":"label",
+                      "pos":self._pos.to_list(),"color":self._color.to_list(),
+                      "text":self._text,"height":float(self._height),
+                      "visible":self._visible,"opacity":float(self._opacity),
+                      "background": self._background.to_list() if isinstance(self._background, vector) else None,
+                      "border": float(kw.get('border', 0))})
+text = label
+
+class curve:
+    def __init__(self, **kw):
+        self._id = _new_id()
+        self._color = kw.get('color', color.white)
+        self._radius = float(kw.get('radius', 0))
+        self._visible = kw.get('visible', True)
+        self._points = []
+        initial = kw.get('pos', None)
+        if initial is not None:
+            if isinstance(initial, vector): self._points.append(initial.clone())
+            else:
+                for p in initial: self._points.append(p.clone() if isinstance(p, vector) else vector(*p))
+        _add_command({"action":"create","id":self._id,"type":"curve",
+                      "color":self._color.to_list(),"radius":self._radius,
+                      "visible":self._visible,"points":[p.to_list() for p in self._points]})
+    def append(self, pos):
+        v = pos.clone() if isinstance(pos, vector) else vector(*pos)
+        self._points.append(v)
+        _add_command({"action":"curve_append","id":self._id,"pos":v.to_list()})
+    def clear(self):
+        self._points = []
+        _add_command({"action":"curve_clear","id":self._id})
+
+class points:
+    def __init__(self, **kw):
+        self._id = _new_id()
+        self._color = kw.get('color', color.white)
+        self._size = float(kw.get('size', 5))
+        self._visible = kw.get('visible', True)
+        self._points = []
+        initial = kw.get('pos', None)
+        if initial is not None:
+            if isinstance(initial, vector): self._points.append(initial.clone())
+            else:
+                for p in initial: self._points.append(p.clone() if isinstance(p, vector) else vector(*p))
+        _add_command({"action":"create","id":self._id,"type":"points",
+                      "color":self._color.to_list(),"size":self._size,
+                      "visible":self._visible,"points":[p.to_list() for p in self._points]})
+    def append(self, pos):
+        v = pos.clone() if isinstance(pos, vector) else vector(*pos)
+        self._points.append(v)
+        _add_command({"action":"curve_append","id":self._id,"pos":v.to_list()})
+    def clear(self):
+        self._points = []
+        _add_command({"action":"curve_clear","id":self._id})
+
+
+# === 저수준 메시 ===
+class vertex:
+    def __init__(self, pos=None, color=None, normal=None, opacity=1.0):
+        self.pos = pos if pos is not None else vector(0,0,0)
+        self.color = color if color is not None else vector(1,1,1)
+        self.normal = normal
+        self.opacity = float(opacity)
+    def to_dict(self):
+        d = {"pos":self.pos.to_list(),"color":self.color.to_list(),"opacity":self.opacity}
+        if isinstance(self.normal, vector): d["normal"] = self.normal.to_list()
+        return d
+
+class triangle:
+    def __init__(self, v0=None, v1=None, v2=None, vs=None, **kw):
+        self._id = _new_id()
+        verts = list(vs) if vs is not None else [v0, v1, v2]
+        if len(verts) != 3 or any(v is None for v in verts):
+            raise ValueError("triangle은 정확히 3개의 vertex가 필요합니다")
+        self._vertices = [v if isinstance(v, vertex) else vertex(pos=v) for v in verts]
+        _add_command({"action":"create","id":self._id,"type":"triangle",
+                      "vertices":[v.to_dict() for v in self._vertices],
+                      "visible":kw.get('visible', True)})
+
+class quad:
+    def __init__(self, v0=None, v1=None, v2=None, v3=None, vs=None, **kw):
+        self._id = _new_id()
+        verts = list(vs) if vs is not None else [v0, v1, v2, v3]
+        if len(verts) != 4 or any(v is None for v in verts):
+            raise ValueError("quad는 정확히 4개의 vertex가 필요합니다")
+        self._vertices = [v if isinstance(v, vertex) else vertex(pos=v) for v in verts]
+        _add_command({"action":"create","id":self._id,"type":"quad",
+                      "vertices":[v.to_dict() for v in self._vertices],
+                      "visible":kw.get('visible', True)})
+
+class extrusion:
+    def __init__(self, path=None, shape=None, color=None, **kw):
+        self._id = _new_id()
+        path = path or []
+        path_pts = [p.to_list() if isinstance(p, vector) else list(p) for p in path]
+        shape = shape or [(-0.5,-0.5),(0.5,-0.5),(0.5,0.5),(-0.5,0.5)]
+        shape_pts = [[s.x, s.y] if isinstance(s, vector) else list(s)[:2] for s in shape]
+        col = color if color is not None else vector(1,1,1)
+        _add_command({"action":"create","id":self._id,"type":"extrusion",
+                      "path":path_pts,"shape":shape_pts,"color":col.to_list(),
+                      "visible":kw.get('visible', True),"opacity":float(kw.get('opacity', 1.0))})
+
+
+# === scene 객체 + frame 별칭 ===
+class _Scene:
+    def __init__(self):
+        self._background = vector(0.97, 0.98, 0.98)
+    @property
+    def background(self): return self._background
+    @background.setter
+    def background(self, v):
+        self._background = v
+        _add_command({"action":"scene","property":"background","value":v.to_list()})
+    @property
+    def range(self): return None
+    @range.setter
+    def range(self, v):
+        # standalone export에서는 카메라 자동 시스템이 없으므로 무시
+        pass
+    @property
+    def center(self): return vector(0,0,0)
+    @center.setter
+    def center(self, v): pass
+    @property
+    def autoscale(self): return True
+    @autoscale.setter
+    def autoscale(self, v): pass
+    @property
+    def title(self): return ''
+    @title.setter
+    def title(self, v): print(f"[scene.title] {v}")
+    @property
+    def caption(self): return ''
+    @caption.setter
+    def caption(self, v): print(f"[scene.caption] {v}")
+    # 이벤트/마우스 — standalone export에서 미지원
+    def bind(self, *args, **kw):
+        print("[scene.bind] standalone HTML export에서는 이벤트가 지원되지 않습니다.")
+        if len(args) == 1: return lambda fn: fn
+    def unbind(self, *args, **kw): pass
+    def waitfor(self, *args, **kw): pass
+    @property
+    def mouse(self):
+        class _M:
+            pos = vector(0,0,0)
+            pick = None
+        return _M()
+
+scene = _Scene()
+frame = compound
+
+
+# === UI 위젯 / 2D 그래프 — standalone export 미지원 ===
+def _unsupported_warn(name):
+    print(f"[{name}] standalone HTML export에서는 이 기능이 지원되지 않습니다.")
+
+def keysdown():
+    """standalone export에서는 키보드 폴링 미지원 — 빈 리스트 반환"""
+    return []
+
+class _NoOpWidget:
+    def __init__(self, *args, **kw):
+        _unsupported_warn(self.__class__.__name__)
+        self._value = kw.get('value', None)
+    @property
+    def value(self): return self._value
+    @value.setter
+    def value(self, v): self._value = v
+    @property
+    def disabled(self): return False
+    @disabled.setter
+    def disabled(self, v): pass
+    def delete(self): pass
+
+class slider(_NoOpWidget): pass
+class button(_NoOpWidget):
+    def __init__(self, text='', **kw): super().__init__(**kw); self._text = text
+    @property
+    def text(self): return self._text
+    @text.setter
+    def text(self, v): self._text = v
+class checkbox(_NoOpWidget): pass
+class radio(_NoOpWidget): pass
+class menu(_NoOpWidget): pass
+class winput(_NoOpWidget): pass
+
+class graph:
+    def __init__(self, **kw):
+        _unsupported_warn('graph')
+        self._series = []
+    def _add_series(self, s): self._series.append(s)
+    def delete(self): pass
+
+class _GSeriesNoOp:
+    def __init__(self, **kw):
+        g = kw.get('graph', None) or graph()
+        self._graph = g
+        g._add_series(self)
+    def plot(self, *args, **kw): pass
+    def delete(self): pass
+
+class gcurve(_GSeriesNoOp): pass
+class gdots(_GSeriesNoOp): pass
+class gvbars(_GSeriesNoOp): pass
+class ghbars(_GSeriesNoOp): pass
 
 
 # === 조명 ===

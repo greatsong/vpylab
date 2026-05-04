@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import useAppStore from '../../stores/appStore';
 import CameraSystem from '../../engine/camera-system';
+import { postEvent, postMouseState, postPressedKeys } from '../../engine/pyodide-singleton';
+import { isEventBound } from '../../engine/vpython-bridge';
 
 const THEME_BG = {
   'creative-light': 0xf8fafc,
@@ -70,6 +72,8 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
       zoomLocked: lockFollowZoom,
     });
     cameraSystemRef.current = camSystem;
+    // bridge.js에서 scene._cameraSystem으로 접근 (scene.range/center/autoscale 처리)
+    scene._cameraSystem = camSystem;
 
     // 더블클릭 → Auto-Fit 리셋
     const onDblClick = () => {
@@ -77,6 +81,88 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
       setCameraMode(camSystem.getMode());
     };
     renderer.domElement.addEventListener('dblclick', onDblClick);
+
+    // === scene.bind / scene.mouse 이벤트 디스패치 ===
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();      // -1..1 NDC 좌표
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0); // z=0 평면
+    const intersection = new THREE.Vector3();
+
+    function computePosFromEvent(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(ndc, camera);
+      // 1) 객체 픽 — meshRegistry의 모든 mesh를 순회하지 않고 scene 자식 사용
+      const targets = [];
+      scene.traverse((o) => {
+        if (o.userData?.vpId && o.visible !== false) targets.push(o);
+      });
+      const hits = raycaster.intersectObjects(targets, true);
+      let pick = null;
+      let pos = null;
+      if (hits.length > 0) {
+        pos = [hits[0].point.x, hits[0].point.y, hits[0].point.z];
+        // 픽 객체의 vpId 찾기 (parent를 따라 올라감)
+        let o = hits[0].object;
+        while (o && !o.userData?.vpId) o = o.parent;
+        pick = o?.userData?.vpId || null;
+      } else {
+        // 2) 객체가 없으면 z=0 평면과의 교점
+        if (raycaster.ray.intersectPlane(groundPlane, intersection)) {
+          pos = [intersection.x, intersection.y, intersection.z];
+        }
+      }
+      return { pos, pick };
+    }
+
+    const onPointerDown = (e) => {
+      if (!isEventBound('mousedown') && !isEventBound('click')) return;
+      const { pos, pick } = computePosFromEvent(e);
+      if (isEventBound('mousedown')) postEvent({ name: 'mousedown', pos, pick });
+    };
+    const onPointerUp = (e) => {
+      const downBound = isEventBound('mouseup') || isEventBound('click');
+      if (!downBound) return;
+      const { pos, pick } = computePosFromEvent(e);
+      if (isEventBound('mouseup')) postEvent({ name: 'mouseup', pos, pick });
+      if (isEventBound('click')) postEvent({ name: 'click', pos, pick });
+    };
+    const onPointerMove = (e) => {
+      // mouse pos는 항상 갱신 (scene.mouse.pos 폴링용)
+      const { pos, pick } = computePosFromEvent(e);
+      if (pos) postMouseState(pos, pick);
+      if (isEventBound('mousemove')) postEvent({ name: 'mousemove', pos, pick });
+    };
+    // keysdown() 폴링용 — 현재 눌려있는 키 셋
+    const pressedKeys = new Set();
+    const flushKeys = () => postPressedKeys([...pressedKeys]);
+
+    const onKeyDown = (e) => {
+      if (!pressedKeys.has(e.key)) {
+        pressedKeys.add(e.key);
+        flushKeys();
+      }
+      if (isEventBound('keydown')) postEvent({ name: 'keydown', key: e.key });
+    };
+    const onKeyUp = (e) => {
+      if (pressedKeys.delete(e.key)) flushKeys();
+      if (isEventBound('keyup')) postEvent({ name: 'keyup', key: e.key });
+    };
+    const onBlur = () => {
+      // 포커스 잃을 때 모든 키 해제 (stuck key 방지)
+      if (pressedKeys.size > 0) {
+        pressedKeys.clear();
+        flushKeys();
+      }
+    };
+
+    renderer.domElement.addEventListener('pointerdown', onPointerDown);
+    renderer.domElement.addEventListener('pointerup', onPointerUp);
+    renderer.domElement.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
 
     // 조명
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -140,6 +226,12 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
       observer.disconnect();
       cancelAnimationFrame(animFrameRef.current);
       renderer.domElement.removeEventListener('dblclick', onDblClick);
+      renderer.domElement.removeEventListener('pointerdown', onPointerDown);
+      renderer.domElement.removeEventListener('pointerup', onPointerUp);
+      renderer.domElement.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
       camSystem.dispose();
       controls.dispose();
       renderer.dispose();
@@ -176,7 +268,11 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
   });
 
   return (
-    <div className="w-full h-full relative" style={{ touchAction: 'none' }}>
+    <div
+      className="w-full h-full relative"
+      style={{ touchAction: 'none' }}
+      data-vpylab-viewport=""
+    >
       <div ref={containerRef} className="w-full h-full" />
 
       {/* 카메라 모드 표시 + 옵션 토글 */}

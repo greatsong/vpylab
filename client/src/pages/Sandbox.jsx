@@ -148,6 +148,19 @@ export default function Sandbox() {
     return () => { cancelled = true; };
   }, [searchParams]);
 
+  // Example 파라미터 처리 (?example=<id>) — 예제 코드를 에디터에 자동 로드
+  useEffect(() => {
+    const exampleId = searchParams.get('example');
+    if (!exampleId) return;
+    const ex = EXAMPLES.find(e => e.id === exampleId);
+    if (ex) {
+      setCode(ex.code);
+      addOutput(`예제 "${ex.title}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
+    } else {
+      addOutput(`예제 ID "${exampleId}"를 찾을 수 없습니다.`, 'error');
+    }
+  }, [searchParams, addOutput]);
+
   // Edit 파라미터 처리 (?edit=galleryId) — GitHub에서 코드 가져와 수정 모드
   useEffect(() => {
     const editId = searchParams.get('edit');

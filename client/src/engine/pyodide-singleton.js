@@ -101,6 +101,39 @@ export function softStop() {
 }
 
 /**
+ * 메인 스레드 이벤트(클릭/마우스/키/위젯)를 Worker로 전달
+ * payload는 {name, pos?, pick?, key?, widget?, value?} 형식
+ */
+export function postEvent(payload) {
+  if (!worker) return;
+  worker.postMessage({ type: 'event', payload });
+}
+
+/**
+ * 위젯 값 동기화 (slider drag 등)
+ */
+export function postWidgetValue(id, value) {
+  if (!worker) return;
+  worker.postMessage({ type: 'widget_value', id, value });
+}
+
+/**
+ * 마우스 위치 동기화 — scene.mouse.pos 폴링용
+ */
+export function postMouseState(pos, pick) {
+  if (!worker) return;
+  worker.postMessage({ type: 'mouse', pos, pick });
+}
+
+/**
+ * 현재 눌려있는 키 목록 동기화 — keysdown() 폴링용
+ */
+export function postPressedKeys(keys) {
+  if (!worker) return;
+  worker.postMessage({ type: 'keys', keys });
+}
+
+/**
  * 하드 스톱 — Worker terminate + 재생성
  * 소프트 스톱이 실패했을 때의 fallback
  */

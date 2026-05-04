@@ -1,11 +1,52 @@
 # VPy Lab 진행 상황
 
-**마지막 세션**: 2026-04-14 (오후 8차)
+**마지막 세션**: 2026-05-04 (VPython API 확장)
 **다음 세션 방침**: 내보내기 동기화 → OAuth 활성화 → 실제 배포 → E2E 인증 테스트
 
 ---
 
 ## ✅ 완료
+
+### Step N: VPython API 확장 v3 (2026-05-04, Tier 1·2·3 전체)
+
+표준 VPython 대비 누락 기능 전부 구현. 양방향 이벤트 채널·DOM 패널·2D 그래프 캔버스 등 새 인프라 추가.
+
+**Tier 1·2 (3D 객체 + 메서드 + scene)**
+- 새 프리미티브: `pyramid`, `ellipsoid`, `helix`, `label`/`text`, `curve`, `points`
+- 객체 메서드: `.clone(**kwargs)`, `.rotate(angle, axis, origin)`, `.attach_trail()`, `.clear_trail()`
+- vector 메서드: `.proj(b)`, `.comp(b)`, `.diff_angle(b)`, `.rotate(angle, axis)`
+- scene 객체: `scene.background/range/center/autoscale/title/caption`
+- frame 별칭, camera-system 확장(`setExplicitRange/Center/Autoscale`)
+
+**Tier 3 (이벤트 + UI + 2D 그래프 + 저수준 메시)**
+- 저수준 메시: `vertex`, `triangle`, `quad`, `extrusion` (BufferGeometry + ExtrudeGeometry)
+- 이벤트: `scene.bind('click'/'mousedown'/'mouseup'/'mousemove'/'keydown'/'keyup', handler)`, `scene.mouse.pos`/`pick`
+  - Worker 양방향 채널: 메인 → Worker `postEvent`/`postWidgetValue`/`postMouseState`, Worker → Python `js._popEvent`/`_getMousePos` 폴링
+  - rate()/sleep() 호출 시점에 등록된 핸들러 자동 디스패치
+- UI 위젯: `slider`, `button`, `checkbox`, `radio`, `menu`, `winput`
+  - 신규 모듈 [widgets-system.js](client/src/engine/widgets-system.js): DOM 패널 + textContent only (XSS 방지)
+- 2D 그래프: `graph`, `gcurve`, `gdots`, `gvbars`, `ghbars`
+  - 신규 모듈 [graph2d-system.js](client/src/engine/graph2d-system.js): Canvas2D 자동 스케일 + 4종 시리즈
+
+**관련 모듈 변경**
+- [pyodide-worker.js](client/src/engine/pyodide-worker.js): 이벤트 큐 + 새 메시지 타입(`event`/`widget_value`/`mouse`) 처리
+- [pyodide-singleton.js](client/src/engine/pyodide-singleton.js): `postEvent`/`postWidgetValue`/`postMouseState` 헬퍼
+- [vpython-bridge.js](client/src/engine/vpython-bridge.js): 9종 새 shape + 12종 새 action 처리, `mesh.userData.vpId`로 raycasting 픽 식별, `isEventBound` 노출
+- [Viewport3D.jsx](client/src/components/viewport/Viewport3D.jsx): Three.js Raycaster + DOM 이벤트 → Worker postMessage, `data-vpylab-viewport` 컨테이너 마킹
+- [export-html.js](client/src/utils/export-html.js): standalone export에 새 프리미티브 + 객체 메서드 동기화. UI 위젯/2D 그래프/이벤트는 export에서 미지원 stub 처리 (콘솔 경고)
+
+**예제 + 문서**
+- 14종 v3 쇼케이스 예제 추가([examples.js](client/src/data/examples.js)) — 학생 베이스라인용:
+  - 기본 6종: 새 도형 모음, 동적 곡선, clone+rotate 시계, 클릭 이벤트, 키보드 조종, 슬라이더 컨트롤
+  - 확장 8종: vertex 무지개 부채, triangle/quad 다면체, extrusion 휘어진 튜브, keysdown 우주선(다중 키), scene.mouse 따라다니기, 슬라이더로 함수 그래프 조절(A·sin(B·x+C)), gdots+gcurve 산점도 회귀, attach_trail 진자 운동
+- [docs/VPYTHON_API.md](docs/VPYTHON_API.md) v3 갱신: 저수준 메시 / 이벤트 / 위젯 / 2D 그래프 섹션 + 사용 예제 추가
+- 검증 중 발견·수정한 버그:
+  - `code-preprocessor.js`: 들여쓴 함수 내부 `import`를 모듈 레벨로 잘못 끌어올려 IndentationError 발생 → `isTopLevel` 체크로 수정 + 회귀 테스트 추가
+  - `vector` 클래스: VPython 호환 위해 `__eq__`/`__ne__`/`__hash__` 추가 (예: `vector(1,2,3) == vector(1,2,3)` 이제 True)
+
+**검증**
+- vitest 145 tests pass / vite build 성공 / Python AST 파싱 OK
+- 보안: textContent only(innerHTML 금지), Worker 격리 유지, 이벤트 페이로드는 JSON 직렬화로 PyProxy 우회
 
 ### 계획 및 리뷰
 - PLAN.md v4 최종 (5개 영역 병렬 리뷰 + 6개 이슈 결정)

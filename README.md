@@ -234,14 +234,17 @@ supabase/migrations/008_code_shares.sql
 ```python
 from vpython import *
 
-scene_background(색상['검정'])
+scene.background = 색상['검정']
 sphere(color=색상['빨강'], emissive=True)
+label(pos=vector(0, 1.2, 0), text="안녕!", color=색상['하양'], height=20)
 음표("도4", 0.3)
 음표("미4", 0.3)
 음표("솔4", 0.5)
 ```
 
-3. 3D 화면에 빛나는 빨간 구가 나타나고 도-미-솔 소리가 나면 **성공**입니다!
+3. 3D 화면에 빛나는 빨간 구와 라벨이 나타나고 도-미-솔 소리가 나면 **성공**입니다!
+
+> **API 레퍼런스**: 객체·메서드·VPython 대비 차이는 [docs/VPYTHON_API.md](docs/VPYTHON_API.md)를 참고하세요.
 
 ### 추가 확인 (선택)
 

@@ -408,6 +408,50 @@ export default class CameraSystem {
   }
 
   /**
+   * scene.range = N — VPython 호환: 시야 반경 N. MANUAL 모드로 전환.
+   */
+  setExplicitRange(range) {
+    if (!Number.isFinite(range) || range <= 0) return;
+    this.mode = MODE.MANUAL;
+    this._userInteracted = true;
+    // FOV 기반으로 거리 계산: tan(fov/2) = range/distance
+    const fov = this.camera.fov * (Math.PI / 180);
+    const distance = range / Math.tan(fov / 2);
+    this._targetDistance = distance;
+    this._currentDistance = distance;
+
+    // 즉시 적용
+    const direction = new THREE.Vector3();
+    direction.subVectors(this.camera.position, this.controls.target);
+    if (direction.lengthSq() < 0.001) direction.set(0, 0, 1);
+    else direction.normalize();
+    this.camera.position.copy(this._currentCenter).addScaledVector(direction, distance);
+  }
+
+  /**
+   * scene.center = vec — 카메라 타겟 중심점 설정. MANUAL 모드로 전환.
+   */
+  setExplicitCenter(x, y, z) {
+    this.mode = MODE.MANUAL;
+    this._userInteracted = true;
+    this._targetCenter.set(x, y, z);
+    this._currentCenter.set(x, y, z);
+    this.controls.target.copy(this._currentCenter);
+  }
+
+  /**
+   * scene.autoscale = bool — true면 Auto-Fit으로 복귀, false면 MANUAL 유지
+   */
+  setAutoscale(enabled) {
+    if (enabled) {
+      this.resetToAutoFit();
+    } else {
+      this.mode = MODE.MANUAL;
+      this._userInteracted = true;
+    }
+  }
+
+  /**
    * 정리
    */
   dispose() {

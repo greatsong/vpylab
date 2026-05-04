@@ -29,8 +29,8 @@ const missions = [
     level: 1,
     title: text('첫 3D 객체: 빛나는 행성', 'First 3D Object: Glowing Planet'),
     description: text(
-      'sphere()로 구를 만들고, 위치(pos), 크기(radius), 색상(color), 빛남(emissive)을 지정합니다.',
-      'Create a sphere and set its position, radius, color, and emissive glow.',
+      'sphere()로 구를 만들고, 기본 반지름 1보다 크게 만든 뒤 파랑 성분이 있는 색과 빛남(emissive)을 지정합니다.',
+      'Create a sphere, make it larger than the default radius 1, then set a color with some blue and emissive glow.',
     ),
     gradeType: 'A',
     starterCode: `from vpython import *
@@ -38,7 +38,11 @@ const missions = [
 scene_background(색상['검정'])
 
 # 목표: 빛나는 행성 하나를 만드세요.
-# 힌트: sphere(pos=vector(...), radius=..., color=..., emissive=True)
+# 채점 기준:
+# 1. sphere()로 구를 만듭니다.
+# 2. radius를 기본값 1보다 크게 만듭니다. 예: radius=1.2
+# 3. color에는 파랑 성분이 있는 색을 씁니다. 예: 색상['보라'], 색상['파랑'], 색상['하늘']
+# 4. emissive=True로 스스로 빛나게 만듭니다.
 
 # 여기에 코드를 작성하세요.
 `,
@@ -60,7 +64,8 @@ scene_background(색상['검정'])
     ],
     hints: [
       text('sphere()는 3D 구를 만듭니다.', 'sphere() creates a 3D sphere.'),
-      text('radius=1.2처럼 크기를 정할 수 있어요.', 'Set size with radius=1.2.'),
+      text('기본 반지름은 1이므로 radius=1.2처럼 1보다 크게 지정하세요.', 'The default radius is 1, so set a value larger than 1 such as radius=1.2.'),
+      text("색상['보라']나 색상['파랑']처럼 파랑 성분이 있는 색을 고르세요.", "Choose a color with some blue, such as 색상['보라'] or 색상['파랑']."),
       text("emissive=True를 넣으면 행성이 스스로 빛납니다.", 'Add emissive=True to make it glow.'),
     ],
   },

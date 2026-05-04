@@ -69,6 +69,18 @@ class vector:
     def __neg__(self):
         return vector(-self.x, -self.y, -self.z)
 
+    def __eq__(self, other):
+        if not isinstance(other, vector):
+            return NotImplemented
+        return self.x == other.x and self.y == other.y and self.z == other.z
+
+    def __ne__(self, other):
+        eq = self.__eq__(other)
+        return NotImplemented if eq is NotImplemented else not eq
+
+    def __hash__(self):
+        return hash((self.x, self.y, self.z))
+
     @property
     def mag(self):
         return (self.x**2 + self.y**2 + self.z**2) ** 0.5
@@ -100,6 +112,40 @@ class vector:
     def clone(self):
         """벡터 복제 — 원본과 독립된 새 벡터 반환"""
         return vector(self.x, self.y, self.z)
+
+    def proj(self, b):
+        """self를 b 방향으로 투영한 벡터 (vector projection)"""
+        bh = b.hat
+        return bh * self.dot(bh)
+
+    def comp(self, b):
+        """self의 b 방향 스칼라 성분 (scalar projection)"""
+        return self.dot(b.hat)
+
+    def diff_angle(self, b):
+        """두 벡터 사이의 각 (라디안)"""
+        import math
+        m1 = self.mag
+        m2 = b.mag
+        if m1 == 0 or m2 == 0:
+            return 0.0
+        cos_t = self.dot(b) / (m1 * m2)
+        # 부동소수 오차 보정
+        if cos_t > 1.0: cos_t = 1.0
+        elif cos_t < -1.0: cos_t = -1.0
+        return math.acos(cos_t)
+
+    def rotate(self, angle, axis=None):
+        """주어진 축을 중심으로 angle(라디안)만큼 회전한 새 벡터 (Rodrigues 공식)
+        axis 미지정 시 z축(0,0,1) 사용"""
+        import math
+        if axis is None:
+            axis = vector(0, 0, 1)
+        k = axis.hat
+        cos_a = math.cos(angle)
+        sin_a = math.sin(angle)
+        v = self
+        return v * cos_a + k.cross(v) * sin_a + k * (k.dot(v) * (1 - cos_a))
 
 # vec() — vector()의 단축 별칭
 vec = vector
@@ -313,6 +359,58 @@ class _GObject:
             "emissive": value,
         })
 
+    # === 공통 메서드 ===
+    def _clone_kwargs(self):
+        """clone() 시 사용할 현재 속성 dict — 서브클래스에서 확장"""
+        return {
+            'pos': self._pos.clone() if isinstance(self._pos, vector) else self._pos,
+            'color': self._color.clone() if isinstance(self._color, vector) else self._color,
+            'visible': self._visible,
+            'opacity': self._opacity,
+            'emissive': self._emissive,
+        }
+
+    def clone(self, **kwargs):
+        """객체 복제 — 동일 속성으로 새 객체 생성. kwargs로 속성을 덮어쓸 수 있음.
+        예: ball2 = ball.clone(pos=vector(2,0,0))"""
+        args = self._clone_kwargs()
+        args.update(kwargs)
+        return self.__class__(**args)
+
+    def rotate(self, angle, axis=None, origin=None):
+        """원점을 중심으로 axis 축으로 angle(라디안)만큼 객체를 회전.
+        - origin 미지정: 객체 자기 위치(self.pos)를 중심으로 회전
+        - axis 미지정: y축(0,1,0)
+        객체에 axis 속성이 있으면(cylinder, arrow, cone 등) 함께 회전"""
+        if axis is None:
+            axis = vector(0, 1, 0)
+        if origin is None:
+            origin = self._pos
+        # pos 회전 (origin 기준 상대 위치를 회전)
+        rel = self._pos - origin
+        new_rel = rel.rotate(angle, axis=axis)
+        self.pos = origin + new_rel
+        # axis 속성 보유 시 함께 회전
+        if hasattr(self, '_axis') and isinstance(self._axis, vector):
+            self.axis = self._axis.rotate(angle, axis=axis)
+
+    def clear_trail(self):
+        """누적된 궤적(trail)을 모두 지움"""
+        _add_command({"action": "trail_clear", "id": self._id})
+
+    def attach_trail(self, color=None, retain=10000):
+        """객체에 궤적을 부착 (이미 있으면 색상/길이만 갱신)"""
+        self._make_trail = True
+        if color is not None:
+            self._trail_color = color
+        _add_command({
+            "action": "trail_attach",
+            "id": self._id,
+            "trail_color": color.to_list() if isinstance(color, vector) else None,
+            "pos": self._pos.to_list(),
+            "retain": int(retain),
+        })
+
 
 # === 구체적 3D 객체 ===
 class sphere(_GObject):
@@ -329,6 +427,9 @@ class sphere(_GObject):
         self._radius = value
         _add_command({"action": "update", "id": self._id, "radius": value})
 
+    def _clone_kwargs(self):
+        return {**super()._clone_kwargs(), 'radius': self._radius}
+
 
 class box(_GObject):
     def __init__(self, **kwargs):
@@ -344,6 +445,11 @@ class box(_GObject):
         self._size = value
         s = value.to_list() if isinstance(value, vector) else value
         _add_command({"action": "update", "id": self._id, "size": s})
+
+    def _clone_kwargs(self):
+        s = self._size
+        size = s.clone() if isinstance(s, vector) else list(s) if hasattr(s, '__iter__') else s
+        return {**super()._clone_kwargs(), 'size': size}
 
 
 class cylinder(_GObject):
@@ -370,6 +476,9 @@ class cylinder(_GObject):
         self._axis = value
         _add_command({"action": "update", "id": self._id, "axis": value.to_list()})
 
+    def _clone_kwargs(self):
+        return {**super()._clone_kwargs(), 'radius': self._radius, 'axis': self._axis.clone()}
+
 
 class arrow(_GObject):
     def __init__(self, **kwargs):
@@ -394,6 +503,9 @@ class arrow(_GObject):
     def shaftwidth(self, value):
         self._shaftwidth = value
         _add_command({"action": "update", "id": self._id, "shaftwidth": value})
+
+    def _clone_kwargs(self):
+        return {**super()._clone_kwargs(), 'axis': self._axis.clone(), 'shaftwidth': self._shaftwidth}
 
 
 class cone(_GObject):
@@ -420,6 +532,9 @@ class cone(_GObject):
         self._axis = value
         _add_command({"action": "update", "id": self._id, "axis": value.to_list()})
 
+    def _clone_kwargs(self):
+        return {**super()._clone_kwargs(), 'radius': self._radius, 'axis': self._axis.clone()}
+
 
 class ring(_GObject):
     def __init__(self, **kwargs):
@@ -444,6 +559,327 @@ class ring(_GObject):
     def thickness(self, value):
         self._thickness = value
         _add_command({"action": "update", "id": self._id, "thickness": value})
+
+    def _clone_kwargs(self):
+        return {**super()._clone_kwargs(), 'radius': self._radius, 'thickness': self._thickness}
+
+
+# === 새 프리미티브: pyramid (4면 피라미드) ===
+class pyramid(_GObject):
+    """사각뿔 — VPython의 pyramid. size=vector(length, height, width)"""
+    def __init__(self, **kwargs):
+        self._size = kwargs.pop('size', vector(1, 1, 1))
+        self._axis = kwargs.pop('axis', vector(1, 0, 0))
+        s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
+        super().__init__('pyramid', size=s, axis=self._axis.to_list(), **kwargs)
+
+    @property
+    def size(self):
+        return self._size
+
+    @size.setter
+    def size(self, value):
+        self._size = value
+        s = value.to_list() if isinstance(value, vector) else list(value)
+        _add_command({"action": "update", "id": self._id, "size": s})
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @axis.setter
+    def axis(self, value):
+        self._axis = value
+        _add_command({"action": "update", "id": self._id, "axis": value.to_list()})
+
+    def _clone_kwargs(self):
+        return {**super()._clone_kwargs(), 'size': self._size.clone(), 'axis': self._axis.clone()}
+
+
+# === 새 프리미티브: ellipsoid (타원체) ===
+class ellipsoid(_GObject):
+    """타원체 — sphere를 size로 비균등 스케일링"""
+    def __init__(self, **kwargs):
+        self._size = kwargs.pop('size', vector(1, 1, 1))
+        s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
+        super().__init__('ellipsoid', size=s, **kwargs)
+
+    @property
+    def size(self):
+        return self._size
+
+    @size.setter
+    def size(self, value):
+        self._size = value
+        s = value.to_list() if isinstance(value, vector) else list(value)
+        _add_command({"action": "update", "id": self._id, "size": s})
+
+    def _clone_kwargs(self):
+        return {**super()._clone_kwargs(), 'size': self._size.clone()}
+
+
+# === 새 프리미티브: helix (나선/스프링) ===
+class helix(_GObject):
+    """나선 — pos에서 axis 방향으로 길이만큼, coils번 감김"""
+    def __init__(self, **kwargs):
+        self._radius = kwargs.pop('radius', 1.0)
+        self._axis = kwargs.pop('axis', vector(1, 0, 0))
+        self._length = kwargs.pop('length', None)
+        self._coils = kwargs.pop('coils', 5)
+        self._thickness = kwargs.pop('thickness', 0.05)
+        # length 미지정 시 axis 길이 사용
+        ax = self._axis
+        length = self._length if self._length is not None else ax.mag
+        super().__init__(
+            'helix',
+            radius=self._radius,
+            axis=ax.to_list(),
+            length=float(length),
+            coils=int(self._coils),
+            thickness=float(self._thickness),
+            **kwargs,
+        )
+
+    @property
+    def radius(self):
+        return self._radius
+
+    @radius.setter
+    def radius(self, value):
+        self._radius = value
+        _add_command({"action": "update", "id": self._id, "radius": value})
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @axis.setter
+    def axis(self, value):
+        self._axis = value
+        _add_command({"action": "update", "id": self._id, "axis": value.to_list()})
+
+    def _clone_kwargs(self):
+        return {
+            **super()._clone_kwargs(),
+            'radius': self._radius,
+            'axis': self._axis.clone(),
+            'length': self._length,
+            'coils': self._coils,
+            'thickness': self._thickness,
+        }
+
+
+# === 새 프리미티브: label (3D 텍스트 라벨) ===
+class label:
+    """3D 위치에 텍스트 라벨을 표시 — 항상 카메라를 향함(Sprite)"""
+    def __init__(self, **kwargs):
+        self._id = _new_id()
+        self._pos = kwargs.get('pos', vector(0, 0, 0))
+        self._text = kwargs.get('text', '')
+        self._color = kwargs.get('color', color.white)
+        self._height = kwargs.get('height', 16)  # 폰트 높이(픽셀)
+        self._visible = kwargs.get('visible', True)
+        self._opacity = kwargs.get('opacity', 1.0)
+        self._background = kwargs.get('background', None)
+        self._border = kwargs.get('border', 0)
+
+        _add_command({
+            "action": "create",
+            "id": self._id,
+            "type": "label",
+            "pos": self._pos.to_list(),
+            "color": self._color.to_list(),
+            "text": str(self._text),
+            "height": float(self._height),
+            "visible": self._visible,
+            "opacity": float(self._opacity),
+            "background": self._background.to_list() if isinstance(self._background, vector) else None,
+            "border": float(self._border),
+        })
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, value):
+        self._pos = value
+        _add_command({"action": "update", "id": self._id, "pos": value.to_list()})
+
+    @property
+    def text(self):
+        return self._text
+
+    @text.setter
+    def text(self, value):
+        self._text = str(value)
+        _add_command({"action": "update", "id": self._id, "text": self._text})
+
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, value):
+        self._color = value
+        _add_command({"action": "update", "id": self._id, "color": value.to_list()})
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = value
+        _add_command({"action": "update", "id": self._id, "visible": value})
+
+    @property
+    def opacity(self):
+        return self._opacity
+
+    @opacity.setter
+    def opacity(self, value):
+        self._opacity = float(value)
+        _add_command({"action": "update", "id": self._id, "opacity": self._opacity})
+
+    def clone(self, **kwargs):
+        args = {
+            'pos': self._pos.clone(),
+            'text': self._text,
+            'color': self._color.clone() if isinstance(self._color, vector) else self._color,
+            'height': self._height,
+            'visible': self._visible,
+            'opacity': self._opacity,
+            'background': self._background.clone() if isinstance(self._background, vector) else self._background,
+            'border': self._border,
+        }
+        args.update(kwargs)
+        return label(**args)
+
+
+# 영어 별칭: text() = label()
+text = label
+
+
+# === 새 프리미티브: curve (선분 누적 곡선) ===
+class curve:
+    """3D 폴리라인 — 점을 누적해 선을 그림.
+    c = curve(color=color.red); c.append(pos)"""
+    def __init__(self, **kwargs):
+        self._id = _new_id()
+        self._color = kwargs.get('color', color.white)
+        self._radius = float(kwargs.get('radius', 0))  # 0이면 기본 LineBasic, >0이면 굵은 선
+        self._visible = kwargs.get('visible', True)
+        self._points = []  # [vector, ...]
+
+        # 초기 points 인자 지원
+        initial = kwargs.get('pos', None)
+        if initial is not None:
+            if isinstance(initial, vector):
+                self._points.append(initial.clone())
+            else:
+                for p in initial:
+                    self._points.append(p.clone() if isinstance(p, vector) else vector(*p))
+
+        _add_command({
+            "action": "create",
+            "id": self._id,
+            "type": "curve",
+            "color": self._color.to_list(),
+            "radius": self._radius,
+            "visible": self._visible,
+            "points": [p.to_list() for p in self._points],
+        })
+
+    def append(self, pos):
+        """점을 추가"""
+        v = pos.clone() if isinstance(pos, vector) else vector(*pos)
+        self._points.append(v)
+        _add_command({
+            "action": "curve_append",
+            "id": self._id,
+            "pos": v.to_list(),
+        })
+
+    def clear(self):
+        """모든 점 지우기"""
+        self._points = []
+        _add_command({"action": "curve_clear", "id": self._id})
+
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, value):
+        self._color = value
+        _add_command({"action": "update", "id": self._id, "color": value.to_list()})
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = value
+        _add_command({"action": "update", "id": self._id, "visible": value})
+
+    def __len__(self):
+        return len(self._points)
+
+
+# === 새 프리미티브: points (점 집합) ===
+class points:
+    """3D 점들의 집합 — 작은 점 또는 구로 표시"""
+    def __init__(self, **kwargs):
+        self._id = _new_id()
+        self._color = kwargs.get('color', color.white)
+        self._size = float(kwargs.get('size', 5))  # 픽셀 단위
+        self._visible = kwargs.get('visible', True)
+        self._points = []
+
+        initial = kwargs.get('pos', None)
+        if initial is not None:
+            if isinstance(initial, vector):
+                self._points.append(initial.clone())
+            else:
+                for p in initial:
+                    self._points.append(p.clone() if isinstance(p, vector) else vector(*p))
+
+        _add_command({
+            "action": "create",
+            "id": self._id,
+            "type": "points",
+            "color": self._color.to_list(),
+            "size": self._size,
+            "visible": self._visible,
+            "points": [p.to_list() for p in self._points],
+        })
+
+    def append(self, pos):
+        v = pos.clone() if isinstance(pos, vector) else vector(*pos)
+        self._points.append(v)
+        _add_command({
+            "action": "curve_append",  # 동일한 메커니즘 재사용
+            "id": self._id,
+            "pos": v.to_list(),
+        })
+
+    def clear(self):
+        self._points = []
+        _add_command({"action": "curve_clear", "id": self._id})
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = value
+        _add_command({"action": "update", "id": self._id, "visible": value})
+
+    def __len__(self):
+        return len(self._points)
 
 
 # === compound (복합 객체) ===
@@ -611,6 +1047,631 @@ class distant_light:
         _add_command({"action": "update", "id": self._id, "intensity": value})
 
 
+# === 저수준 메시: vertex / triangle / quad / extrusion ===
+class vertex:
+    """삼각형/사각형의 정점 — pos는 필수, 나머지는 선택"""
+    def __init__(self, pos=None, color=None, normal=None, opacity=1.0):
+        self.pos = pos if pos is not None else vector(0, 0, 0)
+        self.color = color if color is not None else vector(1, 1, 1)
+        self.normal = normal
+        self.opacity = float(opacity)
+
+    def to_dict(self):
+        d = {
+            "pos": self.pos.to_list(),
+            "color": self.color.to_list(),
+            "opacity": self.opacity,
+        }
+        if isinstance(self.normal, vector):
+            d["normal"] = self.normal.to_list()
+        return d
+
+
+class triangle:
+    """3정점으로 이루어진 삼각형 면 — vertex 3개를 받음"""
+    def __init__(self, v0=None, v1=None, v2=None, vs=None, **kwargs):
+        self._id = _new_id()
+        # vs=[v0,v1,v2] 또는 v0=, v1=, v2= 두 형식 모두 지원
+        if vs is not None:
+            verts = list(vs)
+        else:
+            verts = [v0, v1, v2]
+        if len(verts) != 3 or any(v is None for v in verts):
+            raise ValueError("triangle은 정확히 3개의 vertex가 필요합니다")
+        self._vertices = [v if isinstance(v, vertex) else vertex(pos=v) for v in verts]
+        self._visible = kwargs.get('visible', True)
+
+        _add_command({
+            "action": "create",
+            "id": self._id,
+            "type": "triangle",
+            "vertices": [v.to_dict() for v in self._vertices],
+            "visible": self._visible,
+        })
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = value
+        _add_command({"action": "update", "id": self._id, "visible": value})
+
+
+class quad:
+    """4정점으로 이루어진 사각형 면 — 내부적으로 2개의 삼각형"""
+    def __init__(self, v0=None, v1=None, v2=None, v3=None, vs=None, **kwargs):
+        self._id = _new_id()
+        if vs is not None:
+            verts = list(vs)
+        else:
+            verts = [v0, v1, v2, v3]
+        if len(verts) != 4 or any(v is None for v in verts):
+            raise ValueError("quad는 정확히 4개의 vertex가 필요합니다")
+        self._vertices = [v if isinstance(v, vertex) else vertex(pos=v) for v in verts]
+        self._visible = kwargs.get('visible', True)
+
+        _add_command({
+            "action": "create",
+            "id": self._id,
+            "type": "quad",
+            "vertices": [v.to_dict() for v in self._vertices],
+            "visible": self._visible,
+        })
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = value
+        _add_command({"action": "update", "id": self._id, "visible": value})
+
+
+class extrusion:
+    """2D 단면을 path를 따라 압출(스윕). VPython 호환 단순화 버전.
+    - path: [vector, ...] 또는 평면 좌표 리스트
+    - shape: [(x, y), ...] 2D 단면 외곽선 (또는 vector 리스트)
+    """
+    def __init__(self, path=None, shape=None, color=None, **kwargs):
+        self._id = _new_id()
+        self._color = color if color is not None else vector(1, 1, 1)
+        self._visible = kwargs.get('visible', True)
+        self._opacity = float(kwargs.get('opacity', 1.0))
+        # path 정규화
+        path = path or []
+        path_pts = []
+        for p in path:
+            if isinstance(p, vector):
+                path_pts.append(p.to_list())
+            else:
+                path_pts.append(list(p))
+        # shape 정규화 — (x, y) 튜플 또는 vector
+        shape = shape or [(-0.5, -0.5), (0.5, -0.5), (0.5, 0.5), (-0.5, 0.5)]
+        shape_pts = []
+        for s in shape:
+            if isinstance(s, vector):
+                shape_pts.append([s.x, s.y])
+            else:
+                shape_pts.append(list(s)[:2])
+
+        _add_command({
+            "action": "create",
+            "id": self._id,
+            "type": "extrusion",
+            "path": path_pts,
+            "shape": shape_pts,
+            "color": self._color.to_list(),
+            "visible": self._visible,
+            "opacity": self._opacity,
+        })
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = value
+        _add_command({"action": "update", "id": self._id, "visible": value})
+
+
+# === 2D 그래프 시스템 ===
+# graph는 별도 캔버스(DOM 오버레이)에서 그려지는 2D 플롯입니다.
+# gcurve(선), gdots(점), gvbars(세로막대), ghbars(가로막대)를 지원.
+
+_active_graphs = {}  # id → graph 인스턴스 (디버그용)
+
+class graph:
+    """2D 플롯 캔버스 — gcurve/gdots/gvbars/ghbars의 컨테이너"""
+    def __init__(self, **kwargs):
+        self._id = _new_id()
+        self._title = kwargs.get('title', '')
+        self._xtitle = kwargs.get('xtitle', '')
+        self._ytitle = kwargs.get('ytitle', '')
+        self._width = int(kwargs.get('width', 480))
+        self._height = int(kwargs.get('height', 320))
+        self._fast = bool(kwargs.get('fast', True))
+        self._xmin = kwargs.get('xmin', None)
+        self._xmax = kwargs.get('xmax', None)
+        self._ymin = kwargs.get('ymin', None)
+        self._ymax = kwargs.get('ymax', None)
+        self._series = []
+        _active_graphs[self._id] = self
+
+        _add_command({
+            "action": "graph_create",
+            "id": self._id,
+            "title": self._title,
+            "xtitle": self._xtitle,
+            "ytitle": self._ytitle,
+            "width": self._width,
+            "height": self._height,
+            "fast": self._fast,
+            "xmin": self._xmin, "xmax": self._xmax,
+            "ymin": self._ymin, "ymax": self._ymax,
+        })
+
+    def _add_series(self, series):
+        self._series.append(series)
+
+    def delete(self):
+        _add_command({"action": "graph_delete", "id": self._id})
+        _active_graphs.pop(self._id, None)
+
+
+class _GSeriesBase:
+    """그래프 시리즈 공통 부모 — gcurve/gdots/gvbars/ghbars"""
+    _kind = 'curve'
+
+    def __init__(self, **kwargs):
+        self._id = _new_id()
+        # graph 인스턴스 — 미지정 시 기본 graph 1개를 자동 생성
+        g = kwargs.get('graph', None)
+        if g is None:
+            # 기존에 만들어진 가장 최근 graph 재사용 (없으면 새로 생성)
+            if _active_graphs:
+                g = next(iter(_active_graphs.values()))
+            else:
+                g = graph()
+        self._graph = g
+        self._color = kwargs.get('color', vector(0.2, 0.5, 0.9))
+        self._width = float(kwargs.get('width', 1.5))
+        self._size = float(kwargs.get('size', 4))   # gdots
+        self._label = kwargs.get('label', '')
+        self._visible = kwargs.get('visible', True)
+        g._add_series(self)
+
+        _add_command({
+            "action": "graph_series_create",
+            "id": self._id,
+            "graph_id": g._id,
+            "kind": self._kind,
+            "color": self._color.to_list(),
+            "width": self._width,
+            "size": self._size,
+            "label": self._label,
+            "visible": self._visible,
+        })
+
+    def plot(self, *args):
+        """plot(x, y) 또는 plot([(x,y), ...]) 또는 plot([x1,x2,...], [y1,y2,...])"""
+        # 다양한 입력 형식 정규화
+        pts = []
+        if len(args) == 2 and not hasattr(args[0], '__iter__'):
+            pts = [(float(args[0]), float(args[1]))]
+        elif len(args) == 2 and hasattr(args[0], '__iter__') and hasattr(args[1], '__iter__'):
+            pts = list(zip([float(x) for x in args[0]], [float(y) for y in args[1]]))
+        elif len(args) == 1 and hasattr(args[0], '__iter__'):
+            for item in args[0]:
+                if hasattr(item, '__iter__') and not isinstance(item, str):
+                    a = list(item)
+                    pts.append((float(a[0]), float(a[1])))
+                else:
+                    raise ValueError("plot 인자가 (x,y) 페어가 아닙니다")
+        else:
+            raise ValueError("plot(x, y) 또는 plot([(x,y), ...]) 형식이어야 합니다")
+        _add_command({
+            "action": "graph_series_plot",
+            "id": self._id,
+            "points": pts,
+        })
+
+    def delete(self):
+        _add_command({"action": "graph_series_delete", "id": self._id})
+
+
+class gcurve(_GSeriesBase):
+    """선 그래프"""
+    _kind = 'curve'
+
+
+class gdots(_GSeriesBase):
+    """점 그래프"""
+    _kind = 'dots'
+
+
+class gvbars(_GSeriesBase):
+    """세로 막대 그래프"""
+    _kind = 'vbars'
+
+
+class ghbars(_GSeriesBase):
+    """가로 막대 그래프"""
+    _kind = 'hbars'
+
+
+# === 이벤트 시스템 (scene.bind, scene.mouse) ===
+class _MouseState:
+    """scene.mouse — 마우스 상태 폴링 객체. 최신 위치는 메인 스레드가 갱신."""
+    def __init__(self):
+        self._pos = vector(0, 0, 0)   # 월드 좌표 (3D 평면 z=0 가정)
+        self._pick = None              # 현재 마우스 아래 객체 id
+
+    @property
+    def pos(self):
+        # JS의 _getMousePos를 통해 최신 좌표 갱신
+        try:
+            p = js._getMousePos()
+            if p is not None:
+                self._pos = vector(p[0], p[1], p[2])
+        except Exception:
+            pass
+        return self._pos
+
+    @property
+    def pick(self):
+        try:
+            return js._getMousePick()
+        except Exception:
+            return None
+
+
+_mouse_singleton = _MouseState()
+
+
+class _EventInfo:
+    """on_click/on_mousedown 등에 전달되는 이벤트 객체"""
+    def __init__(self, name, pos=None, pick=None, key=None):
+        self.event = name
+        self.pos = pos if pos is not None else vector(0, 0, 0)
+        self.pick = pick
+        self.key = key
+
+
+# bind된 핸들러 저장: { event_name: [handler, ...] }
+_event_handlers = {}
+
+
+def _process_pending_events():
+    """JS 이벤트 큐에서 이벤트를 가져와 등록된 핸들러 호출. rate()에서 호출됨."""
+    try:
+        while True:
+            evt_json = js._popEvent()
+            if evt_json is None:
+                return
+            try:
+                import json as _json
+                # PyProxy → str 강제 변환
+                evt = _json.loads(str(evt_json))
+            except Exception:
+                continue
+            name = evt.get('name')
+            handlers = _event_handlers.get(name, [])
+            if not handlers:
+                # widget 이벤트는 widget id로도 디스패치
+                w_id = evt.get('widget')
+                if w_id and w_id in _event_handlers:
+                    handlers = _event_handlers[w_id]
+            if not handlers:
+                continue
+            pos = evt.get('pos')
+            info = _EventInfo(
+                name=name,
+                pos=vector(*pos) if pos else None,
+                pick=evt.get('pick'),
+                key=evt.get('key'),
+            )
+            # widget 이벤트면 value 필드 추가
+            if 'value' in evt:
+                info.value = evt['value']
+            for h in handlers:
+                try:
+                    h(info)
+                except Exception as e:
+                    print(f"[event handler error] {e}")
+    except Exception:
+        # _popEvent 미정의 등 — 조용히 무시
+        return
+
+
+def keysdown():
+    """현재 눌려있는 모든 키의 리스트를 반환 (VPython 호환).
+    예: 'ArrowUp' in keysdown() — 위 화살표가 현재 눌려있으면 True
+    여러 키를 동시에 처리하는 게임 루프에 유용."""
+    try:
+        import json as _json
+        raw = js._getPressedKeys()
+        return _json.loads(str(raw))
+    except Exception:
+        return []
+
+
+def _bind(event_name, handler):
+    _event_handlers.setdefault(event_name, []).append(handler)
+
+
+def _unbind(event_name, handler=None):
+    if handler is None:
+        _event_handlers.pop(event_name, None)
+    else:
+        lst = _event_handlers.get(event_name)
+        if lst and handler in lst:
+            lst.remove(handler)
+
+
+# === UI 위젯 ===
+# slider, button, checkbox, radio, menu, winput
+# 모두 DOM 요소로 메인 스레드에서 렌더링되며, 이벤트는 _event_handlers로 디스패치.
+
+_widget_values = {}  # widget id → 최신 value (JS와 동기화)
+
+
+class _Widget:
+    _kind = 'widget'
+
+    def __init__(self, **kwargs):
+        self._id = _new_id()
+        self._bind = kwargs.pop('bind', None)
+        self._visible = kwargs.pop('visible', True)
+        self._disabled = kwargs.pop('disabled', False)
+        # bind 핸들러 등록 (id 기반)
+        if callable(self._bind):
+            _event_handlers.setdefault(self._id, []).append(self._bind)
+        _widget_values[self._id] = kwargs.get('value', None)
+
+    def _emit_create(self, extra):
+        cmd = {
+            "action": "widget_create",
+            "id": self._id,
+            "kind": self._kind,
+            "visible": self._visible,
+            "disabled": self._disabled,
+        }
+        cmd.update(extra)
+        _add_command(cmd)
+
+    @property
+    def value(self):
+        # JS에서 갱신된 최신값 동기화
+        try:
+            v = js._getWidgetValue(self._id)
+            if v is not None:
+                _widget_values[self._id] = v
+        except Exception:
+            pass
+        return _widget_values.get(self._id)
+
+    @value.setter
+    def value(self, v):
+        _widget_values[self._id] = v
+        _add_command({"action": "widget_update", "id": self._id, "value": v})
+
+    @property
+    def disabled(self):
+        return self._disabled
+
+    @disabled.setter
+    def disabled(self, v):
+        self._disabled = bool(v)
+        _add_command({"action": "widget_update", "id": self._id, "disabled": self._disabled})
+
+    def delete(self):
+        _add_command({"action": "widget_delete", "id": self._id})
+
+
+class slider(_Widget):
+    _kind = 'slider'
+
+    def __init__(self, min=0, max=1, step=0.01, value=None, length=200, **kwargs):
+        self._min = float(min)
+        self._max = float(max)
+        self._step = float(step)
+        self._value = float(value) if value is not None else self._min
+        self._length = int(length)
+        super().__init__(value=self._value, **kwargs)
+        self._emit_create({
+            "min": self._min, "max": self._max, "step": self._step,
+            "value": self._value, "length": self._length,
+        })
+
+
+class button(_Widget):
+    _kind = 'button'
+
+    def __init__(self, text='Button', **kwargs):
+        self._text = str(text)
+        super().__init__(**kwargs)
+        self._emit_create({"text": self._text})
+
+    @property
+    def text(self):
+        return self._text
+
+    @text.setter
+    def text(self, v):
+        self._text = str(v)
+        _add_command({"action": "widget_update", "id": self._id, "text": self._text})
+
+
+class checkbox(_Widget):
+    _kind = 'checkbox'
+
+    def __init__(self, text='', checked=False, **kwargs):
+        self._text = str(text)
+        self._checked = bool(checked)
+        super().__init__(value=self._checked, **kwargs)
+        self._emit_create({"text": self._text, "checked": self._checked})
+
+    @property
+    def checked(self):
+        return bool(self.value)
+
+    @checked.setter
+    def checked(self, v):
+        self.value = bool(v)
+
+
+class radio(_Widget):
+    _kind = 'radio'
+
+    def __init__(self, text='', name='radio_group', value=None, checked=False, **kwargs):
+        self._text = str(text)
+        self._name = str(name)
+        self._radio_value = value
+        self._checked = bool(checked)
+        super().__init__(value=value if checked else None, **kwargs)
+        self._emit_create({
+            "text": self._text, "name": self._name,
+            "radio_value": self._radio_value, "checked": self._checked,
+        })
+
+
+class menu(_Widget):
+    _kind = 'menu'
+
+    def __init__(self, choices=None, selected=None, **kwargs):
+        self._choices = list(choices) if choices else []
+        self._selected = selected if selected is not None else (self._choices[0] if self._choices else None)
+        super().__init__(value=self._selected, **kwargs)
+        self._emit_create({"choices": self._choices, "selected": self._selected})
+
+
+class winput(_Widget):
+    """텍스트/숫자 입력 — Enter 키 또는 blur 시 bind 호출"""
+    _kind = 'winput'
+
+    def __init__(self, prompt='', type='numeric', **kwargs):
+        self._prompt = str(prompt)
+        self._type = str(type)
+        super().__init__(**kwargs)
+        self._emit_create({"prompt": self._prompt, "input_type": self._type})
+
+
+# === scene 객체 (카메라/배경 제어) ===
+class _Scene:
+    """씬 전역 제어 — VPython의 scene과 유사
+    scene.background = color.black
+    scene.range = 5         # 카메라 시야 반경
+    scene.center = vector(0,0,0)
+    scene.autoscale = True/False
+    scene.title = "..."     # (현재는 print로 대체)
+    """
+    def __init__(self):
+        self._background = vector(0.97, 0.98, 0.98)
+        self._range = None
+        self._center = vector(0, 0, 0)
+        self._autoscale = True
+        self._title = ''
+        self._caption = ''
+
+    @property
+    def background(self):
+        return self._background
+
+    @background.setter
+    def background(self, value):
+        self._background = value
+        _add_command({"action": "scene", "property": "background", "value": value.to_list()})
+
+    @property
+    def range(self):
+        return self._range
+
+    @range.setter
+    def range(self, value):
+        self._range = float(value)
+        _add_command({"action": "scene", "property": "range", "value": self._range})
+
+    @property
+    def center(self):
+        return self._center
+
+    @center.setter
+    def center(self, value):
+        self._center = value
+        _add_command({"action": "scene", "property": "center", "value": value.to_list()})
+
+    @property
+    def autoscale(self):
+        return self._autoscale
+
+    @autoscale.setter
+    def autoscale(self, value):
+        self._autoscale = bool(value)
+        _add_command({"action": "scene", "property": "autoscale", "value": self._autoscale})
+
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        self._title = str(value)
+        # 콘솔 출력으로 대체 (DOM 오버레이는 Tier 3에서)
+        print(f"[scene.title] {self._title}")
+
+    @property
+    def caption(self):
+        return self._caption
+
+    @caption.setter
+    def caption(self, value):
+        self._caption = str(value)
+        print(f"[scene.caption] {self._caption}")
+
+    @property
+    def mouse(self):
+        return _mouse_singleton
+
+    def bind(self, event_names, handler=None):
+        """이벤트 핸들러 등록.
+        scene.bind('click', on_click)
+        scene.bind('mousedown mouseup mousemove', on_mouse)  # 공백 구분 다중
+        @scene.bind('keydown')  # 데코레이터로도 사용 가능"""
+        # 데코레이터 형태: scene.bind('click') 후 함수에 적용
+        if handler is None:
+            def _decorator(fn):
+                self.bind(event_names, fn)
+                return fn
+            return _decorator
+        names = event_names.split() if isinstance(event_names, str) else list(event_names)
+        for n in names:
+            _bind(n, handler)
+        # 메인 스레드에 이 이벤트를 디스패치 시작하라고 알림
+        _add_command({"action": "scene_bind", "events": names})
+
+    def unbind(self, event_names, handler=None):
+        names = event_names.split() if isinstance(event_names, str) else list(event_names)
+        for n in names:
+            _unbind(n, handler)
+
+    def waitfor(self, event_name):
+        """동기 대기 — VPython의 scene.waitfor와 호환되도록 단순화.
+        실제 비동기 환경에서는 이벤트 루프와 충돌하므로 권장하지 않음."""
+        print(f"[scene.waitfor] {event_name} — VPyLab은 scene.bind 콜백 사용을 권장")
+
+
+scene = _Scene()
+
+
+# === frame 별칭 (compound와 동일) ===
+# VPython 구버전 호환 — frame은 사실상 compound와 같은 그룹화
+frame = compound
+
+
 # === 중단 신호 확인 ===
 def _check_stop():
     """JS의 shouldStop 플래그를 확인하여 중단 여부 반환"""
@@ -628,12 +1689,15 @@ class _StopExecution(Exception):
 # === rate() 함수 ===
 async def rate(fps):
     """
-    프레임 레이트 제어 + 커맨드 버퍼 플러시
-    rate(100) = 초당 100회 루프, 각 반복 후 커맨드 배치 전송
+    프레임 레이트 제어 + 커맨드 버퍼 플러시 + 이벤트 디스패치
+    rate(100) = 초당 100회 루프, 각 반복 후 커맨드 배치 전송 및 등록된 핸들러 호출
     """
     if _check_stop():
         _send_commands()
         raise _StopExecution("실행이 중지되었습니다")
+    # 등록된 이벤트 핸들러 호출 (있을 때만)
+    if _event_handlers:
+        _process_pending_events()
     if _command_buffer:
         _send_commands()  # 누적된 커맨드를 한번에 전송
     else:
@@ -644,10 +1708,12 @@ async def rate(fps):
 
 
 async def sleep(seconds):
-    """비동기 sleep"""
+    """비동기 sleep + 이벤트 디스패치"""
     if _check_stop():
         _send_commands()
         raise _StopExecution("실행이 중지되었습니다")
+    if _event_handlers:
+        _process_pending_events()
     if _command_buffer:
         _send_commands()
     else:
