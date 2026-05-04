@@ -36,12 +36,13 @@ const COLOR_CLASS = {
 
 const fallbackColor = COLOR_CLASS.sky;
 
-const EDUFLOW_BASE_URL = (import.meta.env?.VITE_EDUFLOW_BASE_URL || '').replace(/\/$/, '');
-function eduflowSiteUrl(course) {
-  // 에듀플로 배포 사이트 패턴: <eduflow>/p/vpylab-<courseId>/site/
-  // VITE_EDUFLOW_BASE_URL 미설정 시 코스 detail 페이지에 안내만 표시
-  if (!EDUFLOW_BASE_URL) return null;
-  return `${EDUFLOW_BASE_URL}/p/vpylab-${course.id}/site/`;
+// 교재 사이트는 GitHub Pages에 직접 배포 (greatsong/vpylab-textbook).
+// 사용자가 다른 도메인을 쓰려면 VITE_TEXTBOOK_BASE_URL 환경변수로 덮어쓴다.
+const TEXTBOOK_BASE_URL = (
+  import.meta.env?.VITE_TEXTBOOK_BASE_URL || 'https://greatsong.github.io/vpylab-textbook'
+).replace(/\/$/, '');
+function textbookSiteUrl(course) {
+  return `${TEXTBOOK_BASE_URL}/${course.id}/`;
 }
 
 function CourseCard({ course }) {
@@ -137,7 +138,7 @@ function CourseDetail({ courseId, lessonId }) {
     );
   }
   const c = COLOR_CLASS[course.color] || fallbackColor;
-  const eduflowUrl = eduflowSiteUrl(course);
+  const textbookUrl = textbookSiteUrl(course);
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
@@ -262,28 +263,21 @@ function CourseDetail({ courseId, lessonId }) {
       <section className="rounded-xl border p-5 mb-8"
         style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-panel)' }}>
         <h2 className="font-display text-base font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-          📘 교사용 교재 (에듀플로)
+          📘 교사용 교재 (Starlight)
         </h2>
         <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
-          이 코스의 이론 본문·미스컨셉션·교사 노트는 별도 Starlight 사이트로 발행됩니다.
-          학생은 실습(VPyLab) → 이론(에듀플로) → 변형 도전을 한 흐름으로 진행합니다.
+          이 코스의 이론 본문·미스컨셉션·교사 노트는 GitHub Pages에 발행된
+          Starlight 사이트로 열립니다. 학생은 실습(VPyLab) → 이론(교재) → 변형 도전을
+          한 흐름으로 진행합니다.
         </p>
-        {eduflowUrl ? (
-          <a
-            href={eduflowUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary text-xs !py-1.5 !px-3.5 inline-block no-underline"
-          >
-            📘 교재 사이트 열기
-          </a>
-        ) : (
-          <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
-            교재 사이트 URL이 환경변수(<code>VITE_EDUFLOW_BASE_URL</code>)에 설정되면
-            여기에 직접 링크가 노출됩니다. 시드된 프로젝트 ID:
-            <code className="ml-1">vpylab-{course.id}</code>
-          </p>
-        )}
+        <a
+          href={textbookUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-primary text-xs !py-1.5 !px-3.5 inline-block no-underline"
+        >
+          📘 교재 사이트 열기
+        </a>
       </section>
     </div>
   );
