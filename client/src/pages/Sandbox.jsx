@@ -61,11 +61,14 @@ export default function Sandbox() {
   const [codeShareToast, setCodeShareToast] = useState(false);
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  // 초기화 시 되돌릴 "원본 코드" — 예제/lesson/remix 로드 시 갱신, 미설정 시 DEFAULT_CODE
+  const initialCodeRef = useRef(DEFAULT_CODE);
 
   // /s/:id에서 넘어온 공유 코드 로드
   useEffect(() => {
     if (location.state?.sharedCode) {
       setCode(location.state.sharedCode);
+      initialCodeRef.current = location.state.sharedCode;
       if (location.state?.autoPlay) {
         // 극장 모드: 클릭 대기 → 클릭 시 오디오 잠금 해제 + 실행
         setTheaterMode(true);
@@ -81,6 +84,7 @@ export default function Sandbox() {
     const { code: shared, isExternal } = decodeCodeFromURL();
     if (shared) {
       setCode(shared);
+      initialCodeRef.current = shared;
       if (isExternal) {
         setOutputs([{ text: t('share.externalCode'), type: 'warning', id: Date.now() }]);
       }
@@ -126,6 +130,7 @@ export default function Sandbox() {
         const work = useGalleryStore.getState().currentWork;
         if (work) {
           setCode(work.code);
+          initialCodeRef.current = work.code;
           setRemixInfo({ title: work.title, author: work.vpylab_profiles?.display_name });
           addOutput(`"${work.title}" 작품을 Remix합니다. 자유롭게 수정해보세요!`, 'success');
         }
@@ -144,6 +149,7 @@ export default function Sandbox() {
       const playCode = await useGalleryStore.getState().fetchWorkCode(playId);
       if (cancelled || !playCode) return;
       setCode(playCode);
+      initialCodeRef.current = playCode;
       pendingPlayRef.current = playCode;
     })();
     return () => { cancelled = true; };
@@ -156,6 +162,7 @@ export default function Sandbox() {
     const ex = EXAMPLES.find(e => e.id === exampleId);
     if (ex) {
       setCode(ex.code);
+      initialCodeRef.current = ex.code;  // 초기화 시 이 예제로 복귀
       addOutput(`예제 "${ex.title}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
     } else {
       addOutput(`예제 ID "${exampleId}"를 찾을 수 없습니다.`, 'error');
@@ -176,6 +183,7 @@ export default function Sandbox() {
     const lesson = getLesson(cid, lid);
     if (lesson) {
       setCode(lesson.code);
+      initialCodeRef.current = lesson.code;  // 초기화 시 이 차시로 복귀
       addOutput(`코스 차시 "${lesson.title?.ko || lid}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
     } else {
       addOutput(`차시를 찾을 수 없습니다: ${lessonParam}`, 'error');
@@ -193,13 +201,16 @@ export default function Sandbox() {
           if (token) {
             try {
               const { code: fetchedCode } = await useGalleryStore.getState().fetchCodeFromGitHub(work.github_repo, token);
-              if (fetchedCode) setCode(fetchedCode);
-              else setCode(work.code); // fallback: DB 코드 사용
+              const c = fetchedCode || work.code;
+              setCode(c);
+              initialCodeRef.current = c;
             } catch {
               setCode(work.code);
+              initialCodeRef.current = work.code;
             }
           } else {
             setCode(work.code);
+            initialCodeRef.current = work.code;
           }
           setEditMode({ id: editId, githubRepo: work.github_repo, title: work.title });
           addOutput(`"${work.title}" 수정 모드. 수정 후 "업데이트"를 눌러주세요.`, 'success');
@@ -305,8 +316,9 @@ export default function Sandbox() {
   };
 
   const handleReset = () => {
+    // 현재 로드된 예제/lesson/공유 코드의 원본으로 복귀 (없으면 DEFAULT_CODE)
     if (sceneRef.current) clearScene(sceneRef.current);
-    setCode(DEFAULT_CODE);
+    setCode(initialCodeRef.current || DEFAULT_CODE);
     setOutputs([]);
   };
 
@@ -642,6 +654,42 @@ export default function Sandbox() {
           className={`${activeTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-[45%] md:min-w-[300px]`}
           style={{ borderRight: '1px solid var(--color-border)' }}
         >
+          {/* 모바일 전용: 코드 바로 위 실행/정지 — 상단 툴바가 가려지는 작은 화면 대응 */}
+          <div
+            className="md:hidden flex gap-2 px-3 py-2 shrink-0"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              borderBottom: '1px solid var(--color-border)',
+            }}
+          >
+            {!isRunning ? (
+              <button
+                onClick={handleRun}
+                disabled={!isReady}
+                className="btn-primary flex-1 !py-2.5 !text-[14px] flex items-center justify-center gap-1.5"
+                style={{ opacity: isReady ? 1 : 0.5 }}
+              >
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M6 2l8 6-8 6V2z"/></svg>
+                {t('editor.run')}
+              </button>
+            ) : (
+              <button
+                onClick={handleStop}
+                className="btn-primary flex-1 !py-2.5 !text-[14px] flex items-center justify-center gap-1.5"
+                style={{ background: 'var(--color-error, #FF6B6B)' }}
+              >
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="10" height="10" rx="1"/></svg>
+                {t('editor.stop')}
+              </button>
+            )}
+            <button
+              onClick={handleReset}
+              className="btn-secondary !py-2.5 !text-[13px] !px-4"
+              title={t('editor.reset')}
+            >
+              ↺
+            </button>
+          </div>
           <CodeEditor code={code} onChange={(val) => setCode(val || '')} />
         </div>
 
@@ -774,7 +822,7 @@ export default function Sandbox() {
                 .map(ex => (
                   <button
                     key={ex.id}
-                    onClick={() => { setCode(ex.code); setShowExamples(false); }}
+                    onClick={() => { setCode(ex.code); initialCodeRef.current = ex.code; setShowExamples(false); }}
                     style={{
                       background: 'var(--color-bg-primary)', border: '1px solid var(--color-border)',
                       borderRadius: 8, padding: 12, cursor: 'pointer', textAlign: 'left',
