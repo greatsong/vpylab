@@ -48,6 +48,8 @@ export default function CodeEditor({ code, onChange, fontSize = 14 }) {
   const handleMount = useCallback((editor) => {
     editorRef.current = editor;
     editor.focus();
+    // 폰트 합자 명시적 OFF — props만으로 안 먹는 환경 방어
+    editor.updateOptions({ fontLigatures: false });
   }, []);
 
   return (
@@ -62,7 +64,7 @@ export default function CodeEditor({ code, onChange, fontSize = 14 }) {
         options={{
           fontSize,
           fontFamily: "'JetBrains Mono', 'Fira Code', ui-monospace, Consolas, monospace",
-          fontLigatures: true,
+          fontLigatures: false,  // 학생이 != 를 ≠ 로 오인하지 않도록 합자 OFF
           minimap: { enabled: false },
           scrollBeyondLastLine: false,
           lineNumbers: 'on',
