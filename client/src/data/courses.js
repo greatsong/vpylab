@@ -35,18 +35,6 @@ const courses = [
     icon: '🟦',
     color: 'sky',
     starlightTheme: 'sky',
-    audience: {
-      profile:
-        '코딩이 처음이고 컴퓨터 활용 경험은 풍부한 일반계 고등학교 1학년. "프로그래밍은 어렵다"는 막연한 두려움이 있다.',
-      prerequisites: '중2 좌표평면 이해. 영문 키보드 입력 가능.',
-      motivation:
-        '결과가 즉시 화면에 나타나는 시각적 보상으로 첫 성공 경험을 빠르게 누적한다.',
-      classroomSetting:
-        '1인 1단말(크롬북/노트북). 인터넷 필수(Pyodide 첫 로드 1~2분).',
-      curriculumLink: '고1 「정보」 — 자료의 표현, 객체와 속성 단원 도입부.',
-      assessmentHint:
-        '관찰 평가 + 5차시 자유 작품(캐릭터)으로 산출물 평가. 정답 없는 창작 과제.',
-    },
     lessons: [
       {
         id: 'beg-shapes-1',
@@ -149,16 +137,6 @@ scene_background(색상['하늘'])
     icon: '🔁',
     color: 'emerald',
     starlightTheme: 'emerald',
-    audience: {
-      profile:
-        '입문1 수료자 또는 변수·반복문 수업 직후의 고1. for 한 번 보고 헷갈려 하는 단계.',
-      prerequisites: '입문1 수료 또는 동등(좌표·sphere·color 사용 경험).',
-      motivation:
-        '"같은 코드로 100개"의 위력을 직접 체감하면서 추상화의 효용을 학습한다.',
-      classroomSetting: '1인 1단말. 짝 활동 권장(서로 만든 패턴 비교).',
-      curriculumLink: '고1 「정보」 — 반복 구조, 리스트 구조, 중첩 반복.',
-      assessmentHint: '6차시 자유 패턴 작품 + 짝 코드 리뷰.',
-    },
     lessons: [
       {
         id: 'beg-patterns-1',
@@ -285,16 +263,6 @@ for i in range(5):
     icon: '🎵',
     color: 'amber',
     starlightTheme: 'amber',
-    audience: {
-      profile:
-        '음악·예술 영역에 관심이 있고 코딩이 처음인 중3~고1. 결과가 들려야 흥미를 유지하는 학습자.',
-      prerequisites: '없음(완전 입문). 단순 음계명(도·레·미) 식별 가능.',
-      motivation:
-        '소리라는 비시각적 결과물이 시각 위주의 학습에 신선함을 준다. 음악 동아리·뮤지컬부 학생에게 추천.',
-      classroomSetting: '1인 1단말 + 헤드폰/이어폰 권장(교실 소음 방지).',
-      curriculumLink: '고1 「정보」 + 「음악」 — 음계와 리듬을 코드로 표현.',
-      assessmentHint: '5차시 8마디 자작곡 발표 + 자기평가.',
-    },
     lessons: [
       {
         id: 'beg-melody-1',
@@ -394,19 +362,6 @@ for i, n in enumerate(곡):
     icon: '📈',
     color: 'indigo',
     starlightTheme: 'indigo',
-    audience: {
-      profile:
-        '고1 수학 「함수」 단원을 학습 중이거나 직후의 학생. 수식만 외우는 단계에서 의미를 잡고 싶어 한다.',
-      prerequisites:
-        '일차·이차함수 정의. 라디안의 의미(삼각함수 차시는 라디안 친숙도 권장).',
-      motivation:
-        '슬라이더로 a·h·k·A·ω·φ를 만지면 매개변수가 곧 그래프 변화로 신체화된다.',
-      classroomSetting:
-        '수학 교사+정보 교사 협업 권장. 1인 1단말 + 큰 디스플레이(시연용).',
-      curriculumLink:
-        '고1 「수학」 — 일차·이차함수, 삼각함수. 「정보」 — 함수와 매개변수.',
-      assessmentHint: '학생별 "함수 도감" 1편 산출 + 그래프 해석 발표.',
-    },
     lessons: [
       {
         id: 'fus-math-1',
@@ -572,20 +527,6 @@ for i in range(0, 600):
     icon: '🪐',
     color: 'rose',
     starlightTheme: 'rose',
-    audience: {
-      profile:
-        '고1 통합과학 「운동과 에너지」 학습자 또는 물리 I 선택자. 등가속·자유낙하 공식을 외웠지만 "왜 그런지" 모르는 단계.',
-      prerequisites:
-        '벡터의 합, 가속도 정의, 라디안. 입문 코스(beg-shapes·beg-patterns) 수료 또는 동등.',
-      motivation:
-        '시뮬레이터를 직접 만들면 "식 → 운동" 인과가 분명해진다. v-t 그래프가 자동 생성되며 그래프 해석력도 동시에 길러진다.',
-      classroomSetting:
-        '과학 교사+정보 교사 협업 권장. 1인 1단말 + 실험 보고서 양식 배포.',
-      curriculumLink:
-        '고1 「통합과학」 — 자유낙하·포물선·만유인력. 「물리 I」 — 운동의 법칙.',
-      assessmentHint:
-        '7차시 끝 "내 미니 실험" 보고서(가설→코드→그래프→해석) — 과학 교사 평가.',
-    },
     lessons: [
       {
         id: 'fus-sci-1',
@@ -771,19 +712,6 @@ while t < 3.0:
     icon: '🎨',
     color: 'teal',
     starlightTheme: 'teal',
-    audience: {
-      profile:
-        '미술 선택 학생 또는 STEAM 동아리 구성원. "나는 코딩 못해"라고 자기규정하던 학생이 자부심을 얻는 코스.',
-      prerequisites: '입문1·2 수료 권장. 색상환·보색 개념 친숙도.',
-      motivation:
-        '코드가 곧 붓이 된다. 같은 알고리즘이 다른 작품을 낳는 절차적 생성의 자유로움을 체감.',
-      classroomSetting:
-        '미술 교사+정보 교사 협업. 1인 1단말 + 작품 출력/공유 환경.',
-      curriculumLink:
-        '고2 「미술」 — 색채·표현 기법. 「정보」 — 알고리즘과 무작위.',
-      assessmentHint:
-        '6차시 끝 개인 작품 1점 + 아티스트 노트(코드 해설 카드). 학교 축제·전시 가능.',
-    },
     lessons: [
       {
         id: 'fus-art-1',
@@ -933,20 +861,6 @@ for i, n in enumerate(곡):
     icon: '🧰',
     color: 'slate',
     starlightTheme: 'slate',
-    audience: {
-      profile:
-        '다른 VPyLab 코스 1개 이상 수료한 고2~고3. 자기 자유 프로젝트(과제·동아리·졸업작품)를 막 시작하려는 단계.',
-      prerequisites:
-        '입문1·2 또는 융합1 중 1개 이상 수료. 변수·반복·리스트·함수 정의 익숙.',
-      motivation:
-        '"이거 하고 싶은데 어디서부터 시작하지?" 막막함을 11개의 짧은 시드 코드로 해결한다. 베이스라인을 골라 ★ 표시된 곳만 바꾸면 자기 프로젝트가 굴러간다.',
-      classroomSetting:
-        '자기주도학습 또는 동아리. 1인 1단말 + 프로젝트 노트(코드 스니펫 모음) 동시 운영.',
-      curriculumLink:
-        '고2 「정보」 — 종합 프로젝트. 「인공지능 기초」 — 데이터 시각화. 「실용 수학」 — 시뮬레이션.',
-      assessmentHint:
-        '11차시 누적: 베이스라인 11종 + 마지막 미니 프로젝트 1편(60줄 이내 조립). 시드 복붙→변형→데모로 평가.',
-    },
     lessons: [
       {
         id: 'pro-toolkit-1',

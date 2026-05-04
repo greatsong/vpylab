@@ -224,15 +224,6 @@ function CourseDetail({ courseId, lessonId }) {
   const textbookUrl = textbookSiteUrl(course);
   const activeLesson = lessonId ? course.lessons.find((x) => x.id === lessonId) : null;
 
-  const audienceFields = [
-    ['프로필', course.audience?.profile],
-    ['사전 지식', course.audience?.prerequisites],
-    ['학습 동기', course.audience?.motivation],
-    ['교실 환경', course.audience?.classroomSetting],
-    ['교육과정 연계', course.audience?.curriculumLink],
-    ['평가 가이드', course.audience?.assessmentHint],
-  ];
-
   return (
     <div className="max-w-[1240px] mx-auto px-6 md:px-10 lg:px-14 py-10">
       <Link
@@ -289,30 +280,6 @@ function CourseDetail({ courseId, lessonId }) {
 
         {/* ── 좌측 메인 ── */}
         <div className="min-w-0 space-y-12">
-
-          {/* 대상 학습자 */}
-          {course.audience && (
-            <section>
-              <h2
-                className="font-display text-[15px] font-bold mb-4 uppercase tracking-wider"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                대상 학습자
-              </h2>
-              <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-                {audienceFields.map(([k, v]) => (
-                  <div key={k} className="border-l-2 pl-4" style={{ borderColor: 'var(--color-border)' }}>
-                    <dt className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--color-text-muted)' }}>
-                      {k}
-                    </dt>
-                    <dd className="text-[13px] leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-                      {v || '—'}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          )}
 
           {/* 차시 일람 */}
           <section>
