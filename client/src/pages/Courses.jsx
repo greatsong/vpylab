@@ -99,7 +99,7 @@ function CourseList() {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-10">
+    <div className="max-w-[1240px] mx-auto px-6 md:px-10 lg:px-14 py-10">
       <header className="mb-12 max-w-2xl">
         <p
           className="text-[11px] font-bold uppercase tracking-[0.1em] mb-2"
@@ -234,45 +234,58 @@ function CourseDetail({ courseId, lessonId }) {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+    <div className="max-w-[1240px] mx-auto px-6 md:px-10 lg:px-14 py-10">
       <Link
         to="/courses"
-        className="inline-flex items-center gap-1 text-[12px] mb-6 no-underline"
+        className="inline-flex items-center gap-1 text-[12px] mb-8 no-underline hover:underline"
         style={{ color: 'var(--color-text-muted)' }}
       >
         ← 코스 목록
       </Link>
 
-      {/* 코스 헤더 — 좌측 굵은 보더 액센트 */}
+      {/* 코스 헤더 — 상단 4px 색띠 + 카드 */}
       <header
-        className={`relative pl-6 mb-12 max-w-3xl`}
-        style={{ borderLeft: `4px solid ${c.hex}` }}
+        className="relative rounded-2xl overflow-hidden mb-12"
+        style={{
+          backgroundColor: 'var(--color-bg-panel)',
+          border: '1px solid var(--color-border)',
+        }}
       >
-        <div className="flex items-center gap-3">
-          <span className="text-3xl leading-none">{course.icon}</span>
-          <div className={`text-[11px] font-bold uppercase tracking-[0.1em] ${c.text}`}>
-            {trackLabel(course.track)} · {course.subject} · {course.sessions}차시
+        <div style={{ height: 4, backgroundColor: c.hex }} />
+        <div className="px-7 py-6 md:px-9 md:py-8">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[28px] leading-none">{course.icon}</span>
+            <div className={`text-[10.5px] font-bold uppercase tracking-[0.12em] ${c.text}`}>
+              {trackLabel(course.track)} · {course.subject} · {course.sessions}차시
+            </div>
           </div>
+          <h1
+            className="font-display text-[26px] md:text-[32px] font-bold leading-tight max-w-3xl"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            {course.title.ko}
+          </h1>
+          <p
+            className="text-[14.5px] mt-3 leading-relaxed max-w-3xl"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            {course.description}
+          </p>
+          <p
+            className="text-[11.5px] mt-4 inline-block px-2.5 py-1 rounded"
+            style={{
+              backgroundColor: 'var(--color-bg-primary)',
+              color: 'var(--color-text-muted)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            대상 · {course.targetGrade}
+          </p>
         </div>
-        <h1
-          className="font-display text-[28px] md:text-[36px] font-bold mt-3 leading-tight"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          {course.title.ko}
-        </h1>
-        <p
-          className="text-[15px] mt-3 leading-relaxed"
-          style={{ color: 'var(--color-text-secondary)' }}
-        >
-          {course.description}
-        </p>
-        <p className="text-[12px] mt-3" style={{ color: 'var(--color-text-muted)' }}>
-          대상: {course.targetGrade}
-        </p>
       </header>
 
-      {/* 2-column: 좌측 메인, 우측 sticky */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-x-12 gap-y-10">
+      {/* 2-column: 좌측 메인, 우측 sticky. min-w-0로 grid 자식 폭 고정 보장 */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] gap-x-10 gap-y-10">
 
         {/* ── 좌측 메인 ── */}
         <div className="min-w-0 space-y-12">
@@ -339,7 +352,7 @@ function CourseDetail({ courseId, lessonId }) {
         </div>
 
         {/* ── 우측 sticky 패널 ── */}
-        <aside className="lg:sticky lg:top-20 lg:self-start space-y-4">
+        <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start space-y-4">
 
           {/* 활성 lesson */}
           {activeLesson ? (
@@ -362,11 +375,14 @@ function CourseDetail({ courseId, lessonId }) {
                 </p>
               </div>
               <pre
-                className="text-[11.5px] leading-[1.55] p-4 overflow-auto"
+                className="text-[11.5px] leading-[1.55] p-4"
                 style={{
                   backgroundColor: 'var(--color-bg-primary)',
                   color: 'var(--color-text-primary)',
                   maxHeight: 280,
+                  overflowX: 'auto',
+                  overflowY: 'auto',
+                  whiteSpace: 'pre',
                   fontFamily: 'var(--font-mono, ui-monospace, monospace)',
                 }}
               >
