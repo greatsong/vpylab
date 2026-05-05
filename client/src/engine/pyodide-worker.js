@@ -12,7 +12,12 @@
  */
 
 const PYODIDE_VERSION = '0.27.0';
-const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
+// 1차 CDN: jsdelivr, 2차 fallback: unpkg — 한 쪽이 일시 장애여도 다른 쪽으로 시도
+const PYODIDE_CDNS = [
+  `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`,
+  `https://unpkg.com/pyodide@${PYODIDE_VERSION}/`,
+];
+let PYODIDE_CDN = PYODIDE_CDNS[0];
 
 let pyodide = null;
 let vpythonApiCode = null;
@@ -38,18 +43,38 @@ function sendProgress(percent, message) {
 }
 
 /**
+ * Pyodide JS 스크립트를 importScripts로 로드 — CDN 순회 + 재시도 (3회)
+ * 한 CDN이 일시 장애여도 다른 CDN으로 자동 전환.
+ */
+function importPyodideScript() {
+  const errors = [];
+  for (const cdn of PYODIDE_CDNS) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        importScripts(`${cdn}pyodide.js`);
+        PYODIDE_CDN = cdn;  // 성공한 CDN을 indexURL로도 사용
+        return cdn;
+      } catch (e) {
+        errors.push(`${cdn} attempt ${attempt + 1}: ${e.message || e}`);
+      }
+    }
+  }
+  throw new Error(`Pyodide CDN 로드 실패 (모든 시도): ${errors.slice(-2).join(' | ')}`);
+}
+
+/**
  * Pyodide 초기화
  */
 async function initPyodide() {
   try {
     sendProgress(10, 'Pyodide 다운로드 중...');
 
-    // 1. Pyodide JS 로드 (importScripts 필요)
-    importScripts(`${PYODIDE_CDN}pyodide.js`);
+    // 1. Pyodide JS 로드 — CDN 순회 + 재시도
+    importPyodideScript();
 
     sendProgress(40, 'Python 엔진 초기화 중...');
 
-    // 2. Pyodide WASM 로드 (fetch 필요)
+    // 2. Pyodide WASM 로드 (fetch 필요) — JS 로드에 성공한 CDN 사용
     pyodide = await self.loadPyodide({
       indexURL: PYODIDE_CDN,
     });

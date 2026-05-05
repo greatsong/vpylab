@@ -29,10 +29,13 @@ const activeTimeouts = new Set();      // 시퀀스/효과음 setTimeout id
 function trackOsc(osc, gain) {
   activeOscillators.add(osc);
   if (gain) activeGains.add(gain);
-  osc.addEventListener('ended', () => {
-    activeOscillators.delete(osc);
-    if (gain) activeGains.delete(gain);
-  });
+  // 테스트 환경이나 비표준 oscillator는 addEventListener가 없을 수 있음 — 가드
+  if (typeof osc.addEventListener === 'function') {
+    osc.addEventListener('ended', () => {
+      activeOscillators.delete(osc);
+      if (gain) activeGains.delete(gain);
+    });
+  }
 }
 function trackTimeout(id) {
   activeTimeouts.add(id);
