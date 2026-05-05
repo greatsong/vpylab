@@ -2001,14 +2001,23 @@ def 소리(frequency=440, duration=0.3, type='sine', volume=0.3):
     """sound()의 한글 별칭"""
     play_sound(frequency, duration, type, volume)
 
-async def 음표(name, duration=0.5, type='sine', volume=0.4):
-    """play_note()의 한글 별칭 — 한글 노트 이름 지원 + 자동 대기
+def 음표(name, duration=0.5, type='sine', volume=0.4):
+    """play_note()의 한글 별칭 — 한글 노트 이름 지원 + 자동 순차 대기.
     예: 음표("도4", 0.4), 음표("솔#5", 0.3)
-    소리 재생 후 duration만큼 자동으로 대기하여 순차 재생됩니다.
+    동기 함수이지만 duration 만큼 워커를 block 시켜 학생이 sleep을 명시하지 않아도
+    음이 분리되어 들립니다. 50ms 단위로 stop 체크/이벤트 디스패치하여
+    실행 중지·인터랙션도 즉시 반응합니다.
     """
+    import time as _time  # Pyodide 표준 모듈
     play_note(_resolve_note_name(name), duration, type, volume)
     _send_commands()
-    await asyncio.sleep(duration)
+    end = _time.time() + duration
+    while _time.time() < end:
+        if _check_stop():
+            raise _StopExecution("실행이 중지되었습니다")
+        if _event_handlers:
+            _process_pending_events()
+        _time.sleep(min(0.05, max(0.0, end - _time.time())))
 
 def 효과음(name):
     """play_sfx()의 한글 별칭"""
@@ -2023,8 +2032,19 @@ def 배경음악정지():
     stop_bgm()
 
 def 화음(frequencies, duration=1.0, type='sine', volume=0.25):
-    """play_chord()의 한글 별칭"""
+    """play_chord()의 한글 별칭 — 동시 발음 + 자동 순차 대기.
+    음표와 동일하게 duration 만큼 워커를 block시켜 다음 화음과 자연스럽게 분리됩니다.
+    """
+    import time as _time
     play_chord(frequencies, duration, type, volume)
+    _send_commands()
+    end = _time.time() + duration
+    while _time.time() < end:
+        if _check_stop():
+            raise _StopExecution("실행이 중지되었습니다")
+        if _event_handlers:
+            _process_pending_events()
+        _time.sleep(min(0.05, max(0.0, end - _time.time())))
 
 
 # ===================================================================
