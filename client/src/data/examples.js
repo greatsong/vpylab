@@ -2344,20 +2344,47 @@ for i, (kind, col) in enumerate(shape_specs):
 label(pos=vector(0, 3.5, 0), text='🍄 Super Mario — Main Theme',
       color=color.white, height=20)
 
-# Mario 메인 테마 도입부 — (주파수, 박자수)
-# 박자 1 = 0.15초로 가정 (BPM 약 200)
+# Super Mario Bros. — Overworld Theme A섹션 전체 (Koji Kondo, 1985)
+# 샵/플랫은 note 클래스에 없어 주파수 직접 사용
+Bb4 = 466.16   # = A#4
+Fs5 = 739.99   # = F#5
+Gs4 = 415.30   # = G#4
+
+# 박자 1 = 0.13초 (BPM ~230)
+BEAT = 0.13
+
+# (주파수 또는 None, 박자수)
 M = [
+    # ── 인트로 (4마디) ─────────────────────
     (note.E5, 1), (note.E5, 1), (None, 1), (note.E5, 1),
-    (None, 1),    (note.C5, 1), (note.E5, 2),
-    (note.G5, 2), (None, 2),    (note.G4, 2), (None, 2),
-    (note.C5, 2), (None, 1),    (note.G4, 2), (None, 1), (note.E4, 2),
-    (None, 1),    (note.A4, 1), (note.B4, 1), (note.A4, 1), (note.G4, 2),
-    (note.E4, 1), (note.G4, 1), (note.A4, 2),
+    (None, 1),    (note.C5, 1), (note.E5, 1), (None, 1),
+    (note.G5, 1), (None, 3),    (note.G4, 1), (None, 3),
+
+    # ── 메인 멜로디 1차 (8마디) ────────────
+    (note.C5, 2), (None, 1),    (note.G4, 2), (None, 1),    (note.E4, 2), (None, 2),
+    (note.A4, 2), (None, 1),    (note.B4, 2), (None, 1),    (Bb4, 1),     (note.A4, 2),
+    (note.G4, 1), (note.E5, 1), (note.G5, 1), (note.A5, 1), (None, 1),    (note.F5, 1), (note.G5, 1), (None, 1),
+    (note.E5, 1), (None, 1),    (note.C5, 1), (note.D5, 1), (note.B4, 1), (None, 3),
+
+    # ── 메인 멜로디 2차 반복 (8마디) ────────
+    (note.C5, 2), (None, 1),    (note.G4, 2), (None, 1),    (note.E4, 2), (None, 2),
+    (note.A4, 2), (None, 1),    (note.B4, 2), (None, 1),    (Bb4, 1),     (note.A4, 2),
+    (note.G4, 1), (note.E5, 1), (note.G5, 1), (note.A5, 1), (None, 1),    (note.F5, 1), (note.G5, 1), (None, 1),
+    (note.E5, 1), (None, 1),    (note.C5, 1), (note.D5, 1), (note.B4, 1), (None, 3),
+
+    # ── 변주 섹션 (8마디) ───────────────────
+    (None, 4),    (note.G5, 1), (Fs5, 1),     (note.F5, 1), (note.E5, 2), (Gs4, 1),     (note.A4, 1),
+    (note.C5, 1), (None, 1),    (note.A4, 1), (note.C5, 1), (note.D5, 2),
+    (None, 4),    (note.G5, 1), (Fs5, 1),     (note.F5, 1), (note.E5, 2), (note.C6, 1), (None, 1),
+    (note.C6, 1), (note.C6, 4),
+
+    # ── 변주 반복 (8마디) ───────────────────
+    (None, 4),    (note.G5, 1), (Fs5, 1),     (note.F5, 1), (note.E5, 2), (Gs4, 1),     (note.A4, 1),
+    (note.C5, 1), (None, 1),    (note.A4, 1), (note.C5, 1), (note.D5, 2),
+    (None, 4),    (note.E5, 2), (note.C5, 2), (note.A4, 2), (note.G4, 4),
 ]
 
-BEAT = 0.15  # 1박자 길이(초)
-
-# 무한 반복
+# 무한 반복 — 풀 곡 끝까지, 그 다음 다시
 while True:
     for i, (freq, beats) in enumerate(M):
         dur = BEAT * beats
@@ -2371,7 +2398,7 @@ while True:
             sleep(dur*0.5)
         else:
             sleep(dur)
-    sleep(0.4)
+    sleep(1.0)  # 다음 반복 전 잠깐 쉼
 `
   },
 
@@ -2480,24 +2507,73 @@ label(pos=vector(0, 2.7, 0),
       text='버튼을 눌러 곡을 골라보세요',
       color=color.gray, height=14)
 
-# Super Mario Bros. — 메인 테마 도입부
+# 샵/플랫 주파수 (note 클래스에 없어 직접 정의)
+Bb4 = 466.16   # A#4
+Fs5 = 739.99   # F#5
+Gs4 = 415.30   # G#4
+
+# === Super Mario Bros. — Overworld Theme A섹션 풀버전 (Koji Kondo, 1985) ===
 MARIO = [
+    # 인트로
     (note.E5, 1), (note.E5, 1), (None, 1), (note.E5, 1),
-    (None, 1),    (note.C5, 1), (note.E5, 2),
-    (note.G5, 3), (None, 3),    (note.G4, 2),
+    (None, 1),    (note.C5, 1), (note.E5, 1), (None, 1),
+    (note.G5, 1), (None, 3),    (note.G4, 1), (None, 3),
+    # 메인 멜로디 1차
+    (note.C5, 2), (None, 1),    (note.G4, 2), (None, 1),    (note.E4, 2), (None, 2),
+    (note.A4, 2), (None, 1),    (note.B4, 2), (None, 1),    (Bb4, 1),     (note.A4, 2),
+    (note.G4, 1), (note.E5, 1), (note.G5, 1), (note.A5, 1), (None, 1),    (note.F5, 1), (note.G5, 1), (None, 1),
+    (note.E5, 1), (None, 1),    (note.C5, 1), (note.D5, 1), (note.B4, 1), (None, 3),
+    # 메인 멜로디 2차 (반복)
+    (note.C5, 2), (None, 1),    (note.G4, 2), (None, 1),    (note.E4, 2), (None, 2),
+    (note.A4, 2), (None, 1),    (note.B4, 2), (None, 1),    (Bb4, 1),     (note.A4, 2),
+    (note.G4, 1), (note.E5, 1), (note.G5, 1), (note.A5, 1), (None, 1),    (note.F5, 1), (note.G5, 1), (None, 1),
+    (note.E5, 1), (None, 1),    (note.C5, 1), (note.D5, 1), (note.B4, 1), (None, 3),
+    # 변주
+    (None, 4),    (note.G5, 1), (Fs5, 1),     (note.F5, 1), (note.E5, 2), (Gs4, 1),     (note.A4, 1),
+    (note.C5, 1), (None, 1),    (note.A4, 1), (note.C5, 1), (note.D5, 2),
+    (None, 4),    (note.G5, 1), (Fs5, 1),     (note.F5, 1), (note.E5, 2), (note.C6, 1), (None, 1),
+    (note.C6, 1), (note.C6, 4),
 ]
-# Tetris (Korobeiniki) 도입부
+
+# === Tetris (Korobeiniki) — A섹션 풀버전 ===
 TETRIS = [
+    # A 섹션 1차
     (note.E5, 2), (note.B4, 1), (note.C5, 1), (note.D5, 2), (note.C5, 1), (note.B4, 1),
     (note.A4, 2), (note.A4, 1), (note.C5, 1), (note.E5, 2), (note.D5, 1), (note.C5, 1),
-    (note.B4, 3), (note.C5, 1), (note.D5, 2), (note.E5, 2), (note.C5, 2), (note.A4, 2),
+    (note.B4, 3), (note.C5, 1), (note.D5, 2), (note.E5, 2),
+    (note.C5, 2), (note.A4, 2), (note.A4, 4),
+    # B 섹션
+    (note.D5, 3), (note.F5, 1), (note.A5, 2), (note.G5, 1), (note.F5, 1),
+    (note.E5, 3), (note.C5, 1), (note.E5, 2), (note.D5, 1), (note.C5, 1),
+    (note.B4, 2), (note.B4, 1), (note.C5, 1), (note.D5, 2), (note.E5, 2),
+    (note.C5, 2), (note.A4, 2), (note.A4, 4),
+    # A 섹션 반복
+    (note.E5, 2), (note.B4, 1), (note.C5, 1), (note.D5, 2), (note.C5, 1), (note.B4, 1),
+    (note.A4, 2), (note.A4, 1), (note.C5, 1), (note.E5, 2), (note.D5, 1), (note.C5, 1),
+    (note.B4, 3), (note.C5, 1), (note.D5, 2), (note.E5, 2),
+    (note.C5, 2), (note.A4, 2), (note.A4, 4),
 ]
-# Pac-Man (인트로 비슷)
+
+# === Pac-Man — Coffee Break (intro) 확장 ===
 PACMAN = [
-    (note.B4, 1), (note.B5, 1), (note.F5, 1), (note.D5, 1),
-    (note.B5, 1), (note.F5, 1), (note.D5, 2),
-    (note.C5, 1), (note.C6, 1),
-    (note.G5, 1), (note.E5, 1), (note.C6, 1), (note.G5, 1), (note.E5, 2),
+    # 첫 모티프
+    (note.B4, 1), (note.B5, 1), (Fs5, 1),     (note.D5, 1),
+    (note.B5, 1), (Fs5, 1),     (note.D5, 2),
+    (note.C5, 1), (note.C6, 1), (note.G5, 1), (note.E5, 1),
+    (note.C6, 1), (note.G5, 1), (note.E5, 2),
+    # 두 번째 모티프 (하강)
+    (note.B4, 1), (Bb4, 1),     (note.A4, 1), (Gs4, 1),
+    (note.A4, 1), (Bb4, 1),     (note.B4, 1), (note.C5, 1),
+    # 세 번째 모티프
+    (note.D5, 1), (note.E5, 1), (note.F5, 1), (note.G5, 1),
+    (note.A5, 2), (note.G5, 1), (note.F5, 1),
+    (note.E5, 2), (note.D5, 1), (note.C5, 1),
+    (note.B4, 4),
+    # 첫 모티프 반복
+    (note.B4, 1), (note.B5, 1), (Fs5, 1),     (note.D5, 1),
+    (note.B5, 1), (Fs5, 1),     (note.D5, 2),
+    (note.C5, 1), (note.C6, 1), (note.G5, 1), (note.E5, 1),
+    (note.C6, 1), (note.G5, 1), (note.E5, 4),
 ]
 
 state = {'queue': None, 'name': ''}
