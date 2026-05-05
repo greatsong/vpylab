@@ -2429,25 +2429,63 @@ label(pos=vector(0, 2.5, 0),
       text='우상단 버튼으로 동요를 골라보세요!',
       color=color.black, height=16)
 
-# 동요 데이터: (음, 박자수)
+# 샵/플랫 (note 클래스에 없음)
+Bb4 = 466.16   # A#4
+
+# 동요 데이터: (음, 박자수). 모두 풀버전 (1절+2절 또는 A+B+A)
+
+# 학교종 — 1절 + 2절
 SCHOOL_BELL = [
+    # 1절: 학교종이 땡땡땡, 어서 모이자
     (note.G4, 1), (note.G4, 1), (note.A4, 1), (note.A4, 1),
     (note.G4, 1), (note.G4, 1), (note.E4, 2),
     (note.G4, 1), (note.G4, 1), (note.E4, 1), (note.E4, 1), (note.D4, 2),
+    # 2절: 선생님이 우리를, 기다리신다
+    (note.G4, 1), (note.G4, 1), (note.A4, 1), (note.A4, 1),
+    (note.G4, 1), (note.G4, 1), (note.E4, 2),
+    (note.G4, 1), (note.E4, 1), (note.E4, 1), (note.D4, 1), (note.C4, 2),
 ]
+
+# 산토끼 — 1절 + 2절
 SAN_TOKKI = [
+    # 1절: 산토끼 토끼야, 어디를 가느냐
     (note.G4, 1), (note.E4, 1), (note.E4, 1), (note.F4, 1), (note.D4, 1), (note.D4, 1),
     (note.C4, 1), (note.D4, 1), (note.E4, 1), (note.F4, 1), (note.G4, 1), (note.G4, 1), (note.G4, 2),
+    # 2절: 깡충깡충 뛰면서, 어디를 가느냐
+    (note.G4, 1), (note.G4, 1), (note.E4, 1), (note.E4, 1),
+    (note.G4, 1), (note.G4, 1), (note.E4, 2),
+    (note.C4, 1), (note.D4, 1), (note.E4, 1), (note.F4, 1), (note.G4, 1), (note.G4, 1), (note.G4, 2),
 ]
+
+# Twinkle Twinkle Little Star — A + B + A 풀버전
 TWINKLE = [
+    # A: 반짝반짝 작은별
+    (note.C4, 1), (note.C4, 1), (note.G4, 1), (note.G4, 1),
+    (note.A4, 1), (note.A4, 1), (note.G4, 2),
+    (note.F4, 1), (note.F4, 1), (note.E4, 1), (note.E4, 1),
+    (note.D4, 1), (note.D4, 1), (note.C4, 2),
+    # B: Up above the world so high / Like a diamond in the sky
+    (note.G4, 1), (note.G4, 1), (note.F4, 1), (note.F4, 1),
+    (note.E4, 1), (note.E4, 1), (note.D4, 2),
+    (note.G4, 1), (note.G4, 1), (note.F4, 1), (note.F4, 1),
+    (note.E4, 1), (note.E4, 1), (note.D4, 2),
+    # A 반복: 반짝반짝 작은별
     (note.C4, 1), (note.C4, 1), (note.G4, 1), (note.G4, 1),
     (note.A4, 1), (note.A4, 1), (note.G4, 2),
     (note.F4, 1), (note.F4, 1), (note.E4, 1), (note.E4, 1),
     (note.D4, 1), (note.D4, 1), (note.C4, 2),
 ]
+
+# Happy Birthday — 4구절 풀버전
 HAPPY_BIRTHDAY = [
+    # 1: Happy birthday to you
     (note.C4, 1), (note.C4, 1), (note.D4, 2), (note.C4, 2), (note.F4, 2), (note.E4, 4),
+    # 2: Happy birthday to you
     (note.C4, 1), (note.C4, 1), (note.D4, 2), (note.C4, 2), (note.G4, 2), (note.F4, 4),
+    # 3: Happy birthday dear ___
+    (note.C4, 1), (note.C4, 1), (note.C5, 2), (note.A4, 2), (note.F4, 2), (note.E4, 2), (note.D4, 2),
+    # 4: Happy birthday to you (마지막)
+    (Bb4, 1),     (Bb4, 1),     (note.A4, 2), (note.F4, 2), (note.G4, 2), (note.F4, 4),
 ]
 
 # 재생 요청 큐 (버튼 콜백은 짧게 유지)
