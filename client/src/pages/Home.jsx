@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/useI18n';
 import Header from '../components/layout/Header';
 import { categories, getMissionsByCategory } from '../data/missions';
+import courses from '../data/courses';
 import useAppStore from '../stores/appStore';
 import useGalleryStore from '../stores/galleryStore';
 import GalleryCard from '../components/gallery/GalleryCard';
@@ -48,8 +49,12 @@ export default function Home() {
                   : 'Create 3D simulations with Python. Add sound. Share with the world.'}
               </p>
 
-              <div className="flex gap-3 justify-center animate-slide-up-delay-2">
-                <Link to="/sandbox" className="btn-primary no-underline inline-flex items-center gap-2">
+              <div className="flex gap-3 justify-center flex-wrap animate-slide-up-delay-2">
+                <Link to="/courses" className="btn-primary no-underline inline-flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h12v2H2v-2z"/></svg>
+                  {t('nav.courses') || '코스'}
+                </Link>
+                <Link to="/sandbox" className="btn-secondary no-underline inline-flex items-center gap-2">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M6 2l8 6-8 6V2z"/></svg>
                   {t('nav.sandbox')}
                 </Link>
@@ -60,6 +65,86 @@ export default function Home() {
                   {t('gallery.title') || '갤러리'}
                 </Link>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== 학습 코스 ===== */}
+        <section className="py-16" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+          <div className="container-main">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <h2 className="font-display text-xl md:text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                  {lang === 'ko' ? '학습 코스' : 'Learning Courses'}
+                </h2>
+                <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                  {lang === 'ko'
+                    ? `${courses.length}개 코스 · 입문 · 융합 · 튜토리얼 · 교사 교재 포함`
+                    : `${courses.length} courses · Beginner · Fusion · Tutorial · with teacher textbook`}
+                </p>
+              </div>
+              <Link
+                to="/courses"
+                className="text-sm no-underline font-medium"
+                style={{ color: 'var(--color-accent)' }}
+              >
+                {lang === 'ko' ? '전체 보기' : 'View all'} →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {courses.map((c) => {
+                const accent = {
+                  sky: '#4A6CF7', emerald: '#00B894', amber: '#F0883E',
+                  indigo: '#6C5CE7', rose: '#FF6B6B', teal: '#00CEC9',
+                  slate: '#5A5B6A', blue: '#4A6CF7',
+                }[c.color] || '#4A6CF7';
+                const trackKo = c.track === 'beginner' ? '입문' : c.track === 'fusion' ? '융합' : '튜토리얼';
+                return (
+                  <Link
+                    key={c.id}
+                    to={`/courses/${c.id}`}
+                    className="category-card no-underline"
+                    style={{ '--card-accent': accent }}
+                  >
+                    <div className="flex items-center gap-2.5 mb-3">
+                      <span className="text-xl leading-none shrink-0">{c.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: accent }} />
+                          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider" style={{ color: accent }}>
+                            {trackKo} · {c.subject || '코딩'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <h3
+                      className="font-display font-bold text-[14px] leading-snug mb-1.5"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      {c.title?.[lang] || c.title?.ko}
+                    </h3>
+                    <p
+                      className="text-[12px] leading-relaxed mb-3"
+                      style={{
+                        color: 'var(--color-text-secondary)',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {c.description}
+                    </p>
+                    <div className="flex items-center justify-between text-[11px] pt-3" style={{ borderTop: '1px solid var(--color-border)' }}>
+                      <span style={{ color: 'var(--color-text-muted)' }}>{c.targetGrade}</span>
+                      <span className="font-mono font-semibold" style={{ color: accent }}>
+                        {c.sessions}{lang === 'ko' ? '차시' : ' sessions'}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
