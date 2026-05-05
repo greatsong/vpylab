@@ -166,6 +166,10 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
   const runCode = useCallback((rawCode) => {
     if (singleton.getStatus() !== 'ready') return;
 
+    // 직전 stopExecution()이 예약한 3초 hardStop 타이머가 새 코드를 죽이지 않도록 취소
+    clearTimeout(hardStopTimerRef.current);
+    clearTimeout(activityTimerRef.current);
+
     const { code, warnings } = preprocessCode(rawCode);
     if (warnings.length > 0) {
       warnings.forEach(w => cbRef.current.onOutput?.(`⚠️ ${w}`, 'warning'));
