@@ -421,14 +421,20 @@ code, pre { font-family: var(--font-mono); letter-spacing: -0.02em; }
 .toolbar-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .toolbar-btn.--run {
-  background: rgba(0, 184, 148, 0.08);
-  border-color: rgba(0, 184, 148, 0.25);
-  color: var(--color-success);
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #fff;
+  font-weight: 600;
 }
 
 .toolbar-btn.--run:hover:not(:disabled) {
-  background: rgba(0, 184, 148, 0.15);
-  border-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 88%, #000);
+  border-color: color-mix(in srgb, var(--color-success) 88%, #000);
+}
+
+.toolbar-btn.--run:disabled {
+  /* disabled 상태에서도 형태가 보이도록 — 토큰은 유지하되 opacity만 살짝 낮춤 */
+  opacity: 0.5;
 }
 
 .toolbar-btn.--stop { color: var(--color-text-muted); }
