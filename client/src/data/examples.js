@@ -2794,6 +2794,918 @@ while True:
     counter += 1
 `
   },
+
+  // ═══════════════════════════════════════
+  // 💡 빛 + 음악 창의 (9개) — 에이전트 팀 설계
+  // ═══════════════════════════════════════
+  {
+    id: 'lightshow-aurora-symphony',
+    title: '오로라 심포니 - 하늘에서 춤추는 빛의 교향곡',
+    thumbnail: '🌌',
+    category: 'art',
+    level: 2,
+    description: '오로라처럼 흐르는 빛 커튼이 화음에 맞춰 색과 높이를 바꿔요!',
+    tags: ['light', 'music', 'aurora', 'wave', 'harmony'],
+    code: `from vpython import *
+import math
+
+# 우주 배경 - 깊은 밤하늘
+scene.background = vector(0.02, 0.02, 0.08)
+scene.range = 18
+
+# 타이틀 라벨
+label(pos=vector(0, 12, 0), text="🎶 오로라 심포니 🎶", color=color.cyan, height=22)
+label(pos=vector(0, 10, 0), text="화음에 맞춰 오로라가 춤춥니다", color=color.white, height=14)
+
+# 별 만들기 - 배경에 작은 점들 흩뿌리기
+stars = []
+for i in range(80):
+    star_x = (i * 7 % 40) - 20
+    star_y = (i * 11 % 20) - 10
+    star_z = -15 - (i % 5)
+    star = sphere(pos=vector(star_x, star_y, star_z), radius=0.08,
+                  color=color.white, emissive=True)
+    stars.append(star)
+
+# 오로라 커튼 - 가로로 늘어선 구체 30개
+aurora_count = 30
+aurora_balls = []
+aurora_lights = []
+for i in range(aurora_count):
+    x = (i - aurora_count / 2) * 1.2
+    ball = sphere(pos=vector(x, 0, 0), radius=0.5,
+                  color=color.cyan, emissive=True, opacity=0.7)
+    aurora_balls.append(ball)
+    if i % 2 == 0:
+        light = local_light(pos=vector(x, 0, 0), color=color.cyan, intensity=0.4)
+        aurora_lights.append(light)
+
+# 바닥 반사판
+floor = box(pos=vector(0, -8, 0), size=vector(40, 0.2, 20),
+            color=vector(0.05, 0.05, 0.1), opacity=0.6)
+
+# 화음 시퀀스
+chords_seq = [
+    [note.C4, note.E4, note.G4],
+    [note.D4, note.F4, note.A4],
+    [note.E4, note.G4, note.B4],
+    [note.F4, note.A4, note.C5],
+]
+
+beat_time = 0
+chord_idx = 0
+last_chord_beat = -1
+
+while True:
+    rate(60)
+    beat_time += 1
+
+    if beat_time % 90 == 0 and beat_time != last_chord_beat:
+        chord(chords_seq[chord_idx], 1.4, 'sine', 0.4)
+        chord_idx = (chord_idx + 1) % len(chords_seq)
+        last_chord_beat = beat_time
+
+    t = beat_time * 0.05
+    for i in range(aurora_count):
+        wave_y = math.sin(t + i * 0.4) * 3
+        wave_z = math.cos(t * 0.7 + i * 0.3) * 2
+        x = (i - aurora_count / 2) * 1.2
+        aurora_balls[i].pos = vector(x, wave_y, wave_z)
+        hue = (i / aurora_count + chord_idx * 0.25 + t * 0.05) % 1.0
+        if hue < 0.33:
+            col = vector(0.2, 0.6 + hue, 1.0 - hue)
+        elif hue < 0.66:
+            col = vector(0.5 + (hue - 0.33), 0.3, 1.0)
+        else:
+            col = vector(1.0, 0.4 + (hue - 0.66) * 0.5, 0.7)
+        aurora_balls[i].color = col
+
+    for j in range(len(aurora_lights)):
+        idx = j * 2
+        if idx < aurora_count:
+            aurora_lights[j].color = aurora_balls[idx].color
+            aurora_lights[j].pos = aurora_balls[idx].pos
+            pulse = (math.sin(t * 2 + j * 0.5) + 1) * 0.3 + 0.2
+            aurora_lights[j].intensity = pulse
+
+    for i in range(len(stars)):
+        twinkle = (math.sin(t * 3 + i * 0.7) + 1) * 0.5
+        stars[i].color = vector(twinkle, twinkle, twinkle * 0.8 + 0.2)
+`
+  },
+  {
+    id: 'lightshow-piano-fountain',
+    title: '피아노 분수 - 음표가 솟구치는 빛의 분수',
+    thumbnail: '🎹',
+    category: 'art',
+    level: 2,
+    description: '피아노 멜로디가 연주될 때마다 색색의 빛 기둥이 분수처럼 솟아올라요!',
+    tags: ['light', 'music', 'piano', 'fountain', 'melody'],
+    code: `from vpython import *
+import math
+
+scene.background = vector(0.05, 0.02, 0.1)
+scene.range = 14
+
+label(pos=vector(0, 10, 0), text="🎹 피아노 분수 🎹", color=color.gold, height=20)
+label(pos=vector(0, 8.5, 0), text="멜로디가 빛으로 솟아오릅니다", color=color.white, height=12)
+
+stage = cylinder(pos=vector(0, -5, 0), axis=vector(0, 0.3, 0), radius=8,
+                 color=vector(0.15, 0.1, 0.2))
+
+nozzle_count = 7
+nozzles = []
+fountain_particles = []
+fountain_lights = []
+
+note_colors = [
+    vector(1, 0.2, 0.2),
+    vector(1, 0.6, 0.1),
+    vector(1, 1, 0.2),
+    vector(0.3, 1, 0.3),
+    vector(0.2, 0.7, 1),
+    vector(0.4, 0.3, 1),
+    vector(0.8, 0.3, 1),
+]
+note_freqs = [note.C4, note.D4, note.E4, note.F4, note.G4, note.A4, note.B4]
+note_names = ['도', '레', '미', '파', '솔', '라', '시']
+
+for i in range(nozzle_count):
+    angle = (i / nozzle_count) * 2 * math.pi
+    nx = math.cos(angle) * 4.5
+    nz = math.sin(angle) * 4.5
+    nozzle = cylinder(pos=vector(nx, -4.7, nz), axis=vector(0, 0.6, 0), radius=0.3,
+                      color=note_colors[i], emissive=True)
+    nozzles.append(nozzle)
+    label(pos=vector(nx, -3.5, nz), text=note_names[i], color=color.white, height=14)
+    particles = []
+    for j in range(12):
+        p = sphere(pos=vector(nx, -4, nz), radius=0.18,
+                   color=note_colors[i], emissive=True, opacity=0.0)
+        p.vel_y = 0.0
+        p.progress = -1.0
+        particles.append(p)
+    fountain_particles.append(particles)
+    flight = local_light(pos=vector(nx, -4, nz), color=note_colors[i], intensity=0.3)
+    fountain_lights.append(flight)
+
+center_light = local_light(pos=vector(0, 4, 0), color=color.white, intensity=0.6)
+
+melody = [0, 1, 2, 0, 0, 1, 2, 0, 2, 3, 4, 2, 3, 4, 4, 3, 2, 1, 0, 4, 3, 2, 1, 0]
+melody_idx = 0
+beat_time = 0
+
+while True:
+    rate(60)
+    beat_time += 1
+    t = beat_time * 0.05
+
+    if beat_time % 30 == 0:
+        nidx = melody[melody_idx % len(melody)]
+        sound(note_freqs[nidx], 0.5, 'sine', 0.4)
+        activated = 0
+        for p in fountain_particles[nidx]:
+            if p.progress < 0 and activated < 5:
+                p.progress = 0.0
+                p.vel_y = 0.25 + (activated * 0.02)
+                p.opacity = 1.0
+                angle_n = (nidx / nozzle_count) * 2 * math.pi
+                p.pos = vector(math.cos(angle_n) * 4.5, -4, math.sin(angle_n) * 4.5)
+                activated += 1
+        fountain_lights[nidx].intensity = 1.5
+        nozzles[nidx].radius = 0.5
+        melody_idx += 1
+
+    for i in range(nozzle_count):
+        for p in fountain_particles[i]:
+            if p.progress >= 0:
+                p.vel_y -= 0.008
+                p.pos = p.pos + vector(0, p.vel_y, 0)
+                p.progress += 0.02
+                p.opacity = max(0, 1.0 - p.progress * 0.4)
+                if p.pos.y < -4.5:
+                    p.progress = -1.0
+                    p.opacity = 0
+        fountain_lights[i].intensity = max(0.3, fountain_lights[i].intensity * 0.95)
+        nozzles[i].radius = max(0.3, nozzles[i].radius * 0.96)
+
+    center_light.color = vector(
+        (math.sin(t * 0.3) + 1) * 0.4 + 0.2,
+        (math.sin(t * 0.4 + 2) + 1) * 0.4 + 0.2,
+        (math.sin(t * 0.5 + 4) + 1) * 0.4 + 0.2
+    )
+    breath = (math.sin(t * 2) + 1) * 0.05
+    stage.color = vector(0.15 + breath, 0.1, 0.2 + breath)
+`
+  },
+  {
+    id: 'lightshow-galaxy-disco',
+    title: '갤럭시 디스코 - 우주 한복판 댄스 클럽',
+    thumbnail: '🪩',
+    category: 'art',
+    level: 3,
+    description: '행성들이 비트에 맞춰 회전하고, 스포트라이트가 디스코 비트를 쏟아냅니다!',
+    tags: ['light', 'music', 'disco', 'galaxy', 'beat'],
+    code: `from vpython import *
+import math
+
+scene.background = vector(0.0, 0.0, 0.02)
+scene.range = 16
+
+label(pos=vector(0, 12, 0), text="🪩 갤럭시 디스코 🪩", color=color.magenta, height=22)
+label(pos=vector(0, 10.5, 0), text="우주 한복판의 댄스 플로어", color=color.cyan, height=12)
+
+floor_tiles = []
+for i in range(9):
+    for j in range(9):
+        tx = (i - 4) * 1.5
+        tz = (j - 4) * 1.5
+        tile = box(pos=vector(tx, -5, tz), size=vector(1.3, 0.2, 1.3),
+                   color=color.purple, emissive=True, opacity=0.8)
+        floor_tiles.append(tile)
+
+mirror_ball = sphere(pos=vector(0, 6, 0), radius=1.2,
+                     color=color.white, emissive=True)
+mirror_light = local_light(pos=vector(0, 6, 0), color=color.white, intensity=0.5)
+
+planet_count = 6
+planets = []
+planet_lights = []
+planet_colors = [
+    vector(1, 0.3, 0.3), vector(1, 1, 0.3), vector(0.3, 1, 0.3),
+    vector(0.3, 1, 1), vector(0.3, 0.3, 1), vector(1, 0.3, 1)
+]
+for i in range(planet_count):
+    angle = (i / planet_count) * 2 * math.pi
+    px = math.cos(angle) * 7
+    pz = math.sin(angle) * 7
+    planet = sphere(pos=vector(px, 2, pz), radius=0.7,
+                    color=planet_colors[i], emissive=True, make_trail=True,
+                    trail_color=planet_colors[i])
+    planets.append(planet)
+    plight = local_light(pos=vector(px, 2, pz), color=planet_colors[i], intensity=0.6)
+    planet_lights.append(plight)
+
+spot_lights = []
+spot_cones = []
+spot_positions = [vector(-10, 8, -10), vector(10, 8, -10),
+                  vector(-10, 8, 10), vector(10, 8, 10)]
+spot_colors = [color.red, color.cyan, color.yellow, color.magenta]
+for i in range(4):
+    sl = local_light(pos=spot_positions[i], color=spot_colors[i], intensity=0.8)
+    spot_lights.append(sl)
+    sc = cone(pos=spot_positions[i], axis=vector(-spot_positions[i].x * 0.5,
+              -spot_positions[i].y * 0.5, -spot_positions[i].z * 0.5),
+              radius=2, color=spot_colors[i], emissive=True, opacity=0.15)
+    spot_cones.append(sc)
+
+for i in range(60):
+    sx = (i * 13 % 50) - 25
+    sy = (i * 7 % 30) - 5
+    sz = (i * 17 % 50) - 25
+    if abs(sx) > 12 or abs(sz) > 12:
+        sphere(pos=vector(sx, sy, sz), radius=0.1, color=color.white, emissive=True)
+
+bass_freqs = [note.C4, note.C4, note.G4, note.C4]
+high_notes = [note.E5, note.G5, note.C6, note.G5]
+
+beat_time = 0
+beat_count = 0
+
+while True:
+    rate(60)
+    beat_time += 1
+    t = beat_time * 0.05
+
+    if beat_time % 24 == 0:
+        bidx = beat_count % 4
+        chord([bass_freqs[bidx], high_notes[bidx]], 0.3, 'square', 0.35)
+        beat_count += 1
+        mirror_ball.radius = 1.6
+        mirror_light.intensity = 1.5
+        for k in range(len(floor_tiles)):
+            phase = (k + beat_count * 5) % 4
+            if phase == 0:
+                floor_tiles[k].color = vector(1, 0.2, 0.5)
+            elif phase == 1:
+                floor_tiles[k].color = vector(0.2, 1, 0.5)
+            elif phase == 2:
+                floor_tiles[k].color = vector(0.5, 0.3, 1)
+            else:
+                floor_tiles[k].color = vector(1, 1, 0.3)
+
+    mirror_ball.radius = max(1.2, mirror_ball.radius * 0.94)
+    mirror_light.intensity = max(0.5, mirror_light.intensity * 0.93)
+
+    mb_hue = (t * 0.3) % 1.0
+    if mb_hue < 0.5:
+        mirror_ball.color = vector(1, mb_hue * 2, 1 - mb_hue * 2)
+    else:
+        mirror_ball.color = vector(2 - mb_hue * 2, 1 - (mb_hue - 0.5) * 2, mb_hue * 2)
+    mirror_light.color = mirror_ball.color
+
+    for i in range(planet_count):
+        orbit_angle = t * 0.6 + (i / planet_count) * 2 * math.pi
+        py = 2 + math.sin(t * 1.5 + i) * 1.5
+        px = math.cos(orbit_angle) * (7 + math.sin(t + i) * 0.5)
+        pz = math.sin(orbit_angle) * (7 + math.sin(t + i) * 0.5)
+        planets[i].pos = vector(px, py, pz)
+        planet_lights[i].pos = vector(px, py, pz)
+        beat_pulse = (math.sin(t * 3.14 + i * 0.5) + 1) * 0.4 + 0.3
+        planet_lights[i].intensity = beat_pulse
+        planets[i].radius = 0.7 + beat_pulse * 0.3
+
+    for i in range(4):
+        target_x = math.cos(t * 0.8 + i * 1.5) * 5
+        target_z = math.sin(t * 0.8 + i * 1.5) * 5
+        sp = spot_positions[i]
+        new_axis = vector(target_x - sp.x, -5 - sp.y, target_z - sp.z) * 0.5
+        spot_cones[i].axis = new_axis
+        hue_shift = (t * 0.2 + i * 0.25) % 1.0
+        if hue_shift < 0.33:
+            new_col = vector(1, hue_shift * 3, 0.2)
+        elif hue_shift < 0.66:
+            new_col = vector(1 - (hue_shift - 0.33) * 3, 1, 0.2)
+        else:
+            new_col = vector(0.3, 1 - (hue_shift - 0.66) * 3, 1)
+        spot_lights[i].color = new_col
+        spot_cones[i].color = new_col
+        spot_lights[i].intensity = 0.6 + (math.sin(t * 4 + i) + 1) * 0.4
+`
+  },
+  {
+    id: 'synesthesia-color-piano',
+    title: '색채 피아노 - 클릭으로 빛과 음을 동시에',
+    thumbnail: '🎹',
+    category: 'creative',
+    level: 2,
+    description: '무지개 건반을 클릭하면 그 색이 무대에 빛나고 동시에 도레미파솔라시 음이 울립니다.',
+    tags: ['synesthesia', 'music', 'interactive'],
+    code: `from vpython import *
+
+scene.background = vector(0.05, 0.05, 0.1)
+scene.range = 6
+scene.center = vector(0, 0, 0)
+
+label(pos=vector(0, 4.5, 0), text='무지개 건반을 클릭하세요! 색=음', height=18, color=color.white)
+label(pos=vector(0, 3.8, 0), text='스페이스: 자동연주 / 1~7: 키보드 연주', height=14, color=vector(0.8, 0.8, 1))
+
+계이름 = ['도', '레', '미', '파', '솔', '라', '시']
+주파수 = [note.C4, note.D4, note.E4, note.F4, note.G4, note.A4, note.B4]
+
+건반들 = []
+for i in range(7):
+    x = (i - 3) * 1.4
+    건반 = box(pos=vector(x, 0, 0), size=vector(1.2, 2.0, 0.4),
+                color=무지개[i], emissive=False)
+    건반들.append(건반)
+    label(pos=vector(x, -1.5, 0), text=계이름[i], height=14, color=color.white)
+
+중앙구 = sphere(pos=vector(0, 2.2, 0), radius=0.6,
+                 color=color.white, emissive=True)
+중앙빛 = local_light(pos=vector(0, 2.2, 0), color=color.white, intensity=0.5)
+
+state = {'queue': []}
+
+def on_click(evt):
+    if evt.pick is not None:
+        state['queue'].append(('click', evt.pick))
+
+def on_key(evt):
+    state['queue'].append(('key', evt.key))
+
+scene.bind('click', on_click)
+scene.bind('keydown', on_key)
+
+자동 = {'on': False, 'idx': 0, 'tick': 0}
+
+def 음재생(i):
+    sound(주파수[i], 0.4, 'sine', 0.5)
+    중앙구.color = 무지개[i]
+    중앙빛.color = 무지개[i]
+    건반들[i].emissive = True
+    건반들[i].pos = vector(건반들[i].pos.x, -0.3, 0)
+
+프레임 = 0
+while True:
+    rate(30)
+    프레임 += 1
+
+    while state['queue']:
+        종류, 값 = state['queue'].pop(0)
+        if 종류 == 'click':
+            for i, 건반 in enumerate(건반들):
+                if 건반._id == 값:
+                    음재생(i)
+                    break
+        elif 종류 == 'key':
+            키 = 값
+            if 키 == ' ':
+                자동['on'] = not 자동['on']
+                자동['idx'] = 0
+                자동['tick'] = 0
+            elif 키 in ['1','2','3','4','5','6','7']:
+                음재생(int(키)-1)
+
+    if 자동['on']:
+        자동['tick'] += 1
+        if 자동['tick'] >= 15:
+            자동['tick'] = 0
+            음재생(자동['idx'])
+            자동['idx'] = (자동['idx'] + 1) % 7
+
+    for 건반 in 건반들:
+        if 건반.pos.y < 0:
+            건반.pos = vector(건반.pos.x, 건반.pos.y + 0.05, 0)
+        if 건반.emissive and 프레임 % 5 == 0:
+            건반.emissive = False
+`
+  },
+  {
+    id: 'synesthesia-pitch-painter',
+    title: '마우스 페인팅 - 높이가 음, 색이 음색',
+    thumbnail: '🎨',
+    category: 'creative',
+    level: 3,
+    description: '마우스를 움직여 그림을 그리면 높이는 음의 높낮이로, 좌우는 음색으로 변환됩니다.',
+    tags: ['synesthesia', 'music', 'interactive'],
+    code: `from vpython import *
+
+scene.background = vector(0.02, 0.02, 0.05)
+scene.range = 6
+scene.center = vector(0, 0, 0)
+
+label(pos=vector(0, 5, 0), text='마우스를 움직이며 클릭하면 색과 음이 칠해집니다',
+      height=16, color=color.white)
+label(pos=vector(0, 4.3, 0), text='높이=음높이 | 좌우=음색 | C: 지우기 | 슬라이더로 농도 조절',
+      height=12, color=vector(0.7, 0.9, 1))
+
+canvas_bg = box(pos=vector(0, 0, -0.5), size=vector(11, 8, 0.1),
+                 color=vector(0.1, 0.1, 0.15))
+
+음색목록 = ['piano', 'flute', 'guitar', 'organ', 'synth', 'bass', 'trumpet']
+
+그림 = []
+최대점 = 200
+
+state = {
+    'drawing': False,
+    '농도': 0.5,
+    'clear': False
+}
+
+def on_down(evt):
+    state['drawing'] = True
+
+def on_up(evt):
+    state['drawing'] = False
+
+def on_key(evt):
+    if evt.key == 'c' or evt.key == 'C':
+        state['clear'] = True
+
+def 농도변경(evt):
+    state['농도'] = evt.value
+
+scene.bind('mousedown', on_down)
+scene.bind('mouseup', on_up)
+scene.bind('keydown', on_key)
+
+slider(min=0.1, max=1.0, step=0.05, value=0.5, length=240, bind=농도변경)
+
+def 위치를음으로(pos):
+    음계_표 = [note.C4, note.D4, note.E4, note.F4, note.G4, note.A4, note.B4,
+            note.C5, note.D5, note.E5, note.F5, note.G5, note.A5, note.B5]
+    음idx = int((pos.y + 4) / 8 * 13)
+    음idx = max(0, min(13, 음idx))
+    색idx = int((pos.x + 5) / 10 * 6.99)
+    색idx = max(0, min(6, 색idx))
+    색 = 무지개[음idx % 7]
+    return 음계_표[음idx], 음색목록[색idx], 색
+
+프레임 = 0
+while True:
+    rate(30)
+    프레임 += 1
+
+    if state['clear']:
+        for p in 그림:
+            p.visible = False
+        그림.clear()
+        state['clear'] = False
+
+    mp = scene.mouse.pos
+    if abs(mp.x) < 5.5 and abs(mp.y) < 4 and state['drawing']:
+        if 프레임 % 2 == 0:
+            주파수, 음색이름, 색 = 위치를음으로(mp)
+            점 = sphere(pos=vector(mp.x, mp.y, 0),
+                        radius=0.15 + state['농도']*0.2,
+                        color=색, emissive=True, opacity=0.85)
+            그림.append(점)
+            sound(주파수, 0.15, 'sine', state['농도']*0.5)
+            if len(그림) > 최대점:
+                옛점 = 그림.pop(0)
+                옛점.visible = False
+
+    if 프레임 % 5 == 0:
+        for p in 그림[-20:]:
+            p.radius = max(0.1, p.radius * 0.98)
+`
+  },
+  {
+    id: 'synesthesia-aurora-orchestra',
+    title: '오로라 오케스트라 - 슬라이더로 빛과 음을 지휘',
+    thumbnail: '🌈',
+    category: 'creative',
+    level: 3,
+    description: '세 슬라이더로 주파수, 밝기, 화음을 조절하면 오로라 띠와 화음이 동시에 변합니다.',
+    tags: ['synesthesia', 'music', 'interactive'],
+    code: `from vpython import *
+import math
+
+scene.background = vector(0.01, 0.01, 0.03)
+scene.range = 8
+scene.center = vector(0, 1, 0)
+
+label(pos=vector(0, 6, 0), text='오로라 오케스트라', height=22, color=color.white)
+label(pos=vector(0, 5.3, 0), text='슬라이더 = 주파수/밝기/화음, 클릭 = 화음 연주',
+      height=14, color=vector(0.8, 1, 0.9))
+label(pos=vector(0, -5, 0), text='스페이스: 자동 지휘 모드',
+      height=12, color=vector(0.7, 0.7, 1))
+
+띠 = []
+for i in range(30):
+    x = (i - 15) * 0.5
+    구 = sphere(pos=vector(x, 0, 0), radius=0.3,
+                 color=color.white, emissive=True, opacity=0.8)
+    띠.append(구)
+
+오로라빛 = local_light(pos=vector(0, 0, 3),
+                        color=color.white, intensity=0.7)
+
+box(pos=vector(0, -3, 0), size=vector(20, 0.2, 8),
+    color=vector(0.05, 0.05, 0.1))
+
+화음목록 = [
+    [note.C4, note.E4, note.G4],
+    [note.D4, note.F4, note.A4],
+    [note.E4, note.G4, note.B4],
+    [note.F4, note.A4, note.C5],
+    [note.G4, note.B4, note.D5],
+    [note.A4, note.C5, note.E5],
+    [note.B4, note.D5, note.F5],
+]
+화음이름 = ['C', 'Dm', 'Em', 'F', 'G', 'Am', 'Bdim']
+
+state = {
+    '주파수계수': 1.0,
+    '밝기': 0.7,
+    '화음idx': 0,
+    '클릭': False,
+    '자동': False,
+    '자동tick': 0,
+}
+
+def 주파수콜백(evt): state['주파수계수'] = evt.value
+def 밝기콜백(evt): state['밝기'] = evt.value
+def 화음콜백(evt): state['화음idx'] = int(evt.value)
+def 클릭콜백(evt): state['클릭'] = True
+def 키콜백(evt):
+    if evt.key == ' ':
+        state['자동'] = not state['자동']
+
+scene.bind('click', 클릭콜백)
+scene.bind('keydown', 키콜백)
+
+slider(min=0.5, max=3.0, step=0.1, value=1.0, length=200, bind=주파수콜백)
+slider(min=0.1, max=1.0, step=0.05, value=0.7, length=200, bind=밝기콜백)
+slider(min=0, max=6, step=1, value=0, length=200, bind=화음콜백)
+
+현재화음 = label(pos=vector(0, 4.5, 0), text='화음: C', height=18, color=color.yellow)
+
+프레임 = 0
+while True:
+    rate(60)
+    프레임 += 1
+
+    if state['자동']:
+        state['자동tick'] += 1
+        if state['자동tick'] >= 72:
+            state['자동tick'] = 0
+            state['화음idx'] = (state['화음idx'] + 1) % 7
+            state['클릭'] = True
+
+    if state['클릭']:
+        chord(화음목록[state['화음idx']], 0.6, 'sine', state['밝기']*0.4)
+        state['클릭'] = False
+        현재화음.text = '화음: ' + 화음이름[state['화음idx']]
+
+    기본색 = 무지개[state['화음idx']]
+    for i, 구 in enumerate(띠):
+        위상 = 프레임 * 0.05 * state['주파수계수'] + i * 0.3
+        y = math.sin(위상) * 1.5 + math.cos(위상*0.5) * 0.5
+        구.pos = vector(구.pos.x, y, math.sin(위상*0.7))
+        깊이 = (math.sin(위상) + 1) / 2
+        구.color = vector(
+            기본색.x * (0.5 + 깊이*0.5),
+            기본색.y * (0.5 + 깊이*0.5),
+            기본색.z * (0.5 + 깊이*0.5)
+        )
+        구.opacity = 0.4 + state['밝기'] * 0.5
+        구.radius = 0.2 + state['밝기'] * 0.3
+
+    오로라빛.color = 기본색
+    오로라빛.intensity = state['밝기'] * 1.5
+
+    if 프레임 % 30 == 0:
+        근음 = 화음목록[state['화음idx']][0] * state['주파수계수']
+        sound(근음, 0.3, 'sine', state['밝기'] * 0.15)
+`
+  },
+  {
+    id: 'cosmic-aurora-veil',
+    title: '오로라 베일 - 흐르는 빛의 커튼',
+    thumbnail: '🌌',
+    category: 'art',
+    level: 2,
+    description: '밤하늘에 끝없이 흐르는 오로라 커튼과 부드러운 화음이 어우러지는 무한 풍경',
+    tags: ['light', 'music', 'generative', 'infinite'],
+    code: `from vpython import *
+import random
+import math
+
+scene.background = vector(0.01, 0.02, 0.06)
+scene.range = 12
+
+label(pos=vector(0, 9, 0), text='오로라 베일 — 그저 보고 들으세요',
+      color=color.white, height=16)
+
+for _ in range(120):
+    sphere(pos=vector(random.uniform(-25, 25),
+                      random.uniform(-8, 12),
+                      random.uniform(-25, -10)),
+           radius=0.04, color=color.white, emissive=True)
+
+NUM_COLS = 60
+NUM_ROWS = 20
+curtain = []
+
+for i in range(NUM_COLS):
+    col = []
+    x = -15 + i * 30 / NUM_COLS
+    for j in range(NUM_ROWS):
+        y = -2 + j * 0.45
+        s = sphere(pos=vector(x, y, 0), radius=0.18,
+                   color=vector(0.2, 1.0, 0.6),
+                   emissive=True, opacity=0.6)
+        col.append(s)
+    curtain.append(col)
+
+local_light(pos=vector(0, 8, 4), color=vector(0.3, 0.9, 0.7), intensity=0.5)
+
+pentatonic = [note.C4, note.D4, note.E4, note.G4, note.A4,
+              note.C5, note.D5, note.E5]
+
+t = 0.0
+beat = 0
+while True:
+    rate(40)
+    t += 0.03
+
+    hue_shift = (math.sin(t * 0.15) + 1) / 2
+    base_a = vector(0.2, 1.0, 0.6)
+    base_b = vector(0.7, 0.3, 1.0)
+    cur_color = base_a * hue_shift + base_b * (1 - hue_shift)
+
+    for i in range(NUM_COLS):
+        wave = math.sin(t * 1.2 + i * 0.25) * 1.4
+        wave += math.sin(t * 0.6 + i * 0.07) * 0.8
+
+        edge_fade = 1 - abs(i - NUM_COLS / 2) / (NUM_COLS / 2)
+        edge_fade = max(0.2, edge_fade)
+
+        for j in range(NUM_ROWS):
+            row_phase = j * 0.18
+            yshift = wave + math.sin(t * 0.8 + row_phase) * 0.3
+
+            base_y = -2 + j * 0.45
+            new_pos = vector(curtain[i][j].pos.x, base_y + yshift * 0.6, math.sin(t * 0.5 + i * 0.15) * 1.5)
+            curtain[i][j].pos = new_pos
+
+            bright = 0.5 + j / NUM_ROWS * 0.7
+            curtain[i][j].color = cur_color * bright
+            curtain[i][j].opacity = 0.4 * edge_fade + 0.2
+
+    beat += 1
+    if beat % 80 == 0:
+        n = random.choice(pentatonic)
+        sound(n, 1.4, 'sine', 0.18)
+    if beat % 320 == 0:
+        c1 = random.choice(pentatonic)
+        c2 = random.choice(pentatonic)
+        c3 = random.choice(pentatonic)
+        chord([c1, c2, c3], 2.2, 'triangle', 0.14)
+`
+  },
+  {
+    id: 'cosmic-firefly-choir',
+    title: '반딧불이 합창단 - 점멸하는 빛의 노래',
+    thumbnail: '✨',
+    category: 'art',
+    level: 3,
+    description: '어두운 숲 속을 떠다니는 반딧불이 100마리가 각자 점멸하며 음을 노래하는 무한 풍경',
+    tags: ['light', 'music', 'generative', 'infinite'],
+    code: `from vpython import *
+import random
+import math
+
+scene.background = vector(0.02, 0.03, 0.05)
+scene.range = 10
+
+label(pos=vector(0, 8, 0),
+      text='반딧불이 합창단 — 빛이 노래합니다',
+      color=color.white, height=14)
+
+box(pos=vector(0, -5, 0), size=vector(40, 0.2, 40),
+    color=vector(0.05, 0.08, 0.05), opacity=0.7)
+
+distant_light(direction=vector(0.3, -1, 0.2),
+              color=vector(0.3, 0.4, 0.6), intensity=0.4)
+
+pentatonic = [note.C3, note.E3, note.G3, note.A3,
+              note.C4, note.D4, note.E4, note.G4, note.A4,
+              note.C5, note.D5, note.E5]
+
+warm_palette = [
+    vector(1.0, 0.9, 0.3),
+    vector(1.0, 0.7, 0.2),
+    vector(0.9, 1.0, 0.4),
+    vector(1.0, 0.5, 0.3),
+    vector(0.7, 0.9, 1.0),
+]
+
+NUM_FIREFLIES = 100
+fireflies = []
+
+for _ in range(NUM_FIREFLIES):
+    pos = vector(random.uniform(-15, 15),
+                 random.uniform(-3, 6),
+                 random.uniform(-15, 5))
+    body = sphere(pos=pos, radius=0.12,
+                  color=random.choice(warm_palette),
+                  emissive=True, opacity=0.0)
+    fireflies.append({
+        'obj': body,
+        'phase': random.uniform(0, 6.28),
+        'speed': random.uniform(0.6, 1.8),
+        'note': random.choice(pentatonic),
+        'instr': random.choice(['piano', 'flute', 'chiptune']),
+        'last_played': -999,
+        'home': vector(pos.x, pos.y, pos.z),
+    })
+
+t = 0.0
+tick = 0
+while True:
+    rate(50)
+    t += 0.04
+    tick += 1
+
+    for f in fireflies:
+        brightness = (math.sin(t * f['speed'] + f['phase']) + 1) / 2
+        brightness = brightness ** 3
+        f['obj'].opacity = brightness * 0.95
+
+        f['obj'].pos = f['home'] + vector(
+            math.sin(t * 0.5 + f['phase']) * 0.6,
+            math.sin(t * 0.7 + f['phase'] * 1.3) * 0.4,
+            math.cos(t * 0.4 + f['phase']) * 0.6,
+        )
+
+        if brightness > 0.92 and (t - f['last_played']) > 1.5:
+            if random.random() < 0.18:
+                sound(f['note'], 0.6, 'sine', 0.10)
+                f['last_played'] = t
+
+    if tick % 240 == 0:
+        star = random.choice(fireflies)
+        star['obj'].color = vector(1, 1, 0.6)
+        for k in range(3):
+            n = random.choice(pentatonic)
+            sound(n, 0.4, 'triangle', 0.12)
+`
+  },
+  {
+    id: 'cosmic-galaxy-grow',
+    title: '은하 자라기 - 별이 태어나는 우주',
+    thumbnail: '🌠',
+    category: 'art',
+    level: 3,
+    description: '무에서 시작해 별이 하나씩 태어나며 자라나는 은하, 별마다 자기 음을 가진 무한 우주 작품',
+    tags: ['light', 'music', 'generative', 'infinite'],
+    code: `from vpython import *
+import random
+import math
+
+scene.background = vector(0.005, 0.005, 0.02)
+scene.range = 14
+
+label(pos=vector(0, 11, 0),
+      text='은하 자라기 — 별이 태어나는 소리',
+      color=color.white, height=14)
+
+core = sphere(pos=vector(0, 0, 0), radius=0.7,
+              color=vector(1.0, 0.9, 0.7),
+              emissive=True, opacity=0.6)
+local_light(pos=vector(0, 0, 0),
+            color=vector(1.0, 0.9, 0.8), intensity=0.7)
+
+star_colors = [
+    vector(0.6, 0.8, 1.0),
+    vector(1.0, 1.0, 1.0),
+    vector(1.0, 0.9, 0.6),
+    vector(1.0, 0.6, 0.4),
+    vector(1.0, 0.4, 0.4),
+    vector(0.8, 0.6, 1.0),
+]
+
+pentatonic = [note.C3, note.D3, note.E3, note.G3, note.A3,
+              note.C4, note.D4, note.E4, note.G4, note.A4,
+              note.C5, note.D5, note.E5, note.G5]
+
+MAX_STARS = 220
+stars = []
+
+t = 0.0
+tick = 0
+
+while True:
+    rate(50)
+    t += 0.02
+    tick += 1
+
+    if tick % 6 == 0 and random.random() < 0.7:
+        r = random.uniform(1.2, 11)
+        arm_offset = random.choice([0, math.pi])
+        theta = r * 0.6 + arm_offset + random.uniform(-0.3, 0.3)
+
+        x = math.cos(theta) * r
+        z = math.sin(theta) * r
+        y = random.uniform(-0.6, 0.6)
+
+        col = random.choice(star_colors)
+        size = random.uniform(0.08, 0.22)
+        if random.random() < 0.04:
+            size = random.uniform(0.35, 0.55)
+
+        s = sphere(pos=vector(x, y, z), radius=size,
+                   color=col, emissive=True, opacity=0.0)
+
+        star_data = {
+            'obj': s,
+            'born': t,
+            'note': random.choice(pentatonic),
+            'orbit_r': r,
+            'orbit_theta': theta,
+            'orbit_speed': 0.3 / (r ** 0.5),
+            'y': y,
+            'twinkle_phase': random.uniform(0, 6.28),
+        }
+        stars.append(star_data)
+
+        sound(star_data['note'], 0.7, 'sine', 0.10)
+
+        if random.random() < 0.15:
+            c2 = random.choice(pentatonic)
+            chord([star_data['note'], c2], 1.0, 'triangle', 0.08)
+
+    while len(stars) > MAX_STARS:
+        old = stars.pop(0)
+        old['obj'].visible = False
+
+    for s in stars:
+        age = t - s['born']
+        fade = min(1.0, age * 0.8)
+        twinkle = 0.7 + 0.3 * math.sin(t * 3 + s['twinkle_phase'])
+        s['obj'].opacity = fade * twinkle
+
+        s['orbit_theta'] += s['orbit_speed'] * 0.02
+        s['obj'].pos = vector(
+            math.cos(s['orbit_theta']) * s['orbit_r'],
+            s['y'] + math.sin(t * 0.5 + s['twinkle_phase']) * 0.05,
+            math.sin(s['orbit_theta']) * s['orbit_r']
+        )
+
+    core.radius = 0.7 + math.sin(t * 0.6) * 0.15
+    core.opacity = 0.5 + math.sin(t * 0.4) * 0.2
+
+    if tick % 600 == 0:
+        c1 = random.choice(pentatonic)
+        c2 = random.choice(pentatonic)
+        c3 = random.choice(pentatonic)
+        chord([c1, c2, c3], 2.5, 'sine', 0.12)
+`
+  },
 ];
 
 export default EXAMPLES;

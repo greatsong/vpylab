@@ -38,6 +38,7 @@ export default function Header() {
 
   const navItems = [
     { key: 'courses', path: '/courses' },
+    { key: 'examples', path: '/examples' },
     { key: 'missions', path: '/missions' },
     { key: 'sandbox', path: '/sandbox' },
     { key: 'gallery', path: '/gallery' },

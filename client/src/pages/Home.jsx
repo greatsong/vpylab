@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/useI18n';
 import Header from '../components/layout/Header';
 import { categories, getMissionsByCategory } from '../data/missions';
 import courses from '../data/courses';
+import EXAMPLES from '../data/examples';
 import useAppStore from '../stores/appStore';
 import useGalleryStore from '../stores/galleryStore';
 import GalleryCard from '../components/gallery/GalleryCard';
@@ -12,6 +13,29 @@ const CAT_COLORS = {
   CT: '#6C5CE7', CR: '#FF6B6B', MA: '#00CEC9',
   SC: '#00B894', AR: '#F0883E', SN: '#E84393', AI: '#4A6CF7',
 };
+
+// 예제 카테고리별 액센트 — DESIGN.md 스펙트럼
+const EX_CAT_COLORS = {
+  space: '#4A6CF7', sound: '#E84393', science: '#00B894',
+  art: '#F0883E',  game: '#FF6B6B',  creative: '#6C5CE7',
+  math: '#00CEC9', interactive: '#4A6CF7',
+};
+
+// 홈에서 추천할 핵심 예제 (12개) — 새 v3 + 음악 융합 골고루
+const FEATURED_EXAMPLE_IDS = [
+  'music-piano-recorder',       // ⭐ 인터랙티브 메인
+  'music-childrens-songs',      // 동요
+  'music-game-themes',          // 게임 BGM
+  'music-mario-dance',          // 마리오 댄스
+  'showcase-vertex-rainbow',    // 무지개 부채
+  'showcase-keysdown-spaceship',// 우주선 조종
+  'showcase-mouse-follow',      // 마우스 추적
+  'showcase-pendulum-trail',    // 진자
+  'music-rainbow-piano',        // 무지개 피아노
+  'music-doppler',              // 도플러
+  'showcase-clone-rotate',      // 12지 시계
+  'showcase-graph-functions',   // 함수 그래프
+];
 
 export default function Home() {
   const { t, locale: lang } = useI18n();
@@ -201,6 +225,77 @@ export default function Home() {
                           style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: color }} />
                       </div>
                     </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== 예제 갤러리 ===== */}
+        <section className="py-16" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+          <div className="container-main">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <h2 className="font-display text-xl md:text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                  {lang === 'ko' ? '바로 실행해보는 예제' : 'Run-It-Now Examples'}
+                </h2>
+                <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                  {lang === 'ko'
+                    ? `${EXAMPLES.length}개 예제 · 음악 융합 · 인터랙티브 · 카드 클릭 = 코드 자동 로드`
+                    : `${EXAMPLES.length} examples · Music fusion · Interactive · Click to auto-load`}
+                </p>
+              </div>
+              <Link to="/examples" className="text-sm no-underline font-medium"
+                style={{ color: 'var(--color-accent)' }}>
+                {lang === 'ko' ? '전체 보기' : 'View all'} →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {FEATURED_EXAMPLE_IDS.map((id) => {
+                const ex = EXAMPLES.find((e) => e.id === id);
+                if (!ex) return null;
+                const accent = EX_CAT_COLORS[ex.category] || '#4A6CF7';
+                return (
+                  <Link
+                    key={ex.id}
+                    to={`/sandbox?example=${ex.id}`}
+                    className="category-card no-underline"
+                    style={{ '--card-accent': accent }}
+                  >
+                    <div className="flex items-center gap-2.5 mb-3">
+                      <span className="text-[24px] leading-none shrink-0">{ex.thumbnail || '✨'}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: accent }} />
+                          <span
+                            className="text-[10.5px] font-mono font-bold uppercase tracking-wider truncate"
+                            style={{ color: accent }}
+                          >
+                            {ex.category}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <h3
+                      className="font-display font-bold text-[14px] leading-snug mb-1.5"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      {ex.title}
+                    </h3>
+                    <p
+                      className="text-[12px] leading-relaxed"
+                      style={{
+                        color: 'var(--color-text-secondary)',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {ex.description}
+                    </p>
                   </Link>
                 );
               })}
