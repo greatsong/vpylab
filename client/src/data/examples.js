@@ -1802,6 +1802,998 @@ while True:
     string.axis = bob.pos - pivot.pos
 `
   },
+
+  // ═══════════════════════════════════════
+  // 🎵 음악 융합 쇼케이스 (10개) — 음악×수학·과학·창의
+  // ═══════════════════════════════════════
+
+  // ── 음악 × 수학 (3) ─────────────────────
+  {
+    id: 'music-frequency-tower',
+    title: '주파수 탑 — 음높이의 비밀',
+    thumbnail: '🗼',
+    category: 'sound',
+    level: 2,
+    description: '도레미파솔라시도의 주파수를 박스 높이로 시각화. 높을수록 음이 높다',
+    tags: ['music', 'math', 'frequency'],
+    code: `from vpython import *
+import math
+
+# 음의 높이는 1초당 진동수(Hz)로 결정됩니다.
+# 낮은 도(C4) = 261.63 Hz, 높은 도(C5) = 523.25 Hz — 정확히 2배!
+# 박스 높이를 주파수에 비례하게 그려 비교해 봅시다.
+# ──────────────────────────────────────────
+
+scene.background = vector(0.05, 0.05, 0.1)
+
+# 도레미파솔라시도의 주파수
+notes = [
+    ('도', note.C4, color.red),
+    ('레', note.D4, color.orange),
+    ('미', note.E4, color.yellow),
+    ('파', note.F4, color.green),
+    ('솔', note.G4, color.cyan),
+    ('라', note.A4, color.blue),
+    ('시', note.B4, color.purple),
+    ('도', note.C5, color.magenta),
+]
+
+# 박스 + 라벨 + 음 한꺼번에
+for i, (name, freq, col) in enumerate(notes):
+    h = freq / 100  # 주파수 / 100 = 박스 높이
+    box(pos=vector(i*0.9 - 3.2, h/2, 0),
+        size=vector(0.7, h, 0.7), color=col, emissive=True)
+    label(pos=vector(i*0.9 - 3.2, h + 0.5, 0),
+          text=f'{name}\\n{freq:.0f}Hz',
+          color=color.white, height=12)
+    sound(freq, 0.4, 'sine', 0.25)
+    sleep(0.5)
+
+# 마지막 화음으로 끝
+chord([note.C4, note.E4, note.G4, note.C5], 1.5)
+print('낮은 도 261Hz → 높은 도 523Hz: 정확히 2배 차이입니다!')
+`
+  },
+
+  {
+    id: 'music-sine-wave',
+    title: '사인파 멜로디 — 슬라이더로 그리고 듣기',
+    thumbnail: '🌊',
+    category: 'sound',
+    level: 3,
+    description: '주파수와 진폭을 슬라이더로 조절하며 파형과 소리를 동시에 체험',
+    tags: ['music', 'math', 'wave', 'slider'],
+    code: `from vpython import *
+import math
+
+# 소리는 공기의 진동(파동). 사인파 y = A·sin(2πfx)는 가장 단순한 음.
+# 슬라이더로 주파수(f)와 진폭(A)을 바꿔보세요.
+# ──────────────────────────────────────────
+
+scene.background = vector(0.95, 0.96, 0.98)
+
+state = {'freq': 440.0, 'amp': 1.0}
+
+# 곡선 시각화 — curve로 사인파 그리기
+wave_curve = curve(color=color.blue, radius=0.04)
+
+def redraw():
+    wave_curve.clear()
+    f = state['freq'] / 100  # 시각화용 주파수 스케일
+    A = state['amp']
+    for i in range(200):
+        x = i * 0.04 - 4
+        y = A * math.sin(f * x * 2 * math.pi / 4)
+        wave_curve.append(vector(x, y, 0))
+
+redraw()
+
+# 라벨
+freq_label = label(pos=vector(0, 2.5, 0),
+                   text=f"{state['freq']:.0f} Hz",
+                   color=color.black, height=18)
+
+def on_freq(evt):
+    state['freq'] = evt.value
+    freq_label.text = f"{evt.value:.0f} Hz"
+    redraw()
+    # 즉시 짧은 음 재생
+    sound(evt.value, 0.15, 'sine', 0.2)
+
+def on_amp(evt):
+    state['amp'] = evt.value
+    redraw()
+
+slider(min=110, max=880, step=10, value=440, length=200, bind=on_freq)
+slider(min=0.2, max=2.0, step=0.1, value=1.0, length=200, bind=on_amp)
+
+label(pos=vector(0, -2.5, 0),
+      text="위 슬라이더 = 주파수, 아래 슬라이더 = 진폭",
+      color=color.black, height=12)
+
+# 이벤트 디스패치 루프
+while True:
+    rate(30)
+`
+  },
+
+  {
+    id: 'music-fibonacci-rhythm',
+    title: '피보나치 리듬 — 황금비 박자',
+    thumbnail: '🌀',
+    category: 'sound',
+    level: 2,
+    description: '1, 1, 2, 3, 5, 8 비트마다 음이 울리는 자연의 수학 리듬',
+    tags: ['music', 'math', 'fibonacci'],
+    code: `from vpython import *
+import math
+
+# 피보나치 수열: 1, 1, 2, 3, 5, 8, 13, 21, ...
+# 자연(소라껍데기, 해바라기)에 숨겨진 비율 = 황금비
+# 이 수열대로 비트 수를 두면 독특한 리듬이 만들어집니다.
+# ──────────────────────────────────────────
+
+scene.background = vector(0.05, 0.08, 0.12)
+
+fib = [1, 1, 2, 3, 5, 8, 13]
+notes = [note.C4, note.D4, note.E4, note.G4, note.A4, note.C5, note.E5]
+colors = [color.red, color.orange, color.yellow, color.green,
+          color.cyan, color.blue, color.purple]
+
+# 피보나치 박스 — 크기가 수열대로 커짐
+boxes = []
+x = -4
+for i, n in enumerate(fib):
+    size = 0.3 + n * 0.15
+    b = box(pos=vector(x + size/2, 0, 0),
+            size=vector(size, size, size),
+            color=colors[i], emissive=True)
+    label(pos=vector(b.pos.x, size/2 + 0.4, 0),
+          text=str(n), color=color.white, height=14)
+    boxes.append((b, n, notes[i]))
+    x += size + 0.15
+
+label(pos=vector(0, -2, 0),
+      text="피보나치 수만큼 박자가 반복됩니다",
+      color=color.white, height=14)
+
+# 무한 반복: 각 박스가 자기 비트수만큼 음을 냄
+beat_dur = 0.18
+while True:
+    for b, n, freq in boxes:
+        for _ in range(n):
+            # 박스가 통통 튐
+            b.pos = b.pos + vector(0, 0.4, 0)
+            sound(freq, beat_dur*0.8, 'sine', 0.3)
+            sleep(beat_dur)
+            b.pos = b.pos - vector(0, 0.4, 0)
+    sleep(0.5)
+`
+  },
+
+  // ── 음악 × 과학 (3) ─────────────────────
+  {
+    id: 'music-doppler',
+    title: '도플러 효과 — 지나가는 자동차의 음',
+    thumbnail: '🚗',
+    category: 'sound',
+    level: 3,
+    description: '가까이 올 때는 높은 음, 멀어질 때는 낮은 음 — 구급차 사이렌의 비밀',
+    tags: ['music', 'science', 'doppler'],
+    code: `from vpython import *
+import math
+
+# 도플러 효과: 음원이 다가오면 파장이 짧아져 음이 높아지고,
+# 멀어지면 파장이 길어져 낮아집니다.
+# 구급차 사이렌이 지나갈 때 음이 변하는 이유!
+# ──────────────────────────────────────────
+
+scene.background = vector(0.05, 0.05, 0.1)
+
+# 도로
+box(pos=vector(0, -1, 0), size=vector(20, 0.1, 1),
+    color=color.gray, opacity=0.5)
+# 관측자(사람)
+sphere(pos=vector(0, 0, 0), radius=0.2,
+       color=color.peach, emissive=True)
+label(pos=vector(0, 0.6, 0), text='관측자',
+      color=color.white, height=12)
+
+# 자동차
+car = box(pos=vector(-7, -0.3, 0), size=vector(0.8, 0.4, 0.4),
+          color=color.red, emissive=True, make_trail=True,
+          trail_color=color.red)
+
+# 자동차 본래 음
+base_freq = 440  # A4
+
+label(pos=vector(0, 2.5, 0),
+      text="자동차가 좌→우로 지나갑니다. 음 변화에 귀 기울여보세요!",
+      color=color.white, height=14)
+
+# 자동차가 좌→우로 지나감 (3회 반복)
+for cycle in range(3):
+    car.pos = vector(-7, -0.3, 0)
+    car.clear_trail()
+    while car.pos.x < 7:
+        car.pos = car.pos + vector(0.15, 0, 0)
+        # 거리 기반 도플러 시뮬레이션 (단순화)
+        dx = 0 - car.pos.x  # 관측자(0)에서 자동차까지
+        speed = 0.15  # 자동차 속도(임의)
+        # 다가오면(dx>0) 주파수↑, 멀어지면 주파수↓
+        if dx > 0.1:  # 다가오는 중
+            freq = base_freq * 1.15
+        elif dx < -0.1:  # 멀어지는 중
+            freq = base_freq * 0.87
+        else:  # 옆을 지남
+            freq = base_freq
+        sound(freq, 0.12, 'sawtooth', 0.18)
+        sleep(0.05)
+    sleep(0.3)
+
+print('도플러 효과: 다가올 때 약 +15%, 멀어질 때 약 -13% 주파수 변화')
+`
+  },
+
+  {
+    id: 'music-wave-interference',
+    title: '파동 간섭 — 두 사인파의 합',
+    thumbnail: '🎶',
+    category: 'sound',
+    level: 3,
+    description: '두 음을 동시에 내면 보강·상쇄 간섭이 일어나며 새 파형이 생긴다',
+    tags: ['music', 'science', 'interference'],
+    code: `from vpython import *
+import math
+
+# 두 사인파를 더하면 합성파가 만들어집니다.
+# 같은 주파수: 보강(2배 진폭) 또는 상쇄(0)
+# 가까운 주파수: 맥놀이(beat) — 음량이 주기적으로 커졌다 작아짐
+# ──────────────────────────────────────────
+
+scene.background = vector(0.95, 0.96, 0.98)
+
+# 세 곡선: 파동1(빨강), 파동2(파랑), 합성파(보라)
+c1 = curve(color=color.red, radius=0.03)
+c2 = curve(color=color.blue, radius=0.03)
+csum = curve(color=color.purple, radius=0.05)
+
+label(pos=vector(0, 3.2, 0), text='빨강 + 파랑 = 보라(합성파)',
+      color=color.black, height=16)
+
+# 두 주파수
+f1 = note.C4   # 261.63 Hz
+f2 = note.E4   # 329.63 Hz
+
+# 시각화: 시간 0~4초 구간
+N = 200
+for i in range(N):
+    t = i / N * 4
+    y1 = math.sin(f1 * t / 50) * 0.7
+    y2 = math.sin(f2 * t / 50) * 0.7
+    x = i * 0.04 - 4
+    c1.append(vector(x, y1 + 1.5, 0))
+    c2.append(vector(x, y2 + 0, 0))
+    csum.append(vector(x, y1 + y2 - 1.5, 0))
+
+# 두 음을 동시에 (화음으로) 1초간 — 실제로 들어보는 보강 간섭
+print('첫째 음: 도(C4, 261.63 Hz)')
+sound(f1, 1.0, 'sine', 0.3)
+sleep(1.1)
+print('둘째 음: 미(E4, 329.63 Hz)')
+sound(f2, 1.0, 'sine', 0.3)
+sleep(1.1)
+print('두 음을 동시에 — 화음으로 들리지만 사실은 합성파입니다')
+chord([f1, f2], 2.0, 'sine', 0.25)
+`
+  },
+
+  {
+    id: 'music-planet-orchestra',
+    title: '행성 합주단 — 우주의 음악',
+    thumbnail: '🪐',
+    category: 'sound',
+    level: 3,
+    description: '5개 행성이 각자 다른 속도로 돌면서 일직선이 될 때마다 자기 음을 연주',
+    tags: ['music', 'science', 'orbit', 'space'],
+    code: `from vpython import *
+import math
+
+# 케플러는 행성의 운동에서 음악을 듣고자 했습니다 ("천체의 음악").
+# 5개 행성이 각자 다른 속도로 공전하다가, 0도(원점 위)를 지날 때
+# 자기 고유 음을 연주합니다. 다른 주기들의 합주!
+# ──────────────────────────────────────────
+
+scene.background = vector(0.02, 0.02, 0.08)
+
+# 태양
+sphere(pos=vector(0, 0, 0), radius=0.3, color=color.yellow, emissive=True)
+local_light(pos=vector(0, 0, 0), color=color.yellow, intensity=2)
+
+# 5개 행성: 거리, 속도(주기), 색, 음
+planets_data = [
+    (1.5, 0.05,  color.red,    note.C5),
+    (2.3, 0.035, color.orange, note.E5),
+    (3.0, 0.025, color.cyan,   note.G5),
+    (3.8, 0.018, color.green,  note.C6),
+    (4.7, 0.013, color.purple, note.E5),
+]
+
+planets = []
+for dist, speed, col, freq in planets_data:
+    # 궤도 ring
+    ring(pos=vector(0, 0, 0), radius=dist, thickness=0.02,
+         color=color.gray, axis=vector(0, 1, 0), opacity=0.3)
+    p = sphere(radius=0.15 + dist*0.04, color=col,
+               emissive=True, make_trail=True, trail_color=col)
+    p.dist = dist
+    p.speed = speed
+    p.angle = 0
+    p.freq = freq
+    p.last_zone = -1  # 마지막 음을 낸 영역(0~7) — 중복 방지
+    planets.append(p)
+
+label(pos=vector(0, 5.5, 0),
+      text='행성이 위쪽(0도)을 지날 때마다 자기 음을 연주합니다',
+      color=color.white, height=14)
+
+# 무한 반복
+while True:
+    rate(60)
+    for p in planets:
+        p.angle += p.speed
+        p.pos = vector(p.dist * math.cos(p.angle),
+                       0, p.dist * math.sin(p.angle))
+        # 0도(우측) 지날 때 음 재생 — sin이 0에 가깝고 cos>0
+        zone = int(p.angle / (math.pi / 4)) % 8
+        if zone == 0 and p.last_zone != 0:
+            sound(p.freq, 0.25, 'sine', 0.18)
+        p.last_zone = zone
+`
+  },
+
+  // ── 음악 × 창의 (3) ─────────────────────
+  {
+    id: 'music-rainbow-piano',
+    title: '무지개 피아노 — 클릭으로 연주',
+    thumbnail: '🎹',
+    category: 'sound',
+    level: 2,
+    description: '7개 무지개 박스를 클릭하면 도레미파솔라시 음이 나는 인터랙티브 피아노',
+    tags: ['music', 'creative', 'interactive', 'click'],
+    code: `from vpython import *
+
+# 클릭 한 번이 음 한 개. 7개 색을 직접 누르며 멜로디를 만들어 보세요.
+# evt.pick으로 클릭된 객체 id를 알 수 있어 어떤 건반인지 식별합니다.
+# ──────────────────────────────────────────
+
+scene.background = vector(0.1, 0.1, 0.15)
+scene.center = vector(0, 0, 0)
+scene.range = 5
+
+# 7색 박스 + 음
+keys_data = [
+    ('도', note.C4, color.red),
+    ('레', note.D4, color.orange),
+    ('미', note.E4, color.yellow),
+    ('파', note.F4, color.green),
+    ('솔', note.G4, color.cyan),
+    ('라', note.A4, color.blue),
+    ('시', note.B4, color.purple),
+]
+
+key_map = {}  # id → (음, 박스)
+x = -3
+for name, freq, col in keys_data:
+    b = box(pos=vector(x, 0, 0),
+            size=vector(0.8, 1.5, 0.5),
+            color=col, emissive=True)
+    label(pos=vector(x, -1.2, 0), text=name,
+          color=color.white, height=18)
+    key_map[b._id] = (freq, b)
+    x += 1
+
+label(pos=vector(0, 2.5, 0),
+      text='색 박스를 클릭해 멜로디를 만들어보세요!',
+      color=color.white, height=18)
+
+def on_click(evt):
+    if evt.pick in key_map:
+        freq, b = key_map[evt.pick]
+        sound(freq, 0.3, 'sine', 0.35)
+        # 박스가 살짝 위로 튀었다 돌아오기
+        b.pos = b.pos + vector(0, 0.3, 0)
+
+scene.bind('click', on_click)
+
+# 박스 위치 복귀 루프 + 이벤트 디스패치
+while True:
+    rate(30)
+    for _, b in key_map.values():
+        # 원위치로 부드럽게 보간
+        if b.pos.y > 0.01:
+            b.pos = b.pos + vector(0, -0.05, 0)
+        elif b.pos.y < -0.01:
+            b.pos = vector(b.pos.x, 0, b.pos.z)
+`
+  },
+
+  {
+    id: 'music-note-fireworks',
+    title: '음표 폭죽 — 클릭한 곳에 폭발과 음',
+    thumbnail: '🎆',
+    category: 'sound',
+    level: 3,
+    description: '화면 어디든 클릭하면 폭죽이 터지고, 위치(높이)에 따라 음 높이가 달라짐',
+    tags: ['music', 'creative', 'interactive', 'particles'],
+    code: `from vpython import *
+import random
+import math
+
+# 클릭 위치의 y좌표 → 음 높이 (위쪽=고음, 아래쪽=저음)
+# 클릭 위치의 x좌표 → 색조
+# 폭죽이 사방으로 퍼져 나갑니다.
+# ──────────────────────────────────────────
+
+scene.background = vector(0.02, 0.02, 0.1)
+scene.center = vector(0, 0, 0)
+scene.range = 5
+
+label(pos=vector(0, 4.2, 0),
+      text='어디든 클릭! 위쪽=높은 음, 아래쪽=낮은 음',
+      color=color.white, height=16)
+
+# 폭죽 입자 풀 (원형 보관해 재사용)
+particles = []
+MAX_PARTICLES = 200
+
+# 음 후보
+note_pool = [note.C4, note.D4, note.E4, note.G4, note.A4,
+             note.C5, note.D5, note.E5, note.G5, note.A5,
+             note.C6]
+
+def on_click(evt):
+    if evt.pos is None:
+        return
+    cx, cy, cz = evt.pos.x, evt.pos.y, evt.pos.z
+    # y좌표를 음 인덱스로 매핑 (-3 ~ +3 → 0 ~ 10)
+    idx = int((cy + 3) / 6 * (len(note_pool) - 1))
+    idx = max(0, min(len(note_pool) - 1, idx))
+    freq = note_pool[idx]
+    # 색은 x좌표로
+    hue_idx = int((cx + 4) / 8 * len(무지개))
+    hue_idx = max(0, min(len(무지개) - 1, hue_idx))
+    col = 무지개[hue_idx]
+
+    # 사운드 + 폭죽 입자 20개
+    sound(freq, 0.4, 'triangle', 0.3)
+    for _ in range(20):
+        ang = random.uniform(0, 2 * math.pi)
+        sp = random.uniform(0.05, 0.18)
+        vx = sp * math.cos(ang)
+        vy = sp * math.sin(ang)
+        s = sphere(pos=vector(cx, cy, cz), radius=0.06,
+                   color=col, emissive=True)
+        s.velocity = vector(vx, vy, 0)
+        s.life = 30  # 30프레임 후 소멸
+        particles.append(s)
+
+scene.bind('click', on_click)
+
+# 입자 업데이트 무한 루프
+while True:
+    rate(60)
+    alive = []
+    for p in particles:
+        p.pos = p.pos + p.velocity
+        p.velocity = p.velocity + vector(0, -0.005, 0)  # 중력
+        p.life -= 1
+        p.opacity = p.life / 30
+        if p.life > 0:
+            alive.append(p)
+        else:
+            p.visible = False
+    particles[:] = alive
+`
+  },
+
+  {
+    id: 'music-mario-dance',
+    title: '슈퍼마리오 테마 — 도형 댄스',
+    thumbnail: '🍄',
+    category: 'sound',
+    level: 2,
+    description: '실제 슈퍼마리오 메인 테마 멜로디에 맞춰 도형들이 점프하며 무한히 춤춘다',
+    tags: ['music', 'creative', 'game', 'mario'],
+    code: `from vpython import *
+
+# Super Mario Bros. 메인 테마(코지로 콘도, 1985)의 도입부.
+# (음, 박자) 튜플 시퀀스로 표현 — None은 쉼표.
+# ──────────────────────────────────────────
+
+scene.background = vector(0.02, 0.02, 0.08)
+scene.center = vector(0, 0, 0)
+scene.range = 5
+
+# 6개 도형
+shapes = []
+shape_specs = [
+    ('sphere',    color.red),
+    ('box',       color.orange),
+    ('cone',      color.yellow),
+    ('cylinder',  color.green),
+    ('pyramid',   color.cyan),
+    ('ellipsoid', color.purple),
+]
+for i, (kind, col) in enumerate(shape_specs):
+    x = (i - 2.5) * 1.3
+    if kind == 'sphere':
+        s = sphere(pos=vector(x, 0, 0), radius=0.4, color=col, emissive=True)
+    elif kind == 'box':
+        s = box(pos=vector(x, 0, 0), size=vector(0.7, 0.7, 0.7), color=col, emissive=True)
+    elif kind == 'cone':
+        s = cone(pos=vector(x, 0, 0), radius=0.4, axis=vector(0, 0.8, 0), color=col, emissive=True)
+    elif kind == 'cylinder':
+        s = cylinder(pos=vector(x, 0, 0), radius=0.3, axis=vector(0, 0.8, 0), color=col, emissive=True)
+    elif kind == 'pyramid':
+        s = pyramid(pos=vector(x, 0, 0), size=vector(0.8, 0.6, 0.6), axis=vector(0, 1, 0), color=col, emissive=True)
+    else:
+        s = ellipsoid(pos=vector(x, 0, 0), size=vector(0.5, 0.8, 0.5), color=col, emissive=True)
+    shapes.append(s)
+
+label(pos=vector(0, 3.5, 0), text='🍄 Super Mario — Main Theme',
+      color=color.white, height=20)
+
+# Mario 메인 테마 도입부 — (주파수, 박자수)
+# 박자 1 = 0.15초로 가정 (BPM 약 200)
+M = [
+    (note.E5, 1), (note.E5, 1), (None, 1), (note.E5, 1),
+    (None, 1),    (note.C5, 1), (note.E5, 2),
+    (note.G5, 2), (None, 2),    (note.G4, 2), (None, 2),
+    (note.C5, 2), (None, 1),    (note.G4, 2), (None, 1), (note.E4, 2),
+    (None, 1),    (note.A4, 1), (note.B4, 1), (note.A4, 1), (note.G4, 2),
+    (note.E4, 1), (note.G4, 1), (note.A4, 2),
+]
+
+BEAT = 0.15  # 1박자 길이(초)
+
+# 무한 반복
+while True:
+    for i, (freq, beats) in enumerate(M):
+        dur = BEAT * beats
+        if freq is not None:
+            sound(freq, dur*0.85, 'square', 0.18)
+            # 박자에 맞춰 도형 하나가 점프
+            s = shapes[i % len(shapes)]
+            s.pos = vector(s.pos.x, 0.6, s.pos.z)
+            sleep(dur*0.5)
+            s.pos = vector(s.pos.x, 0, s.pos.z)
+            sleep(dur*0.5)
+        else:
+            sleep(dur)
+    sleep(0.4)
+`
+  },
+
+  // ── 실제 동요 / 게임 음악 ────────────────
+  {
+    id: 'music-childrens-songs',
+    title: '동요 모음 — 학교종, 산토끼, Twinkle, 생일축하',
+    thumbnail: '🎵',
+    category: 'sound',
+    level: 1,
+    description: '버튼 4개를 눌러 동요를 듣고, 각 음에 맞춰 도형이 통통 튄다',
+    tags: ['music', 'song', 'children', 'button'],
+    code: `from vpython import *
+
+# 4개 버튼 중 하나를 클릭하면 해당 동요가 재생되며
+# 음에 맞춰 정중앙의 공이 점프합니다.
+# 동요는 (주파수, 박자) 시퀀스로 코딩되어 있습니다.
+# ──────────────────────────────────────────
+
+scene.background = vector(0.95, 0.96, 0.99)
+scene.range = 4
+
+# 점프하는 공
+ball = sphere(pos=vector(0, 0, 0), radius=0.5,
+              color=color.coral, emissive=True)
+
+label(pos=vector(0, 2.5, 0),
+      text='우상단 버튼으로 동요를 골라보세요!',
+      color=color.black, height=16)
+
+# 동요 데이터: (음, 박자수)
+SCHOOL_BELL = [
+    (note.G4, 1), (note.G4, 1), (note.A4, 1), (note.A4, 1),
+    (note.G4, 1), (note.G4, 1), (note.E4, 2),
+    (note.G4, 1), (note.G4, 1), (note.E4, 1), (note.E4, 1), (note.D4, 2),
+]
+SAN_TOKKI = [
+    (note.G4, 1), (note.E4, 1), (note.E4, 1), (note.F4, 1), (note.D4, 1), (note.D4, 1),
+    (note.C4, 1), (note.D4, 1), (note.E4, 1), (note.F4, 1), (note.G4, 1), (note.G4, 1), (note.G4, 2),
+]
+TWINKLE = [
+    (note.C4, 1), (note.C4, 1), (note.G4, 1), (note.G4, 1),
+    (note.A4, 1), (note.A4, 1), (note.G4, 2),
+    (note.F4, 1), (note.F4, 1), (note.E4, 1), (note.E4, 1),
+    (note.D4, 1), (note.D4, 1), (note.C4, 2),
+]
+HAPPY_BIRTHDAY = [
+    (note.C4, 1), (note.C4, 1), (note.D4, 2), (note.C4, 2), (note.F4, 2), (note.E4, 4),
+    (note.C4, 1), (note.C4, 1), (note.D4, 2), (note.C4, 2), (note.G4, 2), (note.F4, 4),
+]
+
+# 재생 요청 큐 (버튼 콜백은 짧게 유지)
+state = {'queue': None, 'name': ''}
+
+def request(song, name):
+    state['queue'] = song
+    state['name'] = name
+
+button(text='🔔 학교종', bind=lambda e: request(SCHOOL_BELL, '학교종'))
+button(text='🐰 산토끼', bind=lambda e: request(SAN_TOKKI, '산토끼'))
+button(text='⭐ Twinkle', bind=lambda e: request(TWINKLE, 'Twinkle Twinkle'))
+button(text='🎂 생일축하', bind=lambda e: request(HAPPY_BIRTHDAY, '생일축하'))
+
+# 메인 루프 — 큐에 곡이 들어오면 재생
+BEAT = 0.28
+while True:
+    rate(30)
+    if state['queue'] is not None:
+        song = state['queue']
+        state['queue'] = None
+        ball.color = color.gold
+        for freq, beats in song:
+            dur = BEAT * beats
+            sound(freq, dur*0.85, 'sine', 0.32)
+            ball.pos = vector(0, 0.5, 0)
+            sleep(dur * 0.4)
+            ball.pos = vector(0, 0, 0)
+            sleep(dur * 0.6)
+        ball.color = color.coral
+        print(f'🎵 {state["name"]} 연주 끝')
+`
+  },
+
+  {
+    id: 'music-game-themes',
+    title: '게임 음악 모음 — Mario, Tetris, Pac-Man',
+    thumbnail: '🎮',
+    category: 'sound',
+    level: 2,
+    description: '버튼으로 클래식 게임 BGM을 골라 듣고, 박자에 맞춰 도형 폭죽이 터진다',
+    tags: ['music', 'game', 'retro', 'button'],
+    code: `from vpython import *
+import random
+
+# 80~90년대 게임 BGM은 구형 오실레이터(square/sawtooth)로 만들어졌습니다.
+# 칩튠(chiptune) 사운드를 재현합니다.
+# ──────────────────────────────────────────
+
+scene.background = vector(0.02, 0.03, 0.08)
+scene.range = 5
+
+label(pos=vector(0, 3.5, 0),
+      text='🎮 클래식 게임 BGM',
+      color=color.white, height=22)
+label(pos=vector(0, 2.7, 0),
+      text='버튼을 눌러 곡을 골라보세요',
+      color=color.gray, height=14)
+
+# Super Mario Bros. — 메인 테마 도입부
+MARIO = [
+    (note.E5, 1), (note.E5, 1), (None, 1), (note.E5, 1),
+    (None, 1),    (note.C5, 1), (note.E5, 2),
+    (note.G5, 3), (None, 3),    (note.G4, 2),
+]
+# Tetris (Korobeiniki) 도입부
+TETRIS = [
+    (note.E5, 2), (note.B4, 1), (note.C5, 1), (note.D5, 2), (note.C5, 1), (note.B4, 1),
+    (note.A4, 2), (note.A4, 1), (note.C5, 1), (note.E5, 2), (note.D5, 1), (note.C5, 1),
+    (note.B4, 3), (note.C5, 1), (note.D5, 2), (note.E5, 2), (note.C5, 2), (note.A4, 2),
+]
+# Pac-Man (인트로 비슷)
+PACMAN = [
+    (note.B4, 1), (note.B5, 1), (note.F5, 1), (note.D5, 1),
+    (note.B5, 1), (note.F5, 1), (note.D5, 2),
+    (note.C5, 1), (note.C6, 1),
+    (note.G5, 1), (note.E5, 1), (note.C6, 1), (note.G5, 1), (note.E5, 2),
+]
+
+state = {'queue': None, 'name': ''}
+
+def request(song, name, fx='square'):
+    state['queue'] = (song, fx)
+    state['name'] = name
+
+button(text='🍄 Mario',   bind=lambda e: request(MARIO,  'Super Mario Bros.', 'square'))
+button(text='🧱 Tetris',  bind=lambda e: request(TETRIS, 'Tetris (Korobeiniki)', 'sawtooth'))
+button(text='🟡 Pac-Man', bind=lambda e: request(PACMAN, 'Pac-Man', 'triangle'))
+
+# 박자마다 폭죽
+particles = []
+def burst(col):
+    import math as m
+    for _ in range(10):
+        ang = random.uniform(0, 2*m.pi)
+        sp = random.uniform(0.04, 0.12)
+        s = sphere(pos=vector(0, 0, 0), radius=0.08, color=col, emissive=True)
+        s.velocity = vector(sp*m.cos(ang), sp*m.sin(ang), 0)
+        s.life = 30
+        particles.append(s)
+
+BEAT = 0.16
+while True:
+    rate(60)
+    # 입자 업데이트
+    alive = []
+    for p in particles:
+        p.pos = p.pos + p.velocity
+        p.velocity = p.velocity + vector(0, -0.003, 0)
+        p.life -= 1
+        p.opacity = max(0, p.life / 30)
+        if p.life > 0: alive.append(p)
+        else: p.visible = False
+    particles[:] = alive
+
+    # 곡 재생 요청 처리
+    if state['queue'] is not None:
+        song, fx = state['queue']
+        state['queue'] = None
+        print(f'🎮 {state["name"]} 시작')
+        for freq, beats in song:
+            dur = BEAT * beats
+            if freq is not None:
+                sound(freq, dur*0.85, fx, 0.18)
+                # 음 높이별 색
+                hue = int(((freq - 200) / 600) * 6) % 7
+                burst(무지개[hue])
+            sleep(dur)
+        print(f'🎮 {state["name"]} 종료')
+`
+  },
+
+  // ── 피아노 레코더 (메인 인터랙티브) ────────
+  {
+    id: 'music-piano-recorder',
+    title: '🎹 피아노 레코더 — 연주하고 다른 악기로 재생',
+    thumbnail: '🎼',
+    category: 'sound',
+    level: 3,
+    description: '피아노 건반을 클릭해 멜로디를 만들고, 악기를 바꿔 같은 멜로디를 다시 듣는다',
+    tags: ['music', 'piano', 'recorder', 'instrument', 'creative'],
+    code: `from vpython import *
+import time
+
+# === 피아노 레코더 ===
+# 1) 건반을 클릭해 자유롭게 연주합니다.
+# 2) 클릭한 음과 시간 간격이 자동으로 기록됩니다.
+# 3) "▶ 재생" 버튼 → 같은 멜로디가 현재 선택된 악기로 다시 들립니다.
+# 4) 메뉴로 악기를 바꿔보세요 — 같은 멜로디가 완전히 다르게 들립니다.
+# 5) "🗑 지우기"로 처음부터 다시.
+# ──────────────────────────────────────────
+
+scene.background = vector(0.96, 0.96, 1.0)
+scene.center = vector(0, 0, 0)
+scene.range = 4
+
+# 건반 정의: (한글이름, 영문음표 객체, 주파수, 색)
+KEYS = [
+    ('도', '도', note.C4, color.red),
+    ('레', '레', note.D4, color.orange),
+    ('미', '미', note.E4, color.yellow),
+    ('파', '파', note.F4, color.green),
+    ('솔', '솔', note.G4, color.cyan),
+    ('라', '라', note.A4, color.blue),
+    ('시', '시', note.B4, color.purple),
+    ('도↑', '높은도', note.C5, color.magenta),
+]
+
+# 건반 박스 + id로 매핑
+key_map = {}  # mesh_id → (이름_한글, 음표명, 주파수, 박스, 기본_y)
+x = -3.5
+for ko, name_for_play, freq, col in KEYS:
+    b = box(pos=vector(x, 0, 0),
+            size=vector(0.85, 1.6, 0.5),
+            color=col, emissive=True)
+    label(pos=vector(x, -1.3, 0), text=ko,
+          color=color.black, height=18)
+    key_map[b._id] = {'name': name_for_play, 'freq': freq, 'box': b, 'base_y': 0}
+    x += 1
+
+# 헤더 라벨
+title_label = label(pos=vector(0, 2.6, 0),
+      text='🎹 건반을 클릭해 멜로디를 만드세요',
+      color=color.black, height=20)
+status_label = label(pos=vector(0, 2.0, 0),
+      text='기록된 음: 0개',
+      color=color.gray, height=14)
+
+# 상태
+state = {
+    'recording': [],     # [(name, t_offset), ...]
+    'first_time': None,  # 첫 음의 절대 시각(초)
+    'instrument': 'piano',
+    'request': None,     # 'play' | 'clear' | None
+    'playing': False,
+    'last_pressed_id': None,
+}
+
+INSTRUMENTS = ['피아노', '플루트', '기타', '오르간', '신스', '베이스', '트럼펫', '칩튠']
+
+def update_status():
+    inst = state['instrument']
+    n = len(state['recording'])
+    status_label.text = f'기록된 음: {n}개  ·  악기: {inst}'
+
+# 건반 클릭 이벤트
+def on_click(evt):
+    if state['playing']:
+        return
+    pick = evt.pick
+    if pick not in key_map:
+        return
+    k = key_map[pick]
+    # 즉시 음 재생 (피아노 음색 — sine + 짧은 attack)
+    sound(k['freq'], 0.4, 'sine', 0.32)
+    # 박스 점프 표시
+    k['box'].pos = vector(k['box'].pos.x, k['base_y'] + 0.3, k['box'].pos.z)
+    state['last_pressed_id'] = pick
+
+    # 기록 (시각 = 첫 음 기준 상대 초)
+    now = time.time()
+    if state['first_time'] is None:
+        state['first_time'] = now
+    t_offset = now - state['first_time']
+    state['recording'].append((k['name'], t_offset))
+    update_status()
+
+scene.bind('click', on_click)
+
+# 재생/지우기/악기 변경 — 콜백은 짧게 (메인 루프가 처리)
+def on_play(evt):
+    if state['playing'] or not state['recording']:
+        return
+    state['request'] = 'play'
+
+def on_clear(evt):
+    state['request'] = 'clear'
+
+def on_instrument(evt):
+    # menu의 evt.value는 한글 이름
+    state['instrument'] = evt.value
+    update_status()
+
+button(text='▶ 재생', bind=on_play)
+button(text='🗑 지우기', bind=on_clear)
+menu(choices=INSTRUMENTS, selected='피아노', bind=on_instrument)
+
+print('💡 팁: 건반을 클릭해 멜로디를 만들고, 악기를 바꿔가며 ▶ 재생 해보세요.')
+print('💡 같은 멜로디가 피아노/플루트/기타/칩튠 등으로 완전히 다르게 들립니다.')
+
+# 메인 루프 — 박스 복귀 + 명령 처리
+while True:
+    rate(60)
+
+    # 모든 박스를 base 위치로 부드럽게 복귀
+    for k in key_map.values():
+        b = k['box']
+        if b.pos.y > k['base_y'] + 0.005:
+            b.pos = vector(b.pos.x, b.pos.y - 0.04, b.pos.z)
+        elif b.pos.y < k['base_y']:
+            b.pos = vector(b.pos.x, k['base_y'], b.pos.z)
+
+    # 명령 처리
+    req = state['request']
+    if req == 'clear':
+        state['recording'] = []
+        state['first_time'] = None
+        state['request'] = None
+        title_label.text = '🎹 건반을 클릭해 멜로디를 만드세요'
+        update_status()
+        print('🗑 기록을 지웠습니다.')
+
+    elif req == 'play' and state['recording'] and not state['playing']:
+        state['playing'] = True
+        state['request'] = None
+        title_label.text = f'▶ {state["instrument"]} 연주 중...'
+        rec = state['recording']
+        prev_t = 0
+        for i, (name, t) in enumerate(rec):
+            wait = max(0.05, t - prev_t)
+            prev_t = t
+            sleep(wait)
+            # 악기로 같은 음 재생 (play_instrument는 sync 버전)
+            try:
+                play_instrument(state['instrument'], name, 0.4)
+            except Exception:
+                # fallback: 주파수로 직접 재생
+                for k in key_map.values():
+                    if k['name'] == name:
+                        sound(k['freq'], 0.4, 'sine', 0.3)
+                        break
+            # 해당 건반 점프 표시
+            for kid, k in key_map.items():
+                if k['name'] == name:
+                    k['box'].pos = vector(k['box'].pos.x, k['base_y'] + 0.3, k['box'].pos.z)
+                    break
+        state['playing'] = False
+        title_label.text = '🎹 건반을 클릭해 멜로디를 만드세요'
+        print(f'▶ {state["instrument"]} 연주 끝.')
+`
+  },
+
+  // ── 무한 반복 / 생성 (1) ────────────────
+  {
+    id: 'music-endless-cosmos',
+    title: '끝없는 우주 멜로디 — 자동 생성 음악-아트',
+    thumbnail: '🌌',
+    category: 'sound',
+    level: 3,
+    description: '자동으로 멜로디가 끝없이 흘러나오고, 음마다 별이 우주에 추가됩니다',
+    tags: ['music', 'creative', 'generative', 'infinite'],
+    code: `from vpython import *
+import random
+import math
+
+# 펜타토닉 음계(5음계)는 어떻게 조합해도 어울립니다 — "잘못된 음"이 없음.
+# 무작위로 골라도 항상 듣기 좋은 멜로디가 생성됩니다.
+# 음마다 우주에 별 하나 추가 → 영원히 자라는 음악-우주.
+# ──────────────────────────────────────────
+
+scene.background = vector(0.01, 0.01, 0.05)
+scene.center = vector(0, 0, 0)
+scene.range = 8
+
+# 펜타토닉 음계 (5음 + 옥타브)
+pentatonic = [note.C4, note.D4, note.E4, note.G4, note.A4,
+              note.C5, note.D5, note.E5, note.G5, note.A5]
+
+# 별이 추가될 때 색상 — 따뜻한색 ↔ 차가운색 교차
+warm = [color.red, color.orange, color.yellow, color.gold]
+cool = [color.cyan, color.blue, color.purple, color.violet]
+
+label(pos=vector(0, 6.5, 0),
+      text='끝없는 우주 멜로디 — 듣고 보세요',
+      color=color.white, height=18)
+
+stars = []  # 누적된 별들 (회전 애니메이션용)
+counter = 0
+
+while True:
+    # 무작위 음 + 길이 + 옥타브
+    freq = random.choice(pentatonic)
+    dur = random.choice([0.2, 0.3, 0.4, 0.6])
+
+    # 음을 우주의 위치로 매핑: 주파수가 높을수록 위로
+    y = (freq - 200) / 100  # 대략 0 ~ 10
+    angle = counter * 0.3   # 회전 각
+    radius = 3 + (counter % 50) * 0.05
+    x = radius * math.cos(angle)
+    z = radius * math.sin(angle)
+
+    # 따뜻색/차가운색 교차
+    palette = warm if counter % 2 == 0 else cool
+    col = random.choice(palette)
+
+    # 별 추가
+    s = sphere(pos=vector(x, y, z),
+               radius=0.08 + dur*0.1,
+               color=col, emissive=True)
+    stars.append(s)
+    # 별 너무 많아지면 가장 오래된 것 제거 (메모리 절약)
+    if len(stars) > 200:
+        old = stars.pop(0)
+        old.visible = False
+
+    # 음 재생 — 악기 음색을 랜덤으로 (sine/triangle/square/sawtooth)
+    timbre = random.choice(['sine', 'triangle', 'square', 'sawtooth'])
+    sound(freq, dur, timbre, 0.18)
+
+    sleep(dur * 0.7)
+    counter += 1
+`
+  },
 ];
 
 export default EXAMPLES;
