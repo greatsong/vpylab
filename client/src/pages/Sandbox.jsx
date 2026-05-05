@@ -9,7 +9,7 @@ import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, errorSound, stopBgm, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
+import { runSound, errorSound, stopBgm, stopAllSounds, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
@@ -161,6 +161,11 @@ export default function Sandbox() {
     if (!exampleId) return;
     const ex = EXAMPLES.find(e => e.id === exampleId);
     if (ex) {
+      // 다른 예제로 이동 시 이전 잔존음/실행 정리
+      stopAllSounds();
+      // softStop 직접 호출 (stopExecution은 아래에서 디스트럭처되므로 TDZ 회피)
+      import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
+      if (sceneRef.current) clearScene(sceneRef.current);
       setCode(ex.code);
       initialCodeRef.current = ex.code;  // 초기화 시 이 예제로 복귀
       addOutput(`예제 "${ex.title}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
@@ -182,6 +187,10 @@ export default function Sandbox() {
     const lid = lessonParam.slice(slash + 1);
     const lesson = getLesson(cid, lid);
     if (lesson) {
+      // 다른 차시로 이동 시 이전 잔존음/실행 정리
+      stopAllSounds();
+      import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
+      if (sceneRef.current) clearScene(sceneRef.current);
       setCode(lesson.code);
       initialCodeRef.current = lesson.code;  // 초기화 시 이 차시로 복귀
       addOutput(`코스 차시 "${lesson.title?.ko || lid}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
@@ -269,6 +278,9 @@ export default function Sandbox() {
   }, [initWorker]);
 
   const startProgram = useCallback((sourceCode) => {
+    // 이전 코드의 잔존음 + BGM + 3D 객체를 모두 정리
+    stopAllSounds();
+    stopExecution();  // 이전 무한 루프 강제 종료 (rate에서 stop signal 감지)
     if (sceneRef.current) clearScene(sceneRef.current);
     clearRegistry();
     if (sceneRef.current?._cameraSystem) {
@@ -279,7 +291,7 @@ export default function Sandbox() {
     runSound();
     addOutput('실행 중', 'log');
     runCode(sourceCode);
-  }, [addOutput, runCode]);
+  }, [addOutput, runCode, stopExecution]);
 
   const handleRun = () => {
     if (!isReady) return;
@@ -317,6 +329,8 @@ export default function Sandbox() {
 
   const handleReset = () => {
     // 현재 로드된 예제/lesson/공유 코드의 원본으로 복귀 (없으면 DEFAULT_CODE)
+    stopAllSounds();
+    stopExecution();
     if (sceneRef.current) clearScene(sceneRef.current);
     setCode(initialCodeRef.current || DEFAULT_CODE);
     setOutputs([]);

@@ -22,6 +22,61 @@ let silentMediaDataUri = null;
 // suspended 상태에서 대기 중인 오디오 콜백 큐
 let pendingAudioQueue = [];
 
+// 활성 오디오 노드 추적 — 다음 실행 시 잔존음 끊기 위함
+const activeOscillators = new Set();   // 현재 울리는 oscillator
+const activeGains = new Set();         // gain 노드 (페이드아웃 후 정지)
+const activeTimeouts = new Set();      // 시퀀스/효과음 setTimeout id
+function trackOsc(osc, gain) {
+  activeOscillators.add(osc);
+  if (gain) activeGains.add(gain);
+  osc.addEventListener('ended', () => {
+    activeOscillators.delete(osc);
+    if (gain) activeGains.delete(gain);
+  });
+}
+function trackTimeout(id) {
+  activeTimeouts.add(id);
+  return id;
+}
+// setTimeout 래퍼 — stopAllSounds에서 일괄 취소되도록 추적
+function _st(fn, ms) {
+  const id = setTimeout(() => {
+    activeTimeouts.delete(id);
+    fn();
+  }, ms);
+  activeTimeouts.add(id);
+  return id;
+}
+
+/**
+ * 모든 사운드 강제 정지 — 새 코드 실행 전 잔존음 제거
+ * - 활성 oscillator를 즉시 stop()
+ * - gain을 0으로 ramp해 in-flight 사운드 페이드아웃
+ * - 큐된 setTimeout 모두 취소
+ * - BGM도 함께 정지
+ */
+export function stopAllSounds() {
+  stopBgm();
+  for (const osc of activeOscillators) {
+    try { osc.stop(0); } catch { /* 이미 끝남 */ }
+    try { osc.disconnect(); } catch { /* 무시 */ }
+  }
+  activeOscillators.clear();
+  for (const gain of activeGains) {
+    try {
+      gain.gain.cancelScheduledValues(0);
+      gain.gain.value = 0;
+      gain.disconnect();
+    } catch { /* 무시 */ }
+  }
+  activeGains.clear();
+  for (const id of activeTimeouts) {
+    clearTimeout(id);
+  }
+  activeTimeouts.clear();
+  pendingAudioQueue.length = 0;
+}
+
 // 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
 let _onNotePlay = null;
 export function setNotePlayCallback(cb) { _onNotePlay = cb; }
@@ -306,7 +361,7 @@ export function resumeAndRun(callback) {
     run();
     flushAudioQueue();
   });
-  setTimeout(run, 500);
+  _st(run, 500);
 }
 
 // ===================================================================
@@ -337,6 +392,7 @@ export function beep(frequency = 440, duration = 0.3, type = 'sine', volume = 0.
 
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + duration);
+    trackOsc(osc, gain);
   });
 }
 
@@ -420,7 +476,7 @@ export function playSequence(notes) {
       beep(n.freq, n.duration, n.type || 'sine', n.volume || 0.4);
     } else {
       const d = delay;
-      setTimeout(() => beep(n.freq, n.duration, n.type || 'sine', n.volume || 0.4), d);
+      _st(() => beep(n.freq, n.duration, n.type || 'sine', n.volume || 0.4), d);
     }
     delay += n.duration * 1000;
   }
@@ -432,8 +488,8 @@ export function playSequence(notes) {
 
 export function successSound() {
   beep(523, 0.15, 'sine', 0.2);  // C5
-  setTimeout(() => beep(659, 0.15, 'sine', 0.2), 100);  // E5
-  setTimeout(() => beep(784, 0.3, 'sine', 0.2), 200);   // G5
+  _st(() => beep(659, 0.15, 'sine', 0.2), 100);  // E5
+  _st(() => beep(784, 0.3, 'sine', 0.2), 200);   // G5
 }
 
 export function errorSound() {
@@ -442,7 +498,7 @@ export function errorSound() {
 
 export function hintSound() {
   beep(880, 0.1, 'sine', 0.15);
-  setTimeout(() => beep(1100, 0.15, 'sine', 0.15), 80);
+  _st(() => beep(1100, 0.15, 'sine', 0.15), 80);
 }
 
 export function runSound() {
@@ -452,7 +508,7 @@ export function runSound() {
 export function levelUpSound() {
   const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
   notes.forEach((freq, i) => {
-    setTimeout(() => beep(freq, 0.2, 'sine', 0.2), i * 120);
+    _st(() => beep(freq, 0.2, 'sine', 0.2), i * 120);
   });
 }
 
@@ -479,6 +535,7 @@ export function sfxJump() {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.2);
+    trackOsc(osc, gain);
   });
 }
 
@@ -487,7 +544,7 @@ export function sfxJump() {
  */
 export function sfxCoin() {
   beep(988, 0.06, 'square', 0.2);   // B5
-  setTimeout(() => beep(1319, 0.12, 'square', 0.2), 60); // E6
+  _st(() => beep(1319, 0.12, 'square', 0.2), 60); // E6
 }
 
 /**
@@ -496,7 +553,7 @@ export function sfxCoin() {
 export function sfxPowerUp() {
   const notes = [523, 659, 784, 988, 1175, 1319]; // C5→E6
   notes.forEach((freq, i) => {
-    setTimeout(() => beep(freq, 0.08, 'square', 0.15), i * 50);
+    _st(() => beep(freq, 0.08, 'square', 0.15), i * 50);
   });
 }
 
@@ -506,7 +563,7 @@ export function sfxPowerUp() {
 export function sfxDeath() {
   const notes = [494, 466, 440, 370, 311, 247]; // B4→B3 하강
   notes.forEach((freq, i) => {
-    setTimeout(() => beep(freq, 0.15, 'square', 0.15), i * 100);
+    _st(() => beep(freq, 0.15, 'square', 0.15), i * 100);
   });
 }
 
@@ -529,6 +586,7 @@ export function sfxFireball() {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
+    trackOsc(osc, gain);
   });
 }
 
@@ -553,6 +611,7 @@ export function sfxPipe() {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.4);
+    trackOsc(osc, gain);
   });
 }
 
@@ -562,7 +621,7 @@ export function sfxPipe() {
 export function sfx1Up() {
   const notes = [659, 784, 988, 784, 988, 1319]; // E5-G5-B5-G5-B5-E6
   notes.forEach((freq, i) => {
-    setTimeout(() => beep(freq, 0.1, 'square', 0.18), i * 80);
+    _st(() => beep(freq, 0.1, 'square', 0.18), i * 80);
   });
 }
 
@@ -578,8 +637,8 @@ export function sfxSelect() {
  */
 export function sfxWarning() {
   beep(440, 0.15, 'square', 0.2);
-  setTimeout(() => beep(440, 0.15, 'square', 0.2), 250);
-  setTimeout(() => beep(440, 0.15, 'square', 0.2), 500);
+  _st(() => beep(440, 0.15, 'square', 0.2), 250);
+  _st(() => beep(440, 0.15, 'square', 0.2), 500);
 }
 
 /**
@@ -635,6 +694,7 @@ export function sfxLaser() {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.2);
+    trackOsc(osc, gain);
   });
 }
 
@@ -795,7 +855,7 @@ export function startBgm(name, loop = true) {
       const dur = durations[i] || 0.2;
       if (freq) {
         const d = delay;
-        const tid = setTimeout(() => {
+        const tid = _st(() => {
           if (running) beep(freq, dur * 0.9, type, volume);
         }, d);
         timeoutIds.push(tid);
@@ -805,7 +865,7 @@ export function startBgm(name, loop = true) {
 
     // 패턴이 끝나면 루프
     if (loop) {
-      const tid = setTimeout(() => {
+      const tid = _st(() => {
         if (running) playPattern();
       }, delay);
       timeoutIds.push(tid);
