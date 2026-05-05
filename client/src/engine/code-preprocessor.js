@@ -86,7 +86,8 @@ function isInsideLambda(line, pos) {
 export function preprocessCode(code) {
   const lines = code.split('\n');
   const warnings = [];
-  const ASYNC_FUNCTIONS = ['rate', 'sleep', '\uc74c\ud45c', '\uc545\uae30'];
+  // async \ud568\uc218\ub9cc \ud3ec\ud568 \u2014 sync\ub85c \ubcc0\uacbd\ub41c \uc74c\ud45c/\ud654\uc74c\uc740 \uc81c\uc678 (\uc790\ub3d9 \uc21c\ucc28 \ub300\uae30\ub294 \ub0b4\ubd80 time.sleep\uc73c\ub85c \ucc98\ub9ac)
+  const ASYNC_FUNCTIONS = ['rate', 'sleep', '\uc545\uae30'];
 
   const processedLines = lines.map((line, lineNum) => {
     const commentStart = findCommentStart(line);

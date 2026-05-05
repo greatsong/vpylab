@@ -4,8 +4,12 @@
 // ─── 카테고리 정의 ───────────────────────────────────────────
 export const docCategories = {
   objects:  { ko: '3D 객체',       en: '3D Objects',       icon: '📦' },
+  meshes:   { ko: '저수준 메시',   en: 'Low-level Meshes', icon: '🔷' },
   vectors:  { ko: '벡터와 수학',   en: 'Vectors & Math',   icon: '📐' },
   scene:    { ko: '씬 제어',       en: 'Scene Controls',   icon: '⚙️' },
+  events:   { ko: '이벤트 / 입력', en: 'Events & Input',   icon: '🖱️' },
+  widgets:  { ko: 'UI 위젯',       en: 'UI Widgets',       icon: '🎚️' },
+  graphs:   { ko: '2D 그래프',     en: '2D Graphs',        icon: '📈' },
   colors:   { ko: '색상표',        en: 'Color Reference',  icon: '🎨' },
   sound:    { ko: '사운드 / 음악', en: 'Sound & Music',    icon: '🎵' },
   charts:   { ko: '3D 차트',       en: '3D Charts',        icon: '📊' },
@@ -178,8 +182,316 @@ head = sphere(pos=vector(1.2, 0.4, 0), radius=0.3, color=color.red)
 car = compound([body, head], pos=vector(0, 0, 0))`,
     tags: ['3d', 'object', 'compound', 'group', 'combine', 'robot', 'car'],
   },
+  {
+    id: 'pyramid',
+    category: 'objects',
+    title: { ko: '사각뿔 (pyramid)', en: 'pyramid' },
+    description: {
+      ko: '직사각 밑면을 가진 사각뿔. size=vector(축방향 높이, 폭, 깊이).',
+      en: 'A square-base pyramid. size=vector(axial-height, width, depth).',
+    },
+    signature: "pyramid(pos=vector(0,0,0), size=vector(1,1,1), axis=vector(1,0,0), color=color.white)",
+    params: [
+      { name: 'pos',  type: 'vector', default: 'vector(0,0,0)', desc: { ko: '꼭짓점 기준 위치', en: 'Apex position' } },
+      { name: 'size', type: 'vector', default: 'vector(1,1,1)', desc: { ko: '(축높이, 폭, 깊이)', en: '(axial-height, width, depth)' } },
+      { name: 'axis', type: 'vector', default: 'vector(1,0,0)', desc: { ko: '축 방향', en: 'Axis direction' } },
+      { name: 'color', type: 'vector', default: 'color.white', desc: { ko: '색상', en: 'Color' } },
+    ],
+    code: `from vpython import *
+pyramid(pos=vector(0,0,0), size=vector(1.5, 1, 1),
+        color=color.gold, axis=vector(0, 1, 0))`,
+    tags: ['3d', 'pyramid', 'cone', '사각뿔', 'geometry'],
+  },
+  {
+    id: 'ellipsoid',
+    category: 'objects',
+    title: { ko: '타원체 (ellipsoid)', en: 'ellipsoid' },
+    description: {
+      ko: '구를 비균등 스케일링한 타원체. size=vector(x폭, y높이, z깊이).',
+      en: 'An ellipsoid (non-uniformly scaled sphere). size=vector(x-width, y-height, z-depth).',
+    },
+    signature: "ellipsoid(pos=vector(0,0,0), size=vector(1,1,1), color=color.white)",
+    params: [
+      { name: 'pos',  type: 'vector', default: 'vector(0,0,0)', desc: { ko: '중심', en: 'Center' } },
+      { name: 'size', type: 'vector', default: 'vector(1,1,1)', desc: { ko: '(x폭, y높이, z깊이)', en: '(x, y, z extents)' } },
+      { name: 'color', type: 'vector', default: 'color.white', desc: { ko: '색상', en: 'Color' } },
+    ],
+    code: `from vpython import *
+ellipsoid(pos=vector(0,0,0), size=vector(1.4, 0.8, 0.6),
+          color=color.skyblue)`,
+    tags: ['3d', 'ellipsoid', '타원체', 'geometry'],
+  },
+  {
+    id: 'helix',
+    category: 'objects',
+    title: { ko: '나선 (helix)', en: 'helix' },
+    description: {
+      ko: '나선/스프링. axis 방향으로 length만큼, coils번 감김.',
+      en: 'Helix/spring. Wraps coils times along axis for length.',
+    },
+    signature: "helix(pos=vector(0,0,0), axis=vector(1,0,0), radius=1, length=1, coils=5, thickness=0.05)",
+    params: [
+      { name: 'pos',       type: 'vector', default: 'vector(0,0,0)', desc: { ko: '시작점', en: 'Start position' } },
+      { name: 'axis',      type: 'vector', default: 'vector(1,0,0)', desc: { ko: '나선이 진행하는 방향', en: 'Axis direction' } },
+      { name: 'radius',    type: 'number', default: '1.0',           desc: { ko: '나선 반경', en: 'Coil radius' } },
+      { name: 'length',    type: 'number', default: 'axis 길이',      desc: { ko: '전체 길이', en: 'Total length' } },
+      { name: 'coils',     type: 'number', default: '5',             desc: { ko: '감김 수', en: 'Number of coils' } },
+      { name: 'thickness', type: 'number', default: '0.05',          desc: { ko: '선 굵기', en: 'Line thickness' } },
+    ],
+    code: `from vpython import *
+spring = helix(pos=vector(0,0,0), axis=vector(1,0,0),
+               radius=0.5, length=4, coils=10,
+               thickness=0.05, color=color.silver)`,
+    tags: ['3d', 'helix', 'spring', '나선', '스프링'],
+  },
+  {
+    id: 'label',
+    category: 'objects',
+    title: { ko: '라벨 (label / text)', en: 'label / text' },
+    description: {
+      ko: '3D 위치에 텍스트 표시. 항상 카메라를 향함(스프라이트). text도 같은 함수.',
+      en: 'Text label at a 3D position, always faces the camera. text() is an alias.',
+    },
+    signature: "label(pos=vector(0,0,0), text='', color=color.white, height=16, background=None, border=0)",
+    params: [
+      { name: 'pos',        type: 'vector', default: 'vector(0,0,0)', desc: { ko: '위치', en: 'Position' } },
+      { name: 'text',       type: 'string', default: "''",            desc: { ko: '표시할 문자열', en: 'Text to display' } },
+      { name: 'color',      type: 'vector', default: 'color.white',   desc: { ko: '글자 색', en: 'Text color' } },
+      { name: 'height',     type: 'number', default: '16',            desc: { ko: '폰트 높이(px)', en: 'Font height (px)' } },
+      { name: 'background', type: 'vector', default: 'None',          desc: { ko: '배경색 (선택)', en: 'Background color (optional)' } },
+      { name: 'border',     type: 'number', default: '0',             desc: { ko: '테두리 두께', en: 'Border thickness' } },
+    ],
+    code: `from vpython import *
+ball = sphere(pos=vector(0,0,0), radius=0.5, color=color.blue)
+label(pos=vector(0, 1.2, 0), text="공", height=20,
+      color=color.white, background=color.black, border=2)`,
+    tags: ['label', 'text', 'sprite', '라벨', '텍스트'],
+  },
+  {
+    id: 'curve',
+    category: 'objects',
+    title: { ko: '곡선 (curve)', en: 'curve' },
+    description: {
+      ko: '점을 누적해 그리는 3D 폴리라인. .append(pos)로 점 추가, .clear()로 비움.',
+      en: '3D polyline that grows as you append points. .append(pos), .clear().',
+    },
+    signature: "curve(color=color.white, radius=0, pos=None, visible=True)",
+    params: [
+      { name: 'color',  type: 'vector', default: 'color.white', desc: { ko: '선 색', en: 'Line color' } },
+      { name: 'radius', type: 'number', default: '0',           desc: { ko: '굵기 (0=얇은선)', en: 'Thickness (0=thin)' } },
+      { name: 'pos',    type: 'list',   default: 'None',        desc: { ko: '초기 점들 (선택)', en: 'Initial points (optional)' } },
+    ],
+    code: `from vpython import *
+import math
+c = curve(color=color.red)
+for i in range(100):
+    c.append(vector(i*0.1, math.sin(i*0.2), 0))
+c.clear()  # 모두 지우기`,
+    tags: ['curve', 'polyline', '곡선', 'append'],
+  },
+  {
+    id: 'points',
+    category: 'objects',
+    title: { ko: '점 집합 (points)', en: 'points' },
+    description: {
+      ko: '여러 3D 점들을 픽셀 크기로 표시. .append(pos)로 점 추가.',
+      en: 'A collection of 3D points rendered as pixel-sized dots. .append(pos).',
+    },
+    signature: "points(color=color.white, size=5, pos=None, visible=True)",
+    params: [
+      { name: 'color', type: 'vector', default: 'color.white', desc: { ko: '점 색', en: 'Point color' } },
+      { name: 'size',  type: 'number', default: '5',           desc: { ko: '픽셀 크기', en: 'Pixel size' } },
+      { name: 'pos',   type: 'list',   default: 'None',        desc: { ko: '초기 점들', en: 'Initial points' } },
+    ],
+    code: `from vpython import *
+p = points(color=color.yellow, size=8)
+for x in range(-5, 6):
+    p.append(vector(x, 0, 0))`,
+    tags: ['points', 'dots', '점', 'particles'],
+  },
+  {
+    id: 'frame',
+    category: 'objects',
+    title: { ko: 'frame (= compound)', en: 'frame (alias for compound)' },
+    description: {
+      ko: '구버전 VPython 호환 별칭. 사용법은 compound와 동일.',
+      en: 'Legacy VPython alias for compound. Same API.',
+    },
+    signature: "frame(objects, pos=vector(0,0,0), color=color.white)",
+    params: [
+      { name: 'objects', type: 'list',   default: '—',            desc: { ko: '묶을 객체 리스트', en: 'List of objects' } },
+    ],
+    code: `from vpython import *
+g = frame([sphere(pos=vector(-1,0,0), radius=0.3),
+           sphere(pos=vector(1,0,0), radius=0.3)],
+          pos=vector(0, 1, 0))`,
+    tags: ['frame', 'compound', 'alias', 'group'],
+  },
 
-  // ━━━ vectors ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ━━━ 객체 공통 메서드 — clone/rotate/attach_trail/clear_trail ━━━━━
+  {
+    id: 'object-clone',
+    category: 'objects',
+    title: { ko: '객체 복제 (.clone())', en: '.clone()' },
+    description: {
+      ko: '동일 속성의 새 객체 생성. **kwargs로 일부 속성만 덮어씁니다.',
+      en: 'Creates a duplicate object. Override individual props with **kwargs.',
+    },
+    signature: "obj.clone(**kwargs) → new_obj",
+    params: [
+      { name: '**kwargs', type: 'props', default: '—', desc: { ko: '덮어쓸 속성 (pos, color, ...)', en: 'Props to override' } },
+    ],
+    code: `from vpython import *
+ball = sphere(pos=vector(0,0,0), radius=0.5, color=color.red)
+ball2 = ball.clone(pos=vector(2,0,0))            # 같은 모양, 다른 위치
+ball3 = ball.clone(pos=vector(-2,0,0), color=color.blue)`,
+    tags: ['clone', 'copy', 'duplicate', '복제'],
+  },
+  {
+    id: 'object-rotate',
+    category: 'objects',
+    title: { ko: '객체 회전 (.rotate())', en: '.rotate()' },
+    description: {
+      ko: 'origin 중심으로 axis 축으로 angle(라디안) 회전. axis 속성 보유 시 함께 회전.',
+      en: 'Rotates the object around origin by angle (radians) on axis. Object axis property is rotated too.',
+    },
+    signature: "obj.rotate(angle, axis=vector(0,1,0), origin=obj.pos)",
+    params: [
+      { name: 'angle',  type: 'number', default: '—',            desc: { ko: '회전 각 (라디안)', en: 'Rotation angle (radians)' } },
+      { name: 'axis',   type: 'vector', default: 'vector(0,1,0)', desc: { ko: '회전축', en: 'Rotation axis' } },
+      { name: 'origin', type: 'vector', default: 'self.pos',      desc: { ko: '회전 중심', en: 'Rotation center' } },
+    ],
+    code: `from vpython import *
+import math
+arrow1 = arrow(pos=vector(2,0,0), axis=vector(1,0,0), color=color.red)
+arrow1.rotate(math.pi/4, axis=vector(0,0,1), origin=vector(0,0,0))`,
+    tags: ['rotate', '회전', 'transform'],
+  },
+  {
+    id: 'object-attach-trail',
+    category: 'objects',
+    title: { ko: '궤적 부착 (.attach_trail())', en: '.attach_trail()' },
+    description: {
+      ko: '객체에 동적으로 궤적 추가. 이미 있으면 색/길이만 갱신.',
+      en: 'Attach a trail to the object on the fly. Updates color/length if already attached.',
+    },
+    signature: "obj.attach_trail(color=None, retain=10000)",
+    params: [
+      { name: 'color',  type: 'vector', default: 'None',  desc: { ko: '궤적 색 (None=객체색)', en: 'Trail color (None=object color)' } },
+      { name: 'retain', type: 'number', default: '10000', desc: { ko: '최대 점 개수', en: 'Max points to keep' } },
+    ],
+    code: `from vpython import *
+ball = sphere(pos=vector(0,0,0), radius=0.3, color=color.red)
+ball.attach_trail(color=color.cyan, retain=500)
+# 이후 ball.pos를 갱신할 때마다 궤적 누적`,
+    tags: ['trail', 'attach', '궤적'],
+  },
+  {
+    id: 'object-clear-trail',
+    category: 'objects',
+    title: { ko: '궤적 지우기 (.clear_trail())', en: '.clear_trail()' },
+    description: {
+      ko: '누적된 궤적을 모두 즉시 지웁니다.',
+      en: 'Immediately clears all accumulated trail points.',
+    },
+    signature: "obj.clear_trail()",
+    params: [],
+    code: `from vpython import *
+ball = sphere(make_trail=True, trail_color=color.cyan)
+# ... 잠시 움직인 후
+ball.clear_trail()    # 궤적 초기화`,
+    tags: ['trail', 'clear', '궤적', '지우기'],
+  },
+
+  // ━━━ meshes — vertex / triangle / quad / extrusion ━━━━━━━━━━━━━━
+  {
+    id: 'vertex',
+    category: 'meshes',
+    title: { ko: '정점 (vertex)', en: 'vertex' },
+    description: {
+      ko: 'triangle/quad의 정점. 위치 + 색을 가짐.',
+      en: 'A vertex for triangle/quad. Holds position + color.',
+    },
+    signature: "vertex(pos=vector(0,0,0), color=color.white, normal=None, opacity=1.0)",
+    params: [
+      { name: 'pos',     type: 'vector', default: 'vector(0,0,0)', desc: { ko: '위치', en: 'Position' } },
+      { name: 'color',   type: 'vector', default: 'color.white',   desc: { ko: '정점 색', en: 'Vertex color' } },
+      { name: 'normal',  type: 'vector', default: 'None',          desc: { ko: '법선 (선택)', en: 'Normal (optional)' } },
+      { name: 'opacity', type: 'number', default: '1.0',           desc: { ko: '불투명도', en: 'Opacity' } },
+    ],
+    code: `from vpython import *
+v0 = vertex(pos=vector(0,0,0), color=color.red)
+v1 = vertex(pos=vector(1,0,0), color=color.green)
+v2 = vertex(pos=vector(0,1,0), color=color.blue)
+triangle(v0=v0, v1=v1, v2=v2)`,
+    tags: ['vertex', 'mesh', '정점'],
+  },
+  {
+    id: 'triangle',
+    category: 'meshes',
+    title: { ko: '삼각형 (triangle)', en: 'triangle' },
+    description: {
+      ko: '3정점 면. v0/v1/v2 또는 vs=[v0,v1,v2] 형식.',
+      en: '3-vertex face. Use v0/v1/v2 or vs=[v0,v1,v2].',
+    },
+    signature: "triangle(v0=, v1=, v2=)  또는  triangle(vs=[v0,v1,v2])",
+    params: [
+      { name: 'v0/v1/v2', type: 'vertex', default: '—', desc: { ko: '3개의 정점', en: 'Three vertices' } },
+    ],
+    code: `from vpython import *
+v0 = vertex(pos=vector(-1,0,0), color=color.red)
+v1 = vertex(pos=vector(1,0,0),  color=color.green)
+v2 = vertex(pos=vector(0,1,0),  color=color.blue)
+triangle(v0=v0, v1=v1, v2=v2)    # 정점 색이 면 위에서 보간`,
+    tags: ['triangle', 'mesh', '삼각형'],
+  },
+  {
+    id: 'quad',
+    category: 'meshes',
+    title: { ko: '사각형 (quad)', en: 'quad' },
+    description: {
+      ko: '4정점 면 (내부적으로 2개 삼각형).',
+      en: '4-vertex face (rendered as 2 triangles).',
+    },
+    signature: "quad(v0=, v1=, v2=, v3=)  또는  quad(vs=[v0,v1,v2,v3])",
+    params: [
+      { name: 'v0~v3', type: 'vertex', default: '—', desc: { ko: '4개의 정점 (시계방향)', en: 'Four vertices (clockwise)' } },
+    ],
+    code: `from vpython import *
+verts = [
+    vertex(pos=vector(-1,-1,0), color=color.red),
+    vertex(pos=vector( 1,-1,0), color=color.green),
+    vertex(pos=vector( 1, 1,0), color=color.blue),
+    vertex(pos=vector(-1, 1,0), color=color.yellow),
+]
+quad(vs=verts)`,
+    tags: ['quad', 'mesh', '사각형'],
+  },
+  {
+    id: 'extrusion',
+    category: 'meshes',
+    title: { ko: '압출 (extrusion)', en: 'extrusion' },
+    description: {
+      ko: '2D 단면(shape)을 3D 경로(path)를 따라 압출. 휘어진 튜브, 별 모양 길 등.',
+      en: 'Sweep a 2D shape along a 3D path. Curved tubes, star-shaped paths, etc.',
+    },
+    signature: "extrusion(path=[vector...], shape=[(x,y)...], color=color.white)",
+    params: [
+      { name: 'path',  type: 'list', default: '—',            desc: { ko: '3D 점 리스트 (vector)', en: 'List of 3D vectors' } },
+      { name: 'shape', type: 'list', default: 'square',       desc: { ko: '2D 외곽선 [(x,y), ...]', en: '2D outline [(x,y), ...]' } },
+      { name: 'color', type: 'vector', default: 'color.white', desc: { ko: '색상', en: 'Color' } },
+    ],
+    code: `from vpython import *
+import math
+star = []
+for i in range(10):
+    r = 0.5 if i % 2 == 0 else 0.2
+    a = i * math.pi / 5
+    star.append((r*math.cos(a), r*math.sin(a)))
+path = [vector(t, 0, 0) for t in range(-3, 4)]
+extrusion(path=path, shape=star, color=color.gold)`,
+    tags: ['extrusion', 'extrude', 'sweep', '압출'],
+  },
   {
     id: 'vector',
     category: 'vectors',
@@ -302,6 +614,82 @@ print(norm(v))   # <0, 1, 0>
 print(hat(v))    # <0, 1, 0> (동일)`,
     tags: ['math', 'vector', 'normalize', 'unit', 'direction'],
   },
+  {
+    id: 'vector-clone',
+    category: 'vectors',
+    title: { ko: '벡터 복제 (.clone())', en: 'vector .clone()' },
+    description: {
+      ko: '벡터를 복제. 원본을 보존하면서 변형하고 싶을 때.',
+      en: 'Copy a vector. Useful when you want to mutate without affecting the original.',
+    },
+    signature: "v.clone() → vector",
+    params: [],
+    code: `from vpython import *
+a = vector(1, 2, 3)
+b = a.clone()
+b.x = 99
+print(a)   # <1, 2, 3>  원본 유지`,
+    tags: ['clone', 'copy', 'vector', '복제'],
+  },
+  {
+    id: 'vector-proj',
+    category: 'vectors',
+    title: { ko: '투영 (.proj() / .comp())', en: '.proj() / .comp()' },
+    description: {
+      ko: '.proj(b)는 self를 b 방향으로 투영한 벡터, .comp(b)는 그 스칼라 성분.',
+      en: '.proj(b) returns vector projection of self onto b. .comp(b) returns the scalar.',
+    },
+    signature: "v.proj(b) → vector\nv.comp(b) → number",
+    params: [
+      { name: 'b', type: 'vector', default: '—', desc: { ko: '투영 기준 벡터', en: 'Direction vector' } },
+    ],
+    code: `from vpython import *
+a = vector(3, 4, 0)
+b = vector(1, 0, 0)
+print(a.proj(b))   # <3, 0, 0>  벡터 투영
+print(a.comp(b))   # 3.0       스칼라 성분`,
+    tags: ['projection', 'proj', 'comp', '투영', 'vector'],
+  },
+  {
+    id: 'vector-diff-angle',
+    category: 'vectors',
+    title: { ko: '벡터 사이 각 (.diff_angle())', en: '.diff_angle()' },
+    description: {
+      ko: '두 벡터 사이의 각을 라디안으로 반환.',
+      en: 'Angle between two vectors in radians.',
+    },
+    signature: "v.diff_angle(b) → number (radians)",
+    params: [
+      { name: 'b', type: 'vector', default: '—', desc: { ko: '비교 벡터', en: 'Other vector' } },
+    ],
+    code: `from vpython import *
+import math
+a = vector(1, 0, 0)
+b = vector(0, 1, 0)
+print(a.diff_angle(b))           # 1.5708 (≈ π/2)
+print(math.degrees(a.diff_angle(b)))  # 90.0`,
+    tags: ['angle', 'diff_angle', '각', 'vector'],
+  },
+  {
+    id: 'vector-rotate',
+    category: 'vectors',
+    title: { ko: '벡터 회전 (.rotate())', en: 'vector .rotate()' },
+    description: {
+      ko: '주어진 축으로 angle(라디안) 회전한 새 벡터 (Rodrigues 공식).',
+      en: 'Returns a new vector rotated by angle (radians) about axis.',
+    },
+    signature: "v.rotate(angle, axis=vector(0,0,1)) → vector",
+    params: [
+      { name: 'angle', type: 'number', default: '—',             desc: { ko: '회전 각 (라디안)', en: 'Rotation angle (radians)' } },
+      { name: 'axis',  type: 'vector', default: 'vector(0,0,1)', desc: { ko: '회전축', en: 'Rotation axis' } },
+    ],
+    code: `from vpython import *
+import math
+v = vector(1, 0, 0)
+v90 = v.rotate(math.pi/2, axis=vector(0,0,1))
+print(v90)   # <0, 1, 0> (z축 90도 회전)`,
+    tags: ['rotate', 'rotation', '회전', 'vector', 'rodrigues'],
+  },
 
   // ━━━ scene ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   {
@@ -399,6 +787,375 @@ scene_background(color.skyblue)
 distant_light(direction=vector(1, -1, -0.5), color=color.white, intensity=1.2)
 box(size=vector(2, 0.5, 2), color=color.orange)`,
     tags: ['scene', 'light', 'directional', 'distant', 'sun', 'lighting'],
+  },
+  {
+    id: 'scene-object',
+    category: 'scene',
+    title: { ko: 'scene 객체 — 카메라/배경', en: 'scene object — camera/background' },
+    description: {
+      ko: '씬 전역 제어. background/range/center/autoscale/title/caption.',
+      en: 'Global scene control: background, range, center, autoscale, title, caption.',
+    },
+    signature: "scene.background = vector\nscene.range = number\nscene.center = vector\nscene.autoscale = bool",
+    params: [
+      { name: 'background', type: 'vector', default: 'cool gray', desc: { ko: '배경색 (vector RGB)', en: 'Background (vector RGB)' } },
+      { name: 'range',      type: 'number', default: '—',         desc: { ko: '시야 반경 (Auto-Fit OFF)', en: 'View half-range (disables auto-fit)' } },
+      { name: 'center',     type: 'vector', default: 'vector(0,0,0)', desc: { ko: '카메라 타겟', en: 'Camera target' } },
+      { name: 'autoscale',  type: 'bool',   default: 'True',      desc: { ko: 'Auto-Fit 다시 켜기', en: 'Re-enable auto-fit' } },
+      { name: 'title',      type: 'string', default: '—',         desc: { ko: '콘솔에 출력', en: 'Logged to console' } },
+      { name: 'caption',    type: 'string', default: '—',         desc: { ko: '콘솔에 출력', en: 'Logged to console' } },
+    ],
+    code: `from vpython import *
+scene.background = color.black
+scene.center = vector(0, 0, 0)
+scene.range = 5
+sphere(pos=vector(0,0,0), radius=1, color=color.red)`,
+    tags: ['scene', 'camera', 'background', 'range', 'center'],
+  },
+
+  // ━━━ events ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'scene-bind',
+    category: 'events',
+    title: { ko: 'scene.bind() — 이벤트 핸들러', en: 'scene.bind() — events' },
+    description: {
+      ko: 'click/mousedown/mouseup/mousemove/keydown/keyup/widget 이벤트 등록. handler는 evt(event info)를 받음.',
+      en: 'Bind handlers for click/mousedown/mouseup/mousemove/keydown/keyup/widget events.',
+    },
+    signature: "scene.bind('click mousedown ...', handler)\n@scene.bind('keydown')   # 데코레이터도 가능",
+    params: [
+      { name: 'event_names', type: 'string', default: '—', desc: { ko: '공백 구분 다중 가능', en: 'Space-separated names' } },
+      { name: 'handler',     type: 'function', default: '—', desc: { ko: 'def f(evt): evt.pos, evt.pick, evt.key', en: 'evt.pos, evt.pick, evt.key' } },
+    ],
+    code: `from vpython import *
+
+def on_click(evt):
+    sphere(pos=evt.pos, radius=0.2, color=color.red)
+
+scene.bind('click', on_click)
+
+# 메인 루프 — rate()로 이벤트 디스패치
+while True:
+    rate(30)`,
+    tags: ['event', 'click', 'mousemove', 'keydown', 'bind', '이벤트'],
+  },
+  {
+    id: 'scene-mouse',
+    category: 'events',
+    title: { ko: 'scene.mouse — 마우스 폴링', en: 'scene.mouse' },
+    description: {
+      ko: 'scene.mouse.pos = 현재 마우스의 월드 좌표(z=0 평면 기준), .pick = 마우스 아래 객체 id.',
+      en: 'scene.mouse.pos = world coords (z=0 plane), scene.mouse.pick = object id under cursor.',
+    },
+    signature: "scene.mouse.pos → vector\nscene.mouse.pick → str | None",
+    params: [],
+    code: `from vpython import *
+ball = sphere(pos=vector(0,0,0), radius=0.3, color=color.coral)
+while True:
+    rate(60)
+    target = scene.mouse.pos
+    ball.pos = ball.pos + (target - ball.pos) * 0.1   # 부드럽게 추적`,
+    tags: ['mouse', 'scene', 'pos', 'pick', '폴링'],
+  },
+  {
+    id: 'keysdown',
+    category: 'events',
+    title: { ko: 'keysdown() — 다중 키 폴링', en: 'keysdown()' },
+    description: {
+      ko: '현재 눌려있는 모든 키 리스트. 동시 입력(예: 위+오른쪽)에 필수. scene.bind(\'keydown\')은 한 번 누름마다 1회.',
+      en: 'List of all keys currently held. Use this for simultaneous keys; bind(\'keydown\') fires once per press.',
+    },
+    signature: "keysdown() → list[str]",
+    params: [],
+    code: `from vpython import *
+ball = sphere(pos=vector(0,0,0), radius=0.3, color=color.lime)
+while True:
+    rate(60)
+    keys = keysdown()
+    if 'ArrowLeft'  in keys: ball.pos.x -= 0.05
+    if 'ArrowRight' in keys: ball.pos.x += 0.05
+    if 'ArrowUp'    in keys: ball.pos.y += 0.05
+    if 'ArrowDown'  in keys: ball.pos.y -= 0.05`,
+    tags: ['keysdown', 'keyboard', 'multi-key', '다중 키', '폴링'],
+  },
+
+  // ━━━ widgets ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'slider',
+    category: 'widgets',
+    title: { ko: '슬라이더 (slider)', en: 'slider' },
+    description: {
+      ko: '드래그 가능한 슬라이더. 값이 바뀔 때마다 bind 콜백 호출 (evt.value).',
+      en: 'Draggable slider. bind callback receives evt.value on every change.',
+    },
+    signature: "slider(min=0, max=1, step=0.01, value=None, length=200, bind=fn)",
+    params: [
+      { name: 'min/max', type: 'number',   default: '0/1',  desc: { ko: '범위', en: 'Range' } },
+      { name: 'step',    type: 'number',   default: '0.01', desc: { ko: '눈금', en: 'Step' } },
+      { name: 'value',   type: 'number',   default: 'min',  desc: { ko: '초기값', en: 'Initial value' } },
+      { name: 'length',  type: 'number',   default: '200',  desc: { ko: '픽셀 길이', en: 'Pixel length' } },
+      { name: 'bind',    type: 'function', default: 'None', desc: { ko: 'def f(evt): evt.value', en: 'def f(evt): evt.value' } },
+    ],
+    code: `from vpython import *
+ball = sphere(pos=vector(0,0,0), radius=0.5, color=color.coral)
+
+def on_slide(evt):
+    ball.radius = evt.value
+
+slider(min=0.1, max=2.0, step=0.05, value=0.5, length=200, bind=on_slide)
+
+while True:
+    rate(30)`,
+    tags: ['slider', 'widget', '슬라이더'],
+  },
+  {
+    id: 'button',
+    category: 'widgets',
+    title: { ko: '버튼 (button)', en: 'button' },
+    description: {
+      ko: '클릭 가능한 버튼. .text로 라벨 변경 가능.',
+      en: 'Clickable button. Use .text to update label.',
+    },
+    signature: "button(text='Button', bind=fn)",
+    params: [
+      { name: 'text', type: 'string',   default: "'Button'", desc: { ko: '버튼 라벨', en: 'Button label' } },
+      { name: 'bind', type: 'function', default: 'None',     desc: { ko: '클릭 핸들러', en: 'Click handler' } },
+    ],
+    code: `from vpython import *
+import random
+ball = sphere(pos=vector(0,0,0), radius=0.5, color=color.red)
+
+def on_click(evt):
+    ball.color = vector(random.random(), random.random(), random.random())
+
+button(text='색 바꾸기', bind=on_click)
+while True:
+    rate(30)`,
+    tags: ['button', 'widget', '버튼'],
+  },
+  {
+    id: 'checkbox',
+    category: 'widgets',
+    title: { ko: '체크박스 (checkbox)', en: 'checkbox' },
+    description: {
+      ko: '체크박스 위젯. evt.value는 boolean. .checked로도 접근.',
+      en: 'Checkbox widget. evt.value is boolean. Use .checked too.',
+    },
+    signature: "checkbox(text='', checked=False, bind=fn)",
+    params: [
+      { name: 'text',    type: 'string',   default: "''",    desc: { ko: '레이블', en: 'Label' } },
+      { name: 'checked', type: 'bool',     default: 'False', desc: { ko: '초기 상태', en: 'Initial state' } },
+      { name: 'bind',    type: 'function', default: 'None',  desc: { ko: '변경 콜백', en: 'Change callback' } },
+    ],
+    code: `from vpython import *
+ball = sphere(pos=vector(0,0,0), radius=0.5, color=color.cyan)
+
+def on_toggle(evt):
+    ball.emissive = evt.value
+
+checkbox(text='발광', checked=False, bind=on_toggle)
+while True:
+    rate(30)`,
+    tags: ['checkbox', 'widget', '체크박스'],
+  },
+  {
+    id: 'radio',
+    category: 'widgets',
+    title: { ko: '라디오 버튼 (radio)', en: 'radio' },
+    description: {
+      ko: '같은 name 그룹에서 하나만 선택. 선택될 때 bind 호출.',
+      en: 'Single-select within same name group. bind fires when selected.',
+    },
+    signature: "radio(text='', name='group', value=None, checked=False, bind=fn)",
+    params: [
+      { name: 'text',    type: 'string',   default: "''",        desc: { ko: '레이블', en: 'Label' } },
+      { name: 'name',    type: 'string',   default: "'radio_group'", desc: { ko: '그룹명', en: 'Group name' } },
+      { name: 'value',   type: 'any',      default: 'None',      desc: { ko: 'evt.value로 전달', en: 'Passed via evt.value' } },
+      { name: 'checked', type: 'bool',     default: 'False',     desc: { ko: '기본 선택', en: 'Default selection' } },
+      { name: 'bind',    type: 'function', default: 'None',      desc: { ko: '선택 콜백', en: 'Select callback' } },
+    ],
+    code: `from vpython import *
+ball = sphere(pos=vector(0,0,0), radius=0.5)
+
+def on_select(evt):
+    ball.color = evt.value
+
+radio(text='빨강', name='c', value=color.red,    checked=True,  bind=on_select)
+radio(text='초록', name='c', value=color.green,                 bind=on_select)
+radio(text='파랑', name='c', value=color.blue,                  bind=on_select)
+while True:
+    rate(30)`,
+    tags: ['radio', 'widget', '라디오'],
+  },
+  {
+    id: 'menu',
+    category: 'widgets',
+    title: { ko: '메뉴 / 드롭다운 (menu)', en: 'menu / dropdown' },
+    description: {
+      ko: '선택지 중 하나를 고르는 드롭다운. evt.value는 선택된 문자열.',
+      en: 'Dropdown to pick one of choices. evt.value is the selected string.',
+    },
+    signature: "menu(choices=[...], selected=None, bind=fn)",
+    params: [
+      { name: 'choices',  type: 'list',     default: '—',    desc: { ko: '선택지 리스트', en: 'List of options' } },
+      { name: 'selected', type: 'string',   default: '첫 항목', desc: { ko: '초기 선택', en: 'Initial choice' } },
+      { name: 'bind',     type: 'function', default: 'None',  desc: { ko: '변경 콜백', en: 'Change callback' } },
+    ],
+    code: `from vpython import *
+ball = sphere(pos=vector(0,0,0), radius=0.5)
+speeds = {'느림': 0.01, '보통': 0.05, '빠름': 0.1}
+
+def on_speed(evt):
+    ball.spd = speeds[evt.value]
+
+ball.spd = speeds['보통']
+menu(choices=list(speeds), selected='보통', bind=on_speed)
+
+while True:
+    rate(60)
+    ball.pos.x += ball.spd
+    if ball.pos.x > 5: ball.pos.x = -5`,
+    tags: ['menu', 'dropdown', 'select', '드롭다운'],
+  },
+  {
+    id: 'winput',
+    category: 'widgets',
+    title: { ko: '입력창 (winput)', en: 'winput' },
+    description: {
+      ko: '숫자 또는 텍스트 입력. Enter 또는 blur 시 bind 호출. type=\'numeric\' (기본) 또는 \'string\'.',
+      en: 'Numeric or text input. Fires on Enter or blur. type=\'numeric\' or \'string\'.',
+    },
+    signature: "winput(prompt='', type='numeric', bind=fn)",
+    params: [
+      { name: 'prompt', type: 'string',   default: "''",        desc: { ko: '안내 문구', en: 'Prompt label' } },
+      { name: 'type',   type: 'string',   default: "'numeric'", desc: { ko: 'numeric | string', en: 'numeric | string' } },
+      { name: 'bind',   type: 'function', default: 'None',      desc: { ko: '제출 콜백', en: 'Submit callback' } },
+    ],
+    code: `from vpython import *
+
+def on_input(evt):
+    print(f"입력값: {evt.value}")
+
+winput(prompt='크기', type='numeric', bind=on_input)
+while True:
+    rate(30)`,
+    tags: ['winput', 'input', 'widget', '입력창'],
+  },
+
+  // ━━━ graphs (2D) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'graph',
+    category: 'graphs',
+    title: { ko: '그래프 캔버스 (graph)', en: 'graph (2D plot canvas)' },
+    description: {
+      ko: '2D 플롯 캔버스. gcurve/gdots/gvbars/ghbars의 컨테이너. 우측 하단 패널에 표시.',
+      en: '2D plot canvas. Container for gcurve/gdots/gvbars/ghbars. Shown in bottom panel.',
+    },
+    signature: "graph(title='', xtitle='', ytitle='', width=480, height=320, xmin=, xmax=, ymin=, ymax=)",
+    params: [
+      { name: 'title',  type: 'string', default: "''",  desc: { ko: '그래프 제목', en: 'Title' } },
+      { name: 'xtitle / ytitle', type: 'string', default: "''", desc: { ko: '축 라벨', en: 'Axis labels' } },
+      { name: 'width / height',  type: 'number', default: '480 / 320', desc: { ko: '캔버스 크기', en: 'Canvas size' } },
+      { name: 'xmin / xmax / ymin / ymax', type: 'number', default: '자동', desc: { ko: '범위 (None=자동)', en: 'Range (None=auto)' } },
+    ],
+    code: `from vpython import *
+import math
+g = graph(title='속도 vs 시간', xtitle='t', ytitle='v',
+          width=480, height=320)
+v_curve = gcurve(graph=g, color=color.red)
+for i in range(100):
+    t = i * 0.1
+    v_curve.plot(t, math.sin(t))`,
+    tags: ['graph', '2d', 'plot', '그래프'],
+  },
+  {
+    id: 'gcurve',
+    category: 'graphs',
+    title: { ko: '선 그래프 (gcurve)', en: 'gcurve' },
+    description: {
+      ko: '선으로 그리는 시리즈. graph 안에 추가. .plot(x, y) 또는 .plot([(x,y),...]).',
+      en: 'Line series within a graph. Use .plot(x, y) or .plot([(x,y), ...]).',
+    },
+    signature: "gcurve(graph=g, color=color.blue, width=1.5, label='')",
+    params: [
+      { name: 'graph', type: 'graph', default: '직전 graph',   desc: { ko: '담을 graph', en: 'Parent graph' } },
+      { name: 'color', type: 'vector', default: 'cool blue',   desc: { ko: '선 색', en: 'Line color' } },
+      { name: 'width', type: 'number', default: '1.5',          desc: { ko: '선 굵기', en: 'Line width' } },
+      { name: 'label', type: 'string', default: "''",           desc: { ko: '범례 라벨', en: 'Legend label' } },
+    ],
+    code: `from vpython import *
+import math
+g = graph(title='cos(x)')
+c = gcurve(graph=g, color=color.blue)
+for i in range(100):
+    c.plot(i*0.1, math.cos(i*0.1))`,
+    tags: ['gcurve', 'graph', 'line', '선그래프'],
+  },
+  {
+    id: 'gdots',
+    category: 'graphs',
+    title: { ko: '점 그래프 (gdots)', en: 'gdots' },
+    description: {
+      ko: '산점도. .plot(x, y)로 점 추가.',
+      en: 'Scatter plot series. Add points with .plot(x, y).',
+    },
+    signature: "gdots(graph=g, color=color.red, size=4, label='')",
+    params: [
+      { name: 'graph', type: 'graph', default: '직전 graph', desc: { ko: '담을 graph', en: 'Parent graph' } },
+      { name: 'color', type: 'vector', default: 'red',       desc: { ko: '점 색', en: 'Dot color' } },
+      { name: 'size',  type: 'number', default: '4',          desc: { ko: '점 크기 (px)', en: 'Dot size' } },
+    ],
+    code: `from vpython import *
+import random
+g = graph(title='산점도', xmin=0, xmax=10)
+d = gdots(graph=g, color=color.red, size=6)
+for _ in range(40):
+    x = random.uniform(0, 10)
+    d.plot(x, 2*x + random.gauss(0, 2))`,
+    tags: ['gdots', 'graph', 'scatter', '산점도'],
+  },
+  {
+    id: 'gvbars',
+    category: 'graphs',
+    title: { ko: '세로 막대 (gvbars)', en: 'gvbars' },
+    description: {
+      ko: '세로 막대 차트. .plot(x, y) — y 높이의 막대를 x 위치에.',
+      en: 'Vertical bar chart. .plot(x, y) places bar of height y at x.',
+    },
+    signature: "gvbars(graph=g, color=color.green, width=0.5)",
+    params: [
+      { name: 'graph', type: 'graph', default: '직전 graph', desc: { ko: '담을 graph', en: 'Parent graph' } },
+      { name: 'color', type: 'vector', default: 'green',     desc: { ko: '막대 색', en: 'Bar color' } },
+      { name: 'width', type: 'number', default: '0.5',        desc: { ko: '막대 굵기', en: 'Bar thickness' } },
+    ],
+    code: `from vpython import *
+g = graph(title='월별 강수량')
+bars = gvbars(graph=g, color=color.blue, width=0.6)
+data = [30, 50, 80, 120, 90, 60]
+for i, v in enumerate(data):
+    bars.plot(i+1, v)`,
+    tags: ['gvbars', 'graph', 'bar', '막대'],
+  },
+  {
+    id: 'ghbars',
+    category: 'graphs',
+    title: { ko: '가로 막대 (ghbars)', en: 'ghbars' },
+    description: {
+      ko: '가로 막대 차트. gvbars의 가로 버전.',
+      en: 'Horizontal bar chart (rotated gvbars).',
+    },
+    signature: "ghbars(graph=g, color=color.orange, width=0.5)",
+    params: [
+      { name: 'graph', type: 'graph', default: '직전 graph', desc: { ko: '담을 graph', en: 'Parent graph' } },
+      { name: 'color', type: 'vector', default: 'orange',    desc: { ko: '막대 색', en: 'Bar color' } },
+      { name: 'width', type: 'number', default: '0.5',        desc: { ko: '막대 굵기', en: 'Bar thickness' } },
+    ],
+    code: `from vpython import *
+g = graph(title='국가별 인구', xtitle='인구(백만)')
+bars = ghbars(graph=g, color=color.orange, width=0.6)
+for i, v in enumerate([52, 333, 126, 1400]):
+    bars.plot(v, i+1)`,
+    tags: ['ghbars', 'graph', 'bar', '가로 막대'],
   },
 
   // ━━━ colors ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
