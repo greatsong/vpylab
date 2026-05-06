@@ -41,6 +41,7 @@ export default function Sandbox() {
   const [saveMsg, setSaveMsg] = useState('');
   const [showSavedCodes, setShowSavedCodes] = useState(false);
   const [showTeam, setShowTeam] = useState(false);
+  const [pushToast, setPushToast] = useState(null);  // { nthCommit, message, commitUrl, repoUrl, pagesUrl } | null
   const [showExamples, setShowExamples] = useState(false);
   const [exampleCategory, setExampleCategory] = useState('all');
   const [publishModalOpen, setPublishModalOpen] = useState(false);
@@ -390,6 +391,38 @@ export default function Sandbox() {
       useAuthStore.getState().setAuthModalOpen(true);
       return;
     }
+    // 동적 import — projectStore는 프로젝트 컨텍스트가 있을 때만 필요
+    const projStore = (await import('../stores/projectStore')).default.getState();
+    const activeProject = projStore.activeProject;
+
+    // === 프로젝트 컨텍스트: Supabase 저장 + GitHub commit + 토스트 ===
+    if (activeProject) {
+      const msg = window.prompt(
+        '커밋 메시지(어떤 변경?) — 비우면 자동',
+        '',
+      );
+      if (msg === null) return;  // 취소
+
+      setSaveMsg('⏳ 저장 중…');
+      const { data: result, error } = await projStore.saveAndPush({ code, message: msg.trim() });
+      if (error) {
+        setSaveMsg('저장 실패');
+        setTimeout(() => setSaveMsg(''), 2500);
+        window.alert(`저장 실패: ${error.message}`);
+        return;
+      }
+      setSaveMsg('');
+      setPushToast({
+        nthCommit: result.nthCommit,
+        message: msg.trim() || `📝 ${new Date().toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}`,
+        commitUrl: result.commitUrl,
+        repoUrl: result.repoUrl,
+        pagesUrl: result.pagesUrl,
+      });
+      return;
+    }
+
+    // === 프로젝트 컨텍스트 없음: 임시 saved_code 행으로만 저장 (이전 동작) ===
     const currentId = useCodeStore.getState().currentCodeId;
     const savedCodes = useCodeStore.getState().savedCodes;
     const currentRow = currentId ? savedCodes.find(c => c.id === currentId) : null;
@@ -609,7 +642,7 @@ export default function Sandbox() {
             {t('code.myCodes')}
           </button>
           <button onClick={() => setShowTeam(true)} className="toolbar-btn">
-            👥 팀
+            📁 프로젝트
           </button>
           <button
             onClick={openPublishModal}
@@ -948,13 +981,15 @@ export default function Sandbox() {
         />
       )}
 
-      {/* 팀 프로젝트 사이드패널 */}
+      {/* 프로젝트 사이드패널 */}
       {showTeam && (
         <TeamProjectsPanel
+          currentCode={code}
           onOpenProject={async (projectId) => {
-            // 팀 프로젝트의 코드 1건을 에디터에 로드
+            // 프로젝트의 코드를 에디터에 로드 + 활성 프로젝트로 전환
             const { default: useProjectStore } = await import('../stores/projectStore');
-            const { code: codeRow } = await useProjectStore.getState().openProject(projectId) || {};
+            const result = await useProjectStore.getState().openProject(projectId) || {};
+            const codeRow = result.code;
             if (codeRow?.code != null) {
               setCode(codeRow.code);
               if (codeRow.id) useCodeStore.getState().setCurrentCodeId(codeRow.id);
@@ -963,6 +998,82 @@ export default function Sandbox() {
           }}
           onClose={() => setShowTeam(false)}
         />
+      )}
+
+      {/* GitHub 저장 성공 토스트 */}
+      {pushToast && (
+        <div
+          className="fixed bottom-6 right-6 z-[80] rounded-xl shadow-2xl p-4 max-w-sm"
+          style={{
+            backgroundColor: 'var(--color-bg-primary)',
+            border: '1px solid var(--color-border)',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+          role="status"
+        >
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                🎉 {pushToast.nthCommit}번째 GitHub 저장 완료!
+              </p>
+              <p className="text-xs mt-1 break-words" style={{ color: 'var(--color-text-secondary)' }}>
+                {pushToast.message}
+              </p>
+            </div>
+            <button
+              onClick={() => setPushToast(null)}
+              className="cursor-pointer border-none bg-transparent text-sm flex-shrink-0"
+              style={{ color: 'var(--color-text-muted)' }}
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="flex gap-1.5 flex-wrap">
+            {pushToast.commitUrl && (
+              <a
+                href={pushToast.commitUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] px-2 py-1 rounded inline-flex items-center gap-1 no-underline"
+                style={{
+                  backgroundColor: 'var(--color-accent)',
+                  color: 'var(--color-accent-text, white)',
+                }}
+              >
+                🔍 이번 변경 보기
+              </a>
+            )}
+            {pushToast.repoUrl && (
+              <a
+                href={pushToast.repoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] px-2 py-1 rounded inline-flex items-center gap-1 no-underline"
+                style={{
+                  backgroundColor: 'var(--color-bg-tertiary)',
+                  color: 'var(--color-text-primary)',
+                }}
+              >
+                📂 레포
+              </a>
+            )}
+            {pushToast.pagesUrl && (
+              <a
+                href={pushToast.pagesUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] px-2 py-1 rounded inline-flex items-center gap-1 no-underline"
+                style={{
+                  backgroundColor: 'var(--color-bg-tertiary)',
+                  color: 'var(--color-text-primary)',
+                }}
+              >
+                🌐 Pages
+              </a>
+            )}
+          </div>
+        </div>
       )}
 
       {/* 갤러리 발행 모달 */}

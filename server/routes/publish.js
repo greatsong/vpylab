@@ -120,9 +120,11 @@ async function commitFile(owner, repoName, path, content, message, token) {
 /**
  * README.md 자동 생성
  */
+const APP_URL = process.env.PUBLIC_APP_URL || 'https://vpylab.vercel.app';
+
 function generateReadme(title, description, owner, repoName, remixFrom) {
   let readme = `# ${title}\n\n> VPyLab에서 만든 3D Python 작품\n\n${description || ''}\n\n`;
-  readme += `## 실행하기\n[VPyLab에서 열기](https://vpylab.com) | [GitHub Pages](https://${owner}.github.io/${repoName}/)\n\n`;
+  readme += `## 실행하기\n[VPyLab에서 열기](${APP_URL}) | [GitHub Pages](https://${owner}.github.io/${repoName}/)\n\n`;
   if (remixFrom) {
     readme += `## 원본\n이 작품은 [원본 작품](${remixFrom})에서 영감을 받았습니다.\n\n`;
   }

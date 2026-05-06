@@ -45,6 +45,10 @@ app.use('/api/share', shareRoutes);
 import syncRoutes from './routes/sync.js';
 app.use('/api/sync', syncRoutes);
 
+// 프로젝트 = GitHub 레포 1:1 (Phase 4-A — 프로젝트 생성 + 자동 Pages + commit)
+import projectsRoutes from './routes/projects.js';
+app.use('/api/projects', projectsRoutes);
+
 app.listen(PORT, () => {
   console.log(`[VPyLab] Express 서버 실행: http://localhost:${PORT}`);
 });
