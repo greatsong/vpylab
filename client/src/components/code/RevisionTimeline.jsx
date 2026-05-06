@@ -158,7 +158,7 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
                 <li key={rev.id} className="relative pl-8 pr-1 py-2.5">
                   {/* 점 */}
                   <span
-                    className="absolute left-2 top-3 w-2.5 h-2.5 rounded-full"
+                    className="absolute left-2 top-3 w-2.5 h-2.5"
                     style={{
                       backgroundColor: dotColor,
                       boxShadow: isLatest ? `0 0 0 3px var(--color-bg-secondary), 0 0 0 4px ${dotColor}` : 'none',
@@ -166,13 +166,13 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
                     aria-hidden
                   />
                   <div
-                    className="rounded-lg p-2.5 transition-all"
+                    className="p-2.5 transition-all"
                     style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                          className="text-[10px] px-1.5 py-0.5 font-medium"
                           style={{
                             backgroundColor: 'var(--color-accent-bg)',
                             color: dotColor,
@@ -188,7 +188,7 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
                         </span>
                         {isLatest && (
                           <span
-                            className="text-[10px] px-1 py-0.5 rounded"
+                            className="text-[10px] px-1 py-0.5"
                             style={{
                               backgroundColor: 'var(--color-success-bg, #d3f9d8)',
                               color: 'var(--color-success, #2f9e44)',
@@ -223,7 +223,7 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
                         {rev.code_size?.toLocaleString() || 0}자
                         {rev.github_commit_sha && (
                           <span
-                            className="ml-1.5 px-1 py-0.5 rounded"
+                            className="ml-1.5 px-1 py-0.5"
                             style={{
                               backgroundColor: 'var(--color-success-bg, #d3f9d8)',
                               color: 'var(--color-success, #2f9e44)',
@@ -238,7 +238,7 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
                         <button
                           onClick={() => handlePush(rev)}
                           disabled={syncing && pushingId === rev.id}
-                          className="text-[10px] px-2 py-1 rounded cursor-pointer border disabled:opacity-50"
+                          className="text-[10px] px-2 py-1 cursor-pointer border disabled:opacity-50"
                           style={{
                             backgroundColor: 'var(--color-bg-tertiary)',
                             borderColor: 'var(--color-border)',
@@ -251,7 +251,7 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
                         {!isLatest && (
                           <button
                             onClick={() => handleRestore(rev.id, rev.message)}
-                            className="text-[10px] px-2 py-1 rounded cursor-pointer border-none transition-opacity hover:opacity-80"
+                            className="text-[10px] px-2 py-1 cursor-pointer border-none transition-opacity hover:opacity-80"
                             style={{
                               backgroundColor: 'var(--color-accent)',
                               color: 'var(--color-accent-text, white)',

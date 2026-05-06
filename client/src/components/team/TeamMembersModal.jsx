@@ -82,7 +82,7 @@ export default function TeamMembersModal({ project, onClose }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-xl shadow-2xl flex flex-col max-h-[80vh]"
+        className="w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]"
         style={{ backgroundColor: 'var(--color-bg-primary)' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -107,14 +107,14 @@ export default function TeamMembersModal({ project, onClose }) {
           <p className="text-[11px] mb-1.5" style={{ color: 'var(--color-text-muted)' }}>초대 코드</p>
           <div className="flex gap-2 items-center">
             <code
-              className="px-3 py-2 rounded text-sm font-mono flex-1 truncate"
+              className="px-3 py-2 text-sm font-mono flex-1 truncate"
               style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-accent)' }}
             >
               {inviteCode || '…'}
             </code>
             <button
               onClick={handleCopy}
-              className="px-3 py-2 text-xs rounded cursor-pointer border-none"
+              className="px-3 py-2 text-xs cursor-pointer border-none"
               style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-accent-text, white)' }}
             >
               {copied ? '복사됨!' : '복사'}
@@ -146,12 +146,12 @@ export default function TeamMembersModal({ project, onClose }) {
               return (
                 <div
                   key={m.user_id}
-                  className="flex items-center justify-between p-2 mx-1 my-0.5 rounded"
+                  className="flex items-center justify-between p-2 mx-1 my-0.5"
                   style={{ backgroundColor: isMe ? 'var(--color-accent-bg)' : 'var(--color-bg-secondary)' }}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      className="w-7 h-7 flex items-center justify-center text-xs font-bold flex-shrink-0"
                       style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-accent-text, white)' }}
                     >
                       {display.charAt(0).toUpperCase()}
@@ -171,7 +171,7 @@ export default function TeamMembersModal({ project, onClose }) {
                         value={m.role}
                         onChange={(e) => handleRoleChange(m.user_id, e.target.value)}
                         disabled={busy}
-                        className="text-[11px] px-1.5 py-1 rounded border outline-none cursor-pointer"
+                        className="text-[11px] px-1.5 py-1 border outline-none cursor-pointer"
                         style={{
                           backgroundColor: 'var(--color-bg-tertiary)',
                           borderColor: 'var(--color-border)',
@@ -183,7 +183,7 @@ export default function TeamMembersModal({ project, onClose }) {
                       </select>
                     ) : (
                       <span
-                        className="text-[10px] px-1.5 py-0.5 rounded"
+                        className="text-[10px] px-1.5 py-0.5"
                         style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
                       >
                         {isOwnerRow ? '소유자' : m.role === 'editor' ? '편집' : '보기'}
@@ -233,7 +233,7 @@ export default function TeamMembersModal({ project, onClose }) {
           )}
           <button
             onClick={onClose}
-            className="text-xs px-3 py-1.5 rounded cursor-pointer border-none"
+            className="text-xs px-3 py-1.5 cursor-pointer border-none"
             style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)' }}
           >
             닫기

@@ -17,17 +17,31 @@ export default function AuthCallback() {
         if (error) console.error('세션 교환 실패:', error.message);
       }
 
-      // 세션 확인 후 홈으로 이동
+      // 세션 확인 후 이동 (재인증 흐름이면 원래 페이지로 복귀, 코드도 복원)
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/', { replace: true });
-      } else {
+      if (!session) {
         // 해시 기반 implicit 플로우 대비
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         if (hashParams.get('access_token')) {
           await new Promise(r => setTimeout(r, 500));
         }
-        navigate('/', { replace: true });
+      }
+
+      // 재인증 시 저장해둔 returnPath / returnCode 복원
+      let returnPath = '/';
+      let returnCode = null;
+      try {
+        returnPath = localStorage.getItem('vpylab-oauth-return-path') || '/';
+        returnCode = localStorage.getItem('vpylab-oauth-return-code');
+        localStorage.removeItem('vpylab-oauth-return-path');
+        localStorage.removeItem('vpylab-oauth-return-code');
+      } catch { /* ignore */ }
+
+      // returnCode가 있으면 navigate state로 전달 → Sandbox가 받아서 에디터 복원
+      if (returnCode != null) {
+        navigate(returnPath, { replace: true, state: { restoredCode: returnCode } });
+      } else {
+        navigate(returnPath, { replace: true });
       }
     };
 

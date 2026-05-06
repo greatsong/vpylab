@@ -69,6 +69,17 @@ export default function Sandbox() {
   // 초기화 시 되돌릴 "원본 코드" — 예제/lesson/remix 로드 시 갱신, 미설정 시 DEFAULT_CODE
   const initialCodeRef = useRef(DEFAULT_CODE);
 
+  // GitHub 재인증 후 복원된 코드
+  useEffect(() => {
+    if (location.state?.restoredCode != null) {
+      setCode(location.state.restoredCode);
+      initialCodeRef.current = location.state.restoredCode;
+      window.history.replaceState({}, '');
+      // GitHub 재인증 직후 → 자동으로 ProjectGate 띄워서 흐름 이어가기
+      setTimeout(() => setShowProjectGate(true), 200);
+    }
+  }, [location.state?.restoredCode]);
+
   // /s/:id에서 넘어온 공유 코드 로드
   useEffect(() => {
     if (location.state?.sharedCode) {
@@ -994,7 +1005,7 @@ export default function Sandbox() {
       {/* GitHub 저장 성공 토스트 */}
       {pushToast && (
         <div
-          className="fixed bottom-6 right-6 z-[80] rounded-xl shadow-2xl p-4 max-w-sm"
+          className="fixed bottom-6 right-6 z-[80] shadow-2xl p-4 max-w-sm"
           style={{
             backgroundColor: 'var(--color-bg-primary)',
             border: '1px solid var(--color-border)',
@@ -1026,7 +1037,7 @@ export default function Sandbox() {
                 href={pushToast.commitUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[11px] px-2 py-1 rounded inline-flex items-center gap-1 no-underline"
+                className="text-[11px] px-2 py-1 inline-flex items-center gap-1 no-underline"
                 style={{
                   backgroundColor: 'var(--color-accent)',
                   color: 'var(--color-accent-text, white)',
@@ -1040,7 +1051,7 @@ export default function Sandbox() {
                 href={pushToast.repoUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[11px] px-2 py-1 rounded inline-flex items-center gap-1 no-underline"
+                className="text-[11px] px-2 py-1 inline-flex items-center gap-1 no-underline"
                 style={{
                   backgroundColor: 'var(--color-bg-tertiary)',
                   color: 'var(--color-text-primary)',
@@ -1054,7 +1065,7 @@ export default function Sandbox() {
                 href={pushToast.pagesUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[11px] px-2 py-1 rounded inline-flex items-center gap-1 no-underline"
+                className="text-[11px] px-2 py-1 inline-flex items-center gap-1 no-underline"
                 style={{
                   backgroundColor: 'var(--color-bg-tertiary)',
                   color: 'var(--color-text-primary)',

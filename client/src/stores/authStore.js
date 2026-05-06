@@ -82,8 +82,14 @@ const useAuthStore = create((set, get) => ({
     if (data?.url) window.location.href = data.url;
   },
 
-  // GitHub 로그인 (public_repo scope으로 갤러리 발행 지원)
-  signInWithGitHub: async () => {
+  // GitHub 로그인 (public_repo scope으로 갤러리 발행/프로젝트 commit 지원)
+  // returnPath, returnCode를 옵션으로 받으면 재인증 후 그 코드로 복원할 수 있도록
+  // localStorage에 임시 저장한다 (Supabase는 OAuth 후 redirectTo만 보존하므로 우리가 직접 백업).
+  signInWithGitHub: async ({ returnPath, returnCode } = {}) => {
+    try {
+      if (returnPath) localStorage.setItem('vpylab-oauth-return-path', returnPath);
+      if (returnCode != null) localStorage.setItem('vpylab-oauth-return-code', returnCode);
+    } catch { /* localStorage 사용 불가 환경 무시 */ }
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {

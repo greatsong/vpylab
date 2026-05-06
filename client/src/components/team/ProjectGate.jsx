@@ -16,7 +16,7 @@ export default function ProjectGate({ open, onCreateNew, onPickExisting, onClose
       aria-modal="true"
     >
       <div
-        className="w-full max-w-md rounded-xl shadow-2xl p-6"
+        className="w-full max-w-md shadow-2xl p-6"
         style={{ backgroundColor: 'var(--color-bg-primary)' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -31,7 +31,7 @@ export default function ProjectGate({ open, onCreateNew, onPickExisting, onClose
         <div className="flex flex-col gap-2 mb-3">
           <button
             onClick={onCreateNew}
-            className="w-full py-3 px-4 text-sm font-bold rounded-lg cursor-pointer border-none text-left flex items-center justify-between"
+            className="w-full py-3 px-4 text-sm font-bold cursor-pointer border-none text-left flex items-center justify-between"
             style={{
               backgroundColor: 'var(--color-accent)',
               color: 'var(--color-accent-text, white)',
@@ -42,7 +42,7 @@ export default function ProjectGate({ open, onCreateNew, onPickExisting, onClose
           </button>
           <button
             onClick={onPickExisting}
-            className="w-full py-3 px-4 text-sm font-medium rounded-lg cursor-pointer border text-left flex items-center justify-between"
+            className="w-full py-3 px-4 text-sm font-medium cursor-pointer border text-left flex items-center justify-between"
             style={{
               backgroundColor: 'var(--color-bg-tertiary)',
               borderColor: 'var(--color-border)',
