@@ -13,7 +13,8 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import useAuthStore from './authStore';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4034';
+// 다른 스토어와 동일한 VITE_API_URL을 사용 (Vercel 환경변수 컨벤션)
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
 
 const useGithubSyncStore = create((set) => ({
   syncing: false,
