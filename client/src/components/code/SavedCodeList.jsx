@@ -1,16 +1,48 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useI18n } from '../../i18n/useI18n';
 import useCodeStore from '../../stores/codeStore';
 import useAuthStore from '../../stores/authStore';
+import useProjectStore from '../../stores/projectStore';
+import RevisionTimeline from './RevisionTimeline';
+import TeamMembersModal from '../team/TeamMembersModal';
 
 export default function SavedCodeList({ onLoadCode, onClose }) {
   const { savedCodes, loading, fetchSavedCodes, deleteCode } = useCodeStore();
   const { user } = useAuthStore();
+  const { createProject } = useProjectStore();
   const { t } = useI18n();
+
+  // 이력 패널 상태 (선택된 코드 1건의 revision 타임라인)
+  const [historyTarget, setHistoryTarget] = useState(null);  // { id, title } | null
+  // 팀 멤버 모달 상태
+  const [teamTarget, setTeamTarget] = useState(null);  // { id, title } | null
+  const [convertingId, setConvertingId] = useState(null);
 
   useEffect(() => {
     if (user) fetchSavedCodes();
   }, [user, fetchSavedCodes]);
+
+  const handleMakeTeam = async (item) => {
+    if (item.project_id) {
+      // 이미 팀 코드면 멤버 관리 모달
+      setTeamTarget({ id: item.project_id, title: item.title });
+      return;
+    }
+    const teamTitle = window.prompt('팀 프로젝트 이름은? (취소하면 기존 코드 제목 사용)', item.title);
+    if (teamTitle === null) return;  // 사용자가 취소
+    setConvertingId(item.id);
+    const { data, error } = await createProject({
+      title: teamTitle || item.title,
+      fromCodeId: item.id,
+    });
+    setConvertingId(null);
+    if (error) {
+      window.alert(`팀 변환 실패: ${error.message}`);
+      return;
+    }
+    fetchSavedCodes();  // 코드 목록의 project_id 표시 갱신
+    if (data?.id) setTeamTarget({ id: data.id, title: data.title });
+  };
 
   if (!user) {
     return (
@@ -63,11 +95,31 @@ export default function SavedCodeList({ onLoadCode, onClose }) {
                   style={{ color: 'var(--color-text-primary)' }}
                   onClick={() => { onLoadCode(item.code, item.id); onClose(); }}
                 >
-                  {item.title}
+                  {item.project_id && '👥 '}{item.title}
                 </h4>
                 <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setHistoryTarget({ id: item.id, title: item.title });
+                  }}
+                  className="text-[10px] cursor-pointer border-none bg-transparent ml-2 opacity-60 hover:opacity-100"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                  title="이 코드의 저장 이력 보기"
+                >
+                  📜
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleMakeTeam(item); }}
+                  disabled={convertingId === item.id}
+                  className="text-[10px] cursor-pointer border-none bg-transparent ml-1 opacity-60 hover:opacity-100 disabled:opacity-30"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                  title={item.project_id ? '팀 멤버 관리' : '팀 프로젝트로 변환'}
+                >
+                  {item.project_id ? '👥' : '＋팀'}
+                </button>
+                <button
                   onClick={(e) => { e.stopPropagation(); deleteCode(item.id); }}
-                  className="text-[10px] cursor-pointer border-none bg-transparent ml-2 opacity-50 hover:opacity-100"
+                  className="text-[10px] cursor-pointer border-none bg-transparent ml-1 opacity-50 hover:opacity-100"
                   style={{ color: 'var(--color-error, #e03131)' }}
                 >
                   {t('common.delete')}
@@ -93,6 +145,29 @@ export default function SavedCodeList({ onLoadCode, onClose }) {
           ))
         )}
       </div>
+
+      {/* 이력 패널 (특정 코드 선택 시 우측에 오버레이로 표시) */}
+      {historyTarget && (
+        <RevisionTimeline
+          codeId={historyTarget.id}
+          codeTitle={historyTarget.title}
+          onClose={() => setHistoryTarget(null)}
+          onRestored={(snapshotCode) => {
+            // 복원 후 에디터에 즉시 반영하고 패널 닫기
+            onLoadCode(snapshotCode, historyTarget.id);
+            setHistoryTarget(null);
+            onClose();
+          }}
+        />
+      )}
+
+      {/* 팀 멤버 모달 */}
+      {teamTarget && (
+        <TeamMembersModal
+          project={{ id: teamTarget.id, title: teamTarget.title }}
+          onClose={() => setTeamTarget(null)}
+        />
+      )}
     </div>
   );
 }

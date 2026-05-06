@@ -17,6 +17,7 @@ import useAuthStore from '../stores/authStore';
 import useCodeStore from '../stores/codeStore';
 import useGalleryStore from '../stores/galleryStore';
 import SavedCodeList from '../components/code/SavedCodeList';
+import TeamProjectsPanel from '../components/team/TeamProjectsPanel';
 import PublishModal from '../components/gallery/PublishModal';
 import SendCodeModal from '../components/codeshare/SendCodeModal';
 import CodeSharePanel from '../components/codeshare/CodeSharePanel';
@@ -39,6 +40,7 @@ export default function Sandbox() {
   const [shareMsg, setShareMsg] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
   const [showSavedCodes, setShowSavedCodes] = useState(false);
+  const [showTeam, setShowTeam] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
   const [exampleCategory, setExampleCategory] = useState('all');
   const [publishModalOpen, setPublishModalOpen] = useState(false);
@@ -114,6 +116,19 @@ export default function Sandbox() {
     }
   }, [lastReceivedAt]);
   useEffect(() => { initAudioOnUserGesture(); }, []);
+
+  // Ctrl/Cmd+S → 저장
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, user]);
 
   const addOutput = useCallback((text, type = 'log') => {
     setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
@@ -366,13 +381,56 @@ export default function Sandbox() {
     setPublishModalOpen(true);
   }, [user]);
 
+  /**
+   * 저장 — 현재 코드가 이미 있으면 같은 행을 업데이트하고 revision을 누적,
+   * 없으면 제목을 묻고 새 행을 만든다. (학생 학습 흐름에 맞춰 단순화)
+   */
+  const handleSave = async () => {
+    if (!user) {
+      useAuthStore.getState().setAuthModalOpen(true);
+      return;
+    }
+    const currentId = useCodeStore.getState().currentCodeId;
+    const savedCodes = useCodeStore.getState().savedCodes;
+    const currentRow = currentId ? savedCodes.find(c => c.id === currentId) : null;
+
+    let titleToUse = currentRow?.title || '';
+    let idToUse = currentId;
+
+    if (!idToUse) {
+      const inputTitle = prompt(t('code.saveTitlePlaceholder') || '코드 이름은?');
+      if (inputTitle === null) return;
+      titleToUse = inputTitle || `코드 ${new Date().toLocaleDateString()}`;
+    }
+
+    const { data, error } = await saveCode({
+      title: titleToUse,
+      code,
+      id: idToUse || null,
+      projectId: currentRow?.project_id || null,
+    });
+    if (error) {
+      setSaveMsg(`저장 실패`);
+      setTimeout(() => setSaveMsg(''), 2500);
+      return;
+    }
+    if (data) {
+      useCodeStore.getState().setCurrentCodeId(data.id);
+      setSaveMsg(t('code.saved') || '저장됨');
+      setTimeout(() => setSaveMsg(''), 2000);
+    }
+  };
+
+  /**
+   * 다른 이름으로 저장 — 현재 currentCodeId 무관하게 새 행을 만든다.
+   */
   const handleSaveAs = async () => {
     if (!user) {
       useAuthStore.getState().setAuthModalOpen(true);
       return;
     }
     const title = prompt(t('code.saveTitlePlaceholder'));
-    if (title === null) return;  // 취소 시 저장하지 않음
+    if (title === null) return;
     const finalTitle = title || `코드 ${new Date().toLocaleDateString()}`;
     const { data, error } = await saveCode({ title: finalTitle, code });
     if (!error && data) {
@@ -533,14 +591,25 @@ export default function Sandbox() {
           <button onClick={handleExport} className="toolbar-btn">
             {t('editor.export')}
           </button>
-          <button onClick={handleSaveAs} className="toolbar-btn">
-            {saveMsg || t('code.saveAs') || '다른 이름으로 저장'}
+          <button
+            onClick={handleSave}
+            className="toolbar-btn"
+            style={{ fontWeight: 600 }}
+            title="현재 코드를 저장 (Ctrl/Cmd+S). 같은 코드면 이력에 누적됩니다."
+          >
+            {saveMsg || '💾 저장'}
+          </button>
+          <button onClick={handleSaveAs} className="toolbar-btn" title="새 이름으로 저장 (별도 코드로 분기)">
+            {t('code.saveAs') || '다른 이름으로 저장'}
           </button>
           <button onClick={() => setShowExamples(true)} className="toolbar-btn --examples">
             {t('editor.examples') || '예제'}
           </button>
           <button onClick={() => setShowSavedCodes(true)} className="toolbar-btn">
             {t('code.myCodes')}
+          </button>
+          <button onClick={() => setShowTeam(true)} className="toolbar-btn">
+            👥 팀
           </button>
           <button
             onClick={openPublishModal}
@@ -609,7 +678,8 @@ export default function Sandbox() {
               {[
                 { label: shareMsg || t('editor.share'), action: () => { handleShare(); setMobileMore(false); } },
                 { label: t('editor.export'), action: () => { handleExport(); setMobileMore(false); } },
-                { label: saveMsg || t('code.saveAs') || '다른 이름으로 저장', action: () => { handleSaveAs(); setMobileMore(false); } },
+                { label: saveMsg || '💾 저장', action: () => { handleSave(); setMobileMore(false); } },
+                { label: t('code.saveAs') || '다른 이름으로 저장', action: () => { handleSaveAs(); setMobileMore(false); } },
                 { label: t('editor.examples') || '예제', action: () => { setShowExamples(true); setMobileMore(false); } },
                 { label: t('code.myCodes'), action: () => { setShowSavedCodes(true); setMobileMore(false); } },
                 { label: t('gallery.publish') || '갤러리에 올리기', action: () => { openPublishModal(); setMobileMore(false); } },
@@ -875,6 +945,23 @@ export default function Sandbox() {
             if (codeId) useCodeStore.getState().setCurrentCodeId(codeId);
           }}
           onClose={() => setShowSavedCodes(false)}
+        />
+      )}
+
+      {/* 팀 프로젝트 사이드패널 */}
+      {showTeam && (
+        <TeamProjectsPanel
+          onOpenProject={async (projectId) => {
+            // 팀 프로젝트의 코드 1건을 에디터에 로드
+            const { default: useProjectStore } = await import('../stores/projectStore');
+            const { code: codeRow } = await useProjectStore.getState().openProject(projectId) || {};
+            if (codeRow?.code != null) {
+              setCode(codeRow.code);
+              if (codeRow.id) useCodeStore.getState().setCurrentCodeId(codeRow.id);
+            }
+            setShowTeam(false);
+          }}
+          onClose={() => setShowTeam(false)}
         />
       )}
 

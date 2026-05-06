@@ -41,6 +41,10 @@ app.use('/api/publish', publishRoutes);
 import shareRoutes from './routes/share.js';
 app.use('/api/share', shareRoutes);
 
+// GitHub 동기화 (Phase 3 — 학생/팀 GitHub 레포에 매 저장 시점 commit)
+import syncRoutes from './routes/sync.js';
+app.use('/api/sync', syncRoutes);
+
 app.listen(PORT, () => {
   console.log(`[VPyLab] Express 서버 실행: http://localhost:${PORT}`);
 });
