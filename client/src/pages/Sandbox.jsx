@@ -16,8 +16,9 @@ import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 import useAuthStore from '../stores/authStore';
 import useCodeStore from '../stores/codeStore';
 import useGalleryStore from '../stores/galleryStore';
-import SavedCodeList from '../components/code/SavedCodeList';
 import TeamProjectsPanel from '../components/team/TeamProjectsPanel';
+import ProjectGate from '../components/team/ProjectGate';
+import useProjectStore from '../stores/projectStore';
 import PublishModal from '../components/gallery/PublishModal';
 import SendCodeModal from '../components/codeshare/SendCodeModal';
 import CodeSharePanel from '../components/codeshare/CodeSharePanel';
@@ -39,9 +40,10 @@ export default function Sandbox() {
   const [mobileMore, setMobileMore] = useState(false);
   const [shareMsg, setShareMsg] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
-  const [showSavedCodes, setShowSavedCodes] = useState(false);
   const [showTeam, setShowTeam] = useState(false);
+  const [showProjectGate, setShowProjectGate] = useState(false);
   const [pushToast, setPushToast] = useState(null);  // { nthCommit, message, commitUrl, repoUrl, pagesUrl } | null
+  const activeProject = useProjectStore((s) => s.activeProject);
   const [showExamples, setShowExamples] = useState(false);
   const [exampleCategory, setExampleCategory] = useState('all');
   const [publishModalOpen, setPublishModalOpen] = useState(false);
@@ -117,6 +119,21 @@ export default function Sandbox() {
     }
   }, [lastReceivedAt]);
   useEffect(() => { initAudioOnUserGesture(); }, []);
+
+  // 외부 코드(공유/리믹스/플레이/예제/차시) 로드 시 활성 프로젝트 컨텍스트 해제
+  // → 그 코드를 저장하면 별도 프로젝트로 가는 게 자연스러움
+  useEffect(() => {
+    const fromExternal =
+      !!location.state?.sharedCode
+      || !!searchParams.get('remix')
+      || !!searchParams.get('play')
+      || !!searchParams.get('example')
+      || !!searchParams.get('lesson');
+    if (fromExternal) {
+      useProjectStore.getState().closeProject();
+      useCodeStore.getState().setCurrentCodeId(null);
+    }
+  }, [location.state, searchParams]);
 
   // Ctrl/Cmd+S → 저장
   useEffect(() => {
@@ -422,36 +439,8 @@ export default function Sandbox() {
       return;
     }
 
-    // === 프로젝트 컨텍스트 없음: 임시 saved_code 행으로만 저장 (이전 동작) ===
-    const currentId = useCodeStore.getState().currentCodeId;
-    const savedCodes = useCodeStore.getState().savedCodes;
-    const currentRow = currentId ? savedCodes.find(c => c.id === currentId) : null;
-
-    let titleToUse = currentRow?.title || '';
-    let idToUse = currentId;
-
-    if (!idToUse) {
-      const inputTitle = prompt(t('code.saveTitlePlaceholder') || '코드 이름은?');
-      if (inputTitle === null) return;
-      titleToUse = inputTitle || `코드 ${new Date().toLocaleDateString()}`;
-    }
-
-    const { data, error } = await saveCode({
-      title: titleToUse,
-      code,
-      id: idToUse || null,
-      projectId: currentRow?.project_id || null,
-    });
-    if (error) {
-      setSaveMsg(`저장 실패`);
-      setTimeout(() => setSaveMsg(''), 2500);
-      return;
-    }
-    if (data) {
-      useCodeStore.getState().setCurrentCodeId(data.id);
-      setSaveMsg(t('code.saved') || '저장됨');
-      setTimeout(() => setSaveMsg(''), 2000);
-    }
+    // === 활성 프로젝트 없음: 게이트 다이얼로그로 유도 (떠도는 저장 폐지) ===
+    setShowProjectGate(true);
   };
 
   /**
@@ -638,11 +627,8 @@ export default function Sandbox() {
           <button onClick={() => setShowExamples(true)} className="toolbar-btn --examples">
             {t('editor.examples') || '예제'}
           </button>
-          <button onClick={() => setShowSavedCodes(true)} className="toolbar-btn">
-            {t('code.myCodes')}
-          </button>
-          <button onClick={() => setShowTeam(true)} className="toolbar-btn">
-            📁 프로젝트
+          <button onClick={() => setShowTeam(true)} className="toolbar-btn" style={{ fontWeight: activeProject ? 600 : 400 }}>
+            {activeProject ? `📁 ${activeProject.title.slice(0, 20)}${activeProject.title.length > 20 ? '…' : ''}` : '📁 프로젝트'}
           </button>
           <button
             onClick={openPublishModal}
@@ -714,7 +700,7 @@ export default function Sandbox() {
                 { label: saveMsg || '💾 저장', action: () => { handleSave(); setMobileMore(false); } },
                 { label: t('code.saveAs') || '다른 이름으로 저장', action: () => { handleSaveAs(); setMobileMore(false); } },
                 { label: t('editor.examples') || '예제', action: () => { setShowExamples(true); setMobileMore(false); } },
-                { label: t('code.myCodes'), action: () => { setShowSavedCodes(true); setMobileMore(false); } },
+                { label: activeProject ? `📁 ${activeProject.title}` : '📁 프로젝트', action: () => { setShowTeam(true); setMobileMore(false); } },
                 { label: t('gallery.publish') || '갤러리에 올리기', action: () => { openPublishModal(); setMobileMore(false); } },
                 // 교사: 코드 전송
                 ...(isTeacher() ? [
@@ -939,7 +925,14 @@ export default function Sandbox() {
                 .map(ex => (
                   <button
                     key={ex.id}
-                    onClick={() => { setCode(ex.code); initialCodeRef.current = ex.code; setShowExamples(false); }}
+                    onClick={() => {
+                      setCode(ex.code);
+                      initialCodeRef.current = ex.code;
+                      // 예제 로드 = 활성 프로젝트와 무관 → 컨텍스트 해제
+                      useProjectStore.getState().closeProject();
+                      useCodeStore.getState().setCurrentCodeId(null);
+                      setShowExamples(false);
+                    }}
                     style={{
                       background: 'var(--color-bg-primary)', border: '1px solid var(--color-border)',
                       borderRadius: 8, padding: 12, cursor: 'pointer', textAlign: 'left',
@@ -970,16 +963,14 @@ export default function Sandbox() {
         </div>
       )}
 
-      {/* 저장된 코드 사이드패널 */}
-      {showSavedCodes && (
-        <SavedCodeList
-          onLoadCode={(loadedCode, codeId) => {
-            setCode(loadedCode);
-            if (codeId) useCodeStore.getState().setCurrentCodeId(codeId);
-          }}
-          onClose={() => setShowSavedCodes(false)}
-        />
-      )}
+      {/* 저장 게이트 다이얼로그 — 활성 프로젝트 없을 때 💾 누르면 표시 */}
+      <ProjectGate
+        open={showProjectGate}
+        onCreateNew={() => { setShowProjectGate(false); setShowTeam(true); }}
+        onPickExisting={() => { setShowProjectGate(false); setShowTeam(true); }}
+        onClose={() => setShowProjectGate(false)}
+      />
+
 
       {/* 프로젝트 사이드패널 */}
       {showTeam && (
