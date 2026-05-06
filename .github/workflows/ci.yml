@@ -192,12 +192,16 @@ jobs:
 
       - name: Check for innerHTML usage
         run: |
-          echo "Checking for innerHTML usage in client source..."
-          if grep -r "innerHTML" client/src/ --include="*.jsx" --include="*.js" --include="*.tsx" --include="*.ts" | grep -v "node_modules" | grep -v ".test."; then
-            echo "::error::innerHTML usage detected! Use textContent instead for XSS prevention."
+          echo "Checking for unsafe HTML writes in client source..."
+          # 실제 할당(.innerHTML = …)과 outerHTML / insertAdjacentHTML만 검출.
+          # 주석·문서에서 단어만 언급한 것은 무시(false-positive 방지).
+          if grep -rnE '(\.innerHTML[[:space:]]*=|\.outerHTML[[:space:]]*=|\.insertAdjacentHTML[[:space:]]*\()' \
+              client/src/ --include='*.jsx' --include='*.js' --include='*.tsx' --include='*.ts' \
+              | grep -v 'node_modules' | grep -v '.test.'; then
+            echo "::error::Unsafe HTML write detected! Use textContent / createElement / appendChild instead for XSS prevention."
             exit 1
           fi
-          echo "No innerHTML usage found. Security check passed."
+          echo "No unsafe HTML writes found. Security check passed."
 
       - name: Check for secrets in code
         run: |

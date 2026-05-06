@@ -1688,7 +1688,14 @@ async def 악기(instrument, name, duration=0.5, volume=None):
   const startBtn = document.createElement('div');
   startBtn.id = 'start-overlay';
   startBtn.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(13,17,23,0.95);z-index:200;cursor:pointer;flex-direction:column;gap:16px;';
-  startBtn.innerHTML = '<div style="font-size:48px">▶</div><div style="font-size:16px;color:#8b949e">클릭하여 시작</div>';
+  const startIcon = document.createElement('div');
+  startIcon.style.cssText = 'font-size:48px';
+  startIcon.textContent = '▶';
+  const startLabel = document.createElement('div');
+  startLabel.style.cssText = 'font-size:16px;color:#8b949e';
+  startLabel.textContent = '클릭하여 시작';
+  startBtn.appendChild(startIcon);
+  startBtn.appendChild(startLabel);
   document.body.appendChild(startBtn);
   startBtn.addEventListener('click', async () => {
     startBtn.remove();
