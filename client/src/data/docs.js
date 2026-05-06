@@ -11,6 +11,7 @@ export const docCategories = {
   widgets:  { ko: 'UI 위젯',       en: 'UI Widgets',       icon: '🎚️' },
   graphs:   { ko: '2D 그래프',     en: '2D Graphs',        icon: '📈' },
   colors:   { ko: '색상표',        en: 'Color Reference',  icon: '🎨' },
+  materials:{ ko: '재질 / 텍스처', en: 'Materials & Textures', icon: '🧱' },
   sound:    { ko: '사운드 / 음악', en: 'Sound & Music',    icon: '🎵' },
   charts:   { ko: '3D 차트',       en: '3D Charts',        icon: '📊' },
 };
@@ -1609,6 +1610,81 @@ values = [3, 7, 2, 5, 9, 4]
 labels = ['월', '화', '수', '목', '금', '토']
 막대그래프(values, labels=labels, colormap='plasma')`,
     tags: ['chart', 'graph', 'bar', 'data', 'visualization', 'column', '막대그래프'],
+  },
+
+  // ━━━ materials / textures ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'texture-attribute',
+    category: 'materials',
+    title: { ko: '텍스처 속성 (texture)', en: 'texture attribute' },
+    description: {
+      ko: '도형 표면에 이미지/패턴을 입힙니다. 프리셋 문자열, 외부 URL, data URI를 모두 지원합니다.',
+      en: 'Apply an image or pattern to an object surface. Accepts preset strings, external URLs, and data URIs.',
+    },
+    signature: "box(texture=textures.wood)  # 또는 texture='https://...'",
+    params: [
+      { name: 'preset', type: 'string', default: '-', desc: { ko: 'textures.wood처럼 미리 정의된 프리셋', en: 'Preset like textures.wood' } },
+      { name: 'URL',    type: 'string', default: '-', desc: { ko: 'https:// 또는 http://로 시작하는 외부 이미지', en: 'External image starting with https:// or http://' } },
+      { name: 'data',   type: 'string', default: '-', desc: { ko: "data:image/... 형태의 인라인 이미지", en: 'data:image/... inline image' } },
+    ],
+    code: `from vpython import *
+# 1) 프리셋
+floor = box(pos=vector(0, -1, 0), size=vector(20, 0.2, 20), texture=textures.checker)
+log = box(pos=vector(0, 0, 0), size=vector(2, 1, 1), texture=textures.wood)
+ball = sphere(pos=vector(0, 1.5, 0), radius=0.7, texture=textures.metal)
+
+# 2) 외부 URL — 학교 위키, 위키미디어 등
+earth = sphere(pos=vector(4, 1, 0), radius=1,
+               texture="https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Earthmap1000x500compac.jpg/1024px-Earthmap1000x500compac.jpg")
+
+# 3) 런타임에 변경 가능
+log.texture = textures.brick`,
+    tags: ['texture', 'material', 'image', 'map', 'surface', '텍스처', '재질'],
+  },
+  {
+    id: 'textures-presets',
+    category: 'materials',
+    title: { ko: '텍스처 프리셋 (textures)', en: 'textures namespace' },
+    description: {
+      ko: '20종 프로시저럴 프리셋 — 외부 이미지 없이 즉시 사용. 모든 프리셋은 RepeatWrapping으로 반복됩니다.',
+      en: '20 procedural presets — usable immediately without external images. All wrap with RepeatWrapping.',
+    },
+    signature: "textures.wood, textures.galaxy, textures.water, ...",
+    params: [
+      { name: 'wood',    type: 'preset', default: '-', desc: { ko: '나뭇결', en: 'Wood grain' } },
+      { name: 'metal',   type: 'preset', default: '-', desc: { ko: '브러시드 메탈', en: 'Brushed metal' } },
+      { name: 'stones',  type: 'preset', default: '-', desc: { ko: '둥근 자갈', en: 'Rounded stones' } },
+      { name: 'granite', type: 'preset', default: '-', desc: { ko: '화강암', en: 'Granite speckle' } },
+      { name: 'gravel',  type: 'preset', default: '-', desc: { ko: '자갈 / 모래', en: 'Gravel / sand' } },
+      { name: 'rough',   type: 'preset', default: '-', desc: { ko: '거친 표면', en: 'Rough noise' } },
+      { name: 'rug',     type: 'preset', default: '-', desc: { ko: '러그/카펫 무늬', en: 'Rug pattern' } },
+      { name: 'stucco',  type: 'preset', default: '-', desc: { ko: '벽 마감재', en: 'Stucco wall' } },
+      { name: 'flower',  type: 'preset', default: '-', desc: { ko: '꽃무늬 벽지', en: 'Flower wallpaper' } },
+      { name: 'earth',   type: 'preset', default: '-', desc: { ko: '간이 지구', en: 'Stylized earth' } },
+      { name: 'brick',   type: 'preset', default: '-', desc: { ko: '벽돌', en: 'Brick wall' } },
+      { name: 'checker', type: 'preset', default: '-', desc: { ko: '체크무늬', en: 'Checkerboard' } },
+      { name: 'grid',    type: 'preset', default: '-', desc: { ko: '격자', en: 'Grid lines' } },
+      { name: 'galaxy',  type: 'preset', default: '-', desc: { ko: '나선 은하', en: 'Spiral galaxy' } },
+      { name: 'nebula',  type: 'preset', default: '-', desc: { ko: '성운(분홍·보라·청록)', en: 'Nebula clouds' } },
+      { name: 'water',   type: 'preset', default: '-', desc: { ko: '물결', en: 'Water ripples' } },
+      { name: 'lava',    type: 'preset', default: '-', desc: { ko: '용암', en: 'Lava with cracks' } },
+      { name: 'ice',     type: 'preset', default: '-', desc: { ko: '얼음 결정', en: 'Ice crystals' } },
+      { name: 'circuit', type: 'preset', default: '-', desc: { ko: 'PCB / 회로기판', en: 'Circuit board' } },
+      { name: 'fire',    type: 'preset', default: '-', desc: { ko: '불꽃', en: 'Flames' } },
+    ],
+    code: `from vpython import *
+# 모든 프리셋 한눈에 보기 (5x4 그리드)
+names = ['wood','metal','stones','granite','gravel',
+         'rough','rug','stucco','flower','earth',
+         'brick','checker','grid','galaxy','nebula',
+         'water','lava','ice','circuit','fire']
+for i, n in enumerate(names):
+    x = (i % 5 - 2) * 1.6
+    y = 2.4 - (i // 5) * 1.6
+    box(pos=vector(x, y, 0), size=vector(1.4, 1.4, 0.2),
+        texture=getattr(textures, n))
+    label(pos=vector(x, y - 0.95, 0), text=n, height=10)`,
+    tags: ['texture', 'preset', 'wood', 'metal', 'galaxy', 'nebula', 'water', 'lava', 'ice', 'fire', '프리셋'],
   },
 ];
 

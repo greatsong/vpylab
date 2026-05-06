@@ -247,6 +247,45 @@ color = _ColorPalette()
 색상 = color  # 한글 별칭
 
 
+# === 텍스처 프리셋 ===
+class _TexturePresets:
+    """VPython textures.* 프리셋 — 프로시저럴 패턴 또는 외부 URL/data URI 사용 가능
+
+    예:
+        box(texture=textures.wood)
+        sphere(texture="https://example.com/img.jpg")
+        ground = box(texture=textures.checker, size=vector(20, 0.1, 20))
+    """
+    wood = "preset:wood"
+    metal = "preset:metal"
+    stones = "preset:stones"
+    granite = "preset:granite"
+    gravel = "preset:gravel"
+    rough = "preset:rough"
+    rug = "preset:rug"
+    stucco = "preset:stucco"
+    flower = "preset:flower"
+    earth = "preset:earth"
+    brick = "preset:brick"
+    checker = "preset:checker"
+    grid = "preset:grid"
+    galaxy = "preset:galaxy"
+    nebula = "preset:nebula"
+    water = "preset:water"
+    lava = "preset:lava"
+    ice = "preset:ice"
+    circuit = "preset:circuit"
+    fire = "preset:fire"
+
+    def __repr__(self):
+        names = [k for k in dir(self) if not k.startswith('_') and isinstance(getattr(self, k), str)]
+        return f"<텍스처 프리셋 {len(names)}종 — textures.wood, textures.metal 등>"
+
+
+textures = _TexturePresets()
+텍스처 = textures  # 한글 별칭
+
+
 # === 3D 객체 베이스 클래스 ===
 class _GObject:
     def __init__(self, obj_type, **kwargs):
@@ -260,6 +299,7 @@ class _GObject:
         self._opacity = kwargs.get('opacity', 1.0)
         self._emissive = kwargs.get('emissive', False)
         self._velocity = kwargs.get('velocity', vector(0, 0, 0))
+        self._texture = kwargs.get('texture', None)
 
         # 객체 생성 커맨드
         _add_command({
@@ -359,6 +399,19 @@ class _GObject:
             "emissive": value,
         })
 
+    @property
+    def texture(self):
+        return self._texture
+
+    @texture.setter
+    def texture(self, value):
+        self._texture = value
+        _add_command({
+            "action": "update",
+            "id": self._id,
+            "texture": value,
+        })
+
     # === 공통 메서드 ===
     def _clone_kwargs(self):
         """clone() 시 사용할 현재 속성 dict — 서브클래스에서 확장"""
@@ -368,6 +421,7 @@ class _GObject:
             'visible': self._visible,
             'opacity': self._opacity,
             'emissive': self._emissive,
+            'texture': self._texture,
         }
 
     def clone(self, **kwargs):

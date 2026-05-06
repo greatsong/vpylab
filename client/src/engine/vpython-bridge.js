@@ -12,6 +12,7 @@ import {
   registerNote,
 } from './object-registry';
 import { processSoundCommand, setNotePlayCallback } from './sound-system';
+import { resolveTexture } from './texture-system';
 
 // 음표 재생 시 레지스트리에 기록
 setNotePlayCallback((name, duration) => registerNote(name, duration));
@@ -209,14 +210,20 @@ function createObject(cmd, scene) {
   let mesh;
 
   const col = toThreeColor(cmd.color || [1, 1, 1]);
+  const tex = resolveTexture(cmd.texture);
   material = new THREE.MeshStandardMaterial({
     color: col,
+    map: tex || null,
     emissive: cmd.emissive ? cloneThreeColor(col) : new THREE.Color(0, 0, 0),
     emissiveIntensity: cmd.emissive ? 0.8 : 0,
     ...DEFAULT_MATERIAL_PARAMS,
     transparent: cmd.opacity < 1,
     opacity: cmd.opacity ?? 1,
   });
+  if (tex) {
+    material.userData = material.userData || {};
+    material.userData.textureSpec = cmd.texture;
+  }
 
   switch (cmd.type) {
     case 'sphere':
@@ -622,6 +629,23 @@ function updateMesh(cmd) {
       mesh.material.transparent = cmd.opacity < 1;
     }
     registryUpdates.opacity = cmd.opacity;
+  }
+
+  if (cmd.texture !== undefined) {
+    const newTex = resolveTexture(cmd.texture);
+    const apply = (mat) => {
+      if (!mat) return;
+      mat.map = newTex || null;
+      mat.userData = mat.userData || {};
+      mat.userData.textureSpec = cmd.texture || null;
+      mat.needsUpdate = true;
+    };
+    if (mesh.isGroup) {
+      mesh.traverse((child) => apply(child.material));
+    } else {
+      apply(mesh.material);
+    }
+    registryUpdates.texture = cmd.texture || null;
   }
 
   if (cmd.emissive !== undefined && !mesh.isLight) {

@@ -115,6 +115,18 @@ vi.mock('three', () => {
     }
   }
 
+  class TextureLoader {
+    setCrossOrigin() { return this; }
+    load(url) {
+      return { url, isTexture: true, dispose() {} };
+    }
+  }
+
+  class CanvasTexture {
+    constructor() { this.isTexture = true; }
+    dispose() {}
+  }
+
   return {
     Color,
     Vector3,
@@ -128,6 +140,10 @@ vi.mock('three', () => {
     ConeGeometry: class extends Geometry {},
     TorusGeometry: class extends Geometry {},
     MeshStandardMaterial: class extends Material {},
+    TextureLoader,
+    CanvasTexture,
+    SRGBColorSpace: 'srgb',
+    RepeatWrapping: 1000,
     Scene,
   };
 });

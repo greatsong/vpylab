@@ -3820,6 +3820,62 @@ while True:
         chord([c1, c2, c3], 2.5, 'sine', 0.12)
 `
   },
+  {
+    id: 'texture-showcase',
+    title: '텍스처 쇼케이스 (20종)',
+    thumbnail: '🧱',
+    category: 'art',
+    level: 1,
+    description: '20종 프리셋 텍스처(나무·금속·은하·성운·용암·얼음 등)와 외부 URL 텍스처를 한눈에 비교.',
+    tags: ['texture', 'material', 'preset', 'showcase', 'galaxy', 'nebula'],
+    code: `from vpython import *
+
+scene_background(vector(0.04, 0.04, 0.08))
+
+# === 20종 프리셋 (5x4 그리드) ===
+preset_names = [
+    'wood', 'metal', 'stones', 'granite', 'gravel',
+    'rough', 'rug', 'stucco', 'flower', 'earth',
+    'brick', 'checker', 'grid', 'galaxy', 'nebula',
+    'water', 'lava', 'ice', 'circuit', 'fire',
+]
+
+cols = 5
+for i, name in enumerate(preset_names):
+    row = i // cols
+    col = i % cols
+    x = (col - 2) * 1.7
+    y = 3.0 - row * 1.7
+    box(pos=vector(x, y, 0),
+        size=vector(1.5, 1.5, 0.2),
+        texture=getattr(textures, name))
+    label(pos=vector(x, y - 1.0, 0), text=name, height=11,
+          color=color.white, background=vector(0, 0, 0))
+
+# === 외부 URL 텍스처 예제 ===
+# picsum.photos — CORS 지원 무료 랜덤 이미지
+sphere(pos=vector(-3, -4.8, 0), radius=0.85,
+       texture="https://picsum.photos/seed/vpylab/512/512")
+label(pos=vector(-3, -5.9, 0), text="picsum (랜덤)", height=11,
+      color=color.white, background=vector(0, 0, 0))
+
+# NASA images-assets — 은하 (CORS 지원, 공공 이미지)
+galaxy_url = "https://images-assets.nasa.gov/image/PIA12348/PIA12348~thumb.jpg"
+sphere(pos=vector(0, -4.8, 0), radius=0.85, texture=galaxy_url)
+label(pos=vector(0, -5.9, 0), text="NASA 은하", height=11,
+      color=color.white, background=vector(0, 0, 0))
+
+# Wikimedia Commons — 화성 (직접 링크, CORS 지원)
+mars_url = "https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg"
+sphere(pos=vector(3, -4.8, 0), radius=0.85, texture=mars_url)
+label(pos=vector(3, -5.9, 0), text="화성", height=11,
+      color=color.white, background=vector(0, 0, 0))
+
+# 한 번 flush — 모든 객체 표시 후 종료
+rate(1)
+print("✨ 20종 프리셋 + 3종 외부 URL 텍스처 표시 완료")
+`
+  },
 ];
 
 export default EXAMPLES;
