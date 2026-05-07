@@ -51,7 +51,7 @@ const useRevisionStore = create((set, get) => ({
   fetchRevisionSnapshot: async (revisionId) => {
     const { data, error } = await supabase
       .from('vpylab_code_revisions')
-      .select('id, code_id, code_snapshot, message, created_at')
+      .select('id, code_id, project_id, code_snapshot, message, created_at')
       .eq('id', revisionId)
       .single();
 
@@ -83,8 +83,7 @@ const useRevisionStore = create((set, get) => ({
         updated_at: new Date().toISOString(),
       })
       .eq('id', snapshot.code_id)
-      .eq('user_id', user.id)
-      .select()
+      .select('id, project_id')
       .single();
 
     if (updateError) {
@@ -100,6 +99,7 @@ const useRevisionStore = create((set, get) => ({
       userId: user.id,
       message: `이전 버전으로 복원 (${shortId})`,
       source: 'restore',
+      projectId: snapshot.project_id || codeRow.project_id || null,
     });
 
     // 3) UI 갱신

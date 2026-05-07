@@ -41,7 +41,11 @@ export default function Sandbox() {
   const [shareMsg, setShareMsg] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
   const [showTeam, setShowTeam] = useState(false);
+  const [teamInitialAction, setTeamInitialAction] = useState('browse');
   const [showProjectGate, setShowProjectGate] = useState(false);
+  const [commitModalOpen, setCommitModalOpen] = useState(false);
+  const [commitSaving, setCommitSaving] = useState(false);
+  const [commitError, setCommitError] = useState('');
   const [pushToast, setPushToast] = useState(null);  // { nthCommit, message, commitUrl, repoUrl, pagesUrl } | null
   const activeProject = useProjectStore((s) => s.activeProject);
   const [showExamples, setShowExamples] = useState(false);
@@ -68,6 +72,7 @@ export default function Sandbox() {
   const location = useLocation();
   // 초기화 시 되돌릴 "원본 코드" — 예제/lesson/remix 로드 시 갱신, 미설정 시 DEFAULT_CODE
   const initialCodeRef = useRef(DEFAULT_CODE);
+  const pendingPlayRef = useRef(null); // 자동 실행할 코드
 
   // GitHub 재인증 후 복원된 코드
   useEffect(() => {
@@ -101,6 +106,9 @@ export default function Sandbox() {
     if (shared) {
       setCode(shared);
       initialCodeRef.current = shared;
+      if (searchParams.get('autorun') === '1') {
+        pendingPlayRef.current = shared;
+      }
       if (isExternal) {
         setOutputs([{ text: t('share.externalCode'), type: 'warning', id: Date.now() }]);
       }
@@ -108,27 +116,30 @@ export default function Sandbox() {
   }, []);
 
   // 자동 저장: 코드 변경 시 2초 debounce
+  // 활성 프로젝트가 있으면 GitHub commit 흐름(수동 저장)을 사용하므로 자동 저장은 건너뜁니다.
+  // (프로젝트 모드에서 vpylab_saved_code 직접 갱신 시 팀 멤버의 user_id 필터로 인해
+  //  실제 갱신 없이 'saved' 표시되는 문제 방지)
   useEffect(() => {
-    if (user && code && code !== DEFAULT_CODE) {
-      autoSave(code, { title: '자유 코딩' });
-    }
-  }, [code, user]);
+    if (!user || !code || code === DEFAULT_CODE) return;
+    if (activeProject) return;
+    autoSave(code, { title: '자유 코딩' });
+  }, [code, user, activeProject, autoSave]);
 
   // 컴포넌트 언마운트 시 타이머 정리
-  useEffect(() => () => clearAutoSave(), []);
+  useEffect(() => () => clearAutoSave(), [clearAutoSave]);
 
   // 코드 공유 초기화 + 정리
   useEffect(() => {
     if (user && profile) initCodeShare(user, profile);
     return () => unsubCodeShare();
-  }, [user, profile]);
+  }, [user, profile, initCodeShare, unsubCodeShare]);
 
   // 코드 수신 토스트
   useEffect(() => {
     if (lastReceivedAt && !panelOpen) {
       setCodeShareToast(true);
     }
-  }, [lastReceivedAt]);
+  }, [lastReceivedAt, panelOpen]);
   useEffect(() => { initAudioOnUserGesture(); }, []);
 
   // 외부 코드(공유/리믹스/플레이/예제/차시) 로드 시 활성 프로젝트 컨텍스트 해제
@@ -139,7 +150,9 @@ export default function Sandbox() {
       || !!searchParams.get('remix')
       || !!searchParams.get('play')
       || !!searchParams.get('example')
-      || !!searchParams.get('lesson');
+      || !!searchParams.get('lesson')
+      || window.location.hash.startsWith('#code=')
+      || window.location.hash.startsWith('#b64=');
     if (fromExternal) {
       useProjectStore.getState().closeProject();
       useCodeStore.getState().setCurrentCodeId(null);
@@ -183,7 +196,6 @@ export default function Sandbox() {
   }, [searchParams, addOutput]);
 
   // Play 파라미터 처리 (?play=galleryId) — 코드 로드 후 자동 실행
-  const pendingPlayRef = useRef(null); // 자동 실행할 코드
   useEffect(() => {
     const playId = searchParams.get('play');
     if (!playId) return;
@@ -425,33 +437,48 @@ export default function Sandbox() {
 
     // === 프로젝트 컨텍스트: Supabase 저장 + GitHub commit + 토스트 ===
     if (activeProject) {
-      const msg = window.prompt(
-        '커밋 메시지(어떤 변경?) — 비우면 자동',
-        '',
-      );
-      if (msg === null) return;  // 취소
-
-      setSaveMsg('⏳ 저장 중…');
-      const { data: result, error } = await projStore.saveAndPush({ code, message: msg.trim() });
-      if (error) {
-        setSaveMsg('저장 실패');
-        setTimeout(() => setSaveMsg(''), 2500);
-        window.alert(`저장 실패: ${error.message}`);
-        return;
-      }
-      setSaveMsg('');
-      setPushToast({
-        nthCommit: result.nthCommit,
-        message: msg.trim() || `📝 ${new Date().toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}`,
-        commitUrl: result.commitUrl,
-        repoUrl: result.repoUrl,
-        pagesUrl: result.pagesUrl,
-      });
+      setCommitError('');
+      setCommitModalOpen(true);
       return;
     }
 
     // === 활성 프로젝트 없음: 게이트 다이얼로그로 유도 (떠도는 저장 폐지) ===
     setShowProjectGate(true);
+  };
+
+  const handleProjectCommit = async (message) => {
+    const projStore = (await import('../stores/projectStore')).default.getState();
+    if (!projStore.activeProject) {
+      setCommitModalOpen(false);
+      setShowProjectGate(true);
+      return;
+    }
+
+    const trimmed = message.trim();
+    setCommitSaving(true);
+    setCommitError('');
+    setSaveMsg('저장 중…');
+    const { data: result, error } = await projStore.saveAndPush({ code, message: trimmed });
+    setCommitSaving(false);
+    if (error) {
+      setSaveMsg('저장 실패');
+      setCommitError(error.message);
+      setTimeout(() => setSaveMsg(''), 2500);
+      return;
+    }
+
+    setSaveMsg('');
+    setCommitModalOpen(false);
+    setPushToast({
+      nthCommit: result.nthCommit,
+      message: trimmed || new Date().toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }),
+      commitUrl: result.commitUrl,
+      pageCommitUrl: result.pageCommitUrl,
+      repoUrl: result.repoUrl,
+      pagesUrl: result.pagesUrl,
+      pagesStatus: result.pagesStatus,
+      pagesWarning: result.pagesWarning,
+    });
   };
 
   /**
@@ -596,10 +623,11 @@ export default function Sandbox() {
 
       {/* 툴바 */}
       <div
-        className="flex items-center gap-2 px-3 py-2 shrink-0"
+        className="flex items-center gap-2 shrink-0"
         style={{
           backgroundColor: 'var(--color-bg-secondary)',
           borderBottom: '1px solid var(--color-border)',
+          padding: '10px 20px',
         }}
       >
         <button onClick={handleRun} disabled={!isReady || isRunning} className="toolbar-btn --run">
@@ -638,7 +666,7 @@ export default function Sandbox() {
           <button onClick={() => setShowExamples(true)} className="toolbar-btn --examples">
             {t('editor.examples') || '예제'}
           </button>
-          <button onClick={() => setShowTeam(true)} className="toolbar-btn" style={{ fontWeight: activeProject ? 600 : 400 }}>
+          <button onClick={() => { setTeamInitialAction('browse'); setShowTeam(true); }} className="toolbar-btn" style={{ fontWeight: activeProject ? 600 : 400 }}>
             {activeProject ? `📁 ${activeProject.title.slice(0, 20)}${activeProject.title.length > 20 ? '…' : ''}` : '📁 프로젝트'}
           </button>
           <button
@@ -711,7 +739,7 @@ export default function Sandbox() {
                 { label: saveMsg || '💾 저장', action: () => { handleSave(); setMobileMore(false); } },
                 { label: t('code.saveAs') || '다른 이름으로 저장', action: () => { handleSaveAs(); setMobileMore(false); } },
                 { label: t('editor.examples') || '예제', action: () => { setShowExamples(true); setMobileMore(false); } },
-                { label: activeProject ? `📁 ${activeProject.title}` : '📁 프로젝트', action: () => { setShowTeam(true); setMobileMore(false); } },
+                { label: activeProject ? `📁 ${activeProject.title}` : '📁 프로젝트', action: () => { setTeamInitialAction('browse'); setShowTeam(true); setMobileMore(false); } },
                 { label: t('gallery.publish') || '갤러리에 올리기', action: () => { openPublishModal(); setMobileMore(false); } },
                 // 교사: 코드 전송
                 ...(isTeacher() ? [
@@ -770,10 +798,11 @@ export default function Sandbox() {
         >
           {/* 모바일 전용: 코드 바로 위 실행/정지 — 상단 툴바가 가려지는 작은 화면 대응 */}
           <div
-            className="md:hidden flex gap-2 px-3 py-2 shrink-0"
+            className="md:hidden flex gap-2 shrink-0"
             style={{
               backgroundColor: 'var(--color-bg-secondary)',
               borderBottom: '1px solid var(--color-border)',
+              padding: '10px 16px',
             }}
           >
             {!isRunning ? (
@@ -977,16 +1006,31 @@ export default function Sandbox() {
       {/* 저장 게이트 다이얼로그 — 활성 프로젝트 없을 때 💾 누르면 표시 */}
       <ProjectGate
         open={showProjectGate}
-        onCreateNew={() => { setShowProjectGate(false); setShowTeam(true); }}
-        onPickExisting={() => { setShowProjectGate(false); setShowTeam(true); }}
+        onCreateNew={() => { setShowProjectGate(false); setTeamInitialAction('create'); setShowTeam(true); }}
+        onPickExisting={() => { setShowProjectGate(false); setTeamInitialAction('browse'); setShowTeam(true); }}
         onClose={() => setShowProjectGate(false)}
       />
 
+      {commitModalOpen && (
+        <CommitSaveModal
+          open={commitModalOpen}
+          projectTitle={activeProject?.title || ''}
+          saving={commitSaving}
+          error={commitError}
+          onSubmit={handleProjectCommit}
+          onClose={() => {
+            if (commitSaving) return;
+            setCommitModalOpen(false);
+            setCommitError('');
+          }}
+        />
+      )}
 
       {/* 프로젝트 사이드패널 */}
       {showTeam && (
         <TeamProjectsPanel
           currentCode={code}
+          initialAction={teamInitialAction}
           onOpenProject={async (projectId) => {
             // 프로젝트의 코드를 에디터에 로드 + 활성 프로젝트로 전환
             const { default: useProjectStore } = await import('../stores/projectStore');
@@ -997,86 +1041,14 @@ export default function Sandbox() {
               if (codeRow.id) useCodeStore.getState().setCurrentCodeId(codeRow.id);
             }
             setShowTeam(false);
+            setTeamInitialAction('browse');
           }}
-          onClose={() => setShowTeam(false)}
+          onClose={() => { setShowTeam(false); setTeamInitialAction('browse'); }}
         />
       )}
 
       {/* GitHub 저장 성공 토스트 */}
-      {pushToast && (
-        <div
-          className="fixed bottom-6 right-6 z-[80] shadow-2xl p-4 max-w-sm"
-          style={{
-            backgroundColor: 'var(--color-bg-primary)',
-            border: '1px solid var(--color-border)',
-            animation: 'fadeIn 0.2s ease-out',
-          }}
-          role="status"
-        >
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
-                🎉 {pushToast.nthCommit}번째 GitHub 저장 완료!
-              </p>
-              <p className="text-xs mt-1 break-words" style={{ color: 'var(--color-text-secondary)' }}>
-                {pushToast.message}
-              </p>
-            </div>
-            <button
-              onClick={() => setPushToast(null)}
-              className="cursor-pointer border-none bg-transparent text-sm flex-shrink-0"
-              style={{ color: 'var(--color-text-muted)' }}
-              aria-label="닫기"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="flex gap-1.5 flex-wrap">
-            {pushToast.commitUrl && (
-              <a
-                href={pushToast.commitUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] px-2 py-1 inline-flex items-center gap-1 no-underline"
-                style={{
-                  backgroundColor: 'var(--color-accent)',
-                  color: 'var(--color-accent-text, white)',
-                }}
-              >
-                🔍 이번 변경 보기
-              </a>
-            )}
-            {pushToast.repoUrl && (
-              <a
-                href={pushToast.repoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] px-2 py-1 inline-flex items-center gap-1 no-underline"
-                style={{
-                  backgroundColor: 'var(--color-bg-tertiary)',
-                  color: 'var(--color-text-primary)',
-                }}
-              >
-                📂 레포
-              </a>
-            )}
-            {pushToast.pagesUrl && (
-              <a
-                href={pushToast.pagesUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] px-2 py-1 inline-flex items-center gap-1 no-underline"
-                style={{
-                  backgroundColor: 'var(--color-bg-tertiary)',
-                  color: 'var(--color-text-primary)',
-                }}
-              >
-                🌐 Pages
-              </a>
-            )}
-          </div>
-        </div>
-      )}
+      {pushToast && <GitHubSaveToast toast={pushToast} onClose={() => setPushToast(null)} />}
 
       {/* 갤러리 발행 모달 */}
       <PublishModal
@@ -1115,6 +1087,195 @@ export default function Sandbox() {
         onDismiss={() => setCodeShareToast(false)}
         onOpen={() => { setCodeShareToast(false); setPanelOpen(true); }}
       />
+    </div>
+  );
+}
+
+function CommitSaveModal({ open, projectTitle, saving, error, onSubmit, onClose }) {
+  const [message, setMessage] = useState('');
+
+  if (!open) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(message);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(15, 23, 42, 0.54)' }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md border shadow-2xl"
+        style={{
+          backgroundColor: 'var(--color-bg-panel)',
+          borderColor: 'var(--color-border)',
+          padding: 24,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase" style={{ color: 'var(--color-accent)' }}>
+              {projectTitle}
+            </p>
+            <h3 className="mt-1 text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>
+              GitHub에 저장
+            </h3>
+            <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              코드, 커밋 이력, Pages 실행 페이지를 함께 갱신합니다.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="h-8 w-8 border bg-transparent text-lg disabled:opacity-40"
+            style={{
+              color: 'var(--color-text-muted)',
+              borderColor: 'var(--color-border)',
+            }}
+            aria-label="닫기"
+          >
+            ×
+          </button>
+        </div>
+
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
+            변경 내용
+          </span>
+          <input
+            autoFocus
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="예: 배경색과 카메라 움직임 조정"
+            className="w-full border px-3 py-2 text-sm outline-none"
+            style={{
+              backgroundColor: 'var(--color-bg-primary)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-primary)',
+            }}
+            maxLength={200}
+          />
+        </label>
+
+        {error && (
+          <p
+            className="mt-3 border px-3 py-2 text-xs"
+            style={{
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-error)',
+            }}
+          >
+            {error}
+          </p>
+        )}
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            className="border px-4 py-2 text-sm font-semibold disabled:opacity-40"
+            style={{
+              backgroundColor: 'transparent',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            취소
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="border-none px-4 py-2 text-sm font-semibold disabled:opacity-60"
+            style={{
+              backgroundColor: 'var(--color-accent)',
+              color: 'var(--color-accent-text, white)',
+            }}
+          >
+            {saving ? '저장 중' : '저장'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function GitHubSaveToast({ toast, onClose }) {
+  const links = [
+    toast.pageCommitUrl && { href: toast.pageCommitUrl, label: 'Pages 커밋' },
+    !toast.pageCommitUrl && toast.commitUrl && { href: toast.commitUrl, label: '이번 커밋' },
+    toast.pagesUrl && { href: toast.pagesUrl, label: '실행 페이지' },
+    toast.repoUrl && { href: toast.repoUrl, label: '저장소' },
+  ].filter(Boolean);
+
+  return (
+    <div
+      className="fixed bottom-6 right-6 z-[80] w-[min(390px,calc(100vw-32px))] border shadow-2xl"
+      style={{
+        backgroundColor: 'var(--color-bg-panel)',
+        borderColor: 'var(--color-border)',
+        boxShadow: 'inset 3px 0 0 var(--color-success), 0 20px 40px rgba(15,23,42,0.18)',
+        animation: 'fadeIn 0.2s ease-out',
+        padding: 18,
+      }}
+      role="status"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
+            GitHub 저장 완료
+          </p>
+          <p className="mt-1 text-xs leading-relaxed break-words" style={{ color: 'var(--color-text-secondary)' }}>
+            {toast.nthCommit}번째 커밋 · {toast.message}
+          </p>
+          <p className="mt-1 text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+            {toast.pagesWarning
+              ? `Pages 배포 확인: ${toast.pagesWarning}`
+              : toast.pagesStatus
+                ? `Pages 상태: ${toast.pagesStatus}. 반영에는 잠시 시간이 걸릴 수 있습니다.`
+                : 'Pages 반영에는 잠시 시간이 걸릴 수 있습니다.'}
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          className="h-7 w-7 border bg-transparent text-base flex-shrink-0"
+          style={{
+            color: 'var(--color-text-muted)',
+            borderColor: 'var(--color-border)',
+          }}
+          aria-label="닫기"
+        >
+          ×
+        </button>
+      </div>
+
+      {links.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {links.map((link, index) => (
+            <a
+              key={link.href}
+              href={link.href}
+              target="_blank"
+              rel="noreferrer"
+              className="px-2.5 py-1.5 text-[11px] font-semibold no-underline"
+              style={{
+                backgroundColor: index === 0 ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
+                color: index === 0 ? 'var(--color-accent-text, white)' : 'var(--color-text-primary)',
+              }}
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

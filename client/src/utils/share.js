@@ -1,6 +1,6 @@
 /**
  * VPyLab — 코드 공유 유틸리티
- * 짧은 URL 방식 (/s/abc12345) + LZ-String 하위 호환
+ * 짧은 URL 방식 (/s/abc12345) + LZ-String/base64 해시 하위 호환
  */
 
 import { supabase } from '../lib/supabase';
@@ -78,19 +78,38 @@ export async function copyCodeLink(code, title) {
 }
 
 /**
- * URL 해시에서 코드 디코딩 (LZ-String 하위 호환)
- * 기존 #code= 형식 링크가 여전히 동작하도록 유지
+ * base64url 해시 디코딩 (GitHub Pages fallback 링크용)
+ * @param {string} value
+ * @returns {string|null}
+ */
+function decodeBase64Url(value) {
+  try {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+    const binary = window.atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch (err) {
+    console.warn('[Share] base64 URL 디코딩 실패:', err);
+    return null;
+  }
+}
+
+/**
+ * URL 해시에서 코드 디코딩 (LZ-String/base64 하위 호환)
+ * 기존 #code= 형식 링크와 Pages fallback #b64= 링크가 동작하도록 유지
  * @returns {{ code: string|null, isExternal: boolean }}
  */
 export function decodeCodeFromURL() {
   const hash = window.location.hash;
-  if (!hash || !hash.startsWith('#code=')) {
+  if (!hash || (!hash.startsWith('#code=') && !hash.startsWith('#b64='))) {
     return { code: null, isExternal: false };
   }
 
   try {
-    const compressed = hash.slice(6);
-    const decoded = decompressFromEncodedURIComponent(compressed);
+    const decoded = hash.startsWith('#b64=')
+      ? decodeBase64Url(hash.slice(5))
+      : decompressFromEncodedURIComponent(hash.slice(6));
 
     if (!decoded) {
       return { code: null, isExternal: false };

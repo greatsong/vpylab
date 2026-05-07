@@ -10,57 +10,65 @@ export default function ProjectGate({ open, onCreateNew, onPickExisting, onClose
   return (
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+      style={{ backgroundColor: 'rgba(15, 23, 42, 0.54)' }}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="w-full max-w-md shadow-2xl p-6"
-        style={{ backgroundColor: 'var(--color-bg-primary)' }}
+        className="w-full max-w-md border shadow-2xl"
+        style={{
+          backgroundColor: 'var(--color-bg-panel)',
+          borderColor: 'var(--color-border)',
+          padding: 24,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-          💾 어디에 저장할까요?
-        </h3>
-        <p className="text-sm mb-5 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-          VPyLab은 모든 저장을 GitHub 프로젝트에 commit합니다.<br />
-          이 코드를 새 프로젝트로 만들거나, 기존 프로젝트에 이어 저장할 수 있어요.
-        </p>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>
+              저장 위치 선택
+            </h3>
+            <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              GitHub 커밋과 Pages 갱신이 함께 기록됩니다.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="h-8 w-8 border bg-transparent text-lg"
+            style={{
+              color: 'var(--color-text-muted)',
+              borderColor: 'var(--color-border)',
+            }}
+            aria-label="닫기"
+          >
+            ×
+          </button>
+        </div>
 
-        <div className="flex flex-col gap-2 mb-3">
+        <div className="flex flex-col gap-2">
           <button
             onClick={onCreateNew}
-            className="w-full py-3 px-4 text-sm font-bold cursor-pointer border-none text-left flex items-center justify-between"
+            className="w-full py-3 px-4 text-sm font-bold cursor-pointer border-none text-left flex items-center justify-between gap-4"
             style={{
               backgroundColor: 'var(--color-accent)',
               color: 'var(--color-accent-text, white)',
             }}
           >
-            <span>＋ 새 프로젝트로 만들기</span>
-            <span className="text-xs opacity-80">현재 코드가 첫 commit이 됨</span>
+            <span>새 프로젝트 만들기</span>
+            <span className="text-xs font-medium opacity-80">첫 커밋으로 저장</span>
           </button>
           <button
             onClick={onPickExisting}
-            className="w-full py-3 px-4 text-sm font-medium cursor-pointer border text-left flex items-center justify-between"
+            className="w-full py-3 px-4 text-sm font-semibold cursor-pointer border text-left flex items-center justify-between gap-4"
             style={{
-              backgroundColor: 'var(--color-bg-tertiary)',
+              backgroundColor: 'var(--color-bg-primary)',
               borderColor: 'var(--color-border)',
               color: 'var(--color-text-primary)',
             }}
           >
-            <span>📁 기존 프로젝트에 이어 저장</span>
-            <span className="text-xs opacity-60">목록에서 선택</span>
-          </button>
-        </div>
-
-        <div className="flex justify-end pt-2">
-          <button
-            onClick={onClose}
-            className="text-sm px-3 py-1.5 cursor-pointer border-none bg-transparent"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
-            취소
+            <span>기존 프로젝트에 저장</span>
+            <span className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>목록에서 선택</span>
           </button>
         </div>
       </div>

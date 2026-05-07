@@ -21,7 +21,9 @@
 
 <!-- 어떻게 테스트했는지 설명해주세요. -->
 
-- [ ] `npm test` 통과
+- [ ] `npm run test:run --prefix client` 통과
+- [ ] `npm run lint --prefix client` 통과
+- [ ] `npm run build --prefix client` 통과
 - [ ] 로컬에서 수동 테스트 완료
 
 ### 스크린샷 (Screenshots, 선택)

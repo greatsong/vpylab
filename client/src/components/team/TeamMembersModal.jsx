@@ -8,10 +8,16 @@ import useAuthStore from '../../stores/authStore';
 
 export default function TeamMembersModal({ project, onClose }) {
   const { user } = useAuthStore();
-  const { activeProject, activeMembers, openProject, removeMember, setMemberRole, leaveProject, regenerateInviteCode, deleteProject } = useProjectStore();
+  const {
+    activeProject, activeMembers, openProject, removeMember, setMemberRole,
+    leaveProject, regenerateInviteCode, inviteGithubCollaborator, deleteProject,
+  } = useProjectStore();
 
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [githubUsername, setGithubUsername] = useState('');
+  const [githubInviteMsg, setGithubInviteMsg] = useState('');
+  const [githubInviting, setGithubInviting] = useState(false);
 
   useEffect(() => {
     if (project?.id) openProject(project.id);
@@ -20,6 +26,8 @@ export default function TeamMembersModal({ project, onClose }) {
   const isOwner = activeProject && user && activeProject.owner_id === user.id;
   const inviteCode = activeProject?.invite_code || project?.invite_code || '';
   const inviteUrl = inviteCode ? `${window.location.origin}/?team=${inviteCode}` : '';
+  const repoFullName = activeProject?.github_repo || project?.github_repo || '';
+  const collaboratorUrl = repoFullName ? `https://github.com/${repoFullName}/settings/access` : '';
 
   const handleCopy = async () => {
     try {
@@ -61,6 +69,24 @@ export default function TeamMembersModal({ project, onClose }) {
     setBusy(true);
     await regenerateInviteCode(activeProject.id);
     setBusy(false);
+  };
+
+  const handleGithubInvite = async (e) => {
+    e.preventDefault();
+    if (!githubUsername.trim()) {
+      setGithubInviteMsg('GitHub 사용자명을 입력해주세요.');
+      return;
+    }
+    setGithubInviting(true);
+    setGithubInviteMsg('');
+    const { data, error } = await inviteGithubCollaborator({ username: githubUsername });
+    setGithubInviting(false);
+    if (error) {
+      setGithubInviteMsg(error.message);
+      return;
+    }
+    setGithubUsername('');
+    setGithubInviteMsg(`${data.username}님에게 GitHub collaborator 초대를 보냈습니다.`);
   };
 
   const handleDelete = async () => {
@@ -129,6 +155,56 @@ export default function TeamMembersModal({ project, onClose }) {
             >
               ↻ 코드 재발급
             </button>
+          )}
+          {isOwner && collaboratorUrl && (
+            <div
+              className="mt-3 border px-3 py-2 text-[11px] leading-relaxed"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-bg-secondary)',
+                color: 'var(--color-text-secondary)',
+              }}
+            >
+              초대 코드는 VPyLab 멤버만 추가합니다. 팀원이 GitHub에 직접 커밋하려면 저장소의 Collaborators에도 GitHub 계정을 추가해주세요.
+              <a
+                href={collaboratorUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="ml-1 font-semibold no-underline"
+                style={{ color: 'var(--color-accent)' }}
+              >
+                GitHub 권한 설정
+              </a>
+              <form onSubmit={handleGithubInvite} className="mt-2 flex gap-1.5">
+                <input
+                  value={githubUsername}
+                  onChange={(e) => setGithubUsername(e.target.value)}
+                  placeholder="GitHub username"
+                  className="min-w-0 flex-1 border px-2 py-1 text-[11px] outline-none"
+                  style={{
+                    backgroundColor: 'var(--color-bg-primary)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={githubInviting}
+                  className="border-none px-2 py-1 text-[11px] font-semibold disabled:opacity-50"
+                  style={{
+                    backgroundColor: 'var(--color-accent)',
+                    color: 'var(--color-accent-text, white)',
+                  }}
+                >
+                  {githubInviting ? '초대 중' : '초대'}
+                </button>
+              </form>
+              {githubInviteMsg && (
+                <p className="mt-1.5 text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+                  {githubInviteMsg}
+                </p>
+              )}
+            </div>
           )}
         </div>
 

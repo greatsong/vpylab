@@ -1,10 +1,3 @@
-/**
- * VPyLab — 프로젝트 갤러리 (Phase 4-A 재디자인 v2)
- *
- * - 풀스크린 오버레이 + 큰 "+ 새 프로젝트" 카드 + 기존 프로젝트 카드 그리드
- * - GitHub 토큰이 없으면 재인증 버튼 노출 (현재 코드 유지)
- * - 둥근 모서리 사용 안 함 (사용자 요청)
- */
 import { useEffect, useState } from 'react';
 import useProjectStore from '../../stores/projectStore';
 import useAuthStore from '../../stores/authStore';
@@ -24,7 +17,7 @@ function relativeTime(iso) {
   return new Date(iso).toLocaleDateString();
 }
 
-export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode }) {
+export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode, initialAction = 'browse' }) {
   const { user } = useAuthStore();
   const {
     myProjects, loadingProjects,
@@ -32,6 +25,9 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode 
   } = useProjectStore();
 
   const [creating, setCreating] = useState(false);
+  const [createOpen, setCreateOpen] = useState(initialAction === 'create');
+  const [createTitle, setCreateTitle] = useState('');
+  const [createDescription, setCreateDescription] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [joinError, setJoinError] = useState('');
   const [joining, setJoining] = useState(false);
@@ -62,24 +58,30 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode 
     });
   };
 
-  const handleCreate = async () => {
+  const openCreate = () => {
     setCreateError('');
     if (tokenStatus === 'missing') {
       setCreateError('GitHub 인증이 만료되었습니다. 아래 "GitHub 재로그인" 버튼을 눌러주세요.');
       return;
     }
-    const title = window.prompt('새 프로젝트 이름은? (예: 우리 학교 종소리)');
-    if (title === null) return;
-    if (!title.trim()) {
+    setCreateOpen(true);
+  };
+
+  const handleCreate = async (e) => {
+    e?.preventDefault();
+    setCreateError('');
+    const title = createTitle.trim();
+    if (!title) {
       setCreateError('이름을 입력해주세요.');
       return;
     }
     setCreating(true);
     const seedCode = currentCode && currentCode.trim().length > 0
       ? currentCode
-      : `# ${title.trim()} — VPyLab 프로젝트\n# 여기에 코드를 작성하세요.\n\nbox(pos=(0,0,0), size=(1,1,1), color=(1,0,0))\n`;
+      : `# ${title} — VPyLab 프로젝트\n# 여기에 코드를 작성하세요.\n\nbox(pos=(0,0,0), size=(1,1,1), color=(1,0,0))\n`;
     const { data, error } = await createProject({
-      title: title.trim().slice(0, 80),
+      title: title.slice(0, 80),
+      description: createDescription.trim().slice(0, 240),
       initialCode: seedCode,
     });
     setCreating(false);
@@ -91,6 +93,9 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode 
       }
       return;
     }
+    setCreateTitle('');
+    setCreateDescription('');
+    setCreateOpen(false);
     if (onOpenProject && data?.id) onOpenProject(data.id);
   };
 
@@ -115,12 +120,17 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode 
   if (!user) {
     return (
       <Overlay onClose={onClose}>
-        <Header title="📁 프로젝트" onClose={onClose} />
-        <div className="flex-1 flex items-center justify-center p-12">
-          <p className="text-base text-center" style={{ color: 'var(--color-text-muted)' }}>
-            로그인 후 이용할 수 있어요.<br />
-            <span className="text-sm">GitHub 계정으로 로그인하면 자동으로 레포가 만들어져요.</span>
-          </p>
+        <Header title="프로젝트" onClose={onClose} />
+        <div className="flex-1 flex items-center justify-center" style={{ padding: 48 }}>
+          <EmptyState
+            title="로그인이 필요합니다"
+            description="GitHub 프로젝트, 초대 코드, 저장 이력은 로그인 후 사용할 수 있습니다."
+            actionLabel="로그인하기"
+            onAction={() => {
+              onClose?.();
+              useAuthStore.getState().setAuthModalOpen(true);
+            }}
+          />
         </div>
       </Overlay>
     );
@@ -128,28 +138,21 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode 
 
   return (
     <Overlay onClose={onClose}>
-      <Header title="📁 프로젝트" onClose={onClose} />
+      <Header title="프로젝트" onClose={onClose} />
 
-      {/* GitHub 재인증 안내 (토큰 만료 시) */}
       {tokenStatus === 'missing' && (
-        <div
-          className="mx-6 mt-6 px-4 py-3 flex items-center justify-between gap-4"
-          style={{
-            backgroundColor: 'var(--color-warning-bg, #fff3bf)',
-            borderLeft: '3px solid var(--color-warning, #f59f00)',
-          }}
-        >
+        <StatusBanner tone="warning">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              ⚠️ GitHub 인증이 만료되었습니다
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+              GitHub 인증을 다시 연결해야 합니다
             </p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
-              다시 로그인하세요. 현재 작성 중인 코드는 유지됩니다.
+              현재 작성 중인 코드는 유지됩니다. 다시 로그인한 뒤 이어서 저장할 수 있습니다.
             </p>
           </div>
           <button
             onClick={handleReauth}
-            className="px-4 py-2 text-sm font-bold cursor-pointer border-none whitespace-nowrap"
+            className="px-4 py-2 text-sm font-semibold cursor-pointer border-none whitespace-nowrap"
             style={{
               backgroundColor: 'var(--color-accent)',
               color: 'var(--color-accent-text, white)',
@@ -157,69 +160,77 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode 
           >
             GitHub 재로그인
           </button>
-        </div>
+        </StatusBanner>
       )}
 
-      {/* 본문: 카드 그리드 */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        {/* 초대 코드 합류 (한 줄짜리 작은 입력) */}
-        <div className="mb-6 flex items-center gap-2 max-w-md">
-          <span className="text-xs whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
-            초대 코드로 합류:
-          </span>
+      <div className="flex-1 overflow-y-auto" style={{ padding: 28 }}>
+        <form
+          onSubmit={(e) => { e.preventDefault(); handleJoin(); }}
+          className="mb-6 flex flex-col gap-2 border sm:flex-row sm:items-center"
+          style={{
+            backgroundColor: 'var(--color-bg-primary)',
+            borderColor: 'var(--color-border)',
+            padding: '14px 16px',
+          }}
+        >
+          <label className="text-xs font-semibold sm:w-28" style={{ color: 'var(--color-text-secondary)' }}>
+            초대 코드
+          </label>
           <input
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value)}
             placeholder="8자 코드"
-            className="flex-1 px-2 py-1 text-xs border outline-none font-mono"
+            className="min-w-0 flex-1 px-3 py-2 text-sm border outline-none font-mono"
             style={{
-              backgroundColor: 'var(--color-bg-tertiary)',
+              backgroundColor: 'var(--color-bg-secondary)',
               borderColor: 'var(--color-border)',
               color: 'var(--color-text-primary)',
             }}
             maxLength={16}
           />
           <button
-            onClick={handleJoin}
+            type="submit"
             disabled={joining}
-            className="px-3 py-1 text-xs cursor-pointer border disabled:opacity-50"
+            className="px-4 py-2 text-sm font-semibold cursor-pointer border disabled:opacity-50"
             style={{
-              backgroundColor: 'var(--color-bg-tertiary)',
+              backgroundColor: 'var(--color-bg-panel)',
               borderColor: 'var(--color-border)',
               color: 'var(--color-text-primary)',
             }}
           >
-            {joining ? '⏳' : '합류'}
+            {joining ? '합류 중' : '합류'}
           </button>
           {joinError && (
-            <span className="text-xs ml-1" style={{ color: 'var(--color-error, #e03131)' }}>{joinError}</span>
+            <p className="text-xs sm:basis-full sm:pl-28" style={{ color: 'var(--color-error, #e03131)' }}>
+              {joinError}
+            </p>
           )}
-        </div>
+        </form>
 
-        {/* 카드 그리드 */}
         <div
           className="grid gap-4"
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
         >
-          {/* + 새 프로젝트 카드 */}
           <button
-            onClick={handleCreate}
+            onClick={openCreate}
             disabled={creating || tokenStatus === 'missing'}
-            className="p-6 text-left cursor-pointer border-2 border-dashed disabled:opacity-50 transition-colors flex flex-col items-center justify-center min-h-[180px]"
+            className="text-left cursor-pointer border disabled:opacity-50 transition-colors flex flex-col justify-between min-h-[190px]"
             style={{
-              backgroundColor: 'transparent',
+              backgroundColor: 'var(--color-bg-primary)',
               borderColor: 'var(--color-accent)',
-              color: 'var(--color-accent)',
+              color: 'var(--color-text-primary)',
+              padding: 22,
             }}
           >
-            <span className="text-4xl mb-2">＋</span>
-            <span className="text-base font-bold mb-1">새 프로젝트</span>
-            <span className="text-xs text-center opacity-80" style={{ color: 'var(--color-text-secondary)' }}>
-              {creating ? 'GitHub 레포 만드는 중…' : '현재 코드가 첫 commit이 됩니다'}
+            <span className="inline-flex h-9 w-9 items-center justify-center border text-xl" style={{ borderColor: 'var(--color-border)', color: 'var(--color-accent)' }}>+</span>
+            <span>
+              <span className="block text-base font-bold mb-1">새 프로젝트 만들기</span>
+              <span className="block text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+                현재 코드를 첫 커밋으로 저장하고 GitHub Pages 실행 페이지를 만듭니다.
+              </span>
             </span>
           </button>
 
-          {/* 기존 프로젝트 카드들 */}
           {!loadingProjects && myProjects.map((p) => (
             <ProjectCard
               key={p.id}
@@ -231,17 +242,35 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode 
 
           {loadingProjects && (
             <div className="col-span-full text-center text-sm py-8" style={{ color: 'var(--color-text-muted)' }}>
-              불러오는 중…
+              프로젝트를 불러오는 중입니다.
             </div>
           )}
         </div>
 
         {createError && (
-          <p className="text-sm mt-4 max-w-xl" style={{ color: 'var(--color-error, #e03131)' }}>
-            {createError}
-          </p>
+          <StatusBanner tone="error" compact>
+            <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{createError}</p>
+          </StatusBanner>
         )}
       </div>
+
+      {createOpen && (
+        <CreateProjectModal
+          title={createTitle}
+          description={createDescription}
+          creating={creating}
+          error={createError}
+          hasCode={Boolean(currentCode?.trim())}
+          onTitleChange={setCreateTitle}
+          onDescriptionChange={setCreateDescription}
+          onSubmit={handleCreate}
+          onClose={() => {
+            if (creating) return;
+            setCreateOpen(false);
+            setCreateError('');
+          }}
+        />
+      )}
 
       {membersTarget && (
         <TeamMembersModal
@@ -260,14 +289,15 @@ function Overlay({ children, onClose }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
+      style={{ backgroundColor: 'rgba(15, 23, 42, 0.58)' }}
       onClick={onClose}
     >
       <div
         className="w-[min(1080px,96vw)] h-[min(720px,92vh)] flex flex-col shadow-2xl"
         style={{
-          backgroundColor: 'var(--color-bg-secondary)',
+          backgroundColor: 'var(--color-bg-panel)',
           border: '1px solid var(--color-border)',
+          borderRadius: 0,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -280,24 +310,30 @@ function Overlay({ children, onClose }) {
 function Header({ title, onClose }) {
   return (
     <div
-      className="flex items-center justify-between px-6 py-4 border-b"
-      style={{ borderColor: 'var(--color-border)' }}
+      className="flex items-center justify-between border-b"
+      style={{
+        borderColor: 'var(--color-border)',
+        padding: '20px 28px',
+      }}
     >
       <div>
         <h2 className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>
           {title}
         </h2>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-          GitHub 레포 + Pages 자동 연결 · 저장은 모두 commit으로 누적
+        <p className="text-xs mt-0.5 break-keep" style={{ color: 'var(--color-text-muted)' }}>
+          GitHub 저장소, Pages 실행 페이지, 팀 초대를 한 곳에서 관리합니다.
         </p>
       </div>
       <button
         onClick={onClose}
-        className="cursor-pointer border-none bg-transparent text-xl"
-        style={{ color: 'var(--color-text-muted)' }}
+        className="h-9 w-9 cursor-pointer border bg-transparent text-lg"
+        style={{
+          color: 'var(--color-text-muted)',
+          borderColor: 'var(--color-border)',
+        }}
         aria-label="닫기"
       >
-        ✕
+        ×
       </button>
     </div>
   );
@@ -329,14 +365,14 @@ function ProjectCard({ project, onOpen, onMembersClick }) {
 
   return (
     <div
-      className="flex flex-col p-4 transition-shadow"
+      className="flex flex-col transition-shadow"
       style={{
-        backgroundColor: 'var(--color-bg-primary)',
+        backgroundColor: 'var(--color-bg-panel)',
         border: '1px solid var(--color-border)',
         boxShadow: '0 1px 0 rgba(0,0,0,0.04)',
+        padding: 18,
       }}
     >
-      {/* 제목 + 역할 */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <h3
           onClick={onOpen}
@@ -352,28 +388,25 @@ function ProjectCard({ project, onOpen, onMembersClick }) {
             color: 'var(--color-accent)',
           }}
         >
-          {isOwner ? '👑' : project.my_role === 'editor' ? '✏️' : '👀'}
+          {isOwner ? 'OWNER' : project.my_role === 'editor' ? 'EDIT' : 'VIEW'}
         </span>
       </div>
 
-      {/* 설명 */}
       {project.description && (
         <p className="text-xs mb-3 line-clamp-2" style={{ color: 'var(--color-text-secondary)' }}>
           {project.description}
         </p>
       )}
 
-      {/* 메타: 멤버수 + 최근 활동 */}
       <div className="flex items-center justify-between text-[11px] mb-3" style={{ color: 'var(--color-text-muted)' }}>
         <span>
-          👥 {memberCount === null ? '…' : memberCount === 1 ? '혼자' : `${memberCount}명`}
+          {memberCount === null ? '멤버 확인 중' : memberCount === 1 ? '개인 프로젝트' : `${memberCount}명 참여`}
         </span>
         <span title={lastTouched ? new Date(lastTouched).toLocaleString() : ''}>
-          ⏱️ {relativeTime(lastTouched)}
+          {relativeTime(lastTouched)}
         </span>
       </div>
 
-      {/* 링크들 */}
       {repo && (
         <div className="flex items-center gap-1.5 mb-3 flex-wrap">
           <a
@@ -381,25 +414,24 @@ function ProjectCard({ project, onOpen, onMembersClick }) {
             className="text-[10px] px-2 py-1 inline-flex items-center gap-1 no-underline"
             style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
             onClick={(e) => e.stopPropagation()}
-          >🔗 GitHub</a>
+          >GitHub</a>
           {pagesUrl && (
             <a
               href={pagesUrl} target="_blank" rel="noreferrer"
               className="text-[10px] px-2 py-1 inline-flex items-center gap-1 no-underline"
               style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
               onClick={(e) => e.stopPropagation()}
-            >🌐 Pages</a>
+            >Pages</a>
           )}
           <a
             href={`${repoUrl}/commits/main`} target="_blank" rel="noreferrer"
             className="text-[10px] px-2 py-1 inline-flex items-center gap-1 no-underline"
             style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
             onClick={(e) => e.stopPropagation()}
-          >📜 이력</a>
+          >커밋</a>
         </div>
       )}
 
-      {/* 액션 */}
       <div className="flex items-center gap-2 mt-auto">
         <button
           onClick={onOpen}
@@ -421,9 +453,188 @@ function ProjectCard({ project, onOpen, onMembersClick }) {
           }}
           title="멤버 / 초대 코드"
         >
-          👥
+          멤버
         </button>
       </div>
+    </div>
+  );
+}
+
+function StatusBanner({ children, tone = 'info', compact = false }) {
+  const toneColor = tone === 'error'
+    ? 'var(--color-error, #ef4444)'
+    : tone === 'warning'
+      ? 'var(--color-warning, #f59e0b)'
+      : 'var(--color-accent)';
+  return (
+    <div
+      className={`${compact ? 'mt-4' : 'mx-6 mt-6'} flex items-center justify-between gap-4 border px-4 py-3`}
+      style={{
+        backgroundColor: 'var(--color-bg-primary)',
+        borderColor: 'var(--color-border)',
+        boxShadow: `inset 3px 0 0 ${toneColor}`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function EmptyState({ title, description, actionLabel, onAction }) {
+  return (
+    <div className="max-w-md text-center">
+      <p className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>{title}</p>
+      <p className="mt-2 text-sm leading-relaxed break-keep" style={{ color: 'var(--color-text-secondary)' }}>{description}</p>
+      {actionLabel && (
+        <button
+          onClick={onAction}
+          className="mt-5 border-none px-4 py-2 text-sm font-semibold"
+          style={{
+            backgroundColor: 'var(--color-accent)',
+            color: 'var(--color-accent-text, white)',
+          }}
+        >
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function CreateProjectModal({
+  title,
+  description,
+  creating,
+  error,
+  hasCode,
+  onTitleChange,
+  onDescriptionChange,
+  onSubmit,
+  onClose,
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(15, 23, 42, 0.34)' }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <form
+        onSubmit={onSubmit}
+        className="w-full max-w-lg border shadow-2xl"
+        style={{
+          backgroundColor: 'var(--color-bg-panel)',
+          borderColor: 'var(--color-border)',
+          padding: 24,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>
+              새 GitHub 프로젝트
+            </h3>
+            <p className="mt-1 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              저장소와 Pages 실행 페이지를 함께 준비합니다.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={creating}
+            className="h-8 w-8 border bg-transparent text-lg disabled:opacity-40"
+            style={{ color: 'var(--color-text-muted)', borderColor: 'var(--color-border)' }}
+            aria-label="닫기"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
+              프로젝트 이름
+            </span>
+            <input
+              autoFocus
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              maxLength={80}
+              placeholder="예: 우리 학교 종소리"
+              className="w-full border px-3 py-2 text-sm outline-none"
+              style={{
+                backgroundColor: 'var(--color-bg-primary)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-primary)',
+              }}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
+              설명
+            </span>
+            <textarea
+              value={description}
+              onChange={(e) => onDescriptionChange(e.target.value)}
+              maxLength={240}
+              rows={3}
+              placeholder="팀원이 알아볼 수 있는 짧은 설명"
+              className="w-full resize-none border px-3 py-2 text-sm outline-none"
+              style={{
+                backgroundColor: 'var(--color-bg-primary)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-primary)',
+              }}
+            />
+          </label>
+
+          <div
+            className="border px-3 py-2 text-xs"
+            style={{
+              backgroundColor: 'var(--color-accent-bg)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            {hasCode ? '현재 에디터 코드가 첫 커밋으로 저장됩니다.' : '빈 프로젝트 대신 기본 예제 코드로 시작합니다.'}
+          </div>
+
+          {error && (
+            <p className="border px-3 py-2 text-xs" style={{ color: 'var(--color-error)', borderColor: 'var(--color-border)' }}>
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={creating}
+            className="border px-4 py-2 text-sm font-semibold disabled:opacity-40"
+            style={{
+              backgroundColor: 'transparent',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            취소
+          </button>
+          <button
+            type="submit"
+            disabled={creating}
+            className="border-none px-4 py-2 text-sm font-semibold disabled:opacity-60"
+            style={{
+              backgroundColor: 'var(--color-accent)',
+              color: 'var(--color-accent-text, white)',
+            }}
+          >
+            {creating ? '만드는 중' : '프로젝트 만들기'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

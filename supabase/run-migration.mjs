@@ -1,4 +1,6 @@
-// Supabase Management API로 SQL 마이그레이션 실행
+// Supabase SQL Editor에 붙여넣을 마이그레이션 SQL을 출력합니다.
+// 절대 service role key를 코드나 명령어에 넣지 마세요.
+//   SUPABASE_PROJECT_REF=xxxx node supabase/run-migration.mjs
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -6,8 +8,7 @@ import { dirname, join } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sql = readFileSync(join(__dirname, 'migrations/001_vpylab_schema.sql'), 'utf-8');
 
-const PROJECT_REF = 'fipdcjhtfslinfmalwjn';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpcGRjamh0ZnNsaW5mbWFsd2puIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA4Mjk2NiwiZXhwIjoyMDg3NjU4OTY2fQ.2VnkONIlAA0qTxLU6xH53ZMC3iRqczeYDr4wef0ndb4';
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF || 'your-project-ref';
 
 // SQL을 여러 문장으로 나눠서 실행할 수 없으므로,
 // Supabase의 pg_net이나 RPC를 사용해야 함

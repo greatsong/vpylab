@@ -134,7 +134,7 @@ rate(30)`;
     // 함수 내부 'import random'은 함수 안에 그대로 (들여쓰기 보존)
     expect(code).toContain('    import random');
     // 모듈 레벨에 잘못 끌어올려진 들여쓴 import가 없어야 함
-    expect(code).not.toMatch(/^    import random/m);
+    expect(code).not.toMatch(/^ {4}import random/m);
   });
 
   it('삼중 따옴표 문자열 내부의 rate()는 변환하지 않는다', () => {

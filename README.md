@@ -103,10 +103,18 @@ supabase/migrations/005_gallery_search_index.sql
 supabase/migrations/006_gallery_collaboration.sql
 supabase/migrations/007_admin_features.sql
 supabase/migrations/008_code_shares.sql
+supabase/migrations/009_code_revisions.sql
+supabase/migrations/010_team_projects.sql
+supabase/migrations/011_github_sync.sql
+supabase/migrations/012_fix_rls_recursion.sql
 ```
 
-> **주의:** 반드시 001 → 002 → ... 순서대로 실행해야 합니다.  
+> **주의 1:** 반드시 001 → 002 → ... → 012 순서대로 실행해야 합니다.
 > 각 파일을 실행할 때마다 "Success" 메시지가 나오면 다음 파일로 넘어가세요.
+>
+> **주의 2:** `013_reset_for_project_centric.sql` 은 **개발/테스트용 데이터 리셋 스크립트**입니다. 신규 설치 시에는 실행하지 마세요. 기존 데이터를 모두 지우고 프로젝트 중심 모델로 초기화할 때만 사용합니다.
+>
+> **마이그레이션 009~012가 없으면** 프로젝트(팀 협업), 코드 이력(revision), GitHub 동기화 기능이 동작하지 않습니다.
 
 ### 1-3. API 키 메모하기
 

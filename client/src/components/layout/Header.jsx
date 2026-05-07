@@ -56,10 +56,11 @@ export default function Header() {
 
   return (
     <header
-      className="relative flex items-center justify-between px-4 md:px-6 h-14 border-b sticky top-0 z-50"
+      className="relative flex items-center justify-between h-14 border-b sticky top-0 z-50"
       style={{
         borderColor: 'var(--color-border)',
         backgroundColor: 'var(--color-bg-panel)',
+        paddingInline: 'clamp(18px, 3vw, 32px)',
       }}
     >
       {/* 로고 */}

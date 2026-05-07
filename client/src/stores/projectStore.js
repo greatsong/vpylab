@@ -12,6 +12,19 @@ import useAuthStore from './authStore';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
 
+async function buildProjectPageHtml(code, title) {
+  const { generateStandaloneHTML } = await import('../utils/export-html');
+  return generateStandaloneHTML(code, title || 'VPyLab');
+}
+
+async function parseApiJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
 const useProjectStore = create((set, get) => ({
   // 내가 owner거나 멤버인 프로젝트 목록
   myProjects: [],
@@ -88,40 +101,28 @@ const useProjectStore = create((set, get) => ({
 
     set({ loadingProjects: true });
 
+    let reservedProjectId = null;
+    let reservedCodeId = null;
+    let createdRepoFullName = null;
     try {
       const authorLabel = useAuthStore.getState().profile?.display_name
         || user.email?.split('@')[0]
         || user.id.slice(0, 8);
+      const htmlContent = await buildProjectPageHtml(initialCode, title);
 
-      // === 1) 서버에 GitHub 셋업 요청 ===
-      const ghRes = await fetch(`${API_BASE}/api/projects/setup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title, description, code: initialCode, githubToken, authorLabel,
-          isTeam: false,  // 만든 직후엔 1명. 멤버 추가 시점에 README가 갱신되도록 추후 보강.
-        }),
-      });
-      const gh = await ghRes.json();
-      if (!ghRes.ok) {
-        throw new Error(gh.error || `GitHub 셋업 실패 (${ghRes.status})`);
-      }
-
-      // === 2) Supabase: 프로젝트 + 코드 + 첫 revision ===
+      // === 1) Supabase에 프로젝트를 먼저 예약 ===
+      // GitHub 레포를 먼저 만들면 DB/RLS 실패 시 고아 public repo가 남을 수 있습니다.
       const { data: project, error: projErr } = await supabase
         .from('vpylab_projects')
         .insert({
           owner_id: user.id,
           title,
           description,
-          github_repo: gh.repoFullName,
-          github_last_pushed_at: new Date().toISOString(),
         })
         .select()
         .single();
       if (projErr) throw new Error(`Supabase project 실패: ${projErr.message}`);
-
-      // owner는 트리거가 자동 멤버 등록 → vpylab_project_members 별도 INSERT 불필요
+      reservedProjectId = project.id;
 
       const { data: codeRow, error: codeErr } = await supabase
         .from('vpylab_saved_code')
@@ -130,14 +131,13 @@ const useProjectStore = create((set, get) => ({
           title,
           code: initialCode,
           project_id: project.id,
-          github_repo: gh.repoFullName,
-          github_last_pushed_at: new Date().toISOString(),
         })
         .select()
         .single();
       if (codeErr) throw new Error(`Supabase code 실패: ${codeErr.message}`);
+      reservedCodeId = codeRow.id;
 
-      await supabase.from('vpylab_code_revisions').insert({
+      const { error: revisionErr } = await supabase.from('vpylab_code_revisions').insert({
         code_id: codeRow.id,
         author_id: user.id,
         project_id: project.id,
@@ -146,6 +146,42 @@ const useProjectStore = create((set, get) => ({
         code_size: initialCode.length,
         source: 'manual',
       });
+      if (revisionErr) throw new Error(`Supabase revision 실패: ${revisionErr.message}`);
+
+      // === 2) 서버에 GitHub 셋업 요청 ===
+      const ghRes = await fetch(`${API_BASE}/api/projects/setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title, description, code: initialCode, htmlContent, githubToken, authorLabel,
+          isTeam: false,  // 만든 직후엔 1명. 멤버 추가 시점에 README가 갱신되도록 추후 보강.
+        }),
+      });
+      const gh = await ghRes.json();
+      if (!ghRes.ok) {
+        createdRepoFullName = gh.repoFullName || null;
+        throw new Error(gh.error || `GitHub 셋업 실패 (${ghRes.status})`);
+      }
+      createdRepoFullName = gh.repoFullName;
+
+      const nowIso = new Date().toISOString();
+      const { error: projectUpdateErr } = await supabase
+        .from('vpylab_projects')
+        .update({
+          github_repo: gh.repoFullName,
+          github_last_pushed_at: nowIso,
+        })
+        .eq('id', project.id);
+      if (projectUpdateErr) throw new Error(`Supabase project 갱신 실패: ${projectUpdateErr.message}`);
+
+      const { error: codeUpdateErr } = await supabase
+        .from('vpylab_saved_code')
+        .update({
+          github_repo: gh.repoFullName,
+          github_last_pushed_at: nowIso,
+        })
+        .eq('id', codeRow.id);
+      if (codeUpdateErr) throw new Error(`Supabase code 갱신 실패: ${codeUpdateErr.message}`);
 
       // === 3) 결과 반환 ===
       const enriched = {
@@ -162,7 +198,18 @@ const useProjectStore = create((set, get) => ({
       return { data: enriched, error: null };
     } catch (e) {
       set({ loadingProjects: false });
-      return { error: { message: e.message } };
+      // GitHub 셋업 전/중 실패하면 예약해둔 DB 행은 정리합니다.
+      // GitHub 레포 삭제 권한(delete_repo)은 요청하지 않으므로, GitHub 생성 이후 실패는 안내로 남깁니다.
+      if (reservedProjectId) {
+        await supabase.from('vpylab_projects').delete().eq('id', reservedProjectId);
+      }
+      if (reservedCodeId) {
+        useCodeStore.getState().setCurrentCodeId(null);
+      }
+      const suffix = createdRepoFullName
+        ? `\n\n주의: GitHub에 ${createdRepoFullName} 레포가 만들어졌을 수 있습니다. GitHub에서 직접 확인해주세요.`
+        : '';
+      return { error: { message: `${e.message}${suffix}` } };
     }
   },
 
@@ -313,6 +360,36 @@ const useProjectStore = create((set, get) => ({
     return { data, error };
   },
 
+  inviteGithubCollaborator: async ({ username }) => {
+    const { activeProject } = get();
+    if (!activeProject?.github_repo) {
+      return { error: { message: 'GitHub 저장소 연결 정보가 없습니다.' } };
+    }
+    const githubToken = await useAuthStore.getState().getGitHubToken();
+    if (!githubToken) {
+      return { error: { message: 'GitHub 로그인이 만료되었습니다. 저장소 소유자 계정으로 다시 로그인해주세요.' } };
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/projects/collaborators/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repoFullName: activeProject.github_repo,
+          username,
+          githubToken,
+        }),
+      });
+      const result = await parseApiJson(response);
+      if (!response.ok) {
+        return { error: { message: result.error || `GitHub collaborator 초대 실패 (${response.status})` } };
+      }
+      return { data: result, error: null };
+    } catch (e) {
+      return { error: { message: `GitHub collaborator 초대 실패: ${e.message}` } };
+    }
+  },
+
   deleteProject: async (projectId) => {
     const { error } = await supabase
       .from('vpylab_projects')
@@ -403,8 +480,31 @@ const useProjectStore = create((set, get) => ({
     if (!githubToken) {
       return { error: { message: 'GitHub 로그인이 만료되었습니다. 다시 로그인해주세요.' } };
     }
+    if (!activeProject.github_repo) {
+      return { error: { message: '이 프로젝트는 GitHub 저장소와 아직 연결되지 않았습니다. 새 프로젝트를 다시 만들거나 저장소 연결을 확인해주세요.' } };
+    }
 
-    // 1) Supabase 저장 + revision 생성 (codeStore가 처리)
+    // 1) GitHub 쓰기 권한 먼저 확인
+    // 팀 초대 코드 합류와 GitHub collaborator 권한은 별도라서, 권한 없는 상태에서
+    // Supabase revision만 생기고 GitHub commit이 실패하는 흐름을 막습니다.
+    try {
+      const accessResponse = await fetch(`${API_BASE}/api/projects/access`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          repoFullName: activeProject.github_repo,
+          githubToken,
+        }),
+      });
+      const accessResult = await parseApiJson(accessResponse);
+      if (!accessResponse.ok) {
+        return { error: { message: accessResult.error || `GitHub 권한 확인 실패 (${accessResponse.status})` } };
+      }
+    } catch (e) {
+      return { error: { message: `GitHub 권한 확인 실패: ${e.message}` } };
+    }
+
+    // 2) Supabase 저장 + revision 생성 (codeStore가 처리)
     const { data: saved, error: saveErr } = await useCodeStore.getState().saveCode({
       title: activeProject.title,
       code,
@@ -415,28 +515,34 @@ const useProjectStore = create((set, get) => ({
     });
     if (saveErr) return { error: saveErr };
 
-    // 직전에 만들어진 revision id 조회 (codeStore가 직접 반환하지 않으므로 1건 fetch)
-    const { data: lastRev } = await supabase
-      .from('vpylab_code_revisions')
-      .select('id')
-      .eq('code_id', activeCodeId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // 방금 만든 revision을 우선 사용하고, 구버전 반환값이면 1건 조회로 보완
+    let lastRev = saved?._revision || null;
+    if (!lastRev) {
+      const { data } = await supabase
+        .from('vpylab_code_revisions')
+        .select('id')
+        .eq('code_id', activeCodeId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      lastRev = data;
+    }
 
-    // 2) 서버에 GitHub commit 요청
+    // 3) 서버에 GitHub commit 요청
     const authorLabel = useAuthStore.getState().profile?.display_name
       || user.email?.split('@')[0]
       || user.id.slice(0, 8);
 
     let commitResult;
     try {
+      const htmlContent = await buildProjectPageHtml(code, activeProject.title);
       const r = await fetch(`${API_BASE}/api/projects/commit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           repoFullName: activeProject.github_repo,
           code,
+          htmlContent,
           title: activeProject.title,
           message: message || `📝 ${new Date().toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })} 저장`,
           githubToken,
@@ -446,13 +552,13 @@ const useProjectStore = create((set, get) => ({
           updateIndex: true,
         }),
       });
-      commitResult = await r.json();
+      commitResult = await parseApiJson(r);
       if (!r.ok) throw new Error(commitResult.error || `GitHub commit 실패 (${r.status})`);
     } catch (e) {
       return { error: { message: e.message } };
     }
 
-    // 3) revision에 commit SHA 박기 + project last_pushed_at 갱신
+    // 4) revision에 commit SHA 박기 + project last_pushed_at 갱신
     const nowIso = new Date().toISOString();
     if (lastRev?.id && commitResult.commitSha) {
       await supabase.from('vpylab_code_revisions')
@@ -469,7 +575,7 @@ const useProjectStore = create((set, get) => ({
       })
       .eq('id', activeCodeId);
 
-    // 4) 누적 commit 카운트 (revision 중 github_commit_sha 있는 것)
+    // 5) 누적 commit 카운트 (revision 중 github_commit_sha 있는 것)
     const { count: nthCommit } = await supabase
       .from('vpylab_code_revisions')
       .select('id', { count: 'exact', head: true })
@@ -479,9 +585,14 @@ const useProjectStore = create((set, get) => ({
     return {
       data: {
         commitSha: commitResult.commitSha,
+        pageCommitSha: commitResult.pageCommitSha,
         commitUrl: commitResult.commitUrl,
+        pageCommitUrl: commitResult.pageCommitUrl,
         repoUrl: commitResult.repoUrl,
         pagesUrl: commitResult.pagesUrl,
+        pagesStatus: commitResult.pagesStatus,
+        pagesBuildRequested: commitResult.pagesBuildRequested,
+        pagesWarning: commitResult.pagesWarning,
         nthCommit: nthCommit || 1,
         savedCodeId: saved?.id,
       },

@@ -37,10 +37,6 @@ function trackOsc(osc, gain) {
     });
   }
 }
-function trackTimeout(id) {
-  activeTimeouts.add(id);
-  return id;
-}
 // setTimeout 래퍼 — stopAllSounds에서 일괄 취소되도록 추적
 function _st(fn, ms) {
   const id = setTimeout(() => {

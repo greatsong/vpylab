@@ -147,8 +147,9 @@ const useCodeStore = create((set, get) => ({
     if (saveError) return { data: null, error: saveError };
 
     // === revision 생성 (실패해도 저장 자체는 성공으로 간주) ===
+    let revision = null;
     if (!skipRevision && savedRow) {
-      await get()._createRevision({
+      const { data: createdRevision } = await get()._createRevision({
         codeId: savedRow.id,
         code,
         userId: user.id,
@@ -156,10 +157,14 @@ const useCodeStore = create((set, get) => ({
         source,
         projectId: savedRow.project_id || null,
       });
+      revision = createdRevision || null;
     }
 
     get().fetchSavedCodes();
-    return { data: savedRow, error: null };
+    return {
+      data: revision ? { ...savedRow, _revision: revision } : savedRow,
+      error: null,
+    };
   },
 
   /**
@@ -180,14 +185,19 @@ const useCodeStore = create((set, get) => ({
       const currentId = get().currentCodeId;
 
       if (currentId) {
-        // 기존 레코드 업데이트
-        const { error } = await supabase
+        // 기존 레코드 업데이트 (본인 소유분만)
+        // count로 실제 갱신된 행 수를 확인하여 user_id 불일치 시 false-positive 'saved' 방지
+        const { error, count } = await supabase
           .from('vpylab_saved_code')
-          .update({ code, updated_at: new Date().toISOString() })
+          .update({ code, updated_at: new Date().toISOString() }, { count: 'exact' })
           .eq('id', currentId)
           .eq('user_id', user.id);
 
-        set({ saveStatus: error ? 'error' : 'saved' });
+        if (error || count === 0) {
+          set({ saveStatus: 'error' });
+        } else {
+          set({ saveStatus: 'saved' });
+        }
       } else {
         // 새 레코드 생성
         const { data, error } = await supabase

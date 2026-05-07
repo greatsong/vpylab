@@ -158,12 +158,35 @@ jobs:
           EOF
 
   # ──────────────────────────────────────────────
-  # 4. 클라이언트 빌드 검사
+  # 4. 클라이언트 린트 검사
+  # ──────────────────────────────────────────────
+  lint:
+    name: "린트 검증"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Lint
+        working-directory: client
+        run: npm run lint
+
+  # ──────────────────────────────────────────────
+  # 5. 클라이언트 빌드 검사
   # ──────────────────────────────────────────────
   build:
     name: "빌드 검증"
     runs-on: ubuntu-latest
-    needs: [validate-missions, validate-i18n]
+    needs: [validate-missions, validate-i18n, validate-mission-i18n, lint]
     steps:
       - uses: actions/checkout@v4
 
@@ -182,7 +205,7 @@ jobs:
         run: npm run build
 
   # ──────────────────────────────────────────────
-  # 5. 보안 검사
+  # 6. 보안 검사
   # ──────────────────────────────────────────────
   security:
     name: "보안 검사"
@@ -206,8 +229,19 @@ jobs:
       - name: Check for secrets in code
         run: |
           echo "Checking for potential secrets..."
-          if grep -rE "(SUPABASE_SERVICE_ROLE|sk-[a-zA-Z0-9]{20,}|password\s*=\s*['\"][^'\"]+['\"])" client/src/ server/ --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" | grep -v "node_modules" | grep -v ".example"; then
-            echo "::error::Potential secrets found in source code!"
+          # 패턴:
+          #  - Supabase Secret API key (sb_secret_...)
+          #  - Supabase service role JWT (eyJ... 시작 + role:service_role)
+          #  - OpenAI API 키 형태 (sk-...)
+          #  - 따옴표로 감싼 password 할당
+          # 스캔 범위: 저장소 전체. 단, 정상적인 환경변수 참조와 .example/node_modules는 제외
+          PATTERN='(sb_secret_[A-Za-z0-9_-]{16,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|sk-[a-zA-Z0-9]{20,}|password[[:space:]]*=[[:space:]]*['\''"][^'\''\"]+['\''"])'
+          if grep -rEn "$PATTERN" \
+              --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" --include="*.mjs" --include="*.cjs" \
+              --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build \
+              --exclude="*.example" --exclude="*.example.*" \
+              . ; then
+            echo "::error::Potential hardcoded secret detected. Move it to an environment variable."
             exit 1
           fi
           echo "No secrets detected."

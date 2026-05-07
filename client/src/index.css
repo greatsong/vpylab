@@ -24,12 +24,15 @@
   --font-body: 'Pretendard Variable', 'DM Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, Consolas, monospace;
 
-  /* Border radius scale */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* Rectangular UI scale */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
   --radius-full: 9999px;
+
+  --page-gutter-x: clamp(20px, 4vw, 40px);
+  --page-gutter-y: clamp(28px, 4vw, 48px);
 
   /* Shadow scale */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -228,7 +231,13 @@
 }
 
 /* === 글로벌 스타일 === */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; }
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
 
 body {
   font-family: var(--font-body);
@@ -258,6 +267,75 @@ button, [role="button"] {
 
 #root { min-height: 100vh; display: flex; flex-direction: column; }
 
+/* === 전역 UI 리듬 ===
+   앱 전반의 사각형 작업 UI는 각지게 유지하고,
+   페이지 컨테이너에는 항상 충분한 좌우 여백을 둡니다.
+   아바타/상태 점/프로그레스처럼 원형 의미가 있는 요소만 예외로 둡니다. */
+:where(
+  [class~="rounded"],
+  [class~="rounded-sm"],
+  [class~="rounded-md"],
+  [class~="rounded-lg"],
+  [class~="rounded-xl"],
+  [class~="rounded-2xl"],
+  [class~="rounded-3xl"],
+  [class~="rounded-l"],
+  [class~="rounded-r"],
+  [class~="rounded-t"],
+  [class~="rounded-b"],
+  [class~="rounded-l-md"],
+  [class~="rounded-r-md"],
+  [class~="rounded-t-md"],
+  [class~="rounded-b-md"],
+  [class~="rounded-l-lg"],
+  [class~="rounded-r-lg"],
+  [class~="rounded-t-lg"],
+  [class~="rounded-b-lg"],
+  [class~="rounded-l-xl"],
+  [class~="rounded-r-xl"],
+  [class~="rounded-t-xl"],
+  [class~="rounded-b-xl"],
+  .btn-primary,
+  .btn-secondary,
+  .toolbar-btn,
+  .tab-btn,
+  .category-card,
+  .mission-card,
+  .gallery-card,
+  .gallery-search input,
+  .gallery-search button,
+  .cat-pill,
+  .sort-btn,
+  .load-more-btn
+) {
+  border-radius: 0 !important;
+}
+
+:where(
+  [style*="border-radius: 3px"],
+  [style*="border-radius: 4px"],
+  [style*="border-radius: 6px"],
+  [style*="border-radius: 8px"],
+  [style*="border-radius: 10px"],
+  [style*="border-radius: 12px"],
+  [style*="border-radius: 16px"],
+  [style*="border-radius: 18px"],
+  [style*="border-radius: 20px"],
+  [style*="border-radius: 24px"],
+  [style*="border-radius: var(--radius"]
+) {
+  border-radius: 0 !important;
+}
+
+:where(
+  [class~="rounded-full"],
+  .status-dot,
+  .loading-bar,
+  .loading-bar-fill
+) {
+  border-radius: var(--radius-full) !important;
+}
+
 /* === 네비게이션 링크 호버 === */
 .nav-link:hover {
   color: var(--color-accent) !important;
@@ -270,8 +348,21 @@ button, [role="button"] {
   max-width: 1280px;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  padding-left: var(--page-gutter-x);
+  padding-right: var(--page-gutter-x);
+}
+
+main.container-main,
+.gallery-page {
+  padding-top: var(--page-gutter-y);
+  padding-bottom: var(--page-gutter-y);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --page-gutter-x: 16px;
+    --page-gutter-y: 24px;
+  }
 }
 
 code, pre { font-family: var(--font-mono); letter-spacing: -0.02em; }

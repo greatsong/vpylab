@@ -62,7 +62,6 @@ export function resolveTexture(spec) {
       undefined,
       undefined,
       (err) => {
-        // eslint-disable-next-line no-console
         console.warn(`[texture] 로드 실패: ${spec}`, err?.message || err);
       },
     );
