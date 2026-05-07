@@ -5,6 +5,7 @@ import GalleryCard from '../components/gallery/GalleryCard';
 import useGalleryStore from '../stores/galleryStore';
 import useAuthStore from '../stores/authStore';
 import { ensureAudioReady } from '../engine/sound-system';
+import { createPosterThumbnail, isThumbnailUsable } from '../engine/thumbnail';
 import { useI18n } from '../i18n/useI18n';
 
 const GalleryPreview = lazy(() => import('../components/gallery/GalleryPreview'));
@@ -57,6 +58,7 @@ export default function GalleryDetail() {
   const [showPreview, setShowPreview] = useState(false);
   const [forking, setForking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [detailThumbnail, setDetailThumbnail] = useState(null);
 
   useEffect(() => {
     fetchWork(id);
@@ -93,6 +95,27 @@ export default function GalleryDetail() {
       currentWork.project_id ? 'VPyLab 프로젝트에서 발행' : '독립 작품',
     ];
   }, [currentWork]);
+  const posterThumbnail = useMemo(() => createPosterThumbnail({
+    title: currentWork?.title,
+    description: currentWork?.description,
+    category: currentWork?.category,
+    code: currentWork?.code,
+    repo: currentWork?.github_repo,
+    author,
+  }), [author, currentWork?.category, currentWork?.code, currentWork?.description, currentWork?.github_repo, currentWork?.title]);
+  const stageThumbnail = detailThumbnail?.id === currentWork?.id && detailThumbnail.src
+    ? detailThumbnail.src
+    : posterThumbnail;
+  const hasStageCapturedThumbnail = detailThumbnail?.id === currentWork?.id && !!detailThumbnail.src;
+
+  useEffect(() => {
+    let alive = true;
+    if (!currentWork?.thumbnail) return () => { alive = false; };
+    isThumbnailUsable(currentWork.thumbnail).then(usable => {
+      if (alive) setDetailThumbnail({ id: currentWork.id, src: usable ? currentWork.thumbnail : null });
+    });
+    return () => { alive = false; };
+  }, [currentWork?.id, currentWork?.thumbnail]);
 
   if (loading || !currentWork) {
     return (
@@ -178,20 +201,13 @@ export default function GalleryDetail() {
 
         <section className="gallery-detail-hero">
           <div className="gallery-detail-stage">
-            {currentWork.thumbnail ? (
-              <img src={currentWork.thumbnail} alt="" />
-            ) : (
-              <div className="gallery-detail-stage-fallback">
-                <span>{meta.mark}</span>
-                <div aria-hidden="true">
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                </div>
-              </div>
-            )}
-            <div className="gallery-detail-stage-label">{meta.label}</div>
+            <img
+              src={stageThumbnail}
+              alt=""
+              className={hasStageCapturedThumbnail ? 'captured' : 'poster'}
+              onError={() => setDetailThumbnail({ id: currentWork.id, src: null })}
+            />
+            {hasStageCapturedThumbnail && <div className="gallery-detail-stage-label">{meta.label}</div>}
           </div>
 
           <div className="gallery-detail-copy">

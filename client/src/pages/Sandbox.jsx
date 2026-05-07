@@ -459,15 +459,20 @@ export default function Sandbox() {
     downloadHTML(html, filename);
   };
 
+  const refreshPublishThumbnail = useCallback(() => {
+    const thumb = sceneRef.current?._renderer ? captureThumbnail(sceneRef.current._renderer.domElement) : null;
+    setPublishThumbnail(thumb);
+    return thumb;
+  }, []);
+
   const openPublishModal = useCallback(() => {
     if (!user) {
       useAuthStore.getState().setAuthModalOpen(true);
       return;
     }
-    const thumb = sceneRef.current?._renderer ? captureThumbnail(sceneRef.current._renderer.domElement) : null;
-    setPublishThumbnail(thumb);
+    refreshPublishThumbnail();
     setPublishModalOpen(true);
-  }, [user]);
+  }, [refreshPublishThumbnail, user]);
 
   /**
    * 저장 — 현재 코드가 이미 있으면 같은 행을 업데이트하고 revision을 누적,
@@ -1128,6 +1133,7 @@ export default function Sandbox() {
         thumbnail={publishThumbnail}
         remixFrom={remixFrom}
         projectContext={activeProject}
+        onRefreshThumbnail={refreshPublishThumbnail}
       />
 
       {/* 코드 전송 모달 (교사) */}

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ensureAudioReady } from '../../engine/sound-system';
+import { createPosterThumbnail, isThumbnailUsable } from '../../engine/thumbnail';
 import useGalleryStore from '../../stores/galleryStore';
 
 const CATEGORY_META = {
@@ -32,18 +33,27 @@ export default function GalleryCard({ work }) {
   const navigate = useNavigate();
   const fetchThumbnail = useGalleryStore(s => s.fetchThumbnail);
   const [thumbnail, setThumbnail] = useState(null);
-  const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const author = work.vpylab_profiles?.display_name || work.author_alias || '익명';
   const meta = CATEGORY_META[work.category] || CATEGORY_META.free;
   const hasRepo = !!work.github_repo;
   const hasPages = !!work.github_url;
+  const posterThumbnail = useMemo(() => createPosterThumbnail({
+    title: work.title,
+    description: work.description,
+    category: work.category,
+    repo: work.github_repo,
+    author,
+  }), [author, work.category, work.description, work.github_repo, work.title]);
+  const displayThumbnail = thumbnail?.id === work.id && thumbnail.src ? thumbnail.src : posterThumbnail;
+  const hasCapturedThumbnail = thumbnail?.id === work.id && !!thumbnail.src;
 
   useEffect(() => {
     let alive = true;
-    fetchThumbnail(work.id).then(src => {
+    fetchThumbnail(work.id).then(async src => {
       if (!alive) return;
-      setThumbnail(src || null);
-      setThumbnailLoaded(true);
+      const usable = src ? await isThumbnailUsable(src) : false;
+      if (!alive) return;
+      setThumbnail({ id: work.id, src: usable ? src : null });
     });
     return () => { alive = false; };
   }, [fetchThumbnail, work.id]);
@@ -69,22 +79,19 @@ export default function GalleryCard({ work }) {
     <article className="gallery-card" style={{ '--work-accent': meta.accent }}>
       <Link to={`/gallery/${work.id}`} className="gallery-card-main" aria-label={`${work.title} 상세 보기`}>
         <div className="gallery-card-thumb">
-          {thumbnail ? (
-            <img src={thumbnail} alt="" loading="lazy" />
-          ) : (
-            <div className={`gallery-card-fallback ${thumbnailLoaded ? 'ready' : ''}`}>
-              <span>{meta.mark}</span>
-              <div className="code-lines" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </div>
+          <img
+            src={displayThumbnail}
+            alt=""
+            loading="lazy"
+            onError={() => setThumbnail({ id: work.id, src: null })}
+            className={hasCapturedThumbnail ? 'captured' : 'poster'}
+          />
+          {(hasCapturedThumbnail || hasPages) && (
+            <div className={`gallery-card-topline ${hasCapturedThumbnail ? '' : 'poster-topline'}`}>
+              {hasCapturedThumbnail && <span className="gallery-category">{meta.label}</span>}
+              {hasPages && <span className="gallery-mini-badge">Pages</span>}
             </div>
           )}
-          <div className="gallery-card-topline">
-            <span className="gallery-category">{meta.label}</span>
-            {hasPages && <span className="gallery-mini-badge">Pages</span>}
-          </div>
         </div>
 
         <div className="gallery-card-info">

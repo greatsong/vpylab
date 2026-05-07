@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPosterThumbnail, isThumbnailUsable } from '../../engine/thumbnail';
 import useGalleryStore from '../../stores/galleryStore';
 import useAuthStore from '../../stores/authStore';
 
@@ -13,7 +14,7 @@ const CATEGORIES = [
   { value: 'SN', label: '사운드' },
 ];
 
-export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFrom, projectContext = null }) {
+export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFrom, projectContext = null, onRefreshThumbnail }) {
   const navigate = useNavigate();
   const publishWork = useGalleryStore(s => s.publishWork);
   const publishing = useGalleryStore(s => s.publishing);
@@ -32,12 +33,24 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [githubTokenExpired, setGithubTokenExpired] = useState(false);
+  const [thumbnailState, setThumbnailState] = useState(null);
 
   const publishModeText = useMemo(() => {
     if (!publishToGitHub) return '갤러리 스냅샷만 공개합니다.';
     if (hasProjectRepo) return `현재 프로젝트 저장소 ${projectRepo}에 Pages 실행 버전을 갱신합니다.`;
     return '새 GitHub 저장소와 Pages 실행 페이지를 함께 만듭니다.';
   }, [hasProjectRepo, projectRepo, publishToGitHub]);
+  const posterThumbnail = useMemo(() => createPosterThumbnail({
+    title: title.trim() || projectContext?.title || 'VPyLab 작품',
+    description,
+    category,
+    code,
+    repo: projectRepo,
+    author: authorAlias,
+  }), [authorAlias, category, code, description, projectContext?.title, projectRepo, title]);
+  const capturedThumbnail = thumbnailState?.source === thumbnail && thumbnailState.usable ? thumbnail : null;
+  const finalThumbnail = capturedThumbnail || posterThumbnail;
+  const thumbnailMode = capturedThumbnail ? '실행 화면 캡처' : '자동 포스터';
 
   useEffect(() => {
     if (!isOpen) return;
@@ -49,6 +62,15 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
     if (projectContext?.description) setDescription(projectContext.description);
     if (hasProjectRepo) setPublishToGitHub(true);
   }, [hasProjectRepo, isOpen, profile?.display_name, projectContext?.description, projectContext?.id, projectContext?.title]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!thumbnail) return () => { alive = false; };
+    isThumbnailUsable(thumbnail).then(usable => {
+      if (alive) setThumbnailState({ source: thumbnail, usable });
+    });
+    return () => { alive = false; };
+  }, [thumbnail]);
 
   if (!isOpen) return null;
 
@@ -91,7 +113,7 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
         title: title.trim(),
         description: description.trim(),
         code,
-        thumbnail,
+        thumbnail: finalThumbnail,
         category,
         remixFrom,
         htmlContent,
@@ -177,11 +199,17 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
               </button>
             </div>
 
-            {thumbnail && (
-              <div className="publish-thumbnail">
-                <img src={thumbnail} alt="미리보기" />
+            <div className="publish-thumbnail">
+              <img src={finalThumbnail} alt="미리보기" />
+              <div className="publish-thumbnail-bar">
+                <span>{thumbnailMode}</span>
+                {onRefreshThumbnail && (
+                  <button type="button" onClick={onRefreshThumbnail}>
+                    현재 화면 다시 캡처
+                  </button>
+                )}
               </div>
-            )}
+            </div>
 
             <div className="publish-flow-note">
               <span>{hasProjectRepo ? 'Project Repo' : 'Open Source'}</span>
@@ -361,6 +389,7 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
           margin-bottom: 18px;
           border: 1px solid var(--color-border);
           background: var(--color-bg-secondary);
+          overflow: hidden;
         }
 
         .publish-thumbnail img {
@@ -368,6 +397,35 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
           width: 100%;
           aspect-ratio: 16 / 9;
           object-fit: cover;
+        }
+
+        .publish-thumbnail-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 10px 12px;
+          border-top: 1px solid var(--color-border);
+          background: var(--color-bg-panel);
+          color: var(--color-text-muted);
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .publish-thumbnail-bar button {
+          border: 1px solid var(--color-border);
+          background: transparent;
+          color: var(--color-text-primary);
+          cursor: pointer;
+          font: inherit;
+          font-size: 12px;
+          font-weight: 800;
+          padding: 7px 10px;
+        }
+
+        .publish-thumbnail-bar button:hover {
+          border-color: var(--color-accent);
+          color: var(--color-accent);
         }
 
         .publish-flow-note,
