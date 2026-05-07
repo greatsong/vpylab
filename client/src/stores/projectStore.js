@@ -78,9 +78,22 @@ const useProjectStore = create((set, get) => ({
       return [];
     }
 
+    const { data: allMemberRows } = await supabase
+      .from('vpylab_project_members')
+      .select('project_id')
+      .in('project_id', projectIds);
+
     // 내 역할 매핑
     const roleByProject = Object.fromEntries((memberRows || []).map(r => [r.project_id, r.role]));
-    const enriched = (projects || []).map(p => ({ ...p, my_role: roleByProject[p.id] }));
+    const memberCountByProject = (allMemberRows || []).reduce((acc, row) => {
+      acc[row.project_id] = (acc[row.project_id] || 0) + 1;
+      return acc;
+    }, {});
+    const enriched = (projects || []).map(p => ({
+      ...p,
+      my_role: roleByProject[p.id],
+      member_count: memberCountByProject[p.id] || 1,
+    }));
 
     set({ myProjects: enriched, loadingProjects: false });
     return enriched;

@@ -61,6 +61,7 @@ export default function Sandbox() {
   const [theaterMode, setTheaterMode] = useState(false);
   const [theaterWaiting, setTheaterWaiting] = useState(false); // 클릭 대기 중
   const [playStartRequired, setPlayStartRequired] = useState(false);
+  const [repoLoadStatus, setRepoLoadStatus] = useState(null); // 'loading' | 'error' | null
   const sceneRef = useRef(null);
   const pendingBatchRef = useRef([]);  // 모바일: sceneRef 미 mount 시 버퍼
   const { user, profile, isTeacher } = useAuthStore();
@@ -109,17 +110,29 @@ export default function Sandbox() {
     if (repoParam && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repoParam)) {
       const [owner, repo] = repoParam.split('/');
       (async () => {
+        const loadingCode = `# GitHub 프로젝트 ${repoParam} 코드를 불러오는 중입니다...\n`;
+        setRepoLoadStatus('loading');
+        setCode(loadingCode);
+        initialCodeRef.current = loadingCode;
+        pendingPlayRef.current = null;
         try {
           const response = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/main.py`);
           if (!response.ok) throw new Error(`GitHub main.py 로드 실패 (${response.status})`);
           const repoCode = await response.text();
           setCode(repoCode);
           initialCodeRef.current = repoCode;
+          setRepoLoadStatus(null);
           if (searchParams.get('autorun') === '1') {
             pendingPlayRef.current = repoCode;
           }
           setOutputs([{ text: `${repoParam} 프로젝트 코드를 불러왔습니다.`, type: 'success', id: Date.now() }]);
         } catch (e) {
+          const message = e.message || 'GitHub 프로젝트 코드를 불러오지 못했습니다.';
+          const errorCode = `# ${message}\n# 저장소의 main.py와 Pages 배포 상태를 확인해주세요.\n`;
+          setCode(errorCode);
+          initialCodeRef.current = errorCode;
+          pendingPlayRef.current = null;
+          setRepoLoadStatus('error');
           setOutputs([{ text: e.message || 'GitHub 프로젝트 코드를 불러오지 못했습니다.', type: 'error', id: Date.now() }]);
         }
       })();
@@ -146,8 +159,9 @@ export default function Sandbox() {
   useEffect(() => {
     if (!user || !code || code === DEFAULT_CODE) return;
     if (activeProject) return;
+    if (repoLoadStatus) return;
     autoSave(code, { title: '자유 코딩' });
-  }, [code, user, activeProject, autoSave]);
+  }, [code, user, activeProject, repoLoadStatus, autoSave]);
 
   // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => () => clearAutoSave(), [clearAutoSave]);
@@ -383,7 +397,7 @@ export default function Sandbox() {
   }, [addOutput, runCode, stopExecution]);
 
   const handleRun = () => {
-    if (!isReady) return;
+    if (!isReady || repoLoadStatus === 'loading') return;
     setPlayStartRequired(false);
     resumeAndRun(() => startProgram(code));
   };
@@ -666,8 +680,8 @@ export default function Sandbox() {
           padding: '10px 20px',
         }}
       >
-        <button onClick={handleRun} disabled={!isReady || isRunning} className="toolbar-btn --run">
-          {t('editor.run')}
+        <button onClick={handleRun} disabled={!isReady || isRunning || repoLoadStatus === 'loading'} className="toolbar-btn --run">
+          {repoLoadStatus === 'loading' ? '불러오는 중' : t('editor.run')}
         </button>
         <button onClick={handleStop} disabled={!isRunning} className="toolbar-btn --stop">
           {t('editor.stop')}
@@ -844,12 +858,12 @@ export default function Sandbox() {
             {!isRunning ? (
               <button
                 onClick={handleRun}
-                disabled={!isReady}
+                disabled={!isReady || repoLoadStatus === 'loading'}
                 className="btn-primary flex-1 !py-2.5 !text-[14px] flex items-center justify-center gap-1.5"
-                style={{ opacity: isReady ? 1 : 0.5 }}
+                style={{ opacity: isReady && repoLoadStatus !== 'loading' ? 1 : 0.5 }}
               >
                 <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M6 2l8 6-8 6V2z"/></svg>
-                {t('editor.run')}
+                {repoLoadStatus === 'loading' ? '불러오는 중' : t('editor.run')}
               </button>
             ) : (
               <button

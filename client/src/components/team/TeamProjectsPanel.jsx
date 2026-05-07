@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import useProjectStore from '../../stores/projectStore';
 import useAuthStore from '../../stores/authStore';
-import { supabase } from '../../lib/supabase';
 import TeamMembersModal from './TeamMembersModal';
 
 function relativeTime(iso) {
@@ -387,20 +386,7 @@ function ProjectCard({ project, isOpening = false, onOpen, onMembersClick }) {
   const pagesUrl = repo ? `https://${repo.split('/')[0]}.github.io/${repo.split('/')[1]}/` : null;
   const lastTouched = project.github_last_pushed_at || project.updated_at;
   const isOwner = project.my_role === 'owner';
-
-  // 멤버 수 라벨 (owner 1명이면 "혼자", 그 외 N명)
-  const [memberCount, setMemberCount] = useState(null);
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      const { count } = await supabase
-        .from('vpylab_project_members')
-        .select('user_id', { count: 'exact', head: true })
-        .eq('project_id', project.id);
-      if (alive) setMemberCount(count ?? null);
-    })();
-    return () => { alive = false; };
-  }, [project.id]);
+  const memberCount = project.member_count || 1;
 
   return (
     <div
@@ -439,7 +425,7 @@ function ProjectCard({ project, isOpening = false, onOpen, onMembersClick }) {
 
       <div className="flex items-center justify-between text-[11px] mb-3" style={{ color: 'var(--color-text-muted)' }}>
         <span>
-          {memberCount === null ? '멤버 확인 중' : memberCount === 1 ? '개인 프로젝트' : `${memberCount}명 참여`}
+          {memberCount === 1 ? '개인 프로젝트' : `${memberCount}명 참여`}
         </span>
         <span title={lastTouched ? new Date(lastTouched).toLocaleString() : ''}>
           {relativeTime(lastTouched)}
