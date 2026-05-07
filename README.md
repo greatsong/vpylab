@@ -90,9 +90,20 @@ VPyLab은 세 부분으로 나뉩니다:
 
 ### 1-2. 테이블 만들기
 
-1. 왼쪽 메뉴에서 **SQL Editor** 클릭
-2. **New query** 클릭
-3. 프로젝트 폴더에서 아래 파일들을 **순서대로** 열어서 내용을 복사-붙여넣기 → **Run** 클릭:
+운영 프로젝트는 기존처럼 마이그레이션 스크립트로 적용합니다. Supabase Personal Access Token(PAT)을 준비한 뒤 실행하세요.
+
+```bash
+export SUPABASE_ACCESS_TOKEN=sbp_xxxxxxxxxxxxxxxxx
+node scripts/apply-migrations.mjs
+```
+
+특정 파일만 적용해야 할 때는 파일명을 넘깁니다.
+
+```bash
+node scripts/apply-migrations.mjs 014_gallery_project_links.sql
+```
+
+PAT이 없으면 스크립트가 SQL Editor URL과 실행할 SQL을 출력합니다. 이 경우 아래 파일들을 **순서대로** SQL Editor에서 실행하세요.
 
 ```
 supabase/migrations/001_vpylab_schema.sql
@@ -116,6 +127,7 @@ supabase/migrations/014_gallery_project_links.sql
 > **주의 2:** `013_reset_for_project_centric.sql` 은 **개발/테스트용 데이터 리셋 스크립트**입니다. 신규 설치 시에는 실행하지 마세요. 기존 데이터를 모두 지우고 프로젝트 중심 모델로 초기화할 때만 사용합니다.
 >
 > **마이그레이션 009~012가 없으면** 프로젝트(팀 협업), 코드 이력(revision), GitHub 동기화 기능이 동작하지 않습니다.
+> **마이그레이션 014가 없으면** 갤러리 작품이 어느 VPyLab 프로젝트에서 발행되었는지 추적할 수 없습니다.
 
 ### 1-3. API 키 메모하기
 

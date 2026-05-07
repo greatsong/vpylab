@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * VPyLab — Phase 1~3 마이그레이션 적용 스크립트
+ * VPyLab — Supabase 마이그레이션 적용 스크립트
  *
  * 사용법:
  *   1) Supabase PAT(Personal Access Token)이 있다면 자동 적용:
@@ -22,11 +22,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_REF = 'fipdcjhtfslinfmalwjn';
 const MIGRATIONS_DIR = join(__dirname, '..', 'supabase', 'migrations');
 
-// Plan C에서 새로 추가된 마이그레이션들 (이전 것은 이미 적용된 것으로 가정)
-const PLAN_C_MIGRATIONS = [
+// 운영 DB에 순차 적용하는 프로젝트/갤러리 관련 마이그레이션입니다.
+// 013_reset_for_project_centric.sql은 데이터 리셋용이라 기본 적용에서 제외합니다.
+const DEFAULT_MIGRATIONS = [
   '009_code_revisions.sql',
   '010_team_projects.sql',
   '011_github_sync.sql',
+  '012_fix_rls_recursion.sql',
+  '014_gallery_project_links.sql',
 ];
 
 function listAvailable() {
@@ -65,7 +68,7 @@ async function main() {
   if (arg) {
     targets = [arg];
   } else {
-    targets = PLAN_C_MIGRATIONS.filter(f => listAvailable().includes(f));
+    targets = DEFAULT_MIGRATIONS.filter(f => listAvailable().includes(f));
   }
 
   if (targets.length === 0) {
@@ -73,7 +76,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('=== VPyLab — Plan C 마이그레이션 적용 ===');
+  console.log('=== VPyLab — Supabase 마이그레이션 적용 ===');
   console.log('대상:', targets.join(', '));
   console.log('');
 
