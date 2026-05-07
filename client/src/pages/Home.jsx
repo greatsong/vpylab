@@ -89,6 +89,25 @@ export default function Home() {
                   {t('gallery.title') || '갤러리'}
                 </Link>
               </div>
+
+              {/* 처음 사용자용 팀 안내 배너 */}
+              <Link
+                to="/guide"
+                className="no-underline mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all animate-slide-up-delay-2"
+                style={{
+                  backgroundColor: 'var(--color-bg-panel)',
+                  color: 'var(--color-text-secondary)',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                <span className="text-base">🚢</span>
+                <span>
+                  {lang === 'ko'
+                    ? '처음이세요? 팀으로 작품 만드는 방법 보기'
+                    : 'New here? See how to build with a team'}
+                </span>
+                <span style={{ color: 'var(--color-accent)' }}>→</span>
+              </Link>
             </div>
           </div>
         </section>

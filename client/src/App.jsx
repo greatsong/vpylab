@@ -29,6 +29,7 @@ const Gallery = lazyWithRetry(() => import('./pages/Gallery'));
 const GalleryDetail = lazyWithRetry(() => import('./pages/GalleryDetail'));
 const SharedCodeLoader = lazyWithRetry(() => import('./pages/SharedCodeLoader'));
 const Docs = lazyWithRetry(() => import('./pages/Docs'));
+const Guide = lazyWithRetry(() => import('./pages/Guide'));
 const Privacy = lazyWithRetry(() => import('./pages/Privacy'));
 
 function AppContent() {
@@ -58,6 +59,7 @@ function AppContent() {
           <Route path="/missions" element={<Missions />} />
           <Route path="/mission/:missionId" element={<MissionPlay />} />
           <Route path="/docs" element={<Docs />} />
+          <Route path="/guide" element={<Guide />} />
           <Route path="/about" element={<About />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/gallery" element={<Gallery />} />

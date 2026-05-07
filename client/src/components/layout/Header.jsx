@@ -42,6 +42,7 @@ export default function Header() {
     { key: 'missions', path: '/missions' },
     { key: 'sandbox', path: '/sandbox' },
     { key: 'gallery', path: '/gallery' },
+    { key: 'guide', path: '/guide' },
     { key: 'docs', path: '/docs' },
     ...(isTeacher ? [{ key: 'dashboard', path: '/dashboard' }] : []),
   ];
