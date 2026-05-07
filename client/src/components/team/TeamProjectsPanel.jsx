@@ -20,11 +20,13 @@ function relativeTime(iso) {
 export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode, initialAction = 'browse' }) {
   const { user } = useAuthStore();
   const {
-    myProjects, loadingProjects,
+    myProjects, loadingProjects, projectCreationStatus,
     fetchMyProjects, createProject, joinByInviteCode,
   } = useProjectStore();
 
   const [creating, setCreating] = useState(false);
+  const [createElapsed, setCreateElapsed] = useState(0);
+  const [createStartedAt, setCreateStartedAt] = useState(null);
   const [createOpen, setCreateOpen] = useState(initialAction === 'create');
   const [createTitle, setCreateTitle] = useState('');
   const [createDescription, setCreateDescription] = useState('');
@@ -38,6 +40,16 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
   useEffect(() => {
     if (user) fetchMyProjects();
   }, [user, fetchMyProjects]);
+
+  useEffect(() => {
+    if (!creating || !createStartedAt) return undefined;
+    const tick = () => {
+      setCreateElapsed(Math.floor((Date.now() - createStartedAt) / 1000));
+    };
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [creating, createStartedAt]);
 
   // GitHub 토큰 보유 여부 체크 (token이 없으면 재인증 버튼 노출)
   useEffect(() => {
@@ -76,6 +88,8 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
       return;
     }
     setCreating(true);
+    setCreateElapsed(0);
+    setCreateStartedAt(Date.now());
     const seedCode = currentCode && currentCode.trim().length > 0
       ? currentCode
       : `# ${title} — VPyLab 프로젝트\n# 여기에 코드를 작성하세요.\n\nbox(pos=(0,0,0), size=(1,1,1), color=(1,0,0))\n`;
@@ -85,6 +99,7 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
       initialCode: seedCode,
     });
     setCreating(false);
+    setCreateStartedAt(null);
     if (error) {
       setCreateError(error.message);
       // 토큰 만료 케이스면 재인증 안내
@@ -259,6 +274,8 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
           title={createTitle}
           description={createDescription}
           creating={creating}
+          progressLabel={projectCreationStatus}
+          elapsedSeconds={createElapsed}
           error={createError}
           hasCode={Boolean(currentCode?.trim())}
           onTitleChange={setCreateTitle}
@@ -505,6 +522,8 @@ function CreateProjectModal({
   title,
   description,
   creating,
+  progressLabel,
+  elapsedSeconds = 0,
   error,
   hasCode,
   onTitleChange,
@@ -512,6 +531,13 @@ function CreateProjectModal({
   onSubmit,
   onClose,
 }) {
+  const progressPercent = creating
+    ? Math.min(92, 12 + elapsedSeconds * 3)
+    : 0;
+  const waitingMessage = elapsedSeconds >= 25
+    ? 'GitHub 저장소 생성이나 Pages 활성화가 평소보다 오래 걸리고 있습니다. 창을 닫지 말고 조금만 기다려주세요.'
+    : '보통 10-20초 정도 걸리고, GitHub 응답이 느리면 30초 안팎까지 걸릴 수 있습니다.';
+
   return (
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center p-4"
@@ -605,6 +631,35 @@ function CreateProjectModal({
             <p className="border px-3 py-2 text-xs" style={{ color: 'var(--color-error)', borderColor: 'var(--color-border)' }}>
               {error}
             </p>
+          )}
+
+          {creating && (
+            <div
+              className="border px-3 py-3 text-xs"
+              style={{
+                backgroundColor: 'var(--color-bg-secondary)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text-secondary)',
+              }}
+              role="status"
+            >
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                  {progressLabel || '프로젝트를 만드는 중입니다.'}
+                </span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{elapsedSeconds}초</span>
+              </div>
+              <div className="h-1.5 overflow-hidden" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{
+                    width: `${progressPercent}%`,
+                    backgroundColor: 'var(--color-accent)',
+                  }}
+                />
+              </div>
+              <p className="mt-2 leading-relaxed">{waitingMessage}</p>
+            </div>
           )}
         </div>
 

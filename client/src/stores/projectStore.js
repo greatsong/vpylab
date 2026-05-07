@@ -29,6 +29,7 @@ const useProjectStore = create((set, get) => ({
   // 내가 owner거나 멤버인 프로젝트 목록
   myProjects: [],
   loadingProjects: false,
+  projectCreationStatus: null,
 
   // 현재 활성화된 팀 프로젝트(에디터에서 열고 있는)
   activeProject: null,        // { id, owner_id, title, description, invite_code, ... }
@@ -99,7 +100,7 @@ const useProjectStore = create((set, get) => ({
       return { error: { message: 'GitHub 로그인이 필요합니다. 우측 상단에서 GitHub로 로그인해주세요.' } };
     }
 
-    set({ loadingProjects: true });
+    set({ loadingProjects: true, projectCreationStatus: '실행 페이지 HTML을 준비하는 중입니다.' });
 
     let reservedProjectId = null;
     let reservedCodeId = null;
@@ -112,6 +113,7 @@ const useProjectStore = create((set, get) => ({
 
       // === 1) Supabase에 프로젝트를 먼저 예약 ===
       // GitHub 레포를 먼저 만들면 DB/RLS 실패 시 고아 public repo가 남을 수 있습니다.
+      set({ projectCreationStatus: 'VPyLab 프로젝트 공간을 예약하는 중입니다.' });
       const { data: project, error: projErr } = await supabase
         .from('vpylab_projects')
         .insert({
@@ -124,6 +126,7 @@ const useProjectStore = create((set, get) => ({
       if (projErr) throw new Error(`Supabase project 실패: ${projErr.message}`);
       reservedProjectId = project.id;
 
+      set({ projectCreationStatus: '첫 코드를 저장하고 이력을 만드는 중입니다.' });
       const { data: codeRow, error: codeErr } = await supabase
         .from('vpylab_saved_code')
         .insert({
@@ -149,6 +152,7 @@ const useProjectStore = create((set, get) => ({
       if (revisionErr) throw new Error(`Supabase revision 실패: ${revisionErr.message}`);
 
       // === 2) 서버에 GitHub 셋업 요청 ===
+      set({ projectCreationStatus: 'GitHub 저장소와 Pages 실행 페이지를 만드는 중입니다.' });
       const ghRes = await fetch(`${API_BASE}/api/projects/setup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -164,6 +168,7 @@ const useProjectStore = create((set, get) => ({
       }
       createdRepoFullName = gh.repoFullName;
 
+      set({ projectCreationStatus: 'GitHub 연결 정보를 VPyLab에 반영하는 중입니다.' });
       const nowIso = new Date().toISOString();
       const { error: projectUpdateErr } = await supabase
         .from('vpylab_projects')
@@ -193,11 +198,12 @@ const useProjectStore = create((set, get) => ({
         pagesActivated: gh.pagesActivated,
         codeId: codeRow.id,
       };
-      set({ loadingProjects: false });
+      set({ loadingProjects: false, projectCreationStatus: '프로젝트 목록을 갱신하는 중입니다.' });
       await get().fetchMyProjects();
+      set({ projectCreationStatus: null });
       return { data: enriched, error: null };
     } catch (e) {
-      set({ loadingProjects: false });
+      set({ loadingProjects: false, projectCreationStatus: null });
       // GitHub 셋업 전/중 실패하면 예약해둔 DB 행은 정리합니다.
       // GitHub 레포 삭제 권한(delete_repo)은 요청하지 않으므로, GitHub 생성 이후 실패는 안내로 남깁니다.
       if (reservedProjectId) {
