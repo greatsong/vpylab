@@ -61,7 +61,10 @@ function encodeBase64Url(s) {
     .replace(/=+$/g, '');
 }
 
-function buildOpenInVpylabUrl(code) {
+function buildOpenInVpylabUrl({ code = '', owner, repo } = {}) {
+  if (owner && repo) {
+    return `${APP_URL}/sandbox?repo=${encodeURIComponent(`${owner}/${repo}`)}&autorun=1`;
+  }
   return `${APP_URL}/sandbox?autorun=1#b64=${encodeBase64Url(code)}`;
 }
 
@@ -150,13 +153,16 @@ function sanitizeGithubUsername(username) {
 }
 
 function buildPagesHtml({ title, code, htmlContent, owner, repo }) {
-  if (typeof htmlContent === 'string' && htmlContent.trim()) {
-    return htmlContent;
-  }
   try {
-    return generateStandaloneHTML(code, title || repo || 'VPyLab');
+    return generateStandaloneHTML(code, title || repo || 'VPyLab', {
+      openInVpylabUrl: buildOpenInVpylabUrl({ owner, repo }),
+      repoUrl: owner && repo ? `https://github.com/${owner}/${repo}` : null,
+    });
   } catch (e) {
     console.warn('[projects] 실행형 HTML 생성 실패, 정적 fallback 사용:', e.message);
+    if (typeof htmlContent === 'string' && htmlContent.trim()) {
+      return htmlContent;
+    }
     return generateIndexHtml({ title: title || repo || 'VPyLab', code, owner, repo });
   }
 }
@@ -245,7 +251,7 @@ async function createUniqueRepo(githubToken, baseName, description) {
 
 function generateReadme({ title, description, code, owner, repo, isTeam }) {
   const teamBadge = isTeam ? '\n> 👥 **팀 프로젝트**입니다. 여러 명이 함께 작업합니다.\n' : '';
-  const openInVpylabUrl = buildOpenInVpylabUrl(code || '');
+  const openInVpylabUrl = buildOpenInVpylabUrl({ code, owner, repo });
   return `# ${title}
 
 > VPyLab에서 만든 3D Python 작품입니다.
@@ -333,7 +339,7 @@ ${entry.revisionId ? `- VPyLab revision: \`${entry.revisionId}\`\n` : ''}
 }
 
 function generateIndexHtml({ title, code, owner, repo }) {
-  const openInVpylabUrl = buildOpenInVpylabUrl(code);
+  const openInVpylabUrl = buildOpenInVpylabUrl({ code, owner, repo });
 
   return `<!DOCTYPE html>
 <html lang="ko">

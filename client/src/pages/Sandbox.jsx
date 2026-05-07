@@ -46,8 +46,11 @@ export default function Sandbox() {
   const [commitModalOpen, setCommitModalOpen] = useState(false);
   const [commitSaving, setCommitSaving] = useState(false);
   const [commitError, setCommitError] = useState('');
+  const [commitElapsed, setCommitElapsed] = useState(0);
+  const [commitStartedAt, setCommitStartedAt] = useState(null);
   const [pushToast, setPushToast] = useState(null);  // { nthCommit, message, commitUrl, repoUrl, pagesUrl } | null
   const activeProject = useProjectStore((s) => s.activeProject);
+  const projectSaveStatus = useProjectStore((s) => s.projectSaveStatus);
   const [showExamples, setShowExamples] = useState(false);
   const [exampleCategory, setExampleCategory] = useState('all');
   const [publishModalOpen, setPublishModalOpen] = useState(false);
@@ -101,6 +104,27 @@ export default function Sandbox() {
       window.history.replaceState({}, '');
       return;
     }
+    // GitHub 프로젝트 README/Pages에서 넘어온 링크: ?repo=owner/repo
+    const repoParam = searchParams.get('repo');
+    if (repoParam && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repoParam)) {
+      const [owner, repo] = repoParam.split('/');
+      (async () => {
+        try {
+          const response = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/main.py`);
+          if (!response.ok) throw new Error(`GitHub main.py 로드 실패 (${response.status})`);
+          const repoCode = await response.text();
+          setCode(repoCode);
+          initialCodeRef.current = repoCode;
+          if (searchParams.get('autorun') === '1') {
+            pendingPlayRef.current = repoCode;
+          }
+          setOutputs([{ text: `${repoParam} 프로젝트 코드를 불러왔습니다.`, type: 'success', id: Date.now() }]);
+        } catch (e) {
+          setOutputs([{ text: e.message || 'GitHub 프로젝트 코드를 불러오지 못했습니다.', type: 'error', id: Date.now() }]);
+        }
+      })();
+      return;
+    }
     // 기존 LZ-String URL 하위 호환
     const { code: shared, isExternal } = decodeCodeFromURL();
     if (shared) {
@@ -142,6 +166,14 @@ export default function Sandbox() {
   }, [lastReceivedAt, panelOpen]);
   useEffect(() => { initAudioOnUserGesture(); }, []);
 
+  useEffect(() => {
+    if (!commitSaving || !commitStartedAt) return undefined;
+    const tick = () => setCommitElapsed(Math.floor((Date.now() - commitStartedAt) / 1000));
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [commitSaving, commitStartedAt]);
+
   // 외부 코드(공유/리믹스/플레이/예제/차시) 로드 시 활성 프로젝트 컨텍스트 해제
   // → 그 코드를 저장하면 별도 프로젝트로 가는 게 자연스러움
   useEffect(() => {
@@ -151,6 +183,7 @@ export default function Sandbox() {
       || !!searchParams.get('play')
       || !!searchParams.get('example')
       || !!searchParams.get('lesson')
+      || !!searchParams.get('repo')
       || window.location.hash.startsWith('#code=')
       || window.location.hash.startsWith('#b64=');
     if (fromExternal) {
@@ -456,10 +489,13 @@ export default function Sandbox() {
 
     const trimmed = message.trim();
     setCommitSaving(true);
+    setCommitElapsed(0);
+    setCommitStartedAt(Date.now());
     setCommitError('');
     setSaveMsg('저장 중…');
     const { data: result, error } = await projStore.saveAndPush({ code, message: trimmed });
     setCommitSaving(false);
+    setCommitStartedAt(null);
     if (error) {
       setSaveMsg('저장 실패');
       setCommitError(error.message);
@@ -966,6 +1002,11 @@ export default function Sandbox() {
                   <button
                     key={ex.id}
                     onClick={() => {
+                      // 다른 예제로 전환 시 이전 잔존음/실행/씬 정리
+                      stopAllSounds();
+                      stopExecution();
+                      if (sceneRef.current) clearScene(sceneRef.current);
+                      clearRegistry();
                       setCode(ex.code);
                       initialCodeRef.current = ex.code;
                       // 예제 로드 = 활성 프로젝트와 무관 → 컨텍스트 해제
@@ -1016,6 +1057,8 @@ export default function Sandbox() {
           open={commitModalOpen}
           projectTitle={activeProject?.title || ''}
           saving={commitSaving}
+          progressLabel={projectSaveStatus}
+          elapsedSeconds={commitElapsed}
           error={commitError}
           onSubmit={handleProjectCommit}
           onClose={() => {
@@ -1035,11 +1078,24 @@ export default function Sandbox() {
             // 프로젝트의 코드를 에디터에 로드 + 활성 프로젝트로 전환
             const { default: useProjectStore } = await import('../stores/projectStore');
             const result = await useProjectStore.getState().openProject(projectId) || {};
-            const codeRow = result.code;
-            if (codeRow?.code != null) {
-              setCode(codeRow.code);
-              if (codeRow.id) useCodeStore.getState().setCurrentCodeId(codeRow.id);
+            if (result.error) {
+              throw new Error(result.error.message || '프로젝트를 열지 못했습니다.');
             }
+            const codeRow = result.code;
+            if (codeRow?.code == null) {
+              throw new Error('프로젝트 코드를 찾을 수 없습니다.');
+            }
+
+            stopAllSounds();
+            stopExecution();
+            if (sceneRef.current) clearScene(sceneRef.current);
+            clearRegistry();
+            setOutputs([]);
+            setActiveTab('editor');
+            setCode(codeRow.code);
+            initialCodeRef.current = codeRow.code;
+            if (codeRow.id) useCodeStore.getState().setCurrentCodeId(codeRow.id);
+            addOutput(`프로젝트 "${result.project?.title || '제목 없음'}"을 열었습니다.`, 'success');
             setShowTeam(false);
             setTeamInitialAction('browse');
           }}
@@ -1091,10 +1147,26 @@ export default function Sandbox() {
   );
 }
 
-function CommitSaveModal({ open, projectTitle, saving, error, onSubmit, onClose }) {
+function CommitSaveModal({
+  open,
+  projectTitle,
+  saving,
+  progressLabel,
+  elapsedSeconds = 0,
+  error,
+  onSubmit,
+  onClose,
+}) {
   const [message, setMessage] = useState('');
 
   if (!open) return null;
+
+  const progressPercent = saving
+    ? Math.min(92, 14 + elapsedSeconds * 4)
+    : 0;
+  const waitingMessage = elapsedSeconds >= 20
+    ? 'GitHub 커밋이나 Pages 갱신 응답이 평소보다 오래 걸리고 있습니다. 창을 닫지 말고 조금만 기다려주세요.'
+    : '보통 6-15초 정도 걸리고, Pages 갱신이 느리면 30초 안팎까지 걸릴 수 있습니다.';
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1175,6 +1247,35 @@ function CommitSaveModal({ open, projectTitle, saving, error, onSubmit, onClose 
           >
             {error}
           </p>
+        )}
+
+        {saving && (
+          <div
+            className="mt-3 border px-3 py-3 text-xs"
+            style={{
+              backgroundColor: 'var(--color-bg-secondary)',
+              borderColor: 'var(--color-border)',
+              color: 'var(--color-text-secondary)',
+            }}
+            role="status"
+          >
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                {progressLabel || 'GitHub에 저장하는 중입니다.'}
+              </span>
+              <span style={{ color: 'var(--color-text-muted)' }}>{elapsedSeconds}초</span>
+            </div>
+            <div className="h-1.5 overflow-hidden" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+              <div
+                className="h-full transition-all duration-500"
+                style={{
+                  width: `${progressPercent}%`,
+                  backgroundColor: 'var(--color-accent)',
+                }}
+              />
+            </div>
+            <p className="mt-2 leading-relaxed">{waitingMessage}</p>
+          </div>
         )}
 
         <div className="mt-6 flex justify-end gap-2">

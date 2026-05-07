@@ -30,6 +30,7 @@ const useProjectStore = create((set, get) => ({
   myProjects: [],
   loadingProjects: false,
   projectCreationStatus: null,
+  projectSaveStatus: null,
 
   // 현재 활성화된 팀 프로젝트(에디터에서 열고 있는)
   activeProject: null,        // { id, owner_id, title, description, invite_code, ... }
@@ -242,14 +243,18 @@ const useProjectStore = create((set, get) => ({
   // 4) 활성 프로젝트 열기 (멤버 목록 로드 + Realtime 구독)
   // -------------------------------------------------
   openProject: async (projectId) => {
-    if (!projectId) return;
+    if (!projectId) return { error: { message: '프로젝트 ID가 없습니다.' } };
     set({ loadingActive: true });
 
-    const { data: project } = await supabase
+    const { data: project, error: projectError } = await supabase
       .from('vpylab_projects')
       .select('id, owner_id, title, description, invite_code, github_repo, github_last_pushed_at, created_at, updated_at')
       .eq('id', projectId)
       .single();
+    if (projectError || !project) {
+      set({ loadingActive: false });
+      return { error: { message: projectError?.message || '프로젝트를 찾을 수 없습니다.' } };
+    }
 
     const { data: members } = await supabase
       .from('vpylab_project_members')
@@ -270,13 +275,21 @@ const useProjectStore = create((set, get) => ({
     }
 
     // 이 프로젝트의 코드 1건 (가장 최근에 업데이트된 것)
-    const { data: codeRow } = await supabase
+    const { data: codeRow, error: codeError } = await supabase
       .from('vpylab_saved_code')
       .select('id, title, code, updated_at, user_id')
       .eq('project_id', projectId)
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (codeError) {
+      set({ loadingActive: false });
+      return { error: { message: codeError.message || '프로젝트 코드를 불러오지 못했습니다.' } };
+    }
+    if (!codeRow?.code) {
+      set({ loadingActive: false });
+      return { error: { message: '이 프로젝트에 연결된 코드가 없습니다. 저장소의 main.py 또는 프로젝트 생성을 확인해주세요.' } };
+    }
 
     set({
       activeProject: project || null,
@@ -475,25 +488,36 @@ const useProjectStore = create((set, get) => ({
    * 반환: { ok, commitSha, commitUrl, repoUrl, pagesUrl, nthCommit, error }
    */
   saveAndPush: async ({ code, message }) => {
+    const fail = (messageText) => {
+      set({ projectSaveStatus: null });
+      return { error: { message: messageText } };
+    };
+    const failWithError = (error) => {
+      set({ projectSaveStatus: null });
+      return { error };
+    };
+    set({ projectSaveStatus: 'GitHub 로그인과 저장소 연결을 확인하는 중입니다.' });
+
     const { activeProject, activeCodeId } = get();
     if (!activeProject || !activeCodeId) {
-      return { error: { message: '활성 프로젝트가 없습니다.' } };
+      return fail('활성 프로젝트가 없습니다.');
     }
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: { message: '로그인이 필요합니다' } };
+    if (!user) return fail('로그인이 필요합니다');
 
     const githubToken = await useAuthStore.getState().getGitHubToken();
     if (!githubToken) {
-      return { error: { message: 'GitHub 로그인이 만료되었습니다. 다시 로그인해주세요.' } };
+      return fail('GitHub 로그인이 만료되었습니다. 다시 로그인해주세요.');
     }
     if (!activeProject.github_repo) {
-      return { error: { message: '이 프로젝트는 GitHub 저장소와 아직 연결되지 않았습니다. 새 프로젝트를 다시 만들거나 저장소 연결을 확인해주세요.' } };
+      return fail('이 프로젝트는 GitHub 저장소와 아직 연결되지 않았습니다. 새 프로젝트를 다시 만들거나 저장소 연결을 확인해주세요.');
     }
 
     // 1) GitHub 쓰기 권한 먼저 확인
     // 팀 초대 코드 합류와 GitHub collaborator 권한은 별도라서, 권한 없는 상태에서
     // Supabase revision만 생기고 GitHub commit이 실패하는 흐름을 막습니다.
     try {
+      set({ projectSaveStatus: 'GitHub 저장소 쓰기 권한을 확인하는 중입니다.' });
       const accessResponse = await fetch(`${API_BASE}/api/projects/access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -504,13 +528,14 @@ const useProjectStore = create((set, get) => ({
       });
       const accessResult = await parseApiJson(accessResponse);
       if (!accessResponse.ok) {
-        return { error: { message: accessResult.error || `GitHub 권한 확인 실패 (${accessResponse.status})` } };
+        return fail(accessResult.error || `GitHub 권한 확인 실패 (${accessResponse.status})`);
       }
     } catch (e) {
-      return { error: { message: `GitHub 권한 확인 실패: ${e.message}` } };
+      return fail(`GitHub 권한 확인 실패: ${e.message}`);
     }
 
     // 2) Supabase 저장 + revision 생성 (codeStore가 처리)
+    set({ projectSaveStatus: 'VPyLab 코드와 revision을 저장하는 중입니다.' });
     const { data: saved, error: saveErr } = await useCodeStore.getState().saveCode({
       title: activeProject.title,
       code,
@@ -519,7 +544,7 @@ const useProjectStore = create((set, get) => ({
       commitMessage: message || '',
       source: 'manual',
     });
-    if (saveErr) return { error: saveErr };
+    if (saveErr) return failWithError(saveErr);
 
     // 방금 만든 revision을 우선 사용하고, 구버전 반환값이면 1건 조회로 보완
     let lastRev = saved?._revision || null;
@@ -541,7 +566,9 @@ const useProjectStore = create((set, get) => ({
 
     let commitResult;
     try {
+      set({ projectSaveStatus: 'Pages 실행 HTML을 준비하는 중입니다.' });
       const htmlContent = await buildProjectPageHtml(code, activeProject.title);
+      set({ projectSaveStatus: 'GitHub에 코드와 Pages 실행 페이지를 커밋하는 중입니다.' });
       const r = await fetch(`${API_BASE}/api/projects/commit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -561,10 +588,11 @@ const useProjectStore = create((set, get) => ({
       commitResult = await parseApiJson(r);
       if (!r.ok) throw new Error(commitResult.error || `GitHub commit 실패 (${r.status})`);
     } catch (e) {
-      return { error: { message: e.message } };
+      return fail(e.message);
     }
 
     // 4) revision에 commit SHA 박기 + project last_pushed_at 갱신
+    set({ projectSaveStatus: 'VPyLab 이력에 GitHub 커밋 정보를 연결하는 중입니다.' });
     const nowIso = new Date().toISOString();
     if (lastRev?.id && commitResult.commitSha) {
       await supabase.from('vpylab_code_revisions')
@@ -582,12 +610,14 @@ const useProjectStore = create((set, get) => ({
       .eq('id', activeCodeId);
 
     // 5) 누적 commit 카운트 (revision 중 github_commit_sha 있는 것)
+    set({ projectSaveStatus: '저장 결과를 정리하는 중입니다.' });
     const { count: nthCommit } = await supabase
       .from('vpylab_code_revisions')
       .select('id', { count: 'exact', head: true })
       .eq('code_id', activeCodeId)
       .not('github_commit_sha', 'is', null);
 
+    set({ projectSaveStatus: null });
     return {
       data: {
         commitSha: commitResult.commitSha,

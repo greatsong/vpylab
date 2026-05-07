@@ -33,6 +33,8 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
   const [joinCode, setJoinCode] = useState('');
   const [joinError, setJoinError] = useState('');
   const [joining, setJoining] = useState(false);
+  const [openingProjectId, setOpeningProjectId] = useState(null);
+  const [openError, setOpenError] = useState('');
   const [membersTarget, setMembersTarget] = useState(null);
   const [createError, setCreateError] = useState('');
   const [tokenStatus, setTokenStatus] = useState('checking');  // 'checking' | 'ok' | 'missing'
@@ -111,7 +113,7 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
     setCreateTitle('');
     setCreateDescription('');
     setCreateOpen(false);
-    if (onOpenProject && data?.id) onOpenProject(data.id);
+    if (onOpenProject && data?.id) handleOpenProject(data.id);
   };
 
   const handleJoin = async () => {
@@ -128,7 +130,20 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
       return;
     }
     setJoinCode('');
-    if (onOpenProject && data?.projectId) onOpenProject(data.projectId);
+    if (onOpenProject && data?.projectId) handleOpenProject(data.projectId);
+  };
+
+  const handleOpenProject = async (projectId) => {
+    if (!onOpenProject || !projectId) return;
+    setOpenError('');
+    setOpeningProjectId(projectId);
+    try {
+      await onOpenProject(projectId);
+    } catch (e) {
+      setOpenError(e.message || '프로젝트를 열지 못했습니다.');
+    } finally {
+      setOpeningProjectId(null);
+    }
   };
 
   // 미로그인
@@ -222,6 +237,12 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
           )}
         </form>
 
+        {openError && (
+          <StatusBanner tone="error" compact>
+            <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{openError}</p>
+          </StatusBanner>
+        )}
+
         <div
           className="grid gap-4"
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
@@ -250,7 +271,8 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
             <ProjectCard
               key={p.id}
               project={p}
-              onOpen={() => onOpenProject && onOpenProject(p.id)}
+              isOpening={openingProjectId === p.id}
+              onOpen={() => handleOpenProject(p.id)}
               onMembersClick={() => setMembersTarget(p)}
             />
           ))}
@@ -359,7 +381,7 @@ function Header({ title, onClose }) {
 // ========================================
 // 프로젝트 카드 (갤러리 셀)
 // ========================================
-function ProjectCard({ project, onOpen, onMembersClick }) {
+function ProjectCard({ project, isOpening = false, onOpen, onMembersClick }) {
   const repo = project.github_repo;
   const repoUrl = repo ? `https://github.com/${repo}` : null;
   const pagesUrl = repo ? `https://${repo.split('/')[0]}.github.io/${repo.split('/')[1]}/` : null;
@@ -452,16 +474,18 @@ function ProjectCard({ project, onOpen, onMembersClick }) {
       <div className="flex items-center gap-2 mt-auto">
         <button
           onClick={onOpen}
-          className="flex-1 text-xs py-2 cursor-pointer border-none font-bold"
+          disabled={isOpening}
+          className="flex-1 text-xs py-2 cursor-pointer border-none font-bold disabled:opacity-60"
           style={{
             backgroundColor: 'var(--color-accent)',
             color: 'var(--color-accent-text, white)',
           }}
         >
-          이 프로젝트로 작업
+          {isOpening ? '프로젝트 여는 중' : '이 프로젝트로 작업'}
         </button>
         <button
           onClick={onMembersClick}
+          disabled={isOpening}
           className="text-xs px-3 py-2 cursor-pointer border"
           style={{
             backgroundColor: 'transparent',

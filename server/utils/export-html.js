@@ -29,6 +29,7 @@ const THREE_VERSION = '0.183.2';
  * 학생 코드를 독립 실행 가능한 HTML 문자열로 변환
  * @param {string} code - 학생 Python 코드
  * @param {string} title - 작품 제목
+ * @param {{openInVpylabUrl?: string, repoUrl?: string}} [options]
  * @returns {string} HTML 문자열
  */
 /**
@@ -43,12 +44,17 @@ function escapeHTML(str) {
     .replace(/'/g, '&#39;');
 }
 
-export function generateStandaloneHTML(code, title = 'VPyLab') {
+export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
   // Base64로 안전하게 코드 임베딩 (모든 특수문자 문제 해결)
   const base64Code = btoa(unescape(encodeURIComponent(code)));
 
   // 보안: 제목을 HTML 엔티티로 이스케이프 (저장형 XSS 방지)
   const safeTitle = escapeHTML(title);
+  const safeOpenInVpylabUrl = options.openInVpylabUrl ? escapeHTML(options.openInVpylabUrl) : '';
+  const safeRepoUrl = options.repoUrl ? escapeHTML(options.repoUrl) : 'https://github.com/greatsong/vpylab';
+  const openInVpylabLink = safeOpenInVpylabUrl
+    ? ` · <a href="${safeOpenInVpylabUrl}" target="_blank">VPyLab에서 열기</a>`
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -76,7 +82,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab') {
     <div style="font-size:14px">Python 엔진 로딩 중...</div>
     <div class="bar"><div class="fill" id="progress" style="width:0%"></div></div>
   </div>
-  <div id="info">${safeTitle} · <a href="https://github.com/greatsong/vpylab" target="_blank">VPyLab</a></div>
+  <div id="info">${safeTitle} · <a href="${safeRepoUrl}" target="_blank">GitHub</a>${openInVpylabLink}</div>
   <div id="viewport"></div>
   <div id="console"></div>
 
