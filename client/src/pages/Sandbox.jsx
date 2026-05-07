@@ -10,8 +10,16 @@ import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
 import { runSound, errorSound, stopBgm, stopAllSounds, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
-import { captureThumbnail } from '../engine/thumbnail';
+import { captureSceneThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
+import {
+  shouldForceDetailed,
+  markDetailedSaved,
+  readLastCodeLines,
+  writeLastCodeLines,
+  countCodeLines,
+  nowLocalParts,
+} from '../utils/voyage-state';
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
 import useAuthStore from '../stores/authStore';
 import useCodeStore from '../stores/codeStore';
@@ -44,6 +52,7 @@ export default function Sandbox() {
   const [teamInitialAction, setTeamInitialAction] = useState('browse');
   const [showProjectGate, setShowProjectGate] = useState(false);
   const [commitModalOpen, setCommitModalOpen] = useState(false);
+  const [commitMustDetailed, setCommitMustDetailed] = useState(false);
   const [commitSaving, setCommitSaving] = useState(false);
   const [commitError, setCommitError] = useState('');
   const [commitElapsed, setCommitElapsed] = useState(0);
@@ -459,8 +468,8 @@ export default function Sandbox() {
     downloadHTML(html, filename);
   };
 
-  const refreshPublishThumbnail = useCallback(() => {
-    const thumb = sceneRef.current?._renderer ? captureThumbnail(sceneRef.current._renderer.domElement) : null;
+  const refreshPublishThumbnail = useCallback(async () => {
+    const thumb = await captureSceneThumbnail(sceneRef.current);
     setPublishThumbnail(thumb);
     return thumb;
   }, []);
@@ -470,8 +479,8 @@ export default function Sandbox() {
       useAuthStore.getState().setAuthModalOpen(true);
       return;
     }
-    refreshPublishThumbnail();
     setPublishModalOpen(true);
+    refreshPublishThumbnail();
   }, [refreshPublishThumbnail, user]);
 
   /**
@@ -489,6 +498,11 @@ export default function Sandbox() {
 
     // === 프로젝트 컨텍스트: Supabase 저장 + GitHub commit + 토스트 ===
     if (activeProject) {
+      // 모달 열기 전, "회고 강제 모드" 여부를 결정.
+      //   - 처음 저장 / 마지막 자세히 저장 후 30분 경과 → 4필드 자세히 저장만
+      //   - 그 외 → 빠른 저장 기본, 학생이 자세히 저장으로 토글 가능
+      const force = shouldForceDetailed(activeProject.id, user.id);
+      setCommitMustDetailed(force);
       setCommitError('');
       setCommitModalOpen(true);
       return;
@@ -498,21 +512,62 @@ export default function Sandbox() {
     setShowProjectGate(true);
   };
 
-  const handleProjectCommit = async (message) => {
+  /**
+   * payload: { kind: 'quick' | 'detailed', title, did?, blocker?, next? }
+   * 모달이 항해 일지 4필드를 받아 넘기면, 여기서 시각·코드 줄 수 등 메타를 더해
+   * voyageEntry payload를 조립하고 saveAndPush로 보냅니다.
+   * 성공 시 detailed였으면 localStorage 타임스탬프, 모든 저장은 줄 수 갱신.
+   */
+  const handleProjectCommit = async (payload) => {
     const projStore = (await import('../stores/projectStore')).default.getState();
-    if (!projStore.activeProject) {
+    const proj = projStore.activeProject;
+    if (!proj) {
       setCommitModalOpen(false);
       setShowProjectGate(true);
       return;
     }
+    const userId = user?.id;
+    if (!userId) {
+      setCommitError('로그인이 필요합니다');
+      return;
+    }
 
-    const trimmed = message.trim();
+    const kind = payload?.kind === 'quick' ? 'quick' : 'detailed';
+    const title = (payload?.title || '').trim();
+    if (!title) {
+      setCommitError('제목을 적어주세요.');
+      return;
+    }
+
+    // voyage payload 조립 — 클라이언트 로컬 시각·코드 줄 수·줄 변화량 자동 첨부
+    const { localDate, localTime, tzOffset } = nowLocalParts();
+    const codeLines = countCodeLines(code);
+    const lastLines = readLastCodeLines(proj.id, userId);
+    const lineDelta = lastLines != null ? codeLines - lastLines : null;
+
+    const voyageEntry = {
+      kind,
+      title,
+      did: kind === 'detailed' ? (payload.did || '').trim() : undefined,
+      blocker: kind === 'detailed' ? (payload.blocker || '').trim() : undefined,
+      next: kind === 'detailed' ? (payload.next || '').trim() : undefined,
+      localDate,
+      localTime,
+      tzOffset,
+      codeLines,
+      lineDelta,
+    };
+
     setCommitSaving(true);
     setCommitElapsed(0);
     setCommitStartedAt(Date.now());
     setCommitError('');
     setSaveMsg('저장 중…');
-    const { data: result, error } = await projStore.saveAndPush({ code, message: trimmed });
+    const { data: result, error } = await projStore.saveAndPush({
+      code,
+      message: title,
+      voyageEntry,
+    });
     setCommitSaving(false);
     setCommitStartedAt(null);
     if (error) {
@@ -522,11 +577,20 @@ export default function Sandbox() {
       return;
     }
 
+    // 성공 후처리:
+    //   detailed 저장이 voyage append까지 성공한 경우에만 타임스탬프 갱신.
+    //   voyageEntry.error가 있으면 코드는 저장됐지만 일지가 안 쌓였다는 뜻 → 타임스탬프 갱신 X.
+    const voyageOk = !result?.voyageEntry?.error;
+    if (kind === 'detailed' && voyageOk) {
+      markDetailedSaved(proj.id, userId);
+    }
+    writeLastCodeLines(proj.id, userId, codeLines);
+
     setSaveMsg('');
     setCommitModalOpen(false);
     setPushToast({
       nthCommit: result.nthCommit,
-      message: trimmed || new Date().toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }),
+      message: title || new Date().toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }),
       commitUrl: result.commitUrl,
       pageCommitUrl: result.pageCommitUrl,
       repoUrl: result.repoUrl,
@@ -1079,6 +1143,7 @@ export default function Sandbox() {
           progressLabel={projectSaveStatus}
           elapsedSeconds={commitElapsed}
           error={commitError}
+          mustDetailed={commitMustDetailed}
           onSubmit={handleProjectCommit}
           onClose={() => {
             if (commitSaving) return;
@@ -1168,6 +1233,12 @@ export default function Sandbox() {
   );
 }
 
+/**
+ * 저장 모달 — 항해 일지(voyage)와 한 묶음.
+ *  - mustDetailed=true (첫 저장 / 30분 경과): 4필드 자세히 저장만 가능
+ *  - 그 외: "빠른 저장"이 기본, 학생이 탭으로 "자세히 저장"으로 전환 가능
+ *  - 제출 시 부모에게 voyageEntry payload({ kind, title, did, blocker, next })를 넘김
+ */
 function CommitSaveModal({
   open,
   projectTitle,
@@ -1175,24 +1246,66 @@ function CommitSaveModal({
   progressLabel,
   elapsedSeconds = 0,
   error,
+  mustDetailed = false,
   onSubmit,
   onClose,
 }) {
-  const [message, setMessage] = useState('');
+  const [mode, setMode] = useState(mustDetailed ? 'detailed' : 'quick');
+  const [title, setTitle] = useState('');
+  const [did, setDid] = useState('');
+  const [blocker, setBlocker] = useState('');
+  const [next, setNext] = useState('');
+  const [touched, setTouched] = useState(false);
+
+  // 모달이 새로 열릴 때마다 상태 초기화 (강제 모드 반영)
+  useEffect(() => {
+    if (open) {
+      setMode(mustDetailed ? 'detailed' : 'quick');
+      setTitle('');
+      setDid('');
+      setBlocker('');
+      setNext('');
+      setTouched(false);
+    }
+  }, [open, mustDetailed]);
 
   if (!open) return null;
 
-  const progressPercent = saving
-    ? Math.min(92, 14 + elapsedSeconds * 4)
-    : 0;
+  const trimmedTitle = title.trim();
+  const trimmedDid = did.trim();
+  const titleMissing = !trimmedTitle;
+  const didMissing = mode === 'detailed' && !trimmedDid;
+  const canSubmit = !titleMissing && !didMissing && !saving;
+
+  const progressPercent = saving ? Math.min(92, 14 + elapsedSeconds * 4) : 0;
   const waitingMessage = elapsedSeconds >= 20
-    ? 'GitHub 커밋이나 Pages 갱신 응답이 평소보다 오래 걸리고 있습니다. 창을 닫지 말고 조금만 기다려주세요.'
-    : '보통 6-15초 정도 걸리고, Pages 갱신이 느리면 30초 안팎까지 걸릴 수 있습니다.';
+    ? '저장 응답이 평소보다 오래 걸리고 있어요. 창을 닫지 말고 조금만 기다려주세요.'
+    : '보통 6-15초 정도, 미리보기 페이지 갱신이 느리면 30초 안팎까지 걸릴 수 있어요.';
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(message);
+    setTouched(true);
+    if (!canSubmit) return;
+    if (mode === 'quick') {
+      onSubmit({ kind: 'quick', title: trimmedTitle });
+    } else {
+      onSubmit({
+        kind: 'detailed',
+        title: trimmedTitle,
+        did: trimmedDid,
+        blocker: blocker.trim(),
+        next: next.trim(),
+      });
+    }
   };
+
+  const inputStyle = {
+    backgroundColor: 'var(--color-bg-primary)',
+    borderColor: 'var(--color-border)',
+    color: 'var(--color-text-primary)',
+  };
+  const labelClass = 'mb-1.5 block text-xs font-semibold';
+  const labelStyle = { color: 'var(--color-text-secondary)' };
 
   return (
     <div
@@ -1209,19 +1322,21 @@ function CommitSaveModal({
           backgroundColor: 'var(--color-bg-panel)',
           borderColor: 'var(--color-border)',
           padding: 24,
+          maxHeight: '90vh',
+          overflowY: 'auto',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase" style={{ color: 'var(--color-accent)' }}>
               {projectTitle}
             </p>
             <h3 className="mt-1 text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              GitHub에 저장
+              저장하기
             </h3>
-            <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-              코드, 커밋 이력, Pages 실행 페이지를 함께 갱신합니다.
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+              저장하면 코드와 미리보기 페이지가 갱신되고, 항해 일지에도 한 줄이 쌓여요.
             </p>
           </div>
           <button
@@ -1229,42 +1344,146 @@ function CommitSaveModal({
             onClick={onClose}
             disabled={saving}
             className="h-8 w-8 border bg-transparent text-lg disabled:opacity-40"
-            style={{
-              color: 'var(--color-text-muted)',
-              borderColor: 'var(--color-border)',
-            }}
+            style={{ color: 'var(--color-text-muted)', borderColor: 'var(--color-border)' }}
             aria-label="닫기"
           >
             ×
           </button>
         </div>
 
+        {/* 모드 탭 — 강제 모드면 단일 안내 박스 */}
+        {mustDetailed ? (
+          <div
+            className="mb-4 px-3 py-2.5 text-xs leading-relaxed"
+            style={{
+              backgroundColor: 'rgba(74,108,247,0.08)',
+              borderLeft: '3px solid var(--color-accent)',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            <div className="font-bold mb-0.5" style={{ color: 'var(--color-accent)' }}>
+              잠깐 회고하는 시간이에요
+            </div>
+            오늘 처음 저장이거나, 마지막 회고 후 30분이 지났어요.
+            아래 4가지를 짧게 적어주세요. 나중에 본인이 가장 고마워해요.
+          </div>
+        ) : (
+          <div
+            className="mb-4 grid grid-cols-2 gap-1 p-1 rounded"
+            style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+            role="tablist"
+          >
+            <button
+              type="button"
+              onClick={() => setMode('quick')}
+              className="px-3 py-1.5 text-xs font-semibold rounded transition-colors"
+              style={{
+                backgroundColor: mode === 'quick' ? 'var(--color-bg-panel)' : 'transparent',
+                color: mode === 'quick' ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                border: mode === 'quick' ? '1px solid var(--color-border)' : '1px solid transparent',
+              }}
+              role="tab"
+              aria-selected={mode === 'quick'}
+            >
+              빠른 저장
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('detailed')}
+              className="px-3 py-1.5 text-xs font-semibold rounded transition-colors"
+              style={{
+                backgroundColor: mode === 'detailed' ? 'var(--color-bg-panel)' : 'transparent',
+                color: mode === 'detailed' ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                border: mode === 'detailed' ? '1px solid var(--color-border)' : '1px solid transparent',
+              }}
+              role="tab"
+              aria-selected={mode === 'detailed'}
+            >
+              자세히 저장
+            </button>
+          </div>
+        )}
+
+        {/* 제목 — 항상 노출, 항상 필수 */}
         <label className="block">
-          <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
-            변경 내용
+          <span className={labelClass} style={labelStyle}>
+            제목 <span style={{ color: 'var(--color-error)' }}>*</span>
           </span>
           <input
             autoFocus
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="예: 배경색과 카메라 움직임 조정"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={mode === 'quick' ? '예: 카메라 위치 조정' : '예: 공이 바닥을 통과하는 문제 수정'}
             className="w-full border px-3 py-2 text-sm outline-none"
-            style={{
-              backgroundColor: 'var(--color-bg-primary)',
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-text-primary)',
-            }}
-            maxLength={200}
+            style={inputStyle}
+            maxLength={120}
           />
+          {touched && titleMissing && (
+            <span className="mt-1 block text-[11px]" style={{ color: 'var(--color-error)' }}>
+              제목은 한 줄이라도 적어주세요.
+            </span>
+          )}
         </label>
+
+        {/* detailed 추가 필드 */}
+        {mode === 'detailed' && (
+          <>
+            <label className="block mt-3">
+              <span className={labelClass} style={labelStyle}>
+                한 일 <span style={{ color: 'var(--color-error)' }}>*</span>
+              </span>
+              <textarea
+                value={did}
+                onChange={(e) => setDid(e.target.value)}
+                placeholder="예: 충돌 판정 조건을 다시 손봤다."
+                className="w-full border px-3 py-2 text-sm outline-none resize-y"
+                style={{ ...inputStyle, minHeight: 60 }}
+                maxLength={500}
+                rows={2}
+              />
+              {touched && didMissing && (
+                <span className="mt-1 block text-[11px]" style={{ color: 'var(--color-error)' }}>
+                  "한 일"은 한 줄 이상 적어주세요.
+                </span>
+              )}
+            </label>
+
+            <label className="block mt-3">
+              <span className={labelClass} style={labelStyle}>
+                막힌 점 <span className="font-normal" style={{ color: 'var(--color-text-muted)' }}>(선택)</span>
+              </span>
+              <textarea
+                value={blocker}
+                onChange={(e) => setBlocker(e.target.value)}
+                placeholder="없으면 비워두세요. 있으면 다음 사람이 이어받기 좋아요."
+                className="w-full border px-3 py-2 text-sm outline-none resize-y"
+                style={{ ...inputStyle, minHeight: 50 }}
+                maxLength={500}
+                rows={2}
+              />
+            </label>
+
+            <label className="block mt-3">
+              <span className={labelClass} style={labelStyle}>
+                다음 할 일 <span className="font-normal" style={{ color: 'var(--color-text-muted)' }}>(선택)</span>
+              </span>
+              <textarea
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+                placeholder="예: 벽과 반사 효과 추가하기"
+                className="w-full border px-3 py-2 text-sm outline-none resize-y"
+                style={{ ...inputStyle, minHeight: 50 }}
+                maxLength={500}
+                rows={2}
+              />
+            </label>
+          </>
+        )}
 
         {error && (
           <p
             className="mt-3 border px-3 py-2 text-xs"
-            style={{
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-error)',
-            }}
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-error)' }}
           >
             {error}
           </p>
@@ -1282,17 +1501,14 @@ function CommitSaveModal({
           >
             <div className="mb-2 flex items-center justify-between gap-3">
               <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                {progressLabel || 'GitHub에 저장하는 중입니다.'}
+                {progressLabel || '저장하는 중입니다.'}
               </span>
               <span style={{ color: 'var(--color-text-muted)' }}>{elapsedSeconds}초</span>
             </div>
             <div className="h-1.5 overflow-hidden" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
               <div
                 className="h-full transition-all duration-500"
-                style={{
-                  width: `${progressPercent}%`,
-                  backgroundColor: 'var(--color-accent)',
-                }}
+                style={{ width: `${progressPercent}%`, backgroundColor: 'var(--color-accent)' }}
               />
             </div>
             <p className="mt-2 leading-relaxed">{waitingMessage}</p>
@@ -1322,7 +1538,7 @@ function CommitSaveModal({
               color: 'var(--color-accent-text, white)',
             }}
           >
-            {saving ? '저장 중' : '저장'}
+            {saving ? '저장 중' : (mode === 'quick' ? '빠른 저장' : '자세히 저장')}
           </button>
         </div>
       </form>

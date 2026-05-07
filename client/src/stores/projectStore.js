@@ -500,7 +500,7 @@ const useProjectStore = create((set, get) => ({
    *
    * 반환: { ok, commitSha, commitUrl, repoUrl, pagesUrl, nthCommit, error }
    */
-  saveAndPush: async ({ code, message }) => {
+  saveAndPush: async ({ code, message, voyageEntry = null }) => {
     const fail = (messageText) => {
       set({ projectSaveStatus: null });
       return { error: { message: messageText } };
@@ -596,6 +596,7 @@ const useProjectStore = create((set, get) => ({
           source: 'manual',
           revisionId: lastRev?.id || null,
           updateIndex: true,
+          voyageEntry: voyageEntry || undefined,
         }),
       });
       commitResult = await parseApiJson(r);

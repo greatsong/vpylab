@@ -96,13 +96,41 @@ async function ghFetch(url, token, options = {}) {
   return body;
 }
 
+// 중첩 경로(docs/voyage/2026-05-08.md)를 안전하게 인코딩.
+// encodeURIComponent는 '/'까지 %2F로 바꿔 GitHub Contents API에서 가끔 거절되므로
+// 세그먼트별로 인코딩 후 '/'로 다시 이어붙입니다.
+function encodeContentsPath(path) {
+  return String(path)
+    .split('/')
+    .filter(Boolean)
+    .map(encodeURIComponent)
+    .join('/');
+}
+
+function buildContentsUrl(owner, repo, path, branch) {
+  const encoded = encodeContentsPath(path);
+  const base = `https://api.github.com/repos/${owner}/${repo}/contents/${encoded}`;
+  return branch ? `${base}?ref=${branch}` : base;
+}
+
+// 파일을 읽어 { sha, text }를 반환. 없으면 null.
+async function getContentsFile(owner, repo, path, token, branch = 'main') {
+  try {
+    const res = await ghFetch(buildContentsUrl(owner, repo, path, branch), token);
+    return {
+      sha: res.sha,
+      text: Buffer.from(res.content || '', 'base64').toString('utf-8'),
+    };
+  } catch (e) {
+    if (e.status === 404) return null;
+    throw e;
+  }
+}
+
 async function commitFile(owner, repo, path, content, message, token, branch = 'main') {
   let existingSha = null;
   try {
-    const existing = await ghFetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${branch}`,
-      token,
-    );
+    const existing = await ghFetch(buildContentsUrl(owner, repo, path, branch), token);
     existingSha = existing.sha;
   } catch (e) {
     if (e.status !== 404) throw e;
@@ -117,11 +145,176 @@ async function commitFile(owner, repo, path, content, message, token, branch = '
   if (existingSha) body.sha = existingSha;
 
   const result = await ghFetch(
-    `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`,
+    buildContentsUrl(owner, repo, path),
     token,
     { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
   );
   return result.commit?.sha || null;
+}
+
+// ─────────────────────────────────────────────────────────
+// 항해 일지 (voyage) — docs/voyage/YYYY-MM-DD.md append
+// ─────────────────────────────────────────────────────────
+
+// 클라이언트가 보낸 로컬 날짜 검증.
+// 글로벌 학교를 위해 클라이언트 로컬 날짜를 신뢰하되, 형식과 합리성만 확인합니다.
+function isValidLocalDate(s) {
+  if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const t = Date.parse(`${s}T00:00:00Z`);
+  if (Number.isNaN(t)) return false;
+  // 미래 날짜는 ±2일까지만 허용 (시차 슬랙)
+  const slack = 2 * 24 * 60 * 60 * 1000;
+  return t < Date.now() + slack && t > Date.now() - 365 * 24 * 60 * 60 * 1000;
+}
+
+function isValidLocalTime(s) {
+  return typeof s === 'string' && /^\d{2}:\d{2}$/.test(s);
+}
+
+function sanitizeVoyageText(s, maxLen = 500) {
+  if (typeof s !== 'string') return '';
+  // 마크다운 잠재적 깨짐 방지: 앞 헤더만 제거하고 길이 제한
+  return s.replace(/^[ \t]*#{1,6}\s+/gm, '').slice(0, maxLen).trim();
+}
+
+function formatVoyageDetailedBlock(entry) {
+  const time = isValidLocalTime(entry.localTime) ? entry.localTime : '';
+  const title = sanitizeVoyageText(entry.title, 100) || '저장';
+  const author = sanitizeVoyageText(entry.authorLabel, 60) || '익명';
+  const did = sanitizeVoyageText(entry.did, 500);
+  const blocker = sanitizeVoyageText(entry.blocker, 500);
+  const next = sanitizeVoyageText(entry.next, 500);
+  const codeLines = Number.isFinite(entry.codeLines) ? entry.codeLines : null;
+  const lineDelta = Number.isFinite(entry.lineDelta) ? entry.lineDelta : null;
+  const revisionId = typeof entry.revisionId === 'string' ? entry.revisionId.slice(0, 80) : '';
+
+  const lines = [`## ${time ? `${time} — ` : ''}${title}`, ''];
+  lines.push(`- 작성자: ${author}`);
+  if (did) lines.push(`- 한 일: ${did}`);
+  if (blocker) lines.push(`- 막힌 점: ${blocker}`);
+  if (next) lines.push(`- 다음 할 일: ${next}`);
+  if (codeLines != null) {
+    const delta = lineDelta != null ? ` (${lineDelta >= 0 ? '+' : ''}${lineDelta})` : '';
+    lines.push(`- 코드: ${codeLines}줄${delta}`);
+  }
+  if (revisionId) lines.push(`- VPyLab revision: \`${revisionId}\``);
+  return lines.join('\n') + '\n';
+}
+
+function formatVoyageQuickBlock(entry) {
+  const time = isValidLocalTime(entry.localTime) ? entry.localTime : '';
+  const title = sanitizeVoyageText(entry.title, 80) || '빠른 저장';
+  const author = sanitizeVoyageText(entry.authorLabel, 60) || '익명';
+  const lineDelta = Number.isFinite(entry.lineDelta) ? entry.lineDelta : null;
+  const deltaPart = lineDelta != null ? `, 코드 ${lineDelta >= 0 ? '+' : ''}${lineDelta}줄` : '';
+  return `- ${time ? `${time} ` : ''}${title}${deltaPart}, ${author}\n`;
+}
+
+// 같은 파일에 동시 PUT 시 GitHub은 409/422를 돌려줌 → 최신 sha 다시 받아 재시도.
+const VOYAGE_RETRY_DELAYS_MS = [200, 500, 1200];
+
+async function appendVoyageEntry(owner, repo, voyageEntry, token, branch = 'main') {
+  if (!voyageEntry || typeof voyageEntry !== 'object') {
+    throw new Error('voyageEntry가 비어있습니다.');
+  }
+  if (!isValidLocalDate(voyageEntry.localDate)) {
+    throw new Error('voyageEntry.localDate 형식이 올바르지 않습니다 (YYYY-MM-DD)');
+  }
+
+  const kind = voyageEntry.kind === 'quick' ? 'quick' : 'detailed';
+  const path = `docs/voyage/${voyageEntry.localDate}.md`;
+  const formatter = kind === 'quick' ? formatVoyageQuickBlock : formatVoyageDetailedBlock;
+  const newBlock = formatter(voyageEntry);
+  const titleForCommit = sanitizeVoyageText(voyageEntry.title, 80) || (kind === 'quick' ? '빠른 저장' : '저장');
+
+  for (let attempt = 0; attempt <= VOYAGE_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const existing = await getContentsFile(owner, repo, path, token, branch);
+      const isNewDay = !existing;
+      let prev = existing?.text;
+      if (!prev || !prev.startsWith('# ')) {
+        prev = `# 항해 일지: ${voyageEntry.localDate}\n\n`;
+      }
+      const sep = prev.endsWith('\n\n') ? '' : (prev.endsWith('\n') ? '\n' : '\n\n');
+      const updated = prev + sep + newBlock;
+
+      const body = {
+        message: `📔 voyage(${kind}): ${titleForCommit}`,
+        content: Buffer.from(updated, 'utf-8').toString('base64'),
+        branch,
+      };
+      if (existing?.sha) body.sha = existing.sha;
+
+      const result = await ghFetch(
+        buildContentsUrl(owner, repo, path),
+        token,
+        { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+      );
+      return {
+        commitSha: result.commit?.sha || null,
+        path,
+        kind,
+        isNewDay,
+      };
+    } catch (e) {
+      const conflict = e.status === 409 || e.status === 422;
+      if (!conflict || attempt === VOYAGE_RETRY_DELAYS_MS.length) throw e;
+      const wait = VOYAGE_RETRY_DELAYS_MS[attempt];
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+  }
+  throw new Error('voyage append 재시도 한도 초과');
+}
+
+// 새 날짜의 첫 voyage 파일이 생긴 직후, history.md 인덱스에 한 줄 추가.
+// 같은 날짜가 이미 인덱스에 있으면 아무것도 안 함.
+async function ensureHistoryIndexEntry(owner, repo, localDate, token, branch = 'main') {
+  const link = `- [${localDate}](docs/voyage/${localDate}.md)`;
+  const RETRY = [200, 500];
+
+  for (let attempt = 0; attempt <= RETRY.length; attempt++) {
+    try {
+      const existing = await getContentsFile(owner, repo, 'history.md', token, branch);
+      const prev = existing?.text || '';
+
+      if (prev.includes(`docs/voyage/${localDate}.md`)) {
+        return { commitSha: null, alreadyIndexed: true };
+      }
+
+      let updated;
+      if (!existing || !prev.startsWith('# ')) {
+        // 첫 인덱스 생성
+        updated = `# 항해 일지 인덱스\n\n${link}\n`;
+      } else {
+        // 헤더 바로 다음 빈 줄 뒤에 최신 링크를 끼움
+        const lines = prev.split('\n');
+        const headerIdx = lines.findIndex((l) => l.startsWith('# '));
+        let insertAt = headerIdx + 1;
+        while (insertAt < lines.length && lines[insertAt].trim() === '') insertAt++;
+        lines.splice(insertAt, 0, link);
+        updated = lines.join('\n');
+      }
+
+      const body = {
+        message: `📜 voyage 인덱스: ${localDate}`,
+        content: Buffer.from(updated, 'utf-8').toString('base64'),
+        branch,
+      };
+      if (existing?.sha) body.sha = existing.sha;
+
+      const result = await ghFetch(
+        buildContentsUrl(owner, repo, 'history.md'),
+        token,
+        { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+      );
+      return { commitSha: result.commit?.sha || null, alreadyIndexed: false };
+    } catch (e) {
+      const conflict = e.status === 409 || e.status === 422;
+      if (!conflict || attempt === RETRY.length) throw e;
+      await new Promise((resolve) => setTimeout(resolve, RETRY[attempt]));
+    }
+  }
+  throw new Error('history 인덱스 재시도 한도 초과');
 }
 
 function parseRepoFullName(repoFullName) {
@@ -567,6 +760,9 @@ router.post('/commit', limiter, async (req, res) => {
     const {
       repoFullName, code, htmlContent, title, message, githubToken,
       authorLabel = '익명', source = 'manual', revisionId, updateIndex = true,
+      // 항해 일지 옵션 — 클라이언트가 새 모달을 통해 보낼 수 있음.
+      // 미전송이면 기존 history.md 누적 흐름을 유지(하위 호환).
+      voyageEntry,
     } = req.body;
 
     const parsed = parseRepoFullName(repoFullName);
@@ -622,10 +818,41 @@ router.post('/commit', limiter, async (req, res) => {
       }
     }
 
-    try {
-      await appendHistory(owner, repo, { message: finalMsg, authorLabel, source, revisionId }, githubToken);
-    } catch (e) {
-      console.warn('[projects/commit] history.md 갱신 실패:', e.message);
+    let voyageInfo = null;
+    let historyWarning = null;
+    if (voyageEntry) {
+      // 새 흐름: 항해 일지 + 인덱스 갱신.
+      try {
+        const enriched = { ...voyageEntry, authorLabel, revisionId };
+        const result = await appendVoyageEntry(owner, repo, enriched, githubToken);
+        voyageInfo = {
+          path: result.path,
+          kind: result.kind,
+          commitSha: result.commitSha,
+          commitUrl: result.commitSha
+            ? `https://github.com/${owner}/${repo}/commit/${result.commitSha}`
+            : null,
+        };
+        if (result.isNewDay) {
+          try {
+            await ensureHistoryIndexEntry(owner, repo, voyageEntry.localDate, githubToken);
+          } catch (e) {
+            console.warn('[projects/commit] history 인덱스 갱신 실패:', e.message);
+            historyWarning = e.message;
+          }
+        }
+      } catch (e) {
+        console.warn('[projects/commit] voyage append 실패:', e.message);
+        voyageInfo = { error: e.message };
+      }
+    } else {
+      // 하위 호환: 기존 history.md 누적 흐름.
+      try {
+        await appendHistory(owner, repo, { message: finalMsg, authorLabel, source, revisionId }, githubToken);
+      } catch (e) {
+        console.warn('[projects/commit] history.md 갱신 실패:', e.message);
+        historyWarning = e.message;
+      }
     }
 
     res.json({
@@ -640,6 +867,8 @@ router.post('/commit', limiter, async (req, res) => {
       pagesStatus: pagesInfo.status,
       pagesBuildRequested,
       pagesWarning,
+      voyageEntry: voyageInfo,
+      historyWarning,
     });
   } catch (e) {
     console.error('[projects/commit]', e.message);
