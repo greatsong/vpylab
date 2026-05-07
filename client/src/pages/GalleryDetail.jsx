@@ -1,27 +1,47 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import Header from '../components/layout/Header';
+import GalleryCard from '../components/gallery/GalleryCard';
 import useGalleryStore from '../stores/galleryStore';
 import useAuthStore from '../stores/authStore';
-import GalleryCard from '../components/gallery/GalleryCard';
+import { ensureAudioReady } from '../engine/sound-system';
 import { useI18n } from '../i18n/useI18n';
 
 const GalleryPreview = lazy(() => import('../components/gallery/GalleryPreview'));
 
-const DETAIL_CATEGORY_STYLES = {
-  computing: { icon: 'CT', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  CT: { icon: 'CT', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  math: { icon: 'MA', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-  MA: { icon: 'MA', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-  science: { icon: 'SC', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-  SC: { icon: 'SC', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-  art: { icon: 'AR', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
-  AR: { icon: 'AR', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
-  sound: { icon: 'SN', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)' },
-  SN: { icon: 'SN', gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)' },
-  free: { icon: 'VP', gradient: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
+const CATEGORY_META = {
+  CT: { label: '컴퓨팅', accent: '#4A6CF7', mark: 'CT' },
+  CR: { label: '창작', accent: '#FF6B6B', mark: 'CR' },
+  MA: { label: '수학', accent: '#00CEC9', mark: 'MA' },
+  SC: { label: '과학', accent: '#00B894', mark: 'SC' },
+  AR: { label: '아트', accent: '#F0883E', mark: 'AR' },
+  SN: { label: '사운드', accent: '#E84393', mark: 'SN' },
+  free: { label: '자유', accent: '#2563EB', mark: 'VP' },
 };
 
+function shortNumber(value) {
+  const n = Number(value || 0);
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+  return String(n);
+}
+
+function GitHubIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+    </svg>
+  );
+}
+
+function DetailStat({ label, value, children }) {
+  return (
+    <div className="gallery-detail-stat">
+      {children}
+      <span>{shortNumber(value)}</span>
+      <p>{label}</p>
+    </div>
+  );
+}
 
 export default function GalleryDetail() {
   const { id } = useParams();
@@ -31,66 +51,97 @@ export default function GalleryDetail() {
   const user = useAuthStore(s => s.user);
   const getGitHubToken = useAuthStore(s => s.getGitHubToken);
   const isGitHubUser = useAuthStore(s => s.isGitHubUser);
-  const [isLiked, setIsLiked] = useState(false);
+  const signInWithGitHub = useAuthStore(s => s.signInWithGitHub);
+  const [likeState, setLikeState] = useState({ id: null, value: false });
   const [showCode, setShowCode] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [forking, setForking] = useState(false);
-
-  useEffect(() => { fetchWork(id); }, [id]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (currentWork && user) checkIfLiked(id).then(setIsLiked);
-  }, [currentWork, user]);
+    fetchWork(id);
+  }, [fetchWork, id]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!currentWork || !user) return () => { alive = false; };
+    checkIfLiked(id).then(value => {
+      if (alive) setLikeState({ id, value });
+    });
+    return () => { alive = false; };
+  }, [checkIfLiked, currentWork, id, user]);
+
+  const meta = CATEGORY_META[currentWork?.category] || CATEGORY_META.free;
+  const author = currentWork?.vpylab_profiles?.display_name
+    || currentWork?.author_alias
+    || (lang === 'ko' ? '익명' : 'Anonymous');
+  const date = currentWork
+    ? new Date(currentWork.created_at).toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US')
+    : '';
+  const isMyWork = !!(user && currentWork?.user_id === user.id);
+  const isLiked = !!user && likeState.id === id && likeState.value;
+  const repoUrl = currentWork?.github_repo ? `https://github.com/${currentWork.github_repo}` : '';
+  const issuesUrl = currentWork?.github_repo ? `${repoUrl}/issues/new` : '';
+  const runPath = currentWork?.github_repo
+    ? `/sandbox?repo=${encodeURIComponent(currentWork.github_repo)}&autorun=1`
+    : `/sandbox?play=${id}`;
+  const projectState = useMemo(() => {
+    if (!currentWork) return [];
+    return [
+      currentWork.github_repo ? 'GitHub 저장소 연결' : '갤러리 코드 스냅샷',
+      currentWork.github_url ? 'Pages 실행 페이지' : 'Pages 미발행',
+      currentWork.project_id ? 'VPyLab 프로젝트에서 발행' : '독립 작품',
+    ];
+  }, [currentWork]);
 
   if (loading || !currentWork) {
     return (
       <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
         <Header />
-        <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--color-text-muted)' }}>
-          {lang === 'ko' ? '로딩 중...' : 'Loading...'}
-        </div>
+        <main className="gallery-detail-page">
+          <div className="gallery-loading">{lang === 'ko' ? '작품을 불러오는 중입니다.' : 'Loading work.'}</div>
+        </main>
       </div>
     );
   }
 
-  const author = currentWork.vpylab_profiles?.display_name || (lang === 'ko' ? '익명' : 'Anonymous');
-  const date = new Date(currentWork.created_at).toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US');
-  const isMyWork = user && currentWork.user_id === user.id;
-
   const handleLike = async () => {
-    if (!user) return;
-    const liked = await toggleLike(id);
-    setIsLiked(liked);
-  };
-
-  const handleRemix = () => navigate(`/sandbox?remix=${id}`);
-  const handlePlay = () => {
-    navigate(`/sandbox?play=${id}`);
-  };
-  const handleEdit = () => navigate(`/sandbox?edit=${id}`);
-
-  const handleFork = async () => {
-    if (!user) return;
-    if (!isGitHubUser()) {
-      alert(lang === 'ko' ? 'GitHub 로그인이 필요합니다.' : 'GitHub login required.');
+    if (!user) {
+      useAuthStore.getState().setAuthModalOpen(true);
       return;
     }
-    if (!currentWork.github_repo) return;
+    const liked = await toggleLike(id);
+    setLikeState({ id, value: liked });
+  };
+
+  const handleRun = async () => {
+    await ensureAudioReady();
+    navigate(runPath);
+  };
+
+  const handleFork = async () => {
+    if (!user) {
+      useAuthStore.getState().setAuthModalOpen(true);
+      return;
+    }
+    if (!isGitHubUser()) {
+      signInWithGitHub();
+      return;
+    }
+    if (!currentWork.github_repo) {
+      navigate(`/sandbox?remix=${id}`);
+      return;
+    }
 
     setForking(true);
     const token = await getGitHubToken();
     if (!token) {
       setForking(false);
-      if (confirm(lang === 'ko'
-        ? 'GitHub 인증이 만료되었습니다. 재로그인하시겠습니까?'
-        : 'GitHub auth expired. Re-login?')) {
-        sessionStorage.setItem('vpylab_pending_fork', JSON.stringify({
-          sourceId: id,
-          sourceRepo: currentWork.github_repo
-        }));
-        const { signInWithGitHub } = useAuthStore.getState();
-        signInWithGitHub();
-      }
+      sessionStorage.setItem('vpylab_pending_fork', JSON.stringify({
+        sourceId: id,
+        sourceRepo: currentWork.github_repo,
+      }));
+      signInWithGitHub();
       return;
     }
 
@@ -98,250 +149,184 @@ export default function GalleryDetail() {
     setForking(false);
     if (result.error) {
       alert((lang === 'ko' ? 'Fork 실패: ' : 'Fork failed: ') + result.error);
-    } else {
-      navigate(`/sandbox?edit=${result.data.id}`);
+      return;
     }
+    navigate(`/sandbox?edit=${result.data.id}`);
+  };
+
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(currentWork.code);
+    } catch {
+      return;
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
   };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
 
-      <main className="flex-1 container-main py-8 w-full">
-        {/* 뒤로가기 */}
-        <Link to="/gallery" className="inline-flex items-center gap-1.5 text-sm no-underline mb-6"
-          style={{ color: 'var(--color-text-muted)' }}>
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      <main className="gallery-detail-page" style={{ '--work-accent': meta.accent }}>
+        <Link to="/gallery" className="gallery-detail-back">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          {lang === 'ko' ? '갤러리' : 'Gallery'}
+          {lang === 'ko' ? '갤러리로 돌아가기' : 'Back to gallery'}
         </Link>
 
-        {/* 메인 */}
-        <div className="detail-layout mb-8">
-          {/* 카테고리 비주얼 */}
-          {(() => {
-            const catStyle = DETAIL_CATEGORY_STYLES[currentWork.category] || DETAIL_CATEGORY_STYLES.free;
-            return (
-              <div className="rounded-xl overflow-hidden flex items-center justify-center" style={{
-                aspectRatio: '16/10',
-                background: catStyle.gradient,
-              }}>
-                <span
-                  className="text-5xl font-bold tracking-normal"
-                  style={{
-                    color: 'white',
-                    filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.2))',
-                    fontFamily: 'var(--font-display)',
-                  }}
-                >
-                  {catStyle.icon}
-                </span>
+        <section className="gallery-detail-hero">
+          <div className="gallery-detail-stage">
+            {currentWork.thumbnail ? (
+              <img src={currentWork.thumbnail} alt="" />
+            ) : (
+              <div className="gallery-detail-stage-fallback">
+                <span>{meta.mark}</span>
+                <div aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                </div>
               </div>
-            );
-          })()}
+            )}
+            <div className="gallery-detail-stage-label">{meta.label}</div>
+          </div>
 
-          {/* 정보 */}
-          <div>
-            <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>
-              {currentWork.title}
-            </h1>
-            <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
-              {author} · {date}
+          <div className="gallery-detail-copy">
+            <div className="gallery-detail-kicker">
+              <span>{meta.label}</span>
+              {currentWork.github_repo && (
+                <span>
+                  <GitHubIcon size={13} />
+                  {currentWork.github_repo}
+                </span>
+              )}
+            </div>
+
+            <h1>{currentWork.title}</h1>
+            <p className="gallery-detail-meta">{author} · {date}</p>
+            <p className="gallery-detail-description">
+              {currentWork.description || '설명 없이 공개된 VPyLab 작품입니다. 코드를 열어 구조를 살펴보고 내 프로젝트로 발전시킬 수 있습니다.'}
             </p>
 
-            {currentWork.description && (
-              <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-                {currentWork.description}
-              </p>
-            )}
-
-            {/* 영감 */}
             {currentWork.originalWork && (
-              <Link to={`/gallery/${currentWork.originalWork.id}`}
-                className="inline-flex items-center gap-2 text-xs no-underline px-3 py-2 rounded-lg mb-4"
-                style={{
-                  backgroundColor: 'var(--color-accent-bg)',
-                  border: '1px solid rgba(108,92,231,0.2)',
-                  color: 'var(--color-accent)',
-                }}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z"/>
+              <Link to={`/gallery/${currentWork.originalWork.id}`} className="gallery-origin-link">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z" />
                 </svg>
-                {lang === 'ko' ? '영감' : 'Inspired by'}: {currentWork.originalWork.vpylab_profiles?.display_name} — "{currentWork.originalWork.title}"
+                {lang === 'ko' ? '원작에서 Remix' : 'Remixed from'}: {currentWork.originalWork.title}
               </Link>
             )}
 
-            {/* 통계 */}
-            <div className="flex items-center gap-4 mb-5 text-sm">
+            <div className="gallery-detail-stats">
               <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-all"
+                className={`gallery-detail-like ${isLiked ? 'active' : ''}`}
                 onClick={handleLike}
-                disabled={!user}
-                style={{
-                  border: `1px solid ${isLiked ? 'var(--color-error)' : 'var(--color-border)'}`,
-                  backgroundColor: isLiked ? 'rgba(255,107,107,0.08)' : 'transparent',
-                  color: isLiked ? 'var(--color-error)' : 'var(--color-text-muted)',
-                  opacity: user ? 1 : 0.5,
-                }}
+                type="button"
               >
-                <svg width="14" height="14" viewBox="0 0 16 16" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
-                  <path d="M8 14s-5.5-3.5-5.5-7A3.5 3.5 0 018 4a3.5 3.5 0 015.5 3c0 3.5-5.5 7-5.5 7z"/>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <path d="M8 14s-5.5-3.5-5.5-7A3.5 3.5 0 018 4a3.5 3.5 0 015.5 3c0 3.5-5.5 7-5.5 7z" />
                 </svg>
-                {currentWork.like_count || 0}
+                {shortNumber(currentWork.like_count)}
               </button>
-              <span className="flex items-center gap-1.5" style={{ color: 'var(--color-text-muted)' }}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 3C4.5 3 1.5 5.5.5 8c1 2.5 4 5 7.5 5s6.5-2.5 7.5-5c-1-2.5-4-5-7.5-5zm0 8a3 3 0 110-6 3 3 0 010 6z"/>
+              <DetailStat label={lang === 'ko' ? '조회' : 'Views'} value={currentWork.view_count}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path d="M8 3C4.5 3 1.5 5.5.5 8c1 2.5 4 5 7.5 5s6.5-2.5 7.5-5c-1-2.5-4-5-7.5-5zm0 8a3 3 0 110-6 3 3 0 010 6z" />
                 </svg>
-                {currentWork.view_count || 0}
-              </span>
-              <span className="flex items-center gap-1.5" style={{ color: 'var(--color-text-muted)' }}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z"/>
+              </DetailStat>
+              <DetailStat label="Remix" value={currentWork.remix_count}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z" />
                 </svg>
-                {currentWork.remix_count || 0}
-              </span>
+              </DetailStat>
             </div>
 
-            {/* 액션 버튼 */}
-            <div className="flex flex-wrap gap-2">
-              <button onClick={handlePlay}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full border-none cursor-pointer font-semibold text-sm text-white transition-all"
-                style={{ backgroundColor: 'var(--color-accent)' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2l10 6-10 6V2z"/></svg>
-                {lang === 'ko' ? '바로 플레이' : 'Play'}
+            <div className="gallery-detail-actions">
+              <button className="gallery-detail-action primary" onClick={handleRun} type="button">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5 2l9 6-9 6V2z" /></svg>
+                VPyLab에서 실행
               </button>
-
+              <button className="gallery-detail-action" onClick={() => navigate(`/sandbox?remix=${id}`)} type="button">
+                Remix 프로젝트
+              </button>
               {isMyWork && currentWork.github_repo && (
-                <button onClick={handleEdit}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border-none cursor-pointer font-semibold text-sm text-white"
-                  style={{ backgroundColor: '#f0883e' }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M12.1 1.5l2.4 2.4-9 9H3v-2.5l9.1-8.9zm-1.4 1.4L4 9.6V11h1.4l6.7-6.7-1.4-1.4z"/></svg>
-                  {lang === 'ko' ? '수정' : 'Edit'}
+                <button className="gallery-detail-action" onClick={() => navigate(`/sandbox?edit=${id}`)} type="button">
+                  수정하기
                 </button>
               )}
-
-              {!isMyWork && currentWork.github_repo && user && isGitHubUser() && (
-                <button onClick={handleFork} disabled={forking}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border-none cursor-pointer font-semibold text-sm text-white"
-                  style={{ backgroundColor: '#00B894', opacity: forking ? 0.6 : 1 }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.25a2.25 2.25 0 00-1 4.34v1.16A2.25 2.25 0 005 13a2.25 2.25 0 001-4.34V7.59A2.25 2.25 0 005 3.25zM11 3.25a2.25 2.25 0 00-1 4.34v.16c0 .83-.67 1.5-1.5 1.5H7V7.59A2.25 2.25 0 005 3.25"/></svg>
-                  {forking
-                    ? (lang === 'ko' ? 'Remix 중...' : 'Remixing...')
-                    : (lang === 'ko' ? '내 것으로 Remix' : 'Remix to Mine')}
+              {!isMyWork && currentWork.github_repo && (
+                <button className="gallery-detail-action" onClick={handleFork} disabled={forking} type="button">
+                  {forking ? 'Fork 준비 중' : 'GitHub Fork'}
                 </button>
               )}
-
-              <button onClick={handleRemix}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full cursor-pointer font-medium text-sm transition-all"
-                style={{ border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-primary)' }}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z"/></svg>
-                Remix
-              </button>
-
-              {currentWork.github_url && (
-                <a href={currentWork.github_url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full no-underline font-medium text-sm transition-all"
-                  style={{ border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-primary)' }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                  Pages
-                </a>
-              )}
-
-              {currentWork.github_repo && (
-                <>
-                  <a href={`https://github.com/${currentWork.github_repo}`} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full no-underline font-medium text-sm transition-all"
-                    style={{ border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-primary)' }}>
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                    Repo
-                  </a>
-                  <a href={`https://github.com/${currentWork.github_repo}/issues/new`} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full no-underline font-medium text-sm transition-all"
-                    style={{ border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-primary)' }}>
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/><path fillRule="evenodd" d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z"/></svg>
-                    {lang === 'ko' ? '피드백' : 'Feedback'}
-                  </a>
-                </>
-              )}
-
-              <button onClick={() => setShowCode(!showCode)}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full cursor-pointer font-medium text-sm transition-all"
-                style={{ border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-secondary)' }}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 4L1 8l4.5 4M10.5 4L15 8l-4.5 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>
-                {showCode ? (lang === 'ko' ? '코드 숨기기' : 'Hide Code') : (lang === 'ko' ? '코드 보기' : 'View Code')}
-              </button>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* 코드 */}
+        <section className="gallery-detail-open-source">
+          <div>
+            <p className="gallery-detail-section-label">Project Signals</p>
+            <h2>{lang === 'ko' ? '코드와 기여 경로' : 'Code and contribution path'}</h2>
+            <div className="gallery-detail-flags">
+              {projectState.map(item => <span key={item}>{item}</span>)}
+            </div>
+          </div>
+          <div className="gallery-detail-link-grid">
+            {currentWork.github_url && (
+              <a href={currentWork.github_url} target="_blank" rel="noopener noreferrer">Pages</a>
+            )}
+            {repoUrl && (
+              <a href={repoUrl} target="_blank" rel="noopener noreferrer">
+                <GitHubIcon size={14} />
+                Repo
+              </a>
+            )}
+            {issuesUrl && (
+              <a href={issuesUrl} target="_blank" rel="noopener noreferrer">Issue 남기기</a>
+            )}
+            <button onClick={() => setShowCode(value => !value)} type="button">
+              {showCode ? '코드 닫기' : '코드 보기'}
+            </button>
+            <button onClick={() => setShowPreview(value => !value)} type="button">
+              {showPreview ? '미리보기 닫기' : '3D 미리보기'}
+            </button>
+          </div>
+        </section>
+
         {showCode && (
-          <div className="rounded-xl overflow-hidden mb-8"
-            style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-            <div className="flex justify-between items-center px-4 py-2.5 text-xs font-medium"
-              style={{ borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
-              <span>Python</span>
-              <button
-                onClick={() => navigator.clipboard.writeText(currentWork.code)}
-                className="px-3 py-1 rounded-md cursor-pointer text-xs transition-all"
-                style={{ border: '1px solid var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-secondary)' }}>
-                {lang === 'ko' ? '복사' : 'Copy'}
-              </button>
+          <section className="gallery-code-panel">
+            <div className="gallery-code-panel-head">
+              <span>main.py</span>
+              <button onClick={handleCopyCode} type="button">{copied ? '복사됨' : '코드 복사'}</button>
             </div>
-            <pre style={{
-              padding: '1rem', margin: 0, overflowX: 'auto',
-              fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', lineHeight: 1.6,
-              maxHeight: '400px', overflowY: 'auto', color: 'var(--color-text-primary)',
-            }}>
-              <code>{currentWork.code}</code>
-            </pre>
-          </div>
+            <pre><code>{currentWork.code}</code></pre>
+          </section>
         )}
 
-        {/* 3D 미리보기 */}
-        <div className="mb-8">
-          <button onClick={() => setShowPreview(!showPreview)}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full cursor-pointer font-semibold text-sm text-white transition-all mb-4"
-            style={{ backgroundColor: showPreview ? 'var(--color-text-muted)' : 'var(--brand-primary, var(--color-accent))' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2v12h12V2H2zm1 1h10v10H3V3z"/><path d="M5 5l6 3-6 3V5z"/></svg>
-            {showPreview
-              ? (lang === 'ko' ? '미리보기 닫기' : 'Close Preview')
-              : (lang === 'ko' ? '3D 미리보기' : '3D Preview')}
-          </button>
-          {showPreview && (
-            <Suspense fallback={
-              <div className="rounded-xl flex items-center justify-center"
-                style={{ height: '500px', backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}>
-                {lang === 'ko' ? 'Python 엔진 로딩 중...' : 'Loading Python engine...'}
-              </div>
-            }>
+        {showPreview && (
+          <section className="gallery-preview-panel">
+            <Suspense fallback={<div className="gallery-preview-loading">Python 엔진을 준비하고 있습니다.</div>}>
               <GalleryPreview code={currentWork.code} />
             </Suspense>
-          )}
-        </div>
+          </section>
+        )}
 
-        {/* Remix 목록 */}
         {currentWork.remixes?.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"
-              style={{ color: 'var(--color-text-primary)' }}>
-              <svg width="18" height="18" viewBox="0 0 16 16" fill="var(--color-accent)">
-                <path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z"/>
-              </svg>
-              Remix ({currentWork.remixes.length})
-            </h2>
-            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+          <section className="gallery-remix-section">
+            <div className="gallery-section-head compact">
+              <div>
+                <h2>Remix</h2>
+                <p>{lang === 'ko' ? '이 작품에서 이어진 공개 프로젝트입니다.' : 'Published projects that build from this work.'}</p>
+              </div>
+            </div>
+            <div className="gallery-grid">
               {currentWork.remixes.map(remix => (
                 <GalleryCard key={remix.id} work={remix} />
               ))}
             </div>
-          </div>
+          </section>
         )}
       </main>
     </div>

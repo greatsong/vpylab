@@ -49,7 +49,7 @@ const useGalleryStore = create((set, get) => ({
     // 성능: 목록에서 thumbnail 제외 — GalleryCard에서 Intersection Observer로 개별 lazy fetch
     let query = supabase
       .from('vpylab_gallery')
-      .select('id, title, description, category, view_count, like_count, remix_count, github_url, created_at, user_id')
+      .select('id, title, description, category, view_count, like_count, remix_count, github_url, github_repo, author_alias, created_at, user_id')
       .eq('is_public', true)
       .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
@@ -90,7 +90,7 @@ const useGalleryStore = create((set, get) => ({
   // === 추천 작품 조회 (Home 하이라이트) ===
   fetchFeaturedWorks: async () => {
     // 성능: thumbnail 제외, 단일 쿼리로 인기순 폴백 통합
-    const cols = 'id, title, like_count, view_count, github_url, user_id';
+    const cols = 'id, title, description, category, like_count, view_count, remix_count, github_url, github_repo, author_alias, created_at, user_id';
 
     let { data } = await supabase
       .from('vpylab_gallery')
@@ -155,7 +155,7 @@ const useGalleryStore = create((set, get) => ({
       if (data.remix_from) {
         const { data: original } = await supabase
           .from('vpylab_gallery')
-          .select('id, title, user_id')
+          .select('id, title, author_alias, user_id')
           .eq('id', data.remix_from)
           .single();
         if (original) {
@@ -167,7 +167,7 @@ const useGalleryStore = create((set, get) => ({
       // 이 작품의 Remix 목록
       const { data: remixes } = await supabase
         .from('vpylab_gallery')
-        .select('id, title, thumbnail, user_id')
+        .select('id, title, description, category, view_count, like_count, remix_count, github_url, github_repo, author_alias, created_at, user_id')
         .eq('remix_from', id)
         .eq('is_public', true)
         .order('created_at', { ascending: false })
@@ -183,7 +183,19 @@ const useGalleryStore = create((set, get) => ({
   },
 
   // === 작품 발행 (갤러리 + GitHub Pages) ===
-  publishWork: async ({ title, description, code, thumbnail, category, remixFrom, htmlContent, githubToken, authorAlias }) => {
+  publishWork: async ({
+    title,
+    description,
+    code,
+    thumbnail,
+    category,
+    remixFrom,
+    htmlContent,
+    githubToken,
+    authorAlias,
+    projectId = null,
+    existingRepo = null,
+  }) => {
     set({ publishing: true });
 
     try {
@@ -198,7 +210,16 @@ const useGalleryStore = create((set, get) => ({
         const res = await fetch(`${API_BASE}/api/publish`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: htmlContent, pythonCode: code, title, description, category, remixFrom, githubToken }),
+          body: JSON.stringify({
+            code: htmlContent,
+            pythonCode: code,
+            title,
+            description,
+            category,
+            remixFrom,
+            existingRepo,
+            githubToken,
+          }),
         });
         const result = await res.json();
 
@@ -207,27 +228,41 @@ const useGalleryStore = create((set, get) => ({
           githubRepo = result.githubRepo;
           warnings = result.warnings || [];
         } else {
-          console.warn('GitHub Pages 발행 실패:', result.error);
-          warnings.push(result.error || 'GitHub Pages 발행 실패');
+          throw new Error(result.error || 'GitHub Pages 발행 실패');
         }
       }
 
-      const { data, error } = await supabase
+      const galleryInsert = {
+        user_id: user.id,
+        title,
+        description: description || '',
+        code,
+        thumbnail,
+        category: category || 'free',
+        remix_from: remixFrom || null,
+        github_url: githubUrl,
+        github_repo: githubRepo,
+        author_alias: authorAlias || '익명',
+        project_id: projectId || null,
+      };
+
+      let { data, error } = await supabase
         .from('vpylab_gallery')
-        .insert({
-          user_id: user.id,
-          title,
-          description: description || '',
-          code,
-          thumbnail,
-          category: category || 'free',
-          remix_from: remixFrom || null,
-          github_url: githubUrl,
-          github_repo: githubRepo,
-          author_alias: authorAlias || '익명',
-        })
+        .insert(galleryInsert)
         .select()
         .single();
+
+      // 아직 project_id 마이그레이션이 적용되지 않은 배포 환경에서도 발행 자체는 살립니다.
+      if (error && /project_id/i.test(error.message || '')) {
+        delete galleryInsert.project_id;
+        const retry = await supabase
+          .from('vpylab_gallery')
+          .insert(galleryInsert)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
 

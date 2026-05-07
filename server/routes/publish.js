@@ -12,6 +12,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
+import { generateStandaloneHTML } from '../utils/export-html.js';
 
 const router = Router();
 
@@ -123,13 +124,30 @@ async function commitFile(owner, repoName, path, content, message, token) {
 const APP_URL = process.env.PUBLIC_APP_URL || 'https://vpylab.vercel.app';
 
 function generateReadme(title, description, owner, repoName, remixFrom) {
+  const openInVpylabUrl = buildOpenInVpylabUrl(owner, repoName);
   let readme = `# ${title}\n\n> VPyLab에서 만든 3D Python 작품\n\n${description || ''}\n\n`;
-  readme += `## 실행하기\n[VPyLab에서 열기](${APP_URL}) | [GitHub Pages](https://${owner}.github.io/${repoName}/)\n\n`;
+  readme += `## 실행하기\n[VPyLab에서 열기](${openInVpylabUrl}) | [GitHub Pages](https://${owner}.github.io/${repoName}/)\n\n`;
   if (remixFrom) {
-    readme += `## 원본\n이 작품은 [원본 작품](${remixFrom})에서 영감을 받았습니다.\n\n`;
+    readme += `## 원본\n이 작품은 [원본 작품](${APP_URL}/gallery/${remixFrom})에서 영감을 받았습니다.\n\n`;
   }
   readme += `---\n*VPyLab — 3D 프로그래밍 교육 플랫폼*\n`;
   return readme;
+}
+
+function buildOpenInVpylabUrl(owner, repoName) {
+  return `${APP_URL}/sandbox?repo=${encodeURIComponent(`${owner}/${repoName}`)}&autorun=1`;
+}
+
+function buildRepoUrl(owner, repoName) {
+  return `https://github.com/${owner}/${repoName}`;
+}
+
+function buildPagesHtml({ code, title, owner, repoName, fallbackHtml }) {
+  if (!code) return fallbackHtml;
+  return generateStandaloneHTML(code, title || 'VPyLab', {
+    openInVpylabUrl: buildOpenInVpylabUrl(owner, repoName),
+    repoUrl: buildRepoUrl(owner, repoName),
+  });
 }
 
 /**
@@ -179,12 +197,17 @@ router.post('/', publishLimiter, async (req, res) => {
 
     // === 1단계: GitHub 사용자 정보 확인 ===
     const user = await githubFetch('https://api.github.com/user', githubToken);
-    const owner = user.login;
+    let owner = user.login;
 
     // === 2단계: 리포 이름 결정 (기존 리포가 있으면 재사용) ===
     let repoName;
     if (existingRepo) {
-      repoName = existingRepo.split('/').pop();
+      const repoMatch = String(existingRepo).match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
+      if (!repoMatch) {
+        return res.status(400).json({ error: 'GitHub 저장소 형식이 올바르지 않습니다.' });
+      }
+      owner = repoMatch[1];
+      repoName = repoMatch[2];
     } else {
       const uid = crypto.randomUUID().slice(0, 6);
       repoName = `vpylab-${sanitizeRepoName(title)}-${uid}`;
@@ -196,7 +219,10 @@ router.post('/', publishLimiter, async (req, res) => {
       await githubFetch(`https://api.github.com/repos/${owner}/${repoName}`, githubToken);
       repoExists = true;
     } catch {
-      // 리포 없음 → 생성
+      if (existingRepo) {
+        return res.status(404).json({ error: '연결된 GitHub 저장소를 찾을 수 없습니다. 프로젝트 저장소 권한과 이름을 확인해주세요.' });
+      }
+      // 리포 없음 -> 생성
     }
 
     if (!repoExists) {
@@ -221,6 +247,17 @@ router.post('/', publishLimiter, async (req, res) => {
     const commitMsg = repoExists
       ? `✏️ VPyLab에서 업데이트: ${title}`
       : `🚀 VPyLab에서 발행: ${title}`;
+    const htmlForCommit = buildPagesHtml({
+      code: pythonCode,
+      title,
+      owner,
+      repoName,
+      fallbackHtml: code,
+    });
+
+    if (htmlForCommit.length > 500 * 1024) {
+      return res.status(400).json({ error: '실행 HTML이 너무 큽니다. (최대 500KB)' });
+    }
 
     // main.py — 순수 Python 소스 (있으면 커밋)
     if (pythonCode) {
@@ -234,7 +271,7 @@ router.post('/', publishLimiter, async (req, res) => {
     await commitFile(owner, repoName, 'README.md', generateReadme(title, description, owner, repoName, remixFrom), commitMsg, githubToken);
 
     // index.html — 완성 HTML (기존과 동일)
-    await commitFile(owner, repoName, 'index.html', code, commitMsg, githubToken);
+    await commitFile(owner, repoName, 'index.html', htmlForCommit, commitMsg, githubToken);
 
     // === 5단계: GitHub Pages 활성화 ===
     try {
@@ -371,8 +408,23 @@ router.put('/update', publishLimiter, async (req, res) => {
       return res.status(400).json({ error: '코드가 너무 큽니다. (최대 500KB)' });
     }
 
-    const [owner, repoName] = githubRepo.split('/');
+    const repoMatch = String(githubRepo).match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
+    if (!repoMatch) {
+      return res.status(400).json({ error: 'GitHub 저장소 형식이 올바르지 않습니다.' });
+    }
+    const [, owner, repoName] = repoMatch;
     const commitMsg = `✏️ VPyLab에서 업데이트: ${title || '작품 수정'}`;
+    const htmlForCommit = buildPagesHtml({
+      code: pythonCode,
+      title: title || '작품',
+      owner,
+      repoName,
+      fallbackHtml: code,
+    });
+
+    if (htmlForCommit.length > 500 * 1024) {
+      return res.status(400).json({ error: '실행 HTML이 너무 큽니다. (최대 500KB)' });
+    }
 
     // main.py — 순수 Python 소스 (있으면 커밋)
     if (pythonCode) {
@@ -386,7 +438,22 @@ router.put('/update', publishLimiter, async (req, res) => {
     await commitFile(owner, repoName, 'README.md', generateReadme(title || '작품', description, owner, repoName, remixFrom), commitMsg, githubToken);
 
     // index.html — 완성 HTML
-    await commitFile(owner, repoName, 'index.html', code, commitMsg, githubToken);
+    await commitFile(owner, repoName, 'index.html', htmlForCommit, commitMsg, githubToken);
+
+    // Pages가 꺼져 있던 기존 저장소도 업데이트 흐름에서 다시 켭니다.
+    try {
+      await githubFetch(
+        `https://api.github.com/repos/${owner}/${repoName}/pages`,
+        githubToken,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: { branch: 'main', path: '/' } }),
+        },
+      );
+    } catch {
+      // 이미 활성화된 경우
+    }
 
     res.json({
       success: true,

@@ -1,21 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useGalleryStore from '../../stores/galleryStore';
 import useAuthStore from '../../stores/authStore';
-// export-html은 큰 모듈이므로 발행 시점에 lazy import
-
 
 const CATEGORIES = [
-  { value: 'free', label: '자유', en: 'Free' },
-  { value: 'CT', label: '컴퓨팅 사고', en: 'CT' },
-  { value: 'CR', label: '창작', en: 'Creative' },
-  { value: 'MA', label: '수학', en: 'Math' },
-  { value: 'SC', label: '과학', en: 'Science' },
-  { value: 'AR', label: '아트', en: 'Art' },
-  { value: 'SN', label: '사운드', en: 'Sound' },
+  { value: 'free', label: '자유' },
+  { value: 'CT', label: '컴퓨팅' },
+  { value: 'CR', label: '창작' },
+  { value: 'MA', label: '수학' },
+  { value: 'SC', label: '과학' },
+  { value: 'AR', label: '아트' },
+  { value: 'SN', label: '사운드' },
 ];
 
-export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFrom }) {
+export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFrom, projectContext = null }) {
   const navigate = useNavigate();
   const publishWork = useGalleryStore(s => s.publishWork);
   const publishing = useGalleryStore(s => s.publishing);
@@ -24,6 +22,8 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
   const signInWithGitHub = useAuthStore(s => s.signInWithGitHub);
   const profile = useAuthStore(s => s.profile);
 
+  const projectRepo = projectContext?.github_repo || '';
+  const hasProjectRepo = !!projectRepo;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [authorAlias, setAuthorAlias] = useState(profile?.display_name || '');
@@ -32,6 +32,23 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [githubTokenExpired, setGithubTokenExpired] = useState(false);
+
+  const publishModeText = useMemo(() => {
+    if (!publishToGitHub) return '갤러리 스냅샷만 공개합니다.';
+    if (hasProjectRepo) return `현재 프로젝트 저장소 ${projectRepo}에 Pages 실행 버전을 갱신합니다.`;
+    return '새 GitHub 저장소와 Pages 실행 페이지를 함께 만듭니다.';
+  }, [hasProjectRepo, projectRepo, publishToGitHub]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setResult(null);
+    setError(null);
+    setGithubTokenExpired(false);
+    setAuthorAlias(profile?.display_name || '');
+    if (projectContext?.title) setTitle(projectContext.title);
+    if (projectContext?.description) setDescription(projectContext.description);
+    if (hasProjectRepo) setPublishToGitHub(true);
+  }, [hasProjectRepo, isOpen, profile?.display_name, projectContext?.description, projectContext?.id, projectContext?.title]);
 
   if (!isOpen) return null;
 
@@ -47,21 +64,27 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
 
     setError(null);
     setResult(null);
+    setGithubTokenExpired(false);
 
     try {
       let githubToken = null;
       let htmlContent = null;
 
-      // GitHub Pages 발행 옵션이 켜져 있고 GitHub 로그인된 경우
-      if (publishToGitHub && isGitHubUser()) {
-        githubToken = await getGitHubToken();
-        if (githubToken) {
-          const { generateStandaloneHTML } = await import('../../utils/export-html');
-          htmlContent = generateStandaloneHTML(code, title.trim());
-        } else {
-          setGithubTokenExpired(true);
-          // 경고 표시하지만 갤러리에는 발행 가능하도록 진행
+      if (publishToGitHub) {
+        if (!isGitHubUser()) {
+          setError('GitHub Pages까지 연결하려면 GitHub 로그인이 필요합니다.');
+          return;
         }
+
+        githubToken = await getGitHubToken();
+        if (!githubToken) {
+          setGithubTokenExpired(true);
+          setError('GitHub 인증이 만료되었습니다. 다시 로그인한 뒤 발행해주세요.');
+          return;
+        }
+
+        const { generateStandaloneHTML } = await import('../../utils/export-html');
+        htmlContent = generateStandaloneHTML(code, title.trim());
       }
 
       const res = await publishWork({
@@ -74,6 +97,8 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
         htmlContent,
         githubToken,
         authorAlias: authorAlias.trim() || '익명',
+        projectId: projectContext?.id || null,
+        existingRepo: publishToGitHub && hasProjectRepo ? projectRepo : null,
       });
 
       if (res.error) {
@@ -92,6 +117,7 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
     setDescription('');
     setAuthorAlias(profile?.display_name || '');
     setCategory('free');
+    setPublishToGitHub(true);
     setResult(null);
     setError(null);
     setGithubTokenExpired(false);
@@ -100,98 +126,89 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
 
   const handleGoToGallery = () => {
     handleClose();
-    if (result?.data?.id) {
-      navigate(`/gallery/${result.data.id}`);
-    } else {
-      navigate('/gallery');
-    }
+    if (result?.data?.id) navigate(`/gallery/${result.data.id}`);
+    else navigate('/gallery');
   };
 
   return (
     <div className="publish-modal-overlay" onClick={handleClose}>
       <div className="publish-modal" onClick={e => e.stopPropagation()}>
-        {/* 발행 성공 */}
         {result ? (
           <div className="publish-success">
-            <div className="success-icon">
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                <circle cx="24" cy="24" r="24" fill="url(#successGrad)" />
-                <path d="M15 24L21 30L33 18" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                <defs><linearGradient id="successGrad" x1="0" y1="0" x2="48" y2="48">
-                  <stop stopColor="#00B894" /><stop offset="1" stopColor="#00CEC9" />
-                </linearGradient></defs>
+            <div className="publish-success-mark">
+              <svg width="42" height="42" viewBox="0 0 42 42" fill="none" aria-hidden="true">
+                <rect x="5" y="5" width="32" height="32" fill="var(--color-success)" />
+                <path d="M13 21.5L18.5 27L29.5 15" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <h2>발행 완료!</h2>
-            <p className="success-desc">작품이 갤러리에 올라갔습니다.</p>
+            <h2>발행 완료</h2>
+            <p className="publish-success-desc">
+              {result.githubUrl
+                ? '갤러리 작품과 GitHub Pages 실행 페이지가 연결되었습니다.'
+                : '갤러리 작품으로 공개되었습니다.'}
+            </p>
             {result.githubUrl && (
-              <div className="github-url-box">
-                <p>GitHub Pages URL</p>
-                <a href={result.githubUrl} target="_blank" rel="noopener noreferrer">
-                  {result.githubUrl}
-                </a>
-                <button
-                  onClick={() => navigator.clipboard.writeText(result.githubUrl)}
-                  className="copy-btn"
-                >
-                  URL 복사
-                </button>
+              <div className="publish-result-box">
+                <span>GitHub Pages</span>
+                <a href={result.githubUrl} target="_blank" rel="noopener noreferrer">{result.githubUrl}</a>
               </div>
             )}
             {result.warnings?.length > 0 && (
               <div className="publish-warnings">
-                {result.warnings.map((w, i) => (
-                  <p key={i}>⚠️ {w}</p>
-                ))}
+                {result.warnings.map((warning, index) => <p key={index}>{warning}</p>)}
               </div>
             )}
             <div className="publish-actions">
-              <button onClick={handleGoToGallery} className="btn-primary">갤러리에서 보기</button>
-              <button onClick={handleClose} className="btn-secondary">닫기</button>
+              <button onClick={handleGoToGallery} className="publish-primary" type="button">갤러리에서 보기</button>
+              <button onClick={handleClose} className="publish-secondary" type="button">닫기</button>
             </div>
           </div>
         ) : (
           <>
-            <div className="modal-header">
-              <h2>갤러리에 올리기</h2>
-              <button className="close-btn" onClick={handleClose} aria-label="닫기">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            <div className="publish-header">
+              <div>
+                <p>Gallery Publish</p>
+                <h2>작품 공개하기</h2>
+              </div>
+              <button className="publish-close" onClick={handleClose} aria-label="닫기" type="button">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
 
-            {/* 썸네일 미리보기 */}
             {thumbnail && (
-              <div className="thumbnail-preview">
+              <div className="publish-thumbnail">
                 <img src={thumbnail} alt="미리보기" />
               </div>
             )}
 
-            {/* 영감 표시 */}
+            <div className="publish-flow-note">
+              <span>{hasProjectRepo ? 'Project Repo' : 'Open Source'}</span>
+              <p>{publishModeText}</p>
+            </div>
+
             {remixFrom && (
-              <div className="remix-badge">
-                <span className="remix-icon">🔀</span> 다른 작품에서 영감을 받은 Remix
+              <div className="publish-remix-note">
+                다른 작품에서 출발한 Remix로 연결됩니다.
               </div>
             )}
 
-            {/* 제목 */}
-            <label>
+            <label className="publish-field">
               제목 <span className="required">*</span>
               <input
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="작품 제목을 입력하세요"
+                placeholder="작품 제목"
                 maxLength={100}
                 autoFocus
               />
             </label>
 
-            {/* 공개 이름 */}
-            <label>
+            <label className="publish-field">
               공개 이름
-              <div className="author-alias-row">
+              <div className="publish-alias-row">
                 <input
                   type="text"
                   value={authorAlias}
@@ -199,95 +216,79 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
                   placeholder="갤러리에 표시될 이름"
                   maxLength={30}
                 />
-                <button
-                  type="button"
-                  className={`anon-btn ${!authorAlias.trim() ? 'active' : ''}`}
-                  onClick={() => setAuthorAlias('')}
-                >
+                <button type="button" onClick={() => setAuthorAlias('')} className={!authorAlias.trim() ? 'active' : ''}>
                   익명
                 </button>
               </div>
             </label>
 
-            {/* 설명 */}
-            <label>
+            <label className="publish-field">
               설명
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                placeholder="작품에 대한 설명 (선택)"
+                placeholder="다른 사람이 실행하거나 Remix할 때 도움이 되는 짧은 설명"
                 maxLength={500}
                 rows={3}
               />
             </label>
 
-            {/* 카테고리 */}
-            <label>
+            <div className="publish-field">
               카테고리
-              <div className="category-pills">
+              <div className="publish-category-grid">
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat.value}
-                    className={`pill ${category === cat.value ? 'active' : ''}`}
+                    className={category === cat.value ? 'active' : ''}
                     onClick={() => setCategory(cat.value)}
+                    type="button"
                   >
                     {cat.label}
                   </button>
                 ))}
               </div>
-            </label>
+            </div>
 
-            {/* GitHub Pages 발행 옵션 */}
-            <label className="checkbox-label">
+            <label className="publish-checkbox">
               <input
                 type="checkbox"
                 checked={publishToGitHub}
                 onChange={e => setPublishToGitHub(e.target.checked)}
               />
-              GitHub Pages로 발행 (고유 URL 생성)
+              <span>
+                GitHub Pages 실행 버전까지 발행
+                {hasProjectRepo && <small>현재 프로젝트 저장소를 재사용합니다.</small>}
+              </span>
             </label>
 
             {publishToGitHub && !isGitHubUser() && (
-              <div className="github-login-prompt">
-                <p>GitHub Pages 발행을 위해 GitHub 로그인이 필요합니다.</p>
-                <button onClick={signInWithGitHub} className="btn-github">
-                  GitHub으로 로그인
-                </button>
+              <div className="publish-github-prompt">
+                <p>GitHub 저장소와 Pages를 만들려면 GitHub 로그인이 필요합니다.</p>
+                <button onClick={signInWithGitHub} type="button">GitHub으로 로그인</button>
               </div>
             )}
 
-            {/* GitHub 토큰 만료 경고 */}
             {githubTokenExpired && (
-              <div className="github-token-warning">
-                <span>⚠️</span>
-                <div>
-                  <p>GitHub 인증이 만료되었습니다.</p>
-                  <p>갤러리에만 발행됩니다. GitHub Pages도 원하시면 재로그인해주세요.</p>
-                  <button onClick={signInWithGitHub} className="btn-github-small">
-                    GitHub 재로그인
-                  </button>
-                </div>
+              <div className="publish-token-warning">
+                <p>GitHub 인증이 만료되었습니다. 재로그인 후 다시 발행해주세요.</p>
+                <button onClick={signInWithGitHub} type="button">GitHub 재로그인</button>
               </div>
             )}
 
-            {/* 에러 */}
             {error && <div className="publish-error">{error}</div>}
 
-            {/* 버튼 */}
             <div className="publish-actions">
               <button
                 onClick={handlePublish}
                 disabled={publishing || !title.trim()}
-                className="btn-primary"
+                className="publish-primary"
+                type="button"
               >
                 {publishing ? (
-                  <span className="publishing-state">
-                    <span className="spinner" />
-                    발행 중...
-                  </span>
+                  <span className="publishing-state"><span className="spinner" /> 발행 중</span>
                 ) : '발행하기'}
               </button>
-              <button onClick={handleClose} className="btn-secondary">취소</button>
+              <button onClick={handleClose} className="publish-secondary" type="button">취소</button>
             </div>
           </>
         )}
@@ -295,239 +296,341 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
 
       <style>{`
         .publish-modal-overlay {
-          position: fixed; inset: 0;
-          background: rgba(0,0,0,0.5);
-          backdrop-filter: blur(4px);
-          display: flex; align-items: center; justify-content: center;
+          position: fixed;
+          inset: 0;
           z-index: 1000;
-          animation: fadeIn 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          background: rgba(15, 23, 42, 0.56);
+          backdrop-filter: blur(4px);
         }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(16px) scale(0.97); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
         .publish-modal {
-          background: var(--color-bg-panel, #1E1E24);
-          border-radius: var(--radius-lg, 16px);
-          padding: 28px;
-          width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto;
-          border: 1px solid var(--color-border, #2E2E38);
-          box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset;
-          animation: slideUp 0.25s ease;
-          font-family: var(--font-body, 'DM Sans', sans-serif);
+          width: min(560px, 100%);
+          max-height: min(760px, calc(100vh - 48px));
+          overflow-y: auto;
+          background: var(--color-bg-panel);
+          border: 1px solid var(--color-border);
+          box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+          padding: 32px;
+          color: var(--color-text-primary);
+          font-family: var(--font-body);
         }
 
-        .modal-header {
-          display: flex; align-items: center; justify-content: space-between;
-          margin-bottom: 20px;
+        .publish-header {
+          display: flex;
+          align-items: start;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 22px;
         }
-        .modal-header h2 {
-          margin: 0; font-size: 20px; font-weight: 700;
-          font-family: var(--font-display, 'Satoshi', sans-serif);
-          color: var(--color-text-primary, #FFFFFE);
-        }
-        .close-btn {
-          background: none; border: none; cursor: pointer; padding: 4px;
-          color: var(--color-text-muted, #72757E); border-radius: 6px;
-          transition: all 0.15s;
-        }
-        .close-btn:hover { background: var(--color-bg-tertiary, #26262E); color: var(--color-text-primary, #FFFFFE); }
 
-        .publish-modal label {
-          display: block; margin-bottom: 16px;
-          font-size: 13px; font-weight: 500;
-          color: var(--color-text-secondary, #94A1B2);
+        .publish-header p,
+        .publish-flow-note span {
+          margin: 0 0 4px;
+          color: var(--color-accent);
+          font-family: var(--font-mono);
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
         }
-        .publish-modal input[type="text"],
-        .publish-modal textarea {
-          display: block; width: 100%; margin-top: 6px;
-          padding: 10px 14px;
-          background: var(--color-bg-primary, #16161A);
-          border: 1px solid var(--color-border, #2E2E38);
-          border-radius: var(--radius-md, 12px);
-          color: var(--color-text-primary, #FFFFFE);
-          font-size: 14px; font-family: inherit;
-          transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .publish-modal input[type="text"]:focus,
-        .publish-modal textarea:focus {
-          outline: none;
-          border-color: var(--color-accent, #7F5AF0);
-          box-shadow: 0 0 0 3px var(--color-accent-bg, rgba(127, 90, 240, 0.12));
-        }
-        .publish-modal textarea { resize: vertical; }
-        .required { color: var(--color-error, #FF6B6B); }
 
-        .thumbnail-preview {
-          margin-bottom: 16px; border-radius: var(--radius-md, 12px);
-          overflow: hidden; border: 1px solid var(--color-border, #2E2E38);
+        .publish-header h2,
+        .publish-success h2 {
+          margin: 0;
+          font-size: 24px;
+          line-height: 1.2;
+          letter-spacing: 0;
         }
-        .thumbnail-preview img { width: 100%; height: auto; display: block; }
 
-        .remix-badge {
-          background: var(--color-accent-bg, rgba(127, 90, 240, 0.12));
-          border: 1px solid rgba(127, 90, 240, 0.25);
-          padding: 10px 14px; border-radius: var(--radius-md, 12px);
-          margin-bottom: 16px; font-size: 13px;
-          color: var(--color-text-secondary, #94A1B2);
-          display: flex; align-items: center; gap: 6px;
-        }
-        .remix-icon { font-size: 16px; }
-
-        .category-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-        .pill {
-          padding: 6px 14px; border-radius: var(--radius-full, 9999px);
-          border: 1px solid var(--color-border, #2E2E38);
+        .publish-close {
+          width: 40px;
+          height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--color-border);
           background: transparent;
-          color: var(--color-text-secondary, #94A1B2);
-          cursor: pointer; font-size: 13px; font-weight: 500;
-          transition: all 0.15s;
-        }
-        .pill:hover { border-color: var(--color-accent, #7F5AF0); color: var(--color-text-primary, #FFFFFE); }
-        .pill.active {
-          background: linear-gradient(135deg, var(--brand-purple, #6C5CE7), var(--brand-blue, #4A6CF7));
-          color: white;
-          border-color: transparent;
-          box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
+          color: var(--color-text-muted);
+          cursor: pointer;
         }
 
-        .checkbox-label {
-          display: flex !important; align-items: center; gap: 10px; cursor: pointer;
-          padding: 10px 14px; border-radius: var(--radius-md, 12px);
-          background: var(--color-bg-primary, #16161A);
-          border: 1px solid var(--color-border, #2E2E38);
-          margin-bottom: 16px;
-          transition: border-color 0.15s;
-        }
-        .checkbox-label:hover { border-color: var(--color-accent, #7F5AF0); }
-        .checkbox-label input[type="checkbox"] {
-          width: 16px; height: 16px; margin: 0;
-          accent-color: var(--color-accent, #7F5AF0);
+        .publish-thumbnail {
+          margin-bottom: 18px;
+          border: 1px solid var(--color-border);
+          background: var(--color-bg-secondary);
         }
 
-        .github-login-prompt {
-          background: var(--color-bg-primary, #16161A);
-          padding: 14px; border-radius: var(--radius-md, 12px);
+        .publish-thumbnail img {
+          display: block;
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          object-fit: cover;
+        }
+
+        .publish-flow-note,
+        .publish-remix-note,
+        .publish-github-prompt,
+        .publish-token-warning,
+        .publish-error,
+        .publish-result-box {
+          border: 1px solid var(--color-border);
+          background: var(--color-bg-secondary);
+          padding: 14px;
           margin-bottom: 16px;
-          border: 1px solid var(--color-border, #2E2E38);
         }
-        .github-login-prompt p { margin: 0 0 10px; font-size: 13px; color: var(--color-text-secondary, #94A1B2); }
-        .btn-github {
-          padding: 8px 18px; border-radius: var(--radius-sm, 6px);
-          border: none; cursor: pointer;
-          background: #238636; color: white; font-size: 13px; font-weight: 600;
-          transition: background 0.15s;
+
+        .publish-flow-note p,
+        .publish-remix-note,
+        .publish-github-prompt p,
+        .publish-token-warning p,
+        .publish-success-desc {
+          margin: 0;
+          color: var(--color-text-secondary);
+          font-size: 14px;
+          line-height: 1.6;
         }
-        .btn-github:hover { background: #2ea043; }
+
+        .publish-field {
+          display: block;
+          margin-bottom: 16px;
+          color: var(--color-text-secondary);
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .publish-field input,
+        .publish-field textarea {
+          display: block;
+          width: 100%;
+          margin-top: 7px;
+          padding: 12px 14px;
+          border: 1px solid var(--color-border);
+          background: var(--color-bg-primary);
+          color: var(--color-text-primary);
+          font: inherit;
+          font-weight: 500;
+          letter-spacing: 0;
+        }
+
+        .publish-field textarea {
+          resize: vertical;
+        }
+
+        .publish-field input:focus,
+        .publish-field textarea:focus {
+          outline: none;
+          border-color: var(--color-accent);
+          box-shadow: 0 0 0 3px var(--color-accent-bg);
+        }
+
+        .required,
+        .publish-error {
+          color: var(--color-error);
+        }
+
+        .publish-alias-row {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 8px;
+          margin-top: 7px;
+        }
+
+        .publish-alias-row input {
+          margin-top: 0;
+        }
+
+        .publish-alias-row button,
+        .publish-category-grid button,
+        .publish-secondary,
+        .publish-github-prompt button,
+        .publish-token-warning button,
+        .publish-result-box button {
+          border: 1px solid var(--color-border);
+          background: transparent;
+          color: var(--color-text-secondary);
+          cursor: pointer;
+          font: inherit;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 10px 14px;
+        }
+
+        .publish-alias-row button.active,
+        .publish-category-grid button.active {
+          border-color: var(--color-accent);
+          background: var(--color-accent-bg);
+          color: var(--color-accent);
+        }
+
+        .publish-category-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+          gap: 8px;
+          margin-top: 8px;
+        }
+
+        .publish-checkbox {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 10px;
+          align-items: start;
+          padding: 14px;
+          margin-bottom: 16px;
+          border: 1px solid var(--color-border);
+          background: var(--color-bg-primary);
+          color: var(--color-text-primary);
+          cursor: pointer;
+        }
+
+        .publish-checkbox input {
+          margin-top: 3px;
+          accent-color: var(--color-accent);
+        }
+
+        .publish-checkbox small {
+          display: block;
+          margin-top: 3px;
+          color: var(--color-text-muted);
+          font-size: 12px;
+        }
+
+        .publish-github-prompt,
+        .publish-token-warning {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .publish-github-prompt button,
+        .publish-token-warning button {
+          border-color: #238636;
+          color: #238636;
+          white-space: nowrap;
+        }
+
+        .publish-token-warning {
+          border-color: rgba(245, 158, 11, 0.45);
+          background: rgba(245, 158, 11, 0.08);
+        }
 
         .publish-error {
-          background: rgba(255, 107, 107, 0.1);
-          border: 1px solid rgba(255, 107, 107, 0.25);
-          color: var(--color-error, #FF6B6B);
-          font-size: 13px; padding: 10px 14px;
-          border-radius: var(--radius-md, 12px);
-          margin: 8px 0;
+          border-color: rgba(239, 68, 68, 0.35);
+          background: rgba(239, 68, 68, 0.08);
+          font-size: 13px;
         }
 
-        .publish-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-primary {
-          flex: 1; padding: 12px; border-radius: var(--radius-md, 12px);
-          border: none; cursor: pointer;
-          background: linear-gradient(135deg, var(--brand-purple, #6C5CE7), var(--brand-blue, #4A6CF7));
-          color: white; font-weight: 700; font-size: 15px;
-          font-family: var(--font-display, 'Satoshi', sans-serif);
-          transition: opacity 0.15s, transform 0.15s;
-          box-shadow: 0 4px 14px rgba(108, 92, 231, 0.35);
-        }
-        .btn-primary:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
-        .btn-primary:active:not(:disabled) { transform: translateY(0); }
-        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
-
-        .btn-secondary {
-          padding: 12px 20px; border-radius: var(--radius-md, 12px);
-          border: 1px solid var(--color-border, #2E2E38);
-          background: transparent;
-          color: var(--color-text-secondary, #94A1B2);
-          cursor: pointer; font-size: 14px; font-weight: 500;
-          transition: all 0.15s;
-        }
-        .btn-secondary:hover {
-          border-color: var(--color-text-muted, #72757E);
-          color: var(--color-text-primary, #FFFFFE);
+        .publish-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          margin-top: 22px;
         }
 
-        .publishing-state { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .publish-primary {
+          min-width: 132px;
+          padding: 12px 18px;
+          border: 1px solid var(--color-accent);
+          background: var(--color-accent);
+          color: white;
+          cursor: pointer;
+          font: inherit;
+          font-weight: 800;
+        }
+
+        .publish-primary:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+
+        .publishing-state {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+
         .spinner {
-          width: 16px; height: 16px;
-          border: 2px solid rgba(255,255,255,0.25);
+          width: 15px;
+          height: 15px;
+          border: 2px solid rgba(255,255,255,0.28);
           border-top-color: white;
           border-radius: 50%;
-          animation: spin 0.6s linear infinite;
+          animation: publish-spin 0.65s linear infinite;
         }
 
-        .publish-success { text-align: center; padding: 8px 0; }
-        .success-icon { margin-bottom: 16px; }
-        .publish-success h2 {
-          font-size: 22px; margin: 0 0 6px;
-          font-family: var(--font-display, 'Satoshi', sans-serif);
-          color: var(--color-text-primary, #FFFFFE);
-        }
-        .success-desc { color: var(--color-text-secondary, #94A1B2); font-size: 14px; margin: 0 0 20px; }
-
-        .github-url-box {
-          background: rgba(0, 206, 201, 0.08);
-          border: 1px solid rgba(0, 206, 201, 0.2);
-          padding: 14px; border-radius: var(--radius-md, 12px);
-          margin-bottom: 16px; text-align: left;
-        }
-        .github-url-box p { margin: 0 0 6px; font-size: 12px; color: var(--color-text-muted, #72757E); font-weight: 500; }
-        .github-url-box a { color: var(--brand-cyan, #00CEC9); word-break: break-all; font-size: 13px; }
-        .copy-btn {
-          margin-top: 10px; padding: 6px 14px; border-radius: var(--radius-sm, 6px);
-          border: 1px solid var(--color-border, #2E2E38);
-          background: transparent; color: var(--color-text-secondary, #94A1B2);
-          cursor: pointer; font-size: 12px;
-          transition: all 0.15s;
-        }
-        .copy-btn:hover { border-color: var(--brand-cyan, #00CEC9); color: var(--brand-cyan, #00CEC9); }
-
-        .publish-warnings { margin: 8px 0; }
-        .publish-warnings p { font-size: 12px; color: var(--color-warning, #FDCB6E); margin: 4px 0; }
-
-        .author-alias-row {
-          display: flex; gap: 8px; margin-top: 6px;
-        }
-        .author-alias-row input { flex: 1; }
-        .anon-btn {
-          padding: 8px 14px; border-radius: var(--radius-md, 12px);
-          border: 1px solid var(--color-border, #2E2E38);
-          background: transparent;
-          color: var(--color-text-secondary, #94A1B2);
-          cursor: pointer; font-size: 13px; white-space: nowrap;
-          transition: all 0.15s;
-        }
-        .anon-btn.active {
-          background: var(--color-accent-bg, rgba(127, 90, 240, 0.12));
-          border-color: var(--color-accent, #7F5AF0);
-          color: var(--color-accent, #7F5AF0);
+        .publish-success {
+          text-align: center;
         }
 
-        .github-token-warning {
-          display: flex; gap: 10px; align-items: flex-start;
-          background: rgba(253, 203, 110, 0.08);
-          border: 1px solid rgba(253, 203, 110, 0.25);
-          padding: 12px 14px; border-radius: var(--radius-md, 12px);
-          margin: 8px 0; font-size: 13px;
-          color: var(--color-warning, #FDCB6E);
+        .publish-success-mark {
+          margin: 0 auto 14px;
+          width: 42px;
+          height: 42px;
         }
-        .github-token-warning p { margin: 0 0 6px; }
-        .btn-github-small {
-          padding: 5px 12px; border-radius: var(--radius-sm, 6px);
-          border: none; cursor: pointer;
-          background: #238636; color: white; font-size: 12px; font-weight: 600;
+
+        .publish-success-desc {
+          margin-top: 8px;
+          margin-bottom: 18px;
+        }
+
+        .publish-result-box {
+          text-align: left;
+        }
+
+        .publish-result-box span {
+          display: block;
+          margin-bottom: 6px;
+          color: var(--color-text-muted);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .publish-result-box a {
+          color: var(--color-accent);
+          word-break: break-all;
+          font-size: 13px;
+        }
+
+        .publish-warnings {
+          margin: 12px 0;
+          text-align: left;
+        }
+
+        .publish-warnings p {
+          margin: 4px 0;
+          color: var(--color-warning);
+          font-size: 12px;
+        }
+
+        @keyframes publish-spin {
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 560px) {
+          .publish-modal-overlay {
+            padding: 12px;
+            align-items: stretch;
+          }
+
+          .publish-modal {
+            padding: 22px;
+            max-height: none;
+          }
+
+          .publish-actions,
+          .publish-github-prompt,
+          .publish-token-warning {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .publish-primary,
+          .publish-secondary {
+            width: 100%;
+          }
         }
       `}</style>
     </div>

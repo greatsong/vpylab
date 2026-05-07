@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import useGalleryStore from '../stores/galleryStore';
 import GalleryCard from '../components/gallery/GalleryCard';
 import Header from '../components/layout/Header';
@@ -16,24 +17,35 @@ const CATEGORIES = [
 ];
 
 const SORTS = [
-  { value: 'latest', label: '최신순', en: 'Latest' },
-  { value: 'popular', label: '인기순', en: 'Popular' },
-  { value: 'views', label: '조회순', en: 'Most Viewed' },
+  { value: 'latest', label: '최신', en: 'Latest' },
+  { value: 'popular', label: '좋아요', en: 'Liked' },
+  { value: 'views', label: '조회', en: 'Viewed' },
 ];
 
 export default function Gallery() {
-  const { t, locale: lang } = useI18n();
+  const { locale: lang } = useI18n();
   const { works, loading, hasMore, filters, setFilters, fetchWorks } = useGalleryStore();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(filters.search || '');
 
   useEffect(() => {
     fetchWorks(true);
-  }, [filters.category, filters.sort]);
+  }, [fetchWorks, filters.category, filters.sort, filters.search]);
+
+  const stats = useMemo(() => {
+    const pages = works.filter(work => work.github_url || work.github_repo).length;
+    const remixes = works.reduce((sum, work) => sum + (work.remix_count || 0), 0);
+    const likes = works.reduce((sum, work) => sum + (work.like_count || 0), 0);
+    return { pages, remixes, likes };
+  }, [works]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    setFilters({ search });
-    fetchWorks(true);
+    setFilters({ search: search.trim() });
+  };
+
+  const clearSearch = () => {
+    setSearch('');
+    setFilters({ search: '' });
   };
 
   const handleLoadMore = () => {
@@ -44,88 +56,123 @@ export default function Gallery() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
 
-      <div className="gallery-page">
-        {/* 헤더 */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-            {t('gallery.title') || '갤러리'}
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
-            {t('gallery.subtitle') || '학생들의 멋진 3D 작품을 구경하고, Remix 해보세요!'}
-          </p>
-        </div>
+      <main className="gallery-page">
+        <section className="gallery-command">
+          <div className="gallery-command-copy">
+            <p className="gallery-kicker">Open Source Studio</p>
+            <h1>{lang === 'ko' ? '실행하고, 고치고, 다시 공유하는 갤러리' : 'Run, remix, and share VPyLab work'}</h1>
+            <p>
+              {lang === 'ko'
+                ? '작품은 코드와 GitHub 저장소로 이어집니다. 마음에 드는 장면을 실행하고, 이슈를 남기고, 내 프로젝트로 발전시켜보세요.'
+                : 'Every work can become code, feedback, a fork, and a new project.'}
+            </p>
+          </div>
 
-        {/* 필터 바 — 한 줄 정리 */}
-        <div className="gallery-filters">
+          <div className="gallery-command-panel" aria-label="gallery summary">
+            <div>
+              <span>{works.length}</span>
+              <p>{lang === 'ko' ? '로드된 작품' : 'Loaded works'}</p>
+            </div>
+            <div>
+              <span>{stats.pages}</span>
+              <p>GitHub Pages</p>
+            </div>
+            <div>
+              <span>{stats.remixes}</span>
+              <p>Remix</p>
+            </div>
+            <div>
+              <span>{stats.likes}</span>
+              <p>{lang === 'ko' ? '좋아요' : 'Likes'}</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="gallery-toolbar" aria-label="gallery filters">
           <form onSubmit={handleSearch} className="gallery-search">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder={lang === 'ko' ? '작품 검색...' : 'Search...'}
+              placeholder={lang === 'ko' ? '제목으로 작품 검색' : 'Search by title'}
             />
+            {filters.search && (
+              <button type="button" className="gallery-search-clear" onClick={clearSearch}>
+                {lang === 'ko' ? '초기화' : 'Clear'}
+              </button>
+            )}
             <button type="submit">{lang === 'ko' ? '검색' : 'Search'}</button>
           </form>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="gallery-cats">
+          <div className="gallery-filter-row">
+            <div className="gallery-cats" role="tablist" aria-label="categories">
               {CATEGORIES.map(cat => (
                 <button
                   key={cat.value}
                   className={`cat-pill ${filters.category === cat.value ? 'active' : ''}`}
                   onClick={() => setFilters({ category: cat.value })}
+                  type="button"
                 >
                   {lang === 'ko' ? cat.label : cat.en}
                 </button>
               ))}
             </div>
 
-            <div style={{ width: 1, height: 16, backgroundColor: 'var(--color-border)', margin: '0 4px' }} />
-
-            <div className="gallery-sort">
+            <div className="gallery-sort" aria-label="sort">
               {SORTS.map(sort => (
                 <button
                   key={sort.value}
                   className={`sort-btn ${filters.sort === sort.value ? 'active' : ''}`}
                   onClick={() => setFilters({ sort: sort.value })}
+                  type="button"
                 >
                   {lang === 'ko' ? sort.label : sort.en}
                 </button>
               ))}
             </div>
           </div>
+        </section>
+
+        <div className="gallery-section-head">
+          <div>
+            <h2>{lang === 'ko' ? '공개 작품' : 'Published Works'}</h2>
+            <p>{lang === 'ko' ? '클릭하면 상세, 실행, GitHub 흐름으로 이어집니다.' : 'Open a work to run, inspect code, and fork.'}</p>
+          </div>
+          <Link to="/sandbox" className="gallery-create-link">
+            {lang === 'ko' ? '새 작품 만들기' : 'Create work'}
+          </Link>
         </div>
 
-        {/* 작품 그리드 */}
         <div className="gallery-grid">
           {works.map(work => (
             <GalleryCard key={work.id} work={work} />
           ))}
         </div>
 
-        {/* 빈 상태 */}
         {!loading && works.length === 0 && (
           <div className="gallery-empty">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ margin: '0 auto 12px' }}>
-              <rect x="5" y="5" width="30" height="30" rx="6" stroke="var(--color-text-muted)" strokeWidth="1.5" opacity="0.3"/>
-              <circle cx="15" cy="16" r="3" fill="var(--color-text-muted)" opacity="0.3"/>
-              <path d="M5 28L13 21L20 26L27 19L35 28" stroke="var(--color-text-muted)" strokeWidth="1.5" opacity="0.3"/>
-            </svg>
-            <p className="text-sm">{lang === 'ko' ? '아직 작품이 없습니다.' : 'No works yet.'}</p>
-            <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-              {lang === 'ko' ? '첫 번째 작품을 올려보세요!' : 'Be the first to publish!'}
-            </p>
+            <div className="gallery-empty-mark" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 16 16" fill="none">
+                <path d="M3 3.5h10v9H3z" stroke="currentColor" strokeWidth="1.4" />
+                <path d="M6 6l4 2-4 2V6z" fill="currentColor" />
+              </svg>
+            </div>
+            <h3>{lang === 'ko' ? '조건에 맞는 작품이 없습니다.' : 'No matching works.'}</h3>
+            <p>{lang === 'ko' ? '검색어를 줄이거나 다른 카테고리를 선택해보세요.' : 'Try another search or category.'}</p>
           </div>
         )}
 
-        {/* 로딩 / 더보기 */}
-        {loading && <div className="gallery-loading">{lang === 'ko' ? '로딩 중...' : 'Loading...'}</div>}
+        {loading && <div className="gallery-loading">{lang === 'ko' ? '작품을 불러오는 중입니다.' : 'Loading works.'}</div>}
         {!loading && hasMore && works.length > 0 && (
-          <button onClick={handleLoadMore} className="load-more-btn">
-            {lang === 'ko' ? '더보기' : 'Load more'}
+          <button onClick={handleLoadMore} className="load-more-btn" type="button">
+            {lang === 'ko' ? '더 불러오기' : 'Load more'}
           </button>
         )}
-      </div>
+      </main>
     </div>
   );
 }

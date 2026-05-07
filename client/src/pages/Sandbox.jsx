@@ -1127,6 +1127,7 @@ export default function Sandbox() {
         code={code}
         thumbnail={publishThumbnail}
         remixFrom={remixFrom}
+        projectContext={activeProject}
       />
 
       {/* 코드 전송 모달 (교사) */}
