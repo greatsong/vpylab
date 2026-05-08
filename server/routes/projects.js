@@ -38,14 +38,39 @@ const GITHUB_API_TIMEOUT_MS = Number(process.env.GITHUB_API_TIMEOUT_MS || 20_000
 // ========================================
 
 function sanitizeRepoName(title) {
-  return (title || '')
+  const rawTitle = String(title || 'project');
+  const asciiBase = rawTitle
+    .normalize('NFKD')
     .toLowerCase()
-    .replace(/[^a-z0-9가-힣\s-]/g, '')
+    .replace(/[^\x00-\x7F]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
-    .slice(0, 40)
+    .slice(0, 32)
+    .replace(/-$/g, '')
     || 'project';
+
+  const suffix = crypto
+    .createHash('sha1')
+    .update(rawTitle, 'utf8')
+    .digest('hex')
+    .slice(0, 6);
+
+  return `${asciiBase}-${suffix}`;
+}
+
+function normalizeRepoNameInput(name) {
+  return String(name || '')
+    .normalize('NFKD')
+    .toLowerCase()
+    .replace(/[^\x00-\x7F]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 50)
+    .replace(/-$/g, '');
 }
 
 function escapeHtml(s) {
@@ -169,9 +194,26 @@ async function commitFile(owner, repo, path, content, message, token, branch = '
   return result.commit?.sha || null;
 }
 
-const REPO_READY_RETRY_DELAYS_MS = [500, 1500, 3000];
+const REPO_READY_RETRY_DELAYS_MS = [500, 1500, 3000, 5000];
+
+// auto_init=false로 만든 빈 레포는 GitHub 내부에 ref/object DB가 만들어질 때까지
+// 잠깐 시간이 걸립니다. 그동안 git/trees·commits·refs를 호출하면 GitHub이
+// 다음 신호 중 하나로 거절합니다. 모두 같은 propagation 지연 케이스라
+// retry 대상으로 묶어 backoff 재시도합니다.
+function isRepoStillPreparing(e) {
+  if (!e) return false;
+  // 명확한 propagation 신호
+  if (e.status === 404 || e.status === 409) return true;
+  // GitHub이 422/500 + 메시지로 알려주는 케이스도 같이
+  const msg = String(e.message || '').toLowerCase();
+  if (msg.includes('git repository is empty')) return true;
+  if (msg.includes('repository is empty')) return true;
+  if (e.status === 422 && msg.includes('reference')) return true; // ref 미존재
+  return false;
+}
 
 async function createInitialCommit(owner, repo, files, message, token, branch = 'main') {
+  let lastErr = null;
   for (let attempt = 0; attempt <= REPO_READY_RETRY_DELAYS_MS.length; attempt++) {
     try {
       const tree = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/git/trees`, token, {
@@ -206,14 +248,26 @@ async function createInitialCommit(owner, repo, files, message, token, branch = 
         }),
       });
 
+      if (attempt > 0) {
+        console.log(`[createInitialCommit] ${attempt + 1}회 시도 성공 (이전 ${attempt}회 propagation 대기)`);
+      }
       return commit.sha;
     } catch (e) {
-      const repoStillPreparing = e.status === 404 || e.status === 409;
-      if (!repoStillPreparing || attempt === REPO_READY_RETRY_DELAYS_MS.length) throw e;
-      await new Promise((resolve) => setTimeout(resolve, REPO_READY_RETRY_DELAYS_MS[attempt]));
+      lastErr = e;
+      const stillPreparing = isRepoStillPreparing(e);
+      const isLastAttempt = attempt === REPO_READY_RETRY_DELAYS_MS.length;
+      if (!stillPreparing || isLastAttempt) {
+        if (stillPreparing && isLastAttempt) {
+          console.warn(`[createInitialCommit] 재시도 한도 초과: ${e.status} ${e.message}`);
+        }
+        throw e;
+      }
+      const waitMs = REPO_READY_RETRY_DELAYS_MS[attempt];
+      console.log(`[createInitialCommit] propagation 대기 ${waitMs}ms 후 재시도 (시도 ${attempt + 1}, 사유: ${e.status} ${e.message})`);
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
     }
   }
-  throw new Error('초기 커밋 생성 재시도 한도 초과');
+  throw lastErr || new Error('초기 커밋 생성 재시도 한도 초과');
 }
 
 // ─────────────────────────────────────────────────────────
@@ -705,7 +759,10 @@ router.post('/setup', limiter, async (req, res) => {
   };
 
   try {
-    const { title, description = '', code, htmlContent, githubToken, authorLabel = '익명', isTeam = false } = req.body;
+    const {
+      title, description = '', code, htmlContent, githubToken,
+      authorLabel = '익명', isTeam = false, repoName: requestedRepoName,
+    } = req.body;
 
     if (!title || typeof title !== 'string') return res.status(400).json({ error: '제목을 입력해주세요.' });
     if (!code || typeof code !== 'string') return res.status(400).json({ error: '코드가 비어있습니다.' });
@@ -722,7 +779,16 @@ router.post('/setup', limiter, async (req, res) => {
     const owner = ghUser.login;
     step(`GitHub /user 조회 (owner=${owner})`);
 
-    const baseName = `vpylab-${sanitizeRepoName(title)}`;
+    const hasCustomRepoName = typeof requestedRepoName === 'string' && requestedRepoName.trim().length > 0;
+    const customRepoName = hasCustomRepoName ? normalizeRepoNameInput(requestedRepoName) : '';
+    if (hasCustomRepoName && !customRepoName) {
+      return res.status(400).json({
+        error: 'GitHub 저장소 이름은 영문 소문자, 숫자, 하이픈(-)으로 입력해주세요.',
+        code: 'invalid_repo_name',
+      });
+    }
+
+    const baseName = customRepoName || `vpylab-${sanitizeRepoName(title)}`;
     const repo = await createUniqueRepo(githubToken, baseName, `VPyLab — ${title.slice(0, 100)}`);
     const repoName = repo.name;
     createdRepoFullName = `${owner}/${repoName}`;
