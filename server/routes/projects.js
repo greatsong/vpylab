@@ -31,6 +31,7 @@ const MAX_CODE_BYTES = 100 * 1024;
 const MAX_HISTORY_BYTES = 256 * 1024;
 const MAX_HTML_BYTES = 1024 * 1024;
 const APP_URL = process.env.PUBLIC_APP_URL || 'https://vpylab.vercel.app';
+const GITHUB_API_TIMEOUT_MS = Number(process.env.GITHUB_API_TIMEOUT_MS || 20_000);
 
 // ========================================
 // 헬퍼
@@ -69,31 +70,47 @@ function buildOpenInVpylabUrl({ code = '', owner, repo } = {}) {
 }
 
 async function ghFetch(url, token, options = {}) {
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/vnd.github.v3+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(options.headers || {}),
-    },
-  });
-  const text = await res.text();
-  let body = {};
-  if (text) {
-    try {
-      body = JSON.parse(text);
-    } catch {
-      body = { message: text };
+  const { timeoutMs = GITHUB_API_TIMEOUT_MS, headers = {}, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...headers,
+      },
+    });
+    const text = await res.text();
+    let body = {};
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = { message: text };
+      }
     }
+    if (!res.ok) {
+      const err = new Error(body.message || `GitHub API ${res.status}`);
+      err.status = res.status;
+      err.githubErrors = body.errors;
+      throw err;
+    }
+    return body;
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      const err = new Error(`GitHub API 응답 시간이 ${Math.round(timeoutMs / 1000)}초를 넘었습니다.`);
+      err.status = 504;
+      throw err;
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
   }
-  if (!res.ok) {
-    const err = new Error(body.message || `GitHub API ${res.status}`);
-    err.status = res.status;
-    err.githubErrors = body.errors;
-    throw err;
-  }
-  return body;
 }
 
 // 중첩 경로(docs/voyage/2026-05-08.md)를 안전하게 인코딩.
@@ -152,6 +169,53 @@ async function commitFile(owner, repo, path, content, message, token, branch = '
   return result.commit?.sha || null;
 }
 
+const REPO_READY_RETRY_DELAYS_MS = [500, 1500, 3000];
+
+async function createInitialCommit(owner, repo, files, message, token, branch = 'main') {
+  for (let attempt = 0; attempt <= REPO_READY_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const tree = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/git/trees`, token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tree: files.map((file) => ({
+            path: file.path,
+            mode: '100644',
+            type: 'blob',
+            content: file.content,
+          })),
+        }),
+      });
+
+      const commit = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/git/commits`, token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          tree: tree.sha,
+          parents: [],
+        }),
+      });
+
+      await ghFetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ref: `refs/heads/${branch}`,
+          sha: commit.sha,
+        }),
+      });
+
+      return commit.sha;
+    } catch (e) {
+      const repoStillPreparing = e.status === 404 || e.status === 409;
+      if (!repoStillPreparing || attempt === REPO_READY_RETRY_DELAYS_MS.length) throw e;
+      await new Promise((resolve) => setTimeout(resolve, REPO_READY_RETRY_DELAYS_MS[attempt]));
+    }
+  }
+  throw new Error('초기 커밋 생성 재시도 한도 초과');
+}
+
 // ─────────────────────────────────────────────────────────
 // 항해 일지 (voyage) — docs/voyage/YYYY-MM-DD.md append
 // ─────────────────────────────────────────────────────────
@@ -160,21 +224,67 @@ async function commitFile(owner, repo, path, content, message, token, branch = '
 // 글로벌 학교를 위해 클라이언트 로컬 날짜를 신뢰하되, 형식과 합리성만 확인합니다.
 function isValidLocalDate(s) {
   if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
-  const t = Date.parse(`${s}T00:00:00Z`);
-  if (Number.isNaN(t)) return false;
-  // 미래 날짜는 ±2일까지만 허용 (시차 슬랙)
+  const match = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const t = Date.UTC(year, month - 1, day);
+  const d = new Date(t);
+  if (
+    d.getUTCFullYear() !== year
+    || d.getUTCMonth() !== month - 1
+    || d.getUTCDate() !== day
+  ) {
+    return false;
+  }
+
+  // 클라이언트 로컬 날짜는 시차를 고려해 오늘 기준 ±2일까지만 허용합니다.
   const slack = 2 * 24 * 60 * 60 * 1000;
-  return t < Date.now() + slack && t > Date.now() - 365 * 24 * 60 * 60 * 1000;
+  const now = new Date();
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return Math.abs(t - todayUtc) <= slack;
 }
 
 function isValidLocalTime(s) {
-  return typeof s === 'string' && /^\d{2}:\d{2}$/.test(s);
+  if (typeof s !== 'string') return false;
+  const match = s.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return false;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+}
+
+function isValidTimezoneOffset(n) {
+  return Number.isInteger(n) && n >= -12 * 60 && n <= 14 * 60;
 }
 
 function sanitizeVoyageText(s, maxLen = 500) {
   if (typeof s !== 'string') return '';
   // 마크다운 잠재적 깨짐 방지: 앞 헤더만 제거하고 길이 제한
   return s.replace(/^[ \t]*#{1,6}\s+/gm, '').slice(0, maxLen).trim();
+}
+
+function validateVoyageEntryInput(entry) {
+  if (!entry || typeof entry !== 'object') return 'voyageEntry가 비어있습니다.';
+  if (entry.kind !== 'quick' && entry.kind !== 'detailed') {
+    return 'voyageEntry.kind는 quick 또는 detailed여야 합니다.';
+  }
+  if (!sanitizeVoyageText(entry.title, 100)) {
+    return '항해 일지 제목을 입력해주세요.';
+  }
+  if (entry.kind === 'detailed' && !sanitizeVoyageText(entry.did, 500)) {
+    return '자세히 저장에는 "한 일"이 필요합니다.';
+  }
+  if (!isValidLocalDate(entry.localDate)) {
+    return 'voyageEntry.localDate 형식 또는 범위가 올바르지 않습니다.';
+  }
+  if (!isValidLocalTime(entry.localTime)) {
+    return 'voyageEntry.localTime 형식 또는 범위가 올바르지 않습니다.';
+  }
+  if (!isValidTimezoneOffset(entry.tzOffset)) {
+    return 'voyageEntry.tzOffset 범위가 올바르지 않습니다.';
+  }
+  return null;
 }
 
 function formatVoyageDetailedBlock(entry) {
@@ -422,7 +532,7 @@ async function createUniqueRepo(githubToken, baseName, description) {
         body: JSON.stringify({
           name,
           description: description.slice(0, 350),
-          auto_init: true,
+          auto_init: false,
           has_issues: true,
           has_wiki: false,
           private: false,  // GitHub Pages를 디폴트로 쓰려면 public
@@ -584,6 +694,16 @@ function generateIndexHtml({ title, code, owner, repo }) {
 // ========================================
 router.post('/setup', limiter, async (req, res) => {
   let createdRepoFullName = null;
+  // 단계별 timing 측정: Railway 로그에 [setup] +Xms (총 Yms) <단계>로 남깁니다.
+  // 5분 hang 같은 사고 시 어느 단계에서 멎었는지 즉시 식별 가능.
+  const t0 = Date.now();
+  let lastT = t0;
+  const step = (label) => {
+    const now = Date.now();
+    console.log(`[setup] +${now - lastT}ms (총 ${now - t0}ms): ${label}`);
+    lastT = now;
+  };
+
   try {
     const { title, description = '', code, htmlContent, githubToken, authorLabel = '익명', isTeam = false } = req.body;
 
@@ -596,59 +716,67 @@ router.post('/setup', limiter, async (req, res) => {
     if (typeof htmlContent === 'string' && Buffer.byteLength(htmlContent, 'utf-8') > MAX_HTML_BYTES)
       return res.status(413).json({ error: `GitHub Pages HTML이 너무 큽니다 (최대 ${MAX_HTML_BYTES / 1024}KB).` });
     if (!githubToken) return res.status(401).json({ error: 'GitHub 로그인이 필요합니다.' });
+    step('validation 통과');
 
     const ghUser = await ghFetch('https://api.github.com/user', githubToken);
     const owner = ghUser.login;
+    step(`GitHub /user 조회 (owner=${owner})`);
+
     const baseName = `vpylab-${sanitizeRepoName(title)}`;
     const repo = await createUniqueRepo(githubToken, baseName, `VPyLab — ${title.slice(0, 100)}`);
     const repoName = repo.name;
     createdRepoFullName = `${owner}/${repoName}`;
-
-    // GitHub 내부 처리 대기
-    await new Promise(r => setTimeout(r, 1500));
+    step(`레포 생성 (${repoName})`);
 
     const pageHtml = buildPagesHtml({ title, code, htmlContent, owner, repo: repoName });
     if (Buffer.byteLength(pageHtml, 'utf-8') > MAX_HTML_BYTES) {
       return res.status(413).json({ error: `GitHub Pages HTML이 너무 큽니다 (최대 ${MAX_HTML_BYTES / 1024}KB).` });
     }
+    step('Pages HTML 생성');
 
-    // 초기 commit 묶음
-    await commitFile(owner, repoName, 'main.py', code, `🌱 프로젝트 시작: ${title}`, githubToken);
-    await commitFile(owner, repoName, 'README.md', generateReadme({ title, description, code, owner, repo: repoName, isTeam }), '📚 README', githubToken);
-    await commitFile(owner, repoName, 'history.md', generateInitialHistory(title, authorLabel), '📜 history', githubToken);
-    const pageSha = await commitFile(
+    const initialCommitSha = await createInitialCommit(
       owner,
       repoName,
-      'index.html',
-      pageHtml,
-      '🌐 GitHub Pages 실행 페이지',
+      [
+        { path: 'main.py', content: code },
+        { path: 'README.md', content: generateReadme({ title, description, code, owner, repo: repoName, isTeam }) },
+        { path: 'history.md', content: generateInitialHistory(title, authorLabel) },
+        { path: 'index.html', content: pageHtml },
+      ],
+      `🌱 프로젝트 시작: ${title}`,
       githubToken,
     );
+    step(`초기 commit (${initialCommitSha?.slice(0, 7)})`);
 
     // GitHub Pages 활성화/배포 요청
     let pagesInfo = { active: false, status: null };
     let pagesWarning = null;
     try {
       pagesInfo = await ensurePagesEnabled(owner, repoName, githubToken);
+      step(`Pages 활성화 (${pagesInfo.status || 'unknown'})`);
       await requestPagesBuild(owner, repoName, githubToken);
+      step('Pages build 요청');
     } catch (e) {
       console.warn('[projects/setup] Pages 활성화 실패:', e.message);
       pagesWarning = e.message;
+      step(`Pages 단계 실패: ${e.message}`);
     }
 
+    console.log(`[setup] 완료: 총 ${Date.now() - t0}ms (${owner}/${repoName})`);
     res.json({
       success: true,
       repoFullName: `${owner}/${repoName}`,
       repoUrl: `https://github.com/${owner}/${repoName}`,
-      pagesUrl: versionedPagesUrl(owner, repoName, pageSha),
+      pagesUrl: versionedPagesUrl(owner, repoName, initialCommitSha),
       pagesActivated: pagesInfo.active,
       pagesStatus: pagesInfo.status,
       pagesWarning,
-      pageCommitSha: pageSha,
-      pageCommitUrl: pageSha ? `https://github.com/${owner}/${repoName}/commit/${pageSha}` : null,
+      pageCommitSha: initialCommitSha,
+      pageCommitUrl: initialCommitSha ? `https://github.com/${owner}/${repoName}/commit/${initialCommitSha}` : null,
+      timingMs: Date.now() - t0,
     });
   } catch (e) {
-    console.error('[projects/setup]', e.message, e.githubErrors || '');
+    console.error(`[projects/setup] 실패 @ 총 ${Date.now() - t0}ms:`, e.message, e.githubErrors || '');
     if (e.status === 401) return res.status(401).json({ error: 'GitHub 인증이 만료되었습니다.', repoFullName: createdRepoFullName });
     if (e.status === 403) return res.status(403).json({ error: `GitHub 권한 부족: ${e.message}`, repoFullName: createdRepoFullName });
     if (e.status === 422) {
@@ -775,6 +903,12 @@ router.post('/commit', limiter, async (req, res) => {
     if (typeof htmlContent === 'string' && Buffer.byteLength(htmlContent, 'utf-8') > MAX_HTML_BYTES)
       return res.status(413).json({ error: `GitHub Pages HTML이 너무 큽니다 (최대 ${MAX_HTML_BYTES / 1024}KB).` });
     if (!githubToken) return res.status(401).json({ error: 'GitHub 인증 필요' });
+    if (voyageEntry) {
+      const voyageInputError = validateVoyageEntryInput(voyageEntry);
+      if (voyageInputError) {
+        return res.status(400).json({ error: voyageInputError, code: 'invalid_voyage_entry' });
+      }
+    }
 
     const { owner, repo } = parsed;
     const access = await getRepoAccess(owner, repo, githubToken);
@@ -843,7 +977,21 @@ router.post('/commit', limiter, async (req, res) => {
         }
       } catch (e) {
         console.warn('[projects/commit] voyage append 실패:', e.message);
-        voyageInfo = { error: e.message };
+        const conflict = e.status === 409 || e.status === 422;
+        return res.status(conflict ? 409 : 502).json({
+          error: conflict
+            ? '팀원이 동시에 저장 중이어서 항해 일지를 기록하지 못했습니다. 코드와 실행 페이지는 저장됐을 수 있습니다. 잠시 후 다시 저장해주세요.'
+            : `항해 일지를 GitHub에 기록하지 못했습니다. 코드와 실행 페이지는 저장됐을 수 있습니다: ${e.message}`,
+          code: 'voyage_append_failed',
+          partial: true,
+          commitSha: mainSha,
+          pageCommitSha: pageSha,
+          repoUrl: `https://github.com/${owner}/${repo}`,
+          pagesUrl: versionedPagesUrl(owner, repo, pageSha || mainSha),
+          commitUrl: mainSha ? `https://github.com/${owner}/${repo}/commit/${mainSha}` : null,
+          pageCommitUrl: pageSha ? `https://github.com/${owner}/${repo}/commit/${pageSha}` : null,
+          voyageEntry: { error: e.message },
+        });
       }
     } else {
       // 하위 호환: 기존 history.md 누적 흐름.

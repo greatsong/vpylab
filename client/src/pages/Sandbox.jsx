@@ -10,7 +10,7 @@ import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
 import { runSound, errorSound, stopBgm, stopAllSounds, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
-import { captureSceneThumbnail } from '../engine/thumbnail';
+import { captureThumbnail } from '../engine/thumbnail';
 import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
 import {
   shouldForceDetailed,
@@ -469,7 +469,9 @@ export default function Sandbox() {
   };
 
   const refreshPublishThumbnail = useCallback(async () => {
-    const thumb = await captureSceneThumbnail(sceneRef.current);
+    const thumb = sceneRef.current?._renderer
+      ? captureThumbnail(sceneRef.current._renderer.domElement)
+      : null;
     setPublishThumbnail(thumb);
     return thumb;
   }, []);
@@ -1256,18 +1258,6 @@ function CommitSaveModal({
   const [blocker, setBlocker] = useState('');
   const [next, setNext] = useState('');
   const [touched, setTouched] = useState(false);
-
-  // 모달이 새로 열릴 때마다 상태 초기화 (강제 모드 반영)
-  useEffect(() => {
-    if (open) {
-      setMode(mustDetailed ? 'detailed' : 'quick');
-      setTitle('');
-      setDid('');
-      setBlocker('');
-      setNext('');
-      setTouched(false);
-    }
-  }, [open, mustDetailed]);
 
   if (!open) return null;
 
