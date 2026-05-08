@@ -73,6 +73,13 @@ function webpOrJpeg(canvas, quality) {
   return canvas.toDataURL('image/jpeg', quality);
 }
 
+function waitForAnimationFrame() {
+  if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
+    return Promise.resolve();
+  }
+  return new Promise(resolve => window.requestAnimationFrame(resolve));
+}
+
 function isImageDataUseful(imageData) {
   const data = imageData.data || imageData;
   const total = data.length / 4;
@@ -163,6 +170,25 @@ export function captureThumbnail(canvas, maxWidth = 800, quality = 0.82) {
   } catch {
     return null;
   }
+}
+
+export async function captureSceneThumbnail(scene, maxWidth = 800, quality = 0.82) {
+  const renderer = scene?._renderer;
+  const camera = scene?._camera || scene?._cameraSystem?.camera;
+  const canvas = renderer?.domElement;
+  if (!scene || !renderer || !camera || !canvas) return null;
+
+  try {
+    scene.updateMatrixWorld?.(true);
+    camera.updateMatrixWorld?.(true);
+    renderer.render(scene, camera);
+    await waitForAnimationFrame();
+    renderer.render(scene, camera);
+  } catch {
+    return captureThumbnail(canvas, maxWidth, quality);
+  }
+
+  return captureThumbnail(canvas, maxWidth, quality);
 }
 
 export function createPosterThumbnail({

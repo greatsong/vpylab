@@ -53,6 +53,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     const renderer = new THREE.WebGLRenderer({
       antialias: window.devicePixelRatio <= 1,
       alpha: false,
+      preserveDrawingBuffer: true,
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -190,6 +191,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
     if (sceneRef) {
       sceneRef.current = scene;
       sceneRef.current._renderer = renderer;
+      sceneRef.current._camera = camera;
     }
     onSceneReady?.(scene);
 
