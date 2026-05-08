@@ -22,11 +22,25 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 
 // === 라우트 ===
+// 새 배포 여부를 즉시 확인하기 위한 진단 정보:
+//   - startedAt: 서버 프로세스가 시작된 시각. 새 배포되면 갱신됨
+//   - commitSha: Railway가 자동으로 주입하는 git commit hash
+//   - uptimeSeconds: 시작 후 지난 시간
+const SERVER_STARTED_AT = new Date().toISOString();
+const COMMIT_SHA =
+  process.env.RAILWAY_GIT_COMMIT_SHA
+  || process.env.GIT_COMMIT_SHA
+  || process.env.SOURCE_COMMIT
+  || null;
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     version: '0.3.0',
+    startedAt: SERVER_STARTED_AT,
+    uptimeSeconds: Math.round(process.uptime()),
+    commitSha: COMMIT_SHA ? COMMIT_SHA.slice(0, 12) : null,
   });
 });
 
