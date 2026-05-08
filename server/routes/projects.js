@@ -196,10 +196,9 @@ async function commitFile(owner, repo, path, content, message, token, branch = '
 
 const REPO_READY_RETRY_DELAYS_MS = [500, 1500, 3000, 5000];
 
-// auto_init=false로 만든 빈 레포는 GitHub 내부에 ref/object DB가 만들어질 때까지
-// 잠깐 시간이 걸립니다. 그동안 git/trees·commits·refs를 호출하면 GitHub이
-// 다음 신호 중 하나로 거절합니다. 모두 같은 propagation 지연 케이스라
-// retry 대상으로 묶어 backoff 재시도합니다.
+// 새 레포는 auto_init=true로 기본 브랜치를 먼저 만들고, 초기 파일은 Contents API로
+// 순서대로 올립니다. 그래도 GitHub 내부 ref/object DB 반영이 늦을 수 있어
+// 아래 신호들은 propagation 지연으로 보고 backoff 재시도합니다.
 function isRepoStillPreparing(e) {
   if (!e) return false;
   // 명확한 propagation 신호
@@ -216,42 +215,15 @@ async function createInitialCommit(owner, repo, files, message, token, branch = 
   let lastErr = null;
   for (let attempt = 0; attempt <= REPO_READY_RETRY_DELAYS_MS.length; attempt++) {
     try {
-      const tree = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/git/trees`, token, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tree: files.map((file) => ({
-            path: file.path,
-            mode: '100644',
-            type: 'blob',
-            content: file.content,
-          })),
-        }),
-      });
-
-      const commit = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/git/commits`, token, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message,
-          tree: tree.sha,
-          parents: [],
-        }),
-      });
-
-      await ghFetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, token, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ref: `refs/heads/${branch}`,
-          sha: commit.sha,
-        }),
-      });
+      let lastCommitSha = null;
+      for (const file of files) {
+        lastCommitSha = await commitFile(owner, repo, file.path, file.content, message, token, branch);
+      }
 
       if (attempt > 0) {
         console.log(`[createInitialCommit] ${attempt + 1}회 시도 성공 (이전 ${attempt}회 propagation 대기)`);
       }
-      return commit.sha;
+      return lastCommitSha;
     } catch (e) {
       lastErr = e;
       const stillPreparing = isRepoStillPreparing(e);
@@ -586,7 +558,7 @@ async function createUniqueRepo(githubToken, baseName, description) {
         body: JSON.stringify({
           name,
           description: description.slice(0, 350),
-          auto_init: false,
+          auto_init: true,
           has_issues: true,
           has_wiki: false,
           private: false,  // GitHub Pages를 디폴트로 쓰려면 public
