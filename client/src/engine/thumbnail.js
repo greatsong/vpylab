@@ -231,9 +231,9 @@ export function createPosterThumbnail({
       <rect x="0" y="0" width="14" height="540" fill="${meta.accent}"/>
       <rect x="64" y="58" width="118" height="34" fill="#FFFFFF" stroke="#E5E7EB"/>
       <text x="86" y="80" fill="${meta.accent}" font-family="JetBrains Mono, ui-monospace, monospace" font-size="13" font-weight="800">${escapeSvg(meta.label)}</text>
-      <text x="64" y="128" fill="#111827" font-family="Pretendard Variable, Satoshi, system-ui, sans-serif" font-size="54" font-weight="900">${escapeSvg(titleLines[0] || 'VPyLab 작품')}</text>
-      ${titleLines[1] ? `<text x="64" y="190" fill="#111827" font-family="Pretendard Variable, Satoshi, system-ui, sans-serif" font-size="54" font-weight="900">${escapeSvg(titleLines[1])}</text>` : ''}
-      ${svgTextLines(descLines, 66, titleLines[1] ? 238 : 196, 28, 'fill="#5A5B6A" font-family="Pretendard Variable, DM Sans, system-ui, sans-serif" font-size="20" font-weight="600"')}
+      <text x="64" y="128" fill="#111827" font-family="Satoshi, Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, system-ui, sans-serif" font-size="54" font-weight="900">${escapeSvg(titleLines[0] || 'VPyLab 작품')}</text>
+      ${titleLines[1] ? `<text x="64" y="190" fill="#111827" font-family="Satoshi, Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, system-ui, sans-serif" font-size="54" font-weight="900">${escapeSvg(titleLines[1])}</text>` : ''}
+      ${svgTextLines(descLines, 66, titleLines[1] ? 238 : 196, 28, 'fill="#5A5B6A" font-family="DM Sans, Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, system-ui, sans-serif" font-size="20" font-weight="600"')}
       <text x="66" y="315" fill="#2563EB" font-family="JetBrains Mono, ui-monospace, monospace" font-size="14" font-weight="800">${escapeSvg(repoText)}</text>
       <rect x="64" y="344" width="494" height="138" fill="#FFFFFF" stroke="#E5E7EB"/>
       <circle cx="86" cy="367" r="5" fill="#FF6B6B"/>
@@ -246,8 +246,8 @@ export function createPosterThumbnail({
       <path d="M758 250 L758 178 L832 224 L832 297" fill="none" stroke="${meta.accent}" stroke-width="8" opacity="0.86"/>
       <circle cx="694" cy="216" r="34" fill="${meta.accent}" opacity="0.9"/>
       <circle cx="824" cy="168" r="18" fill="#00CEC9" opacity="0.9"/>
-      <text x="686" y="424" fill="#111827" font-family="Pretendard Variable, Satoshi, system-ui, sans-serif" font-size="76" font-weight="900">${escapeSvg(meta.mark)}</text>
-      <text x="66" y="510" fill="#9394A5" font-family="Pretendard Variable, DM Sans, system-ui, sans-serif" font-size="16" font-weight="700">${escapeSvg(authorText)}</text>
+      <text x="686" y="424" fill="#111827" font-family="Satoshi, Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, system-ui, sans-serif" font-size="76" font-weight="900">${escapeSvg(meta.mark)}</text>
+      <text x="66" y="510" fill="#9394A5" font-family="DM Sans, Apple SD Gothic Neo, Malgun Gothic, Noto Sans KR, system-ui, sans-serif" font-size="16" font-weight="700">${escapeSvg(authorText)}</text>
       <text x="790" y="510" fill="#9394A5" font-family="JetBrains Mono, ui-monospace, monospace" font-size="14" font-weight="800">Open Source</text>
     </svg>
   `;

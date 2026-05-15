@@ -230,7 +230,7 @@ export default function Guide() {
           </h1>
           <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
             VPyLab에서는 친구와 함께 작품을 만들고,<br />
-            누가 언제 무엇을 했는지 자동으로 기록됩니다.<br />
+            저장 이력으로 누가 언제 무엇을 했는지 확인할 수 있습니다.<br />
             <span style={{ color: 'var(--color-text-muted)' }}>(혼자 해도 똑같이 잘 동작해요)</span>
           </p>
         </header>
@@ -249,15 +249,42 @@ export default function Guide() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             <div>
               <div className="font-bold mb-1" style={{ color: '#4A6CF7' }}>1. 시작</div>
-              가입 → 팀 만들기 또는 친구 초대 받기
+              VPyLab 로그인 → 프로젝트 만들기 또는 초대 코드로 합류
             </div>
             <div>
               <div className="font-bold mb-1" style={{ color: '#00B894' }}>2. 만드는 중</div>
-              코드 쓰기 → 저장 → "오늘 뭐 했어?" 한 줄 쓰기
+              코드 쓰기 → 저장 → 저장 이력에서 팀원 작업 확인
             </div>
             <div>
               <div className="font-bold mb-1" style={{ color: '#F0883E' }}>3. 마무리</div>
-              완성 버튼 → 소개글 다듬기 → 끝!
+              필요하면 GitHub 직접 반영 → 소개글 다듬기
+            </div>
+          </div>
+        </section>
+
+        {/* ===== 지금 꼭 알아야 할 원칙 ===== */}
+        <section
+          className="rounded-2xl p-6 mb-12"
+          style={{
+            backgroundColor: 'var(--color-bg-panel)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <h2 className="font-display text-lg font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+            먼저 이것만 기억하세요
+          </h2>
+          <div className="space-y-3 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+            <div>
+              <strong style={{ color: 'var(--color-text-primary)' }}>VPyLab 초대 코드가 팀 협업의 기본입니다.</strong>{' '}
+              팀장이 프로젝트를 만들고 초대 코드를 공유하면, 팀원은 VPyLab 안에서 코드를 열고 수정하고 저장할 수 있습니다.
+            </div>
+            <div>
+              <strong style={{ color: 'var(--color-text-primary)' }}>GitHub 공동작업자는 선택 사항입니다.</strong>{' '}
+              GitHub 저장소에 직접 코드까지 반영하려는 팀만 별도로 설정합니다. GitHub 권한이 없어도 VPyLab 저장 이력은 먼저 남습니다.
+            </div>
+            <div>
+              <strong style={{ color: 'var(--color-text-primary)' }}>저장 이력은 VPyLab 안에서 봅니다.</strong>{' '}
+              Sandbox 상단의 <strong>📜 저장 이력</strong> 버튼을 누르면 누가 저장했는지, 어떤 버전으로 돌아갈 수 있는지 확인할 수 있습니다.
             </div>
           </div>
         </section>
@@ -336,19 +363,19 @@ export default function Guide() {
         <div className="space-y-4 mb-12">
           <StepCard num={1} emoji="🚪" title="가입하고 들어오기" accent="#4A6CF7">
             <p className="mb-3">
-              VPyLab을 처음 쓴다면 두 곳에 한 번씩 가입해야 해요.
-              둘 다 무료입니다.
+              팀 프로젝트를 만들거나 합류하려면 먼저 VPyLab에 로그인해야 해요.
+              GitHub는 처음부터 꼭 필요하지 않습니다.
             </p>
             <ol className="list-decimal pl-5 space-y-3 mb-1">
               <li>
-                <strong style={{ color: 'var(--color-text-primary)' }}>VPyLab 가입</strong>
+                <strong style={{ color: 'var(--color-text-primary)' }}>VPyLab 로그인</strong>
                 <div className="mt-1">
                   구글 계정 같은 평소 쓰는 로그인으로 한 번만 들어오면 끝이에요.
                   이름과 이메일만 사용하고, 새 비밀번호를 만들 필요는 없어요.
                 </div>
               </li>
               <li>
-                <strong style={{ color: 'var(--color-text-primary)' }}>GitHub 가입 (필수)</strong>
+                <strong style={{ color: 'var(--color-text-primary)' }}>GitHub 로그인 또는 가입 (선택)</strong>
                 <div className="mt-1">
                   <a
                     href="https://github.com/signup"
@@ -363,8 +390,8 @@ export default function Guide() {
                   >
                     github.com/signup ↗
                   </a>{' '}
-                  에서 사용자 이름·이메일·비밀번호를 정해 가입해요.
-                  여러분이 만든 작품을 안전하게 보관할 공간이에요. 한 번 만들면 평생 써요.
+                  에서 계정을 만들 수 있어요. GitHub 저장소에 직접 반영하거나 Pages 주소로 공개하고 싶을 때 사용합니다.
+                  VPyLab 안에서 팀 프로젝트를 만들고 저장하는 것만으로는 GitHub 가입이 필수는 아니에요.
                 </div>
                 <div
                   className="text-xs mt-2"
@@ -375,13 +402,13 @@ export default function Guide() {
               </li>
             </ol>
             <InfoBox kind="tip">
-              가입이 끝나면 VPyLab 화면 오른쪽 위의 <strong>"GitHub 연결"</strong> 버튼을
-              한 번 눌러주세요. 작품을 저장할 수 있는 준비가 끝납니다.
+              수업 중 빠르게 시작해야 한다면 <strong>GitHub 연결 체크를 끄고</strong> VPyLab 프로젝트만 먼저 만들어도 됩니다.
+              GitHub는 프로젝트 카드에서 나중에 연결할 수 있어요.
             </InfoBox>
             <InfoBox kind="safe">
               담당 선생님 외에는 여러분의 정보를 보지 않아요.
               학년이 끝나면 VPyLab 쪽 정보는 모두 안전하게 지워집니다.
-              GitHub 계정은 여러분 본인의 것이라 그대로 남아있어요.
+              GitHub 계정은 여러분 본인의 계정이라 VPyLab이 삭제하지 않습니다.
             </InfoBox>
           </StepCard>
 
@@ -438,14 +465,14 @@ export default function Guide() {
 
           <StepCard num={4} emoji="📔" title="저장이 곧 항해 일지가 돼요" accent="#E84393">
             <p>
-              저장할 때마다 적은 글이 팀의 <strong>항해 일지</strong>에 자동으로 쌓입니다.
-              일지를 따로 쓸 필요가 없다는 뜻이에요. 저장만 하면 기록이 됩니다.
-              팀의 작품 공간 안{' '}
-              <code style={{ fontSize: '0.85em', backgroundColor: 'var(--color-bg-secondary)', padding: '1px 6px', borderRadius: '3px' }}>
-                docs/voyage
-              </code>{' '}
-              폴더에 날짜별로 한 장씩 쌓여요.
+              저장할 때마다 적은 글과 코드 스냅샷이 <strong>VPyLab 저장 이력</strong>에 먼저 쌓입니다.
+              팀원이 저장하면 그 사람 이름으로 기록되고, 다른 팀원도 같은 프로젝트 이력에서 볼 수 있어요.
+              GitHub 저장소가 연결되어 있고 권한도 확인되면, 같은 기록이 GitHub의 항해 일지에도 뒤따라 반영됩니다.
             </p>
+            <InfoBox kind="safe">
+              중요한 순서는 <strong>VPyLab 저장 먼저, GitHub 반영은 나중</strong>입니다.
+              GitHub 로그인이 늦거나 권한이 아직 없더라도 VPyLab 이력은 먼저 남도록 설계되어 있습니다.
+            </InfoBox>
             <p className="mt-2 mb-1" style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
               실제로 이런 모양이 됩니다 ↓
             </p>
@@ -458,17 +485,57 @@ export default function Guide() {
 
           <StepCard num={5} emoji="👀" title="친구가 어디까지 했는지 보기" accent="#F0883E">
             <p>
-              팀원 누구나 항해 일지를 열어보면 그날 누가 무엇을 했는지 한눈에 보여요.
-              "어디까지 했어?"를 따로 물어볼 필요가 없습니다.
+              Sandbox 상단의 <strong>📜 저장 이력</strong>을 누르면 팀원이 저장한 기록까지 한 타임라인에서 볼 수 있어요.
+              "어디까지 했어?"를 따로 물어볼 필요가 줄어듭니다.
             </p>
             <p className="mt-2">
               팀원이 막히면 일지에 <strong>"막힌 점"</strong>이 그대로 남아 있어서, 다음 사람이
               보고 이어 받을 수 있어요. 위 예시에서 이준호가 막혔던 부분을 김서연이 다음 날
               정리한 것처럼요.
             </p>
+            <InfoBox kind="tip">
+              잘못 저장했을 때도 같은 화면에서 이전 버전을 골라 <strong>이 버전으로</strong>를 누르면 되돌릴 수 있습니다.
+              복원은 현재 기록을 지우지 않고, "복원했다"는 새 기록을 하나 더 남깁니다.
+            </InfoBox>
           </StepCard>
 
-          <StepCard num={6} emoji="📝" title="다 만들면 소개글 쓰기" accent="#FF6B6B">
+          <StepCard num={6} emoji="🔗" title="GitHub 직접 반영은 선택으로 쓰기" accent="#4A6CF7">
+            <p className="mb-3">
+              GitHub는 VPyLab 팀 협업을 시작하기 위한 필수 조건이 아닙니다.
+              다만 저장소 코드까지 직접 반영하거나, GitHub Pages 주소로 작품을 공개하려면 GitHub 권한이 필요합니다.
+            </p>
+            <ol className="list-decimal pl-5 space-y-2">
+              <li>
+                팀장이 프로젝트 카드에서 <strong>GitHub 저장소 연결</strong>을 시작합니다.
+                급하면 이 단계는 나중에 해도 됩니다.
+              </li>
+              <li>
+                팀장이 GitHub 저장소의 <strong>Settings → Collaborators</strong>에서 팀원의 GitHub 사용자명을 초대합니다.
+                VPyLab 안에서는 안내만 하고, 실제 초대와 수락은 GitHub에서 진행합니다.
+              </li>
+              <li>
+                팀원은 GitHub 알림이나 이메일에서 초대를 열고 <strong>Accept invitation</strong>을 눌러 수락합니다.
+              </li>
+              <li>
+                팀원은 VPyLab에서 GitHub 계정으로 다시 로그인하거나 재로그인합니다.
+                그래야 VPyLab이 "이 사용자가 저장소에 쓸 권한이 있구나"를 확인할 수 있습니다.
+              </li>
+              <li>
+                그다음부터는 VPyLab에서 저장하면 <strong>VPyLab 이력에 먼저 저장</strong>되고,
+                GitHub 토큰과 권한이 확인되면 GitHub 저장소에도 이어서 반영됩니다.
+              </li>
+            </ol>
+            <InfoBox kind="safe">
+              GitHub 초대를 수락해도 <strong>VPyLab 초대 코드로 팀에 들어와 있어야</strong> VPyLab 안에서 프로젝트를 수정할 수 있습니다.
+              반대로 VPyLab 팀원이지만 GitHub 초대를 아직 수락하지 않았다면, VPyLab 저장은 가능하고 GitHub 반영만 보류될 수 있습니다.
+            </InfoBox>
+            <InfoBox kind="warn">
+              GitHub가 2단계 인증(2FA)을 요구하거나, 초대가 아직 수락되지 않았거나, 저장소 권한이 없으면 GitHub 반영이 막힐 수 있습니다.
+              이때도 VPyLab 저장은 먼저 남기고, GitHub 쪽만 권한을 정리한 뒤 다시 저장하면 됩니다.
+            </InfoBox>
+          </StepCard>
+
+          <StepCard num={7} emoji="📝" title="다 만들면 소개글 쓰기" accent="#FF6B6B">
             <p>
               작품이 완성되면 팀의 작품 공간에 있는{' '}
               <code style={{ fontSize: '0.85em', backgroundColor: 'var(--color-bg-secondary)', padding: '1px 6px', borderRadius: '3px' }}>
@@ -504,7 +571,7 @@ export default function Guide() {
           내가 한 일이 어디에 어떻게 남아요?
         </h2>
         <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
-          저장 한 번에 <strong>발자국이 네 곳</strong>에 동시에 찍혀요. 이게 핵심이에요.
+          저장하면 VPyLab 안에 먼저 기록되고, GitHub는 연결과 권한이 있을 때만 뒤따라 반영됩니다.
         </p>
 
         <div
@@ -523,45 +590,44 @@ export default function Guide() {
               저장 버튼 한 번 클릭
             </div>
             <div className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
-              아래 네 곳에 동시에 자동으로 ↓
+              아래 정보가 VPyLab 이력에 먼저 남아요 ↓
             </div>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <FootprintCard
               icon="🪪"
-              title="이름 도장"
-              what="저장 누른 본인 이름이 자동으로 박혀요. 다른 사람 이름으로 절대 못 바꿔요."
+              title="작성자"
+              what="저장 누른 본인 계정으로 기록돼요. 친구가 대신 쓴 것처럼 바꿀 수 없어요."
+            />
+            <FootprintCard
+              icon="📦"
+              title="코드 스냅샷"
+              what="그 순간의 코드가 저장돼요. 나중에 같은 상태로 되돌아갈 수 있습니다."
             />
             <FootprintCard
               icon="📓"
-              title="일기장 한 페이지"
-              what='"오늘 뭐 했고 왜 그렇게 했는지"가 사람이 읽기 좋은 글로 남아요.'
+              title="저장 메모"
+              what='"무엇을 했는지", "어디서 막혔는지"가 사람이 읽기 좋은 말로 남아요.'
             />
             <FootprintCard
-              icon="📊"
-              title="성장 다이어리"
-              what="며칠 동안 몇 번, 얼마나 작업했는지 시간 순서로 깔끔히 정리돼요."
-            />
-            <FootprintCard
-              icon="🎨"
-              title="기여도 그래프"
-              what="모둠 작업이면 누가 얼마만큼 했는지 한눈에 보이는 색깔 그래프가 자동으로 그려져요."
+              icon="🔗"
+              title="GitHub 반영"
+              what="저장소가 연결되고 권한이 있으면 GitHub 커밋과 항해 일지도 뒤따라 갱신돼요."
             />
           </div>
 
           <div className="mt-5 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            한 번 눌렀을 뿐인데 네 가지 방식으로 동시에 기록돼요.<br />
+            저장 버튼 하나로 팀원이 이어서 작업할 기준점이 생깁니다.<br />
             <strong style={{ color: 'var(--color-text-primary)' }}>
-              누가 봐도 공정하고, 나중에 내가 다시 봐도 정확합니다.
+              GitHub가 잠시 막혀도 VPyLab 이력은 먼저 남는 것이 핵심입니다.
             </strong>
           </div>
         </div>
 
         <InfoBox kind="safe">
-          이 네 곳은 <strong>서로를 검증</strong>해요. 일지에 "박지민이 카메라 작업"이라 적혀있는데
-          이름 도장이 다르면 시스템이 잡아냅니다. 그래서 친구 이름으로 일지를 적는 일이 구조적으로
-          불가능합니다 — 본인 발자국은 본인 것만 찍혀요.
+          저장 이력에는 <strong>작성자와 시간</strong>이 함께 남습니다. 그래서 팀원이 저장한 것도 같은 프로젝트 이력에서 볼 수 있고,
+          누가 어떤 시점에 어떤 코드를 남겼는지 다시 확인할 수 있습니다.
         </InfoBox>
 
         <div className="my-12" />
@@ -1146,14 +1212,32 @@ VPyLab에서 main.py 열고 ▶ 실행 버튼만 누르면 돼요.
           </FAQ>
 
           <FAQ q="GitHub 가입을 꼭 해야 하나요?">
-            네, 작품을 안전하게 보관하려면 GitHub 가입이 필요해요. 한 번만 만들어두면
-            평생 쓸 수 있어요. 가입이 어렵게 느껴지면 선생님이나 옆자리 친구에게
-            도움을 받으세요.
+            VPyLab 프로젝트를 만들고 팀원과 저장하는 것만으로는 꼭 필요하지 않아요.
+            GitHub는 저장소에 직접 반영하거나 Pages 주소로 공개하고 싶을 때 연결하는 선택 기능입니다.
+            연결이 어렵다면 먼저 VPyLab 프로젝트로 작업을 시작하고, 나중에 선생님 도움을 받아도 됩니다.
+          </FAQ>
+
+          <FAQ q="GitHub 공동작업자로 초대받으면 바로 VPyLab에서 수정할 수 있나요?">
+            VPyLab에서 수정하려면 먼저 <strong>VPyLab 초대 코드로 팀 프로젝트에 합류</strong>해야 합니다.
+            GitHub 공동작업자 초대는 GitHub 저장소에 직접 반영하기 위한 추가 권한이에요.
+            둘 다 된 상태라면 VPyLab에서 저장했을 때 VPyLab 이력이 먼저 남고, 권한 확인 후 GitHub 반영까지 이어집니다.
+          </FAQ>
+
+          <FAQ q="GitHub 초대는 어떻게 수락하나요?">
+            팀장이 GitHub 저장소의 Collaborators 메뉴에서 초대하면, 팀원은 GitHub 알림이나 이메일에서 초대를 열어
+            <strong>Accept invitation</strong>을 눌러야 합니다. 그 뒤 VPyLab에서 GitHub 계정으로 다시 로그인하면
+            저장소 반영 권한을 확인할 수 있습니다. GitHub가 2단계 인증(2FA)을 요구하면 먼저 GitHub 계정에서 2FA를 켜주세요.
           </FAQ>
 
           <FAQ q="실수로 잘못 저장했어요. 되돌릴 수 있나요?">
             네. 저장 하나하나가 체크포인트라서 이전 시점으로 언제든 돌아갈 수 있어요.
-            "저장 기록" 화면에서 원하는 시점을 골라 코드를 그때로 복원할 수 있습니다.
+            Sandbox 상단의 <strong>📜 저장 이력</strong>에서 원하는 시점을 골라 코드를 그때로 복원할 수 있습니다.
+            복원해도 기존 기록은 사라지지 않고, "복원했다"는 새 기록이 하나 더 남습니다.
+          </FAQ>
+
+          <FAQ q="공동 작업자가 저장한 이력도 보이나요?">
+            네. 같은 VPyLab 프로젝트의 편집 멤버가 저장하거나 기록을 남기면 같은 저장 이력에 보입니다.
+            GitHub 연결 여부와 상관없이 VPyLab 이력이 먼저 기준이 됩니다.
           </FAQ>
 
           <FAQ q="친구가 저랑 같은 시간에 저장하면 어떻게 돼요?">
@@ -1173,8 +1257,8 @@ VPyLab에서 main.py 열고 ▶ 실행 버튼만 누르면 돼요.
           </FAQ>
 
           <FAQ q="작품을 다른 사람에게 보여주고 싶어요.">
-            저장하면 작품을 바로 볼 수 있는 미리보기 페이지가 자동으로 만들어져요.
-            그 주소를 친구나 가족에게 보내주면 됩니다. 코드를 모르는 사람도 결과만 볼 수 있어요.
+            갤러리에 올리거나 GitHub Pages까지 연결하면 작품을 볼 수 있는 주소를 만들 수 있어요.
+            GitHub 연결이 아직 어렵다면 먼저 VPyLab 저장 이력으로 작업을 안전하게 남기고, 공개는 나중에 해도 됩니다.
           </FAQ>
 
           <FAQ q="제 작품을 평가받을 때 뭘 보여주면 되나요?">
@@ -1182,11 +1266,11 @@ VPyLab에서 main.py 열고 ▶ 실행 버튼만 누르면 돼요.
             <ul className="list-disc pl-5 mt-2 space-y-1.5">
               <li>
                 <strong>완성된 작품</strong> (미리보기 페이지) —{' '}
-                <span style={{ color: '#00B894' }}>저장하면 자동</span>으로 만들어져요.
+                <span style={{ color: '#00B894' }}>갤러리 발행이나 GitHub Pages 연결</span>로 만들 수 있어요.
               </li>
               <li>
-                <strong>항해 일지</strong> (그동안의 과정) —{' '}
-                <span style={{ color: '#00B894' }}>저장할 때마다 자동</span>으로 쌓여요.
+                <strong>저장 이력</strong> (그동안의 과정) —{' '}
+                <span style={{ color: '#00B894' }}>저장할 때마다 VPyLab에 먼저</span> 쌓여요.
               </li>
               <li>
                 <strong>소개글(README)</strong> —{' '}

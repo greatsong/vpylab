@@ -103,7 +103,7 @@ export default function Home() {
                 <span className="text-base">🚢</span>
                 <span>
                   {lang === 'ko'
-                    ? '처음이세요? 팀으로 작품 만드는 방법 보기'
+                    ? '팀 저장 · GitHub · 이력 복원 안내 보기'
                     : 'New here? See how to build with a team'}
                 </span>
                 <span style={{ color: 'var(--color-accent)' }}>→</span>
