@@ -30,18 +30,27 @@ export default function AuthCallback() {
       // 재인증 시 저장해둔 returnPath / returnCode 복원
       let returnPath = '/';
       let returnCode = null;
+      let returnAction = null;
+      let returnProjectId = null;
       try {
         returnPath = localStorage.getItem('vpylab-oauth-return-path') || '/';
         returnCode = localStorage.getItem('vpylab-oauth-return-code');
+        returnAction = localStorage.getItem('vpylab-oauth-return-action');
+        returnProjectId = localStorage.getItem('vpylab-oauth-return-project-id');
         localStorage.removeItem('vpylab-oauth-return-path');
         localStorage.removeItem('vpylab-oauth-return-code');
+        localStorage.removeItem('vpylab-oauth-return-action');
+        localStorage.removeItem('vpylab-oauth-return-project-id');
       } catch { /* ignore */ }
 
       // returnCode가 있으면 navigate state로 전달 → Sandbox가 받아서 에디터 복원
       if (returnCode != null) {
-        navigate(returnPath, { replace: true, state: { restoredCode: returnCode } });
+        navigate(returnPath, { replace: true, state: { restoredCode: returnCode, returnAction, returnProjectId } });
       } else {
-        navigate(returnPath, { replace: true });
+        navigate(returnPath, {
+          replace: true,
+          state: returnAction ? { returnAction, returnProjectId } : undefined,
+        });
       }
     };
 

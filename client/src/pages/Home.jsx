@@ -122,8 +122,8 @@ export default function Home() {
                 </h2>
                 <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
                   {lang === 'ko'
-                    ? `${courses.length}개 코스 · 입문 · 융합 · 튜토리얼 · 교사 교재 포함`
-                    : `${courses.length} courses · Beginner · Fusion · Tutorial · with teacher textbook`}
+                    ? `${courses.length}개 코스 · 입문 · 융합 · 튜토리얼`
+                    : `${courses.length} courses · Beginner · Fusion · Tutorial`}
                 </p>
               </div>
               <Link

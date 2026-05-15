@@ -74,6 +74,16 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
 
   if (!isOpen) return null;
 
+  const handleGitHubSignIn = () => {
+    const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    signInWithGitHub({
+      returnPath,
+      returnCode: code || '',
+      returnAction: 'publish',
+      returnProjectId: projectContext?.id || '',
+    });
+  };
+
   const handlePublish = async () => {
     if (!title.trim()) {
       setError('제목을 입력해주세요.');
@@ -292,14 +302,14 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
             {publishToGitHub && !isGitHubUser() && (
               <div className="publish-github-prompt">
                 <p>GitHub 저장소와 Pages를 만들려면 GitHub 로그인이 필요합니다.</p>
-                <button onClick={signInWithGitHub} type="button">GitHub으로 로그인</button>
+                <button onClick={handleGitHubSignIn} type="button">GitHub으로 로그인</button>
               </div>
             )}
 
             {githubTokenExpired && (
               <div className="publish-token-warning">
                 <p>GitHub 인증이 만료되었습니다. 재로그인 후 다시 발행해주세요.</p>
-                <button onClick={signInWithGitHub} type="button">GitHub 재로그인</button>
+                <button onClick={handleGitHubSignIn} type="button">GitHub 재로그인</button>
               </div>
             )}
 

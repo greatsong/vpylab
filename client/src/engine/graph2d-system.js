@@ -129,6 +129,17 @@ export function deleteSeries(cmd) {
   seriesGraphMap.delete(cmd.id);
 }
 
+export function clearSeries(cmd) {
+  const gid = seriesGraphMap.get(cmd.id);
+  if (!gid) return;
+  const g = graphRegistry.get(gid);
+  if (!g) return;
+  const s = g.series.get(cmd.id);
+  if (!s) return;
+  s.points = [];
+  redraw(g);
+}
+
 export function plotSeries(cmd) {
   const gid = seriesGraphMap.get(cmd.id);
   if (!gid) return;

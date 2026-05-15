@@ -61,7 +61,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net blob:; style-src 'unsafe-inline'; connect-src https://cdn.jsdelivr.net https://pypi.org https://files.pythonhosted.org blob:; img-src blob: data:; font-src https://cdn.jsdelivr.net; worker-src blob:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com blob:; style-src 'unsafe-inline'; connect-src https://cdn.jsdelivr.net https://unpkg.com https://pypi.org https://files.pythonhosted.org blob:; img-src blob: data:; font-src https://cdn.jsdelivr.net; worker-src blob:;">
   <title>${safeTitle} — VPyLab</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -749,14 +749,32 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
 
   async function run() {
     progress.style.width = '20%';
-    const pyodideScript = document.createElement('script');
-    pyodideScript.src = 'https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide.js';
-    document.head.appendChild(pyodideScript);
-
-    await new Promise(r => pyodideScript.onload = r);
+    const pyodideCdns = [
+      'https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/',
+      'https://unpkg.com/pyodide@${PYODIDE_VERSION}/',
+    ];
+    let pyodideIndexUrl = null;
+    let lastLoadError = null;
+    for (const cdn of pyodideCdns) {
+      const pyodideScript = document.createElement('script');
+      pyodideScript.src = cdn + 'pyodide.js';
+      document.head.appendChild(pyodideScript);
+      try {
+        await new Promise((resolve, reject) => {
+          pyodideScript.onload = resolve;
+          pyodideScript.onerror = () => reject(new Error(cdn + 'pyodide.js 로드 실패'));
+        });
+        pyodideIndexUrl = cdn;
+        break;
+      } catch (err) {
+        lastLoadError = err;
+        pyodideScript.remove();
+      }
+    }
+    if (!pyodideIndexUrl) throw lastLoadError || new Error('Pyodide CDN 로드 실패');
     progress.style.width = '50%';
 
-    const pyodide = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/' });
+    const pyodide = await loadPyodide({ indexURL: pyodideIndexUrl });
     progress.style.width = '80%';
 
     // micropip으로 필요한 패키지 자동 설치
@@ -784,7 +802,8 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
 import sys, types
 vpython_module = types.ModuleType('vpython')
 _vpython_names = [
-    'vector', 'vec', 'color', '색상', 'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
+    'vector', 'vec', 'color', '색상', 'textures', '텍스처',
+    'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
     'pyramid', 'ellipsoid', 'helix', 'label', 'text', 'curve', 'points', 'frame',
     'vertex', 'triangle', 'quad', 'extrusion',
     'scene', 'keysdown',

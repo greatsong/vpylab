@@ -64,7 +64,14 @@ export function createWidget(cmd) {
 
   switch (cmd.kind) {
     case 'slider': {
+      if (cmd.text) {
+        const name = document.createElement('span');
+        name.textContent = String(cmd.text);
+        name.style.cssText = 'min-width:72px;color:#444;font-weight:600;';
+        wrap.appendChild(name);
+      }
       const label = document.createElement('span');
+      label.dataset.widgetValue = 'true';
       label.textContent = String(cmd.value ?? cmd.min ?? 0);
       label.style.cssText = 'min-width:36px;text-align:right;font-variant-numeric:tabular-nums;';
       inputEl = document.createElement('input');
@@ -207,7 +214,7 @@ export function updateWidget(cmd) {
     if (w.kind === 'slider') {
       w.input.value = String(cmd.value);
       // 라벨 업데이트
-      const label = w.el.querySelector('span');
+      const label = w.el.querySelector('[data-widget-value]');
       if (label) label.textContent = String(cmd.value);
     } else if (w.kind === 'checkbox') {
       w.input.checked = Boolean(cmd.value);

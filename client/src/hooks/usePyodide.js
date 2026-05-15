@@ -38,6 +38,7 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
   const ACTIVITY_TIMEOUT = 10_000;
   const lastCodeRef = useRef('');   // 마지막 실행 코드 (타임아웃 메시지 분기용)
   const stopRef = useRef(null);     // doStopExecution ref (선언 순서 문제 해결)
+  const activeRunIdRef = useRef(0); // 이전 실행의 늦은 메시지를 무시하기 위한 실행 번호
 
   // 콜백 refs (최신 값 유지)
   const cbRef = useRef({ onOutput, onError, onBatch, onReady, onDone });
@@ -51,6 +52,12 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
   const handleMessage = useCallback((msg) => {
     const { type, ...data } = msg;
     const cb = cbRef.current;
+    const hasRunId = data.runId !== undefined && data.runId !== null;
+    const isStaleRunMessage = hasRunId && data.runId !== activeRunIdRef.current;
+
+    if (isStaleRunMessage && ['batch', 'stdout', 'stderr', 'error', 'done'].includes(type)) {
+      return;
+    }
 
     // 활동 감지: batch/stdout/stderr 시 타임아웃 리셋
     if (type === 'batch' || type === 'stdout' || type === 'stderr') {
@@ -164,7 +171,8 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
    * 코드 실행
    */
   const runCode = useCallback((rawCode) => {
-    if (singleton.getStatus() !== 'ready') return;
+    const singletonStatus = singleton.getStatus();
+    if (singletonStatus !== 'ready' && singletonStatus !== 'running') return;
 
     // 직전 stopExecution()이 예약한 3초 hardStop 타이머가 새 코드를 죽이지 않도록 취소
     clearTimeout(hardStopTimerRef.current);
@@ -184,7 +192,8 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
       cbRef.current.onError?.(getTimeoutMessage(rawCode));
     }, ACTIVITY_TIMEOUT);
 
-    singleton.runCode(code);
+    const runId = singleton.runCode(code);
+    if (runId) activeRunIdRef.current = runId;
   }, [doStopExecution]);
 
   /**

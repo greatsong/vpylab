@@ -23,6 +23,10 @@ let pyodide = null;
 let vpythonApiCode = null;
 let shouldStop = false;
 let micropipLoaded = false;
+let isRunningCode = false;
+let isDispatchingEvents = false;
+let currentRunId = 0;
+let queuedRun = null;
 
 // === 이벤트 큐 (메인 스레드 → Python) ===
 const _eventQueue = [];
@@ -37,9 +41,61 @@ self._getMousePos = () => _mouseState.pos;
 self._getMousePick = () => _mouseState.pick;
 self._getWidgetValue = (id) => _widgetValues[id] ?? null;
 self._getPressedKeys = () => _pressedKeysJson;
+self._getCurrentRunId = () => currentRunId;
+
+function sendRunMessage(runId, type, payload = {}) {
+  self.postMessage({ type, runId, ...payload });
+}
 
 function sendProgress(percent, message) {
   self.postMessage({ type: 'progress', percent, message });
+}
+
+function clearInputQueues() {
+  _eventQueue.length = 0;
+  for (const key of Object.keys(_widgetValues)) delete _widgetValues[key];
+}
+
+async function flushOutputStreams(runId = currentRunId) {
+  if (!pyodide) return;
+  const stdout = await pyodide.runPythonAsync('sys.stdout.getvalue()');
+  const stderr = await pyodide.runPythonAsync('sys.stderr.getvalue()');
+
+  await pyodide.runPythonAsync(`
+sys.stdout.seek(0); sys.stdout.truncate(0)
+sys.stderr.seek(0); sys.stderr.truncate(0)
+`);
+
+  if (stdout) {
+    const lines = stdout.split('\n');
+    if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+    for (const line of lines) sendRunMessage(runId, 'stdout', { text: line });
+  }
+  if (stderr) {
+    const lines = stderr.split('\n');
+    if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+    for (const line of lines) sendRunMessage(runId, 'stderr', { text: line });
+  }
+}
+
+async function dispatchQueuedEvents() {
+  if (!pyodide || isRunningCode || isDispatchingEvents || _eventQueue.length === 0) return;
+  isDispatchingEvents = true;
+  try {
+    await pyodide.runPythonAsync(`
+_process_pending_events()
+_send_commands()
+`);
+    await flushOutputStreams();
+  } catch (err) {
+    const msg = err.message || String(err);
+    sendRunMessage(currentRunId, 'error', { error: formatPythonError(msg), raw: msg });
+  } finally {
+    isDispatchingEvents = false;
+    if (_eventQueue.length > 0) {
+      await dispatchQueuedEvents();
+    }
+  }
 }
 
 /**
@@ -55,11 +111,14 @@ function importPyodideScript() {
         PYODIDE_CDN = cdn;  // 성공한 CDN을 indexURL로도 사용
         return cdn;
       } catch (e) {
-        errors.push(`${cdn} attempt ${attempt + 1}: ${e.message || e}`);
+        const message = e.message || String(e);
+        errors.push(`${cdn} attempt ${attempt + 1}: ${message}`);
+        // CSP가 막은 fallback은 재시도해도 성공하지 않으므로 같은 CDN 반복을 멈춥니다.
+        if (/Content Security Policy|violates.*directive|blocked by CSP/i.test(message)) break;
       }
     }
   }
-  throw new Error(`Pyodide CDN 로드 실패 (모든 시도): ${errors.slice(-2).join(' | ')}`);
+  throw new Error(`Pyodide CDN 로드 실패: 학교/회사 네트워크가 CDN을 막았거나 일시 장애가 있습니다. 새로고침 후 다시 실행해 주세요. (${errors.slice(-2).join(' | ')})`);
 }
 
 /**
@@ -92,7 +151,8 @@ import types
 vpython_module = types.ModuleType('vpython')
 # 현재 전역에 정의된 VPython 클래스/함수를 모듈에 복사
 _vpython_names = [
-    'vector', 'vec', 'color', '\uc0c9\uc0c1', 'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
+    'vector', 'vec', 'color', '\uc0c9\uc0c1', 'textures', '\ud14d\uc2a4\ucc98',
+    'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
     'pyramid', 'ellipsoid', 'helix', 'label', 'text', 'curve', 'points', 'frame',
     'vertex', 'triangle', 'quad', 'extrusion',
     'graph', 'gcurve', 'gdots', 'gvbars', 'ghbars',
@@ -217,15 +277,24 @@ function detectRequiredPackages(code) {
 /**
  * Python 코드 실행
  */
-async function runCode(code) {
+async function runCode(code, runId = currentRunId + 1) {
   if (!pyodide) {
-    self.postMessage({ type: 'error', error: 'Python 엔진이 아직 준비되지 않았습니다.' });
+    sendRunMessage(runId, 'error', { error: 'Python 엔진이 아직 준비되지 않았습니다.' });
+    return;
+  }
+
+  if (isRunningCode) {
+    queuedRun = { code, runId };
+    shouldStop = true;
     return;
   }
 
   try {
+    currentRunId = runId;
+    isRunningCode = true;
     // 중단 플래그 리셋
     shouldStop = false;
+    clearInputQueues();
 
     // Python에서 중단 신호를 확인할 수 있도록 JS 함수 노출
     self._checkStopSignal = () => shouldStop;
@@ -235,11 +304,11 @@ async function runCode(code) {
     if (packages.length > 0) {
       // micropip 지연 로딩 (첫 사용 시에만)
       if (!micropipLoaded) {
-        self.postMessage({ type: 'stdout', text: '📦 패키지 관리자 준비 중...' });
+        sendRunMessage(runId, 'stdout', { text: '📦 패키지 관리자 준비 중...' });
         await pyodide.loadPackage('micropip');
         micropipLoaded = true;
       }
-      self.postMessage({ type: 'stdout', text: `📦 ${packages.join(', ')} 설치 중...` });
+      sendRunMessage(runId, 'stdout', { text: `📦 ${packages.join(', ')} 설치 중...` });
       await pyodide.runPythonAsync(`
 import micropip
 await micropip.install(${JSON.stringify(packages)})
@@ -247,7 +316,7 @@ await micropip.install(${JSON.stringify(packages)})
       for (const pkg of packages) {
         installedPackages.add(pkg);
       }
-      self.postMessage({ type: 'stdout', text: `✅ ${packages.join(', ')} 설치 완료!` });
+      sendRunMessage(runId, 'stdout', { text: `✅ ${packages.join(', ')} 설치 완료!` });
     }
 
     // stdout/stderr 리디렉션
@@ -258,8 +327,11 @@ sys.stdout = StringIO()
 sys.stderr = StringIO()
 `);
 
+    // 이전 실행에서 남은 Python 측 객체/핸들러를 정리
+    await pyodide.runPythonAsync('_reset_runtime_state()');
+
     // 학생 코드 실행 전 heartbeat — 모바일에서 초기화 지연으로 인한 타임아웃 방지
-    self.postMessage({ type: 'batch', commands: [] });
+    sendRunMessage(runId, 'batch', { commands: [] });
 
     // 학생 코드 실행
     await pyodide.runPythonAsync(code);
@@ -267,42 +339,35 @@ sys.stderr = StringIO()
     // 실행 후 남은 커맨드 버퍼 플러시
     await pyodide.runPythonAsync('_send_commands()');
 
-    // 출력 캡처 — 줄 단위로 분리하여 전송
-    const stdout = await pyodide.runPythonAsync('sys.stdout.getvalue()');
-    const stderr = await pyodide.runPythonAsync('sys.stderr.getvalue()');
+    // 출력 캡처 — 줄 단위로 분리하여 전송 후 버퍼를 비움
+    await flushOutputStreams(runId);
 
-    if (stdout) {
-      const lines = stdout.split('\n');
-      // 마지막 빈 줄 제거 (trailing newline)
-      if (lines.length > 0 && lines[lines.length - 1] === '') {
-        lines.pop();
-      }
-      for (const line of lines) {
-        self.postMessage({ type: 'stdout', text: line });
-      }
-    }
-    if (stderr) {
-      const lines = stderr.split('\n');
-      if (lines.length > 0 && lines[lines.length - 1] === '') {
-        lines.pop();
-      }
-      for (const line of lines) {
-        self.postMessage({ type: 'stderr', text: line });
-      }
-    }
-
-    self.postMessage({ type: 'done' });
+    isRunningCode = false;
+    sendRunMessage(runId, 'done');
   } catch (err) {
     const msg = err.message || String(err);
     // 사용자 중지로 인한 예외는 에러가 아닌 정상 종료로 처리
     // shouldStop 플래그 또는 예외 메시지로 판별
     if (shouldStop || msg.includes('_StopExecution') || msg.includes('실행이 중지되었습니다')) {
       shouldStop = false;
-      self.postMessage({ type: 'done' });
+      isRunningCode = false;
+      sendRunMessage(runId, 'done');
+      if (queuedRun) {
+        const next = queuedRun;
+        queuedRun = null;
+        await runCode(next.code, next.runId);
+      }
       return;
     }
     const errorMsg = formatPythonError(msg);
-    self.postMessage({ type: 'error', error: errorMsg, raw: msg });
+    isRunningCode = false;
+    sendRunMessage(runId, 'error', { error: errorMsg, raw: msg });
+  }
+
+  if (queuedRun) {
+    const next = queuedRun;
+    queuedRun = null;
+    await runCode(next.code, next.runId);
   }
 }
 
@@ -331,7 +396,7 @@ self.onmessage = async (event) => {
       break;
 
     case 'run':
-      await runCode(code);
+      await runCode(code, event.data.runId);
       break;
 
     case 'stop':
@@ -346,6 +411,7 @@ self.onmessage = async (event) => {
           _eventQueue.push(JSON.stringify(event.data.payload));
         } catch { /* 직렬화 실패 시 무시 */ }
       }
+      await dispatchQueuedEvents();
       break;
 
     case 'widget_value':

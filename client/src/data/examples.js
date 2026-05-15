@@ -489,8 +489,7 @@ sphere(pos=vector(5, -3, -6), radius=2.5, color=color.pink, opacity=0.06)
 
 # 우주선 (작은 화살표)
 ship = arrow(pos=vector(0, 0, 5), axis=vector(0, 0, -0.5), color=color.white)
-ship.make_trail = True
-ship.trail_color = color.cyan
+ship.attach_trail(color=color.cyan)
 
 # 느긋하게 떠다니기
 t = 0
@@ -729,7 +728,7 @@ import random, math
 scene_background(vector(0.02, 0.02, 0.05))
 
 # 불꽃놀이 함수
-def firework(x, y):
+async def firework(x, y):
     col = random.choice([color.red, color.yellow, color.cyan,
                          color.magenta, color.green, color.orange])
     play_sfx('explosion')
@@ -771,7 +770,7 @@ def firework(x, y):
 while True:
     x = random.uniform(-3, 3)
     y = random.uniform(1, 4)
-    firework(x, y)
+    await firework(x, y)
     sleep(0.5)
 `
   },
@@ -1654,16 +1653,13 @@ fcurve = gcurve(graph=g, color=color.blue)
 state = {'A': 1.0, 'B': 1.0, 'C': 0.0}
 
 def redraw():
-    fcurve.delete()  # 이전 시리즈 제거
-    new_curve = gcurve(graph=g, color=color.blue)
-    state['curve'] = new_curve
+    fcurve.clear()
     A, B, C = state['A'], state['B'], state['C']
     for i in range(200):
         x = i * 4 * math.pi / 200
         y = A * math.sin(B * x + C)
-        new_curve.plot(x, y)
+        fcurve.plot(x, y)
 
-state['curve'] = fcurve
 redraw()
 
 # 슬라이더 콜백들
@@ -1677,9 +1673,9 @@ def on_C(evt):
     state['C'] = evt.value
     redraw()
 
-slider(min=0.1, max=3.0, step=0.1, value=1.0, length=180, bind=on_A)
-slider(min=0.5, max=4.0, step=0.1, value=1.0, length=180, bind=on_B)
-slider(min=0, max=2*math.pi, step=0.1, value=0, length=180, bind=on_C)
+slider(text='진폭 A', min=0.1, max=3.0, step=0.1, value=1.0, length=180, bind=on_A)
+slider(text='주파수 B', min=0.5, max=4.0, step=0.1, value=1.0, length=180, bind=on_B)
+slider(text='위상 C', min=0, max=2*math.pi, step=0.1, value=0, length=180, bind=on_C)
 
 label(pos=vector(0, 0, 0),
       text="위에서부터 A(진폭), B(주파수), C(위상) 슬라이더",

@@ -50,6 +50,11 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
   }, [codeId, fetchRevisions]);
 
   const handlePush = async (rev) => {
+    if (rev.project_id) {
+      window.alert('팀 프로젝트의 GitHub 반영은 Sandbox의 "코드 저장" 또는 "기록 남기기" 흐름에서 처리됩니다.');
+      return;
+    }
+
     setPushingId(rev.id);
     try {
       const snapshot = await fetchRevisionSnapshot(rev.id);
@@ -153,6 +158,7 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
               const sourceLabel = SOURCE_LABEL[rev.source] || rev.source;
               const dotColor = SOURCE_COLOR[rev.source] || 'var(--color-text-muted)';
               const isLatest = idx === 0;
+              const isTeamRevision = !!rev.project_id;
               const number = revisions.length - idx;
               return (
                 <li key={rev.id} className="relative pl-8 pr-1 py-2.5">
@@ -237,16 +243,18 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
                       <div className="flex gap-1">
                         <button
                           onClick={() => handlePush(rev)}
-                          disabled={syncing && pushingId === rev.id}
+                          disabled={isTeamRevision || (syncing && pushingId === rev.id)}
                           className="text-[10px] px-2 py-1 cursor-pointer border disabled:opacity-50"
                           style={{
                             backgroundColor: 'var(--color-bg-tertiary)',
                             borderColor: 'var(--color-border)',
                             color: 'var(--color-text-secondary)',
                           }}
-                          title="이 버전을 GitHub 레포에 commit"
+                          title={isTeamRevision
+                            ? '팀 프로젝트는 Sandbox의 코드 저장/기록 남기기 흐름에서 GitHub에 반영됩니다.'
+                            : '이 버전을 GitHub 레포에 commit'}
                         >
-                          {pushingId === rev.id ? '⏳ push…' : '📤 GitHub'}
+                          {isTeamRevision ? 'GitHub 자동' : pushingId === rev.id ? '⏳ push…' : '📤 GitHub'}
                         </button>
                         {!isLatest && (
                           <button

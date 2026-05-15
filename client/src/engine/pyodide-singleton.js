@@ -11,6 +11,8 @@ let worker = null;
 let status = 'idle'; // idle | loading | ready | running
 let readyPromiseResolve = null;
 let listeners = new Set(); // { onMessage: fn } 구독자 세트
+let runSeq = 0;
+let activeRunId = 0;
 
 function createWorker() {
   const w = new Worker(
@@ -33,7 +35,8 @@ function createWorker() {
     }
 
     if (msg.type === 'done' || msg.type === 'error') {
-      if (status === 'running') status = 'ready';
+      const isCurrentRun = !msg.runId || msg.runId === activeRunId;
+      if (status === 'running' && isCurrentRun) status = 'ready';
     }
 
     // 모든 구독자에게 메시지 전달
@@ -86,9 +89,12 @@ export function initIfNeeded() {
  * 코드 실행
  */
 export function runCode(code) {
-  if (!worker || status !== 'ready') return;
+  if (!worker || (status !== 'ready' && status !== 'running')) return null;
+  runSeq += 1;
+  activeRunId = runSeq;
   status = 'running';
-  worker.postMessage({ type: 'run', code });
+  worker.postMessage({ type: 'run', code, runId: activeRunId });
+  return activeRunId;
 }
 
 /**
@@ -143,6 +149,7 @@ export function hardStop() {
     worker = null;
   }
   status = 'idle';
+  activeRunId = 0;
   listeners.clear();
 }
 

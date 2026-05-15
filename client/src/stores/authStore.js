@@ -6,8 +6,24 @@ const useAuthStore = create((set, get) => ({
   profile: null,
   loading: true,
   authModalOpen: false,
+  githubTokenExpired: false,
 
   setAuthModalOpen: (open) => set({ authModalOpen: open }),
+
+  markGitHubTokenExpired: () => {
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+        .forEach((key) => {
+          const stored = JSON.parse(localStorage.getItem(key) || '{}');
+          if (stored?.provider_token) {
+            delete stored.provider_token;
+            localStorage.setItem(key, JSON.stringify(stored));
+          }
+        });
+    } catch { /* localStorage 사용 불가 환경 무시 */ }
+    set({ githubTokenExpired: true });
+  },
 
   // 세션 초기화 (App 마운트 시 호출)
   // cleanup 함수를 반환하여 StrictMode 이중 실행 시 리스너 중복 방지
@@ -18,6 +34,7 @@ const useAuthStore = create((set, get) => ({
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           set({ user: session.user, loading: false });
+          await get().upsertProfile(session.user);
           get().fetchProfile(session.user.id);
         } else {
           set({ loading: false });
@@ -65,11 +82,25 @@ const useAuthStore = create((set, get) => ({
       || '';
     const avatarUrl = user.user_metadata?.avatar_url || null;
 
-    await supabase.from('vpylab_profiles').upsert({
+    const { error: insertError } = await supabase.from('vpylab_profiles').upsert({
       id: user.id,
       display_name: displayName,
       avatar_url: avatarUrl,
     }, { onConflict: 'id', ignoreDuplicates: true });
+    if (insertError) {
+      console.warn('프로필 생성 실패:', insertError.message);
+    }
+
+    if (!avatarUrl) return;
+
+    const { error: updateError } = await supabase
+      .from('vpylab_profiles')
+      .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.warn('프로필 갱신 실패:', updateError.message);
+    }
   },
 
   // Google 로그인
@@ -85,10 +116,13 @@ const useAuthStore = create((set, get) => ({
   // GitHub 로그인 (public_repo scope으로 갤러리 발행/프로젝트 commit 지원)
   // returnPath, returnCode를 옵션으로 받으면 재인증 후 그 코드로 복원할 수 있도록
   // localStorage에 임시 저장한다 (Supabase는 OAuth 후 redirectTo만 보존하므로 우리가 직접 백업).
-  signInWithGitHub: async ({ returnPath, returnCode } = {}) => {
+  signInWithGitHub: async ({ returnPath, returnCode, returnAction, returnProjectId } = {}) => {
+    set({ githubTokenExpired: false });
     try {
       if (returnPath) localStorage.setItem('vpylab-oauth-return-path', returnPath);
       if (returnCode != null) localStorage.setItem('vpylab-oauth-return-code', returnCode);
+      if (returnAction) localStorage.setItem('vpylab-oauth-return-action', returnAction);
+      if (returnProjectId) localStorage.setItem('vpylab-oauth-return-project-id', returnProjectId);
     } catch { /* localStorage 사용 불가 환경 무시 */ }
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
@@ -105,6 +139,8 @@ const useAuthStore = create((set, get) => ({
 
   // GitHub provider_token 추출 (갤러리 발행 시 사용)
   getGitHubToken: async () => {
+    if (get().githubTokenExpired) return null;
+
     // 1차: Supabase getSession()에서 provider_token 확인
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.provider_token) return session.provider_token;

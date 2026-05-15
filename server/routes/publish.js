@@ -40,6 +40,18 @@ function sanitizeRepoName(title) {
     || 'vpylab-project';                // 빈 문자열 방지
 }
 
+function parseRepoFullName(repoFullName) {
+  const match = String(repoFullName || '').match(
+    /^([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)\/([A-Za-z0-9._-]{1,100})$/,
+  );
+  if (!match) return null;
+  return { owner: match[1], repoName: match[2] };
+}
+
+function buildRepoApiBase(owner, repoName) {
+  return `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}`;
+}
+
 /**
  * 코드 내 민감 정보 검사
  * 보안: API 키, 이메일, 비밀번호 패턴 경고
@@ -94,7 +106,7 @@ async function commitFile(owner, repoName, path, content, message, token) {
   let existingSha = null;
   try {
     const existing = await githubFetch(
-      `https://api.github.com/repos/${owner}/${repoName}/contents/${path}`,
+      `${buildRepoApiBase(owner, repoName)}/contents/${encodeURIComponent(path)}`,
       token,
     );
     existingSha = existing.sha;
@@ -108,7 +120,7 @@ async function commitFile(owner, repoName, path, content, message, token) {
   if (existingSha) body.sha = existingSha;
 
   await githubFetch(
-    `https://api.github.com/repos/${owner}/${repoName}/contents/${path}`,
+    `${buildRepoApiBase(owner, repoName)}/contents/${encodeURIComponent(path)}`,
     token,
     {
       method: 'PUT',
@@ -202,12 +214,12 @@ router.post('/', publishLimiter, async (req, res) => {
     // === 2단계: 리포 이름 결정 (기존 리포가 있으면 재사용) ===
     let repoName;
     if (existingRepo) {
-      const repoMatch = String(existingRepo).match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
-      if (!repoMatch) {
+      const parsedRepo = parseRepoFullName(existingRepo);
+      if (!parsedRepo) {
         return res.status(400).json({ error: 'GitHub 저장소 형식이 올바르지 않습니다.' });
       }
-      owner = repoMatch[1];
-      repoName = repoMatch[2];
+      owner = parsedRepo.owner;
+      repoName = parsedRepo.repoName;
     } else {
       const uid = crypto.randomUUID().slice(0, 6);
       repoName = `vpylab-${sanitizeRepoName(title)}-${uid}`;
@@ -216,7 +228,7 @@ router.post('/', publishLimiter, async (req, res) => {
     // === 3단계: 리포 확인/생성 ===
     let repoExists = false;
     try {
-      await githubFetch(`https://api.github.com/repos/${owner}/${repoName}`, githubToken);
+      await githubFetch(buildRepoApiBase(owner, repoName), githubToken);
       repoExists = true;
     } catch {
       if (existingRepo) {
@@ -276,7 +288,7 @@ router.post('/', publishLimiter, async (req, res) => {
     // === 5단계: GitHub Pages 활성화 ===
     try {
       await githubFetch(
-        `https://api.github.com/repos/${owner}/${repoName}/pages`,
+        `${buildRepoApiBase(owner, repoName)}/pages`,
         githubToken,
         {
           method: 'POST',
@@ -338,13 +350,18 @@ router.post('/fetch', publishLimiter, async (req, res) => {
     if (!repo || !githubToken) {
       return res.status(400).json({ error: 'repo와 githubToken이 필요합니다.' });
     }
+    const parsedRepo = parseRepoFullName(repo);
+    if (!parsedRepo) {
+      return res.status(400).json({ error: 'GitHub 저장소 형식이 올바르지 않습니다.' });
+    }
+    const repoApiBase = buildRepoApiBase(parsedRepo.owner, parsedRepo.repoName);
 
     // main.py 우선 시도
     let code = '';
     let title = '';
     try {
       const mainPy = await githubFetch(
-        `https://api.github.com/repos/${repo}/contents/main.py`,
+        `${repoApiBase}/contents/main.py`,
         githubToken,
       );
       code = Buffer.from(mainPy.content, 'base64').toString('utf-8');
@@ -355,7 +372,7 @@ router.post('/fetch', publishLimiter, async (req, res) => {
     if (!code) {
       // 기존 index.html 방식 (하위 호환)
       const file = await githubFetch(
-        `https://api.github.com/repos/${repo}/contents/index.html`,
+        `${repoApiBase}/contents/index.html`,
         githubToken,
       );
       const html = Buffer.from(file.content, 'base64').toString('utf-8');
@@ -374,7 +391,7 @@ router.post('/fetch', publishLimiter, async (req, res) => {
     // vpylab.json에서 메타데이터 읽기 시도
     try {
       const meta = await githubFetch(
-        `https://api.github.com/repos/${repo}/contents/vpylab.json`,
+        `${repoApiBase}/contents/vpylab.json`,
         githubToken,
       );
       const metaContent = JSON.parse(Buffer.from(meta.content, 'base64').toString('utf-8'));
@@ -408,11 +425,11 @@ router.put('/update', publishLimiter, async (req, res) => {
       return res.status(400).json({ error: '코드가 너무 큽니다. (최대 500KB)' });
     }
 
-    const repoMatch = String(githubRepo).match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
-    if (!repoMatch) {
+    const parsedRepo = parseRepoFullName(githubRepo);
+    if (!parsedRepo) {
       return res.status(400).json({ error: 'GitHub 저장소 형식이 올바르지 않습니다.' });
     }
-    const [, owner, repoName] = repoMatch;
+    const { owner, repoName } = parsedRepo;
     const commitMsg = `✏️ VPyLab에서 업데이트: ${title || '작품 수정'}`;
     const htmlForCommit = buildPagesHtml({
       code: pythonCode,
@@ -443,7 +460,7 @@ router.put('/update', publishLimiter, async (req, res) => {
     // Pages가 꺼져 있던 기존 저장소도 업데이트 흐름에서 다시 켭니다.
     try {
       await githubFetch(
-        `https://api.github.com/repos/${owner}/${repoName}/pages`,
+        `${buildRepoApiBase(owner, repoName)}/pages`,
         githubToken,
         {
           method: 'POST',
@@ -480,10 +497,14 @@ router.post('/fork', publishLimiter, async (req, res) => {
     if (!sourceRepo || !githubToken) {
       return res.status(400).json({ error: '필수 항목이 누락되었습니다.' });
     }
+    const parsedRepo = parseRepoFullName(sourceRepo);
+    if (!parsedRepo) {
+      return res.status(400).json({ error: 'GitHub 저장소 형식이 올바르지 않습니다.' });
+    }
 
     // Fork API
     const forked = await githubFetch(
-      `https://api.github.com/repos/${sourceRepo}/forks`,
+      `${buildRepoApiBase(parsedRepo.owner, parsedRepo.repoName)}/forks`,
       githubToken,
       {
         method: 'POST',
@@ -498,7 +519,7 @@ router.post('/fork', publishLimiter, async (req, res) => {
     // GitHub Pages 활성화
     try {
       await githubFetch(
-        `https://api.github.com/repos/${forked.full_name}/pages`,
+        `${buildRepoApiBase(forked.owner.login, forked.name)}/pages`,
         githubToken,
         {
           method: 'POST',

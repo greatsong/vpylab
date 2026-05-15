@@ -384,14 +384,15 @@ for i in range(-50, 51):
         summary: 'slider로 a 값을 바꾸면 그래프가 실시간으로 변한다.',
         code: `from vpython import *
 
-g = graph(title='y = a x + b', xtitle='x', ytitle='y', width=600, height=380)
+g = graph(title='y = a x + b', xtitle='x', ytitle='y',
+          width=600, height=380, xmin=-5, xmax=5, ymin=-15, ymax=15)
 선 = gcurve(color=color.red)
 
 a = 1.0
 b = 0.0
 
 def 다시그리기():
-    선.delete()
+    선.clear()
     for i in range(-50, 51):
         x = i * 0.1
         선.plot(x, a * x + b)
@@ -406,8 +407,8 @@ def on_b(s):
     b = s.value
     다시그리기()
 
-slider(min=-3, max=3, value=1.0, bind=on_a)
-slider(min=-3, max=3, value=0.0, bind=on_b)
+slider(text='기울기 a', min=-3, max=3, value=1.0, bind=on_a)
+slider(text='절편 b', min=-3, max=3, value=0.0, bind=on_b)
 다시그리기()
 `,
       },
@@ -417,15 +418,16 @@ slider(min=-3, max=3, value=0.0, bind=on_b)
         summary: 'y = a(x-h)² + k의 a, h, k가 만드는 변화를 본다.',
         code: `from vpython import *
 
-g = graph(title='y = a(x - h)^2 + k', xtitle='x', ytitle='y', width=600, height=400)
+g = graph(title='y = a(x - h)^2 + k', xtitle='x', ytitle='y',
+          width=600, height=400, xmin=-5, xmax=5, ymin=-5, ymax=20)
 포물선 = gcurve(color=color.orange)
 꼭짓점 = gdots(color=color.red)
 
 a, h, k = 1.0, 0.0, 0.0
 
 def 다시():
-    포물선.delete()
-    꼭짓점.delete()
+    포물선.clear()
+    꼭짓점.clear()
     for i in range(-50, 51):
         x = i * 0.1
         포물선.plot(x, a * (x - h) ** 2 + k)
@@ -438,9 +440,9 @@ def fh(s):
 def fk(s):
     global k; k = s.value; 다시()
 
-slider(min=-2, max=2, value=1.0, bind=fa)
-slider(min=-3, max=3, value=0.0, bind=fh)
-slider(min=-3, max=3, value=0.0, bind=fk)
+slider(text='폭 a', min=-2, max=2, value=1.0, bind=fa)
+slider(text='좌우 h', min=-3, max=3, value=0.0, bind=fh)
+slider(text='상하 k', min=-3, max=3, value=0.0, bind=fk)
 다시()
 `,
       },
@@ -466,13 +468,14 @@ for i in range(0, 700):
         code: `from vpython import *
 import math
 
-g = graph(title='y = A sin(w x + p)', xtitle='x', ytitle='y', width=600, height=380)
+g = graph(title='y = A sin(w x + p)', xtitle='x', ytitle='y',
+          width=600, height=380, xmin=0, xmax=7, ymin=-3.2, ymax=3.2)
 파 = gcurve(color=color.magenta)
 
 A, w, p = 1.0, 1.0, 0.0
 
 def 다시():
-    파.delete()
+    파.clear()
     for i in range(0, 700):
         x = i * 0.01
         파.plot(x, A * math.sin(w * x + p))
@@ -484,9 +487,9 @@ def fw(s):
 def fp(s):
     global p; p = s.value; 다시()
 
-slider(min=0.1, max=3, value=1.0, bind=fA)
-slider(min=0.1, max=5, value=1.0, bind=fw)
-slider(min=-3.14, max=3.14, value=0.0, bind=fp)
+slider(text='진폭 A', min=0.1, max=3, value=1.0, bind=fA)
+slider(text='각속도 w', min=0.1, max=5, value=1.0, bind=fw)
+slider(text='위상 p', min=-3.14, max=3.14, value=0.0, bind=fp)
 다시()
 `,
       },
@@ -1048,17 +1051,17 @@ scene_background(색상['검정'])
 def 크기바꾸기(s):
     공.radius = s.value              # ★ 어떤 속성을 바꿀지
 
-slider(min=0.1, max=2.0, value=0.4, bind=크기바꾸기)
+slider(text='크기', min=0.1, max=2.0, value=0.4, bind=크기바꾸기)
 
 def 키눌림(evt):
     이동 = 0.2                       # ★ 이동량
-    if evt.key == 'left':
+    if evt.key == 'ArrowLeft':
         공.pos = 공.pos + vector(-이동, 0, 0)
-    elif evt.key == 'right':
+    elif evt.key == 'ArrowRight':
         공.pos = 공.pos + vector(이동, 0, 0)
-    elif evt.key == 'up':
+    elif evt.key == 'ArrowUp':
         공.pos = 공.pos + vector(0, 이동, 0)
-    elif evt.key == 'down':
+    elif evt.key == 'ArrowDown':
         공.pos = 공.pos + vector(0, -이동, 0)
 
 scene.bind('keydown', 키눌림)

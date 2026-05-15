@@ -36,11 +36,6 @@ const COURSE_HEX = {
 };
 const colorOf = (course) => COURSE_HEX[course.color] || '#4A6CF7';
 
-const TEXTBOOK_BASE_URL = (
-  import.meta.env?.VITE_TEXTBOOK_BASE_URL || 'https://greatsong.github.io/vpylab-textbook'
-).replace(/\/$/, '');
-const textbookSiteUrl = (course) => `${TEXTBOOK_BASE_URL}/${course.id}/`;
-
 // ─── 코스 카드 (목록 페이지) ────────────────────────────────────
 function CourseCard({ course, lang }) {
   const color = colorOf(course);
@@ -135,8 +130,8 @@ function CourseList() {
         </h1>
         <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
           {lang === 'ko'
-            ? `${courses.length}개 코스 · 실습(VPyLab)과 교사용 교재(Starlight)가 한 짝`
-            : `${courses.length} courses · Hands-on (VPyLab) paired with teacher textbook (Starlight)`}
+            ? `${courses.length}개 코스 · 입문 · 융합 · 튜토리얼`
+            : `${courses.length} courses · Beginner · Fusion · Tutorial`}
         </p>
       </div>
 
@@ -263,7 +258,6 @@ function CourseDetail({ courseId, lessonId }) {
 
   const color = colorOf(course);
   const trackMeta = TRACK_META[course.track];
-  const textbookUrl = textbookSiteUrl(course);
   const activeLesson = lessonId ? course.lessons.find((x) => x.id === lessonId) : null;
 
   return (
@@ -462,48 +456,6 @@ function CourseDetail({ courseId, lessonId }) {
             </div>
           )}
 
-          {/* 교사용 교재 카드 */}
-          <a
-            href={textbookUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block no-underline rounded-lg p-5 transition-all"
-            style={{
-              border: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-bg-panel)',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-              e.currentTarget.style.borderColor = `${color}55`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-              e.currentTarget.style.borderColor = 'var(--color-border)';
-            }}
-          >
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-text-muted)' }} />
-              <span className="text-[10.5px] font-mono font-bold uppercase tracking-wider"
-                style={{ color: 'var(--color-text-muted)' }}>
-                {lang === 'ko' ? '교사용 교재' : 'Teacher Textbook'}
-              </span>
-            </div>
-            <h3 className="font-display text-[14.5px] font-bold mb-1.5"
-              style={{ color: 'var(--color-text-primary)' }}>
-              📘 Starlight {lang === 'ko' ? '교재 사이트' : 'Textbook'}
-            </h3>
-            <p className="text-[12.5px] leading-relaxed mb-2"
-              style={{ color: 'var(--color-text-secondary)' }}>
-              {lang === 'ko'
-                ? '이론 본문 · 미스컨셉션 · 교사 노트가 차시별로 정리된 정적 사이트.'
-                : 'Theory · misconceptions · teacher notes — organized per lesson.'}
-            </p>
-            <span className="text-[12.5px] font-semibold"
-              style={{ color: 'var(--color-accent)' }}>
-              {lang === 'ko' ? '교재 사이트 열기 →' : 'Open textbook →'}
-            </span>
-          </a>
         </aside>
       </div>
     </main>

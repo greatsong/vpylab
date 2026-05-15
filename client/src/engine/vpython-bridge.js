@@ -22,7 +22,7 @@ import {
 } from './widgets-system';
 import {
   createGraph, deleteGraph,
-  createSeries, deleteSeries, plotSeries,
+  createSeries, deleteSeries, clearSeries, plotSeries,
   clearGraphs2D,
 } from './graph2d-system';
 
@@ -873,6 +873,9 @@ export function processBatch(commands, scene) {
         break;
       case 'graph_series_delete':
         try { deleteSeries(cmd); } catch (e) { console.warn('[series delete]', e); }
+        break;
+      case 'graph_series_clear':
+        try { clearSeries(cmd); } catch (e) { console.warn('[series clear]', e); }
         break;
       case 'graph_series_plot':
         try { plotSeries(cmd); } catch (e) { console.warn('[series plot]', e); }

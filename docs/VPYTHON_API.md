@@ -271,7 +271,8 @@ scene.bind('mousedown mouseup mousemove', on_click)  # 공백 구분 다중
 def trace(evt):
     print(evt.pos)
 
-# 이벤트 디스패치는 rate() 호출 시점에 발생 — 메인 루프 필수
+# 실행 중인 루프에서는 rate() 호출 시점에 이벤트가 처리됩니다.
+# 코드 실행이 끝난 뒤에도 위젯/클릭 콜백은 계속 동작합니다.
 while True:
     rate(30)
 ```
@@ -311,7 +312,7 @@ while True:
 # 슬라이더 — bind 콜백은 evt.value로 값 전달
 def on_slide(evt):
     ball.radius = evt.value
-slider(min=0.1, max=2.0, step=0.05, value=0.5, length=200, bind=on_slide)
+slider(text='크기', min=0.1, max=2.0, step=0.05, value=0.5, length=200, bind=on_slide)
 
 # 버튼
 def on_click(evt):
@@ -348,6 +349,9 @@ while t < 10:
     v_curve.plot(t, v)
     v_dots.plot(t, v * 0.8)
     t += 0.1
+
+# redraw할 때는 시리즈를 삭제하지 말고 점만 비웁니다.
+v_curve.clear()
 ```
 
 ---

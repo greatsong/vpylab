@@ -1,5 +1,13 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import useAuthStore from './authStore';
+
+async function getCurrentUser() {
+  const cachedUser = useAuthStore.getState().user;
+  if (cachedUser?.id) return cachedUser;
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
 
 const useCodeStore = create((set, get) => ({
   savedCodes: [],
@@ -108,7 +116,7 @@ const useCodeStore = create((set, get) => ({
     source = 'manual',
     skipRevision = false,
   }) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) return { error: { message: '로그인이 필요합니다' } };
 
     let savedRow;

@@ -23,6 +23,7 @@ def _send_commands():
         # JSON 문자열로 직렬화하여 전송 (Proxy 객체 문제 회피)
         js.postMessage(json.dumps({
             "type": "batch",
+            "runId": _current_run_id(),
             "commands": _command_buffer
         }))
         _command_buffer = []
@@ -31,6 +32,14 @@ def _send_commands():
 def _add_command(cmd):
     """커맨드를 버퍼에 추가"""
     _command_buffer.append(cmd)
+
+
+def _current_run_id():
+    """현재 실행 번호. 이전 실행의 늦은 메시지를 브라우저에서 걸러내기 위해 함께 보낸다."""
+    try:
+        return int(js._getCurrentRunId())
+    except:
+        return 0
 
 
 def _new_id():
@@ -1336,6 +1345,10 @@ class _GSeriesBase:
     def delete(self):
         _add_command({"action": "graph_series_delete", "id": self._id})
 
+    def clear(self):
+        """시리즈의 점만 비우고 같은 그래프/색/핸들러는 유지"""
+        _add_command({"action": "graph_series_clear", "id": self._id})
+
 
 class gcurve(_GSeriesBase):
     """선 그래프"""
@@ -1529,16 +1542,17 @@ class _Widget:
 class slider(_Widget):
     _kind = 'slider'
 
-    def __init__(self, min=0, max=1, step=0.01, value=None, length=200, **kwargs):
+    def __init__(self, min=0, max=1, step=0.01, value=None, length=200, text='', **kwargs):
         self._min = float(min)
         self._max = float(max)
         self._step = float(step)
         self._value = float(value) if value is not None else self._min
         self._length = int(length)
+        self._text = str(text)
         super().__init__(value=self._value, **kwargs)
         self._emit_create({
             "min": self._min, "max": self._max, "step": self._step,
-            "value": self._value, "length": self._length,
+            "value": self._value, "length": self._length, "text": self._text,
         })
 
 
@@ -1756,7 +1770,7 @@ async def rate(fps):
         _send_commands()  # 누적된 커맨드를 한번에 전송
     else:
         # 커맨드가 없어도 하트비트 전송 (활동 타이머 리셋용)
-        js.postMessage(json.dumps({"type": "batch", "commands": []}))
+        js.postMessage(json.dumps({"type": "batch", "runId": _current_run_id(), "commands": []}))
     delay = 1.0 / fps
     await asyncio.sleep(delay)
 
@@ -1771,7 +1785,7 @@ async def sleep(seconds):
     if _command_buffer:
         _send_commands()
     else:
-        js.postMessage(json.dumps({"type": "batch", "commands": []}))
+        js.postMessage(json.dumps({"type": "batch", "runId": _current_run_id(), "commands": []}))
     await asyncio.sleep(seconds)
 
 
@@ -2237,3 +2251,13 @@ async def 악기(instrument, name, duration=0.5, volume=None):
     play_instrument(instrument, name, duration, volume)
     _send_commands()
     await asyncio.sleep(duration)
+
+
+def _reset_runtime_state():
+    """새 코드 실행 전 Python 측 런타임 상태를 정리"""
+    global _command_buffer, _object_counter
+    _command_buffer = []
+    _object_counter = 0
+    _active_graphs.clear()
+    _event_handlers.clear()
+    _widget_values.clear()
