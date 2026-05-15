@@ -18,6 +18,7 @@ const GITHUB_SETUP_TIMEOUT_MS = 90000;
 const AUTH_TIMEOUT_MS = 10000;
 const GITHUB_AUTH_TIMEOUT_MS = 3000;
 const SUPABASE_TIMEOUT_MS = 15000;
+const SUPABASE_WRITE_TIMEOUT_MS = 30000;
 const GITHUB_SYNC_RETRY_BASE_MS = 60_000;
 const GITHUB_SYNC_RETRY_MAX_MS = 30 * 60_000;
 const GITHUB_SYNC_PENDING_STORAGE_KEY = 'vpylab:github-sync-pending:v1';
@@ -1591,9 +1592,10 @@ const useProjectStore = create((set, get) => ({
           projectId: activeProject.id,
           commitMessage: revisionMessage || message || '',
           source: 'manual',
+          skipParentLookup: true,
         }),
-        SUPABASE_TIMEOUT_MS,
-        'VPyLab 코드 저장이 15초 안에 끝나지 않았습니다. 네트워크를 확인한 뒤 다시 시도해주세요.',
+        SUPABASE_WRITE_TIMEOUT_MS,
+        'VPyLab 코드 저장이 30초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 저장해주세요.',
       );
       if (saveErr) return failWithError(saveErr);
 
@@ -1617,9 +1619,10 @@ const useProjectStore = create((set, get) => ({
         projectId: activeProject.id,
         commitMessage: revisionMessage || message || '',
         source: 'manual',
+        skipParentLookup: true,
       }),
-      SUPABASE_TIMEOUT_MS,
-      'VPyLab 코드 저장이 15초 안에 끝나지 않았습니다. 네트워크를 확인한 뒤 다시 시도해주세요.',
+      SUPABASE_WRITE_TIMEOUT_MS,
+      'VPyLab 코드 저장이 30초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 저장해주세요.',
     );
     if (saveErr) return failWithError(saveErr);
 
@@ -1751,9 +1754,10 @@ const useProjectStore = create((set, get) => ({
         message: revisionMessage || message || '',
         source: 'manual',
         projectId: activeProject.id,
+        skipParentLookup: true,
       }),
-      SUPABASE_TIMEOUT_MS,
-      'VPyLab 기록 저장이 15초 안에 끝나지 않았습니다. 네트워크를 확인한 뒤 다시 시도해주세요.',
+      SUPABASE_WRITE_TIMEOUT_MS,
+      'VPyLab 기록 저장이 30초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 기록해주세요.',
     );
     if (revisionError) return failWithError(revisionError);
 

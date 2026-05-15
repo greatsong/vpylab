@@ -68,15 +68,30 @@ const useCodeStore = create((set, get) => ({
    * - parent_revision_id를 자동으로 직전 revision으로 연결
    * - projectId가 있으면 revision에도 함께 기록(팀 이력 RLS/조회용)
    */
-  _createRevision: async ({ codeId, code, userId, message = '', source = 'manual', projectId = null }) => {
-    // 최신 parent revision 찾기 (없으면 null = 첫 revision)
-    const { data: parent } = await supabase
-      .from('vpylab_code_revisions')
-      .select('id')
-      .eq('code_id', codeId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+  _createRevision: async ({
+    codeId,
+    code,
+    userId,
+    message = '',
+    source = 'manual',
+    projectId = null,
+    skipParentLookup = false,
+  }) => {
+    let parent = null;
+    if (!skipParentLookup) {
+      const { data, error } = await supabase
+        .from('vpylab_code_revisions')
+        .select('id')
+        .eq('code_id', codeId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('[codeStore] parent revision 조회 실패:', error.message);
+      }
+      parent = data || null;
+    }
 
     const { data, error } = await supabase
       .from('vpylab_code_revisions')
@@ -115,6 +130,7 @@ const useCodeStore = create((set, get) => ({
     commitMessage = '',
     source = 'manual',
     skipRevision = false,
+    skipParentLookup = false,
   }) => {
     const user = await getCurrentUser();
     if (!user) return { error: { message: '로그인이 필요합니다' } };
@@ -164,6 +180,7 @@ const useCodeStore = create((set, get) => ({
         message: commitMessage,
         source,
         projectId: savedRow.project_id || null,
+        skipParentLookup,
       });
       revision = createdRevision || null;
     }

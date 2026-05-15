@@ -83,12 +83,15 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
     }
   };
 
-  const handleRestore = async (revisionId, message) => {
-    const label = message || '이 버전';
-    const ok = window.confirm(`"${label}" 시점으로 되돌릴까요?\n\n현재 코드는 새로운 "복원" 기록으로 남아 사라지지 않습니다.`);
+  const handleRestore = async (rev) => {
+    const label = rev.message || '이 버전';
+    const teamNote = rev.project_id
+      ? '\n\n팀 프로젝트라면 복원 후 "코드 저장"을 한 번 눌러 GitHub 저장소에도 같은 상태를 반영할 수 있습니다.'
+      : '';
+    const ok = window.confirm(`"${label}" 시점으로 되돌릴까요?\n\n현재 코드는 새로운 "복원" 기록으로 남아 사라지지 않습니다.${teamNote}`);
     if (!ok) return;
 
-    const { error } = await restoreRevision(revisionId, {
+    const { error } = await restoreRevision(rev.id, {
       onRestored: (snapshotCode) => {
         if (onRestored) onRestored(snapshotCode);
       },
@@ -258,7 +261,7 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
                         </button>
                         {!isLatest && (
                           <button
-                            onClick={() => handleRestore(rev.id, rev.message)}
+                            onClick={() => handleRestore(rev)}
                             className="text-[10px] px-2 py-1 cursor-pointer border-none transition-opacity hover:opacity-80"
                             style={{
                               backgroundColor: 'var(--color-accent)',
@@ -286,7 +289,7 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
           color: 'var(--color-text-muted)',
         }}
       >
-        💡 복원해도 현재 코드는 사라지지 않고 새 기록으로 보존됩니다.
+        💡 복원해도 현재 코드는 새 기록으로 보존됩니다. 팀 프로젝트는 복원 후 코드 저장을 누르면 GitHub 반영도 다시 시도됩니다.
       </div>
     </div>
   );

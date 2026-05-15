@@ -100,6 +100,7 @@ const useRevisionStore = create((set, get) => ({
       message: `이전 버전으로 복원 (${shortId})`,
       source: 'restore',
       projectId: snapshot.project_id || codeRow.project_id || null,
+      skipParentLookup: true,
     });
 
     // 3) UI 갱신

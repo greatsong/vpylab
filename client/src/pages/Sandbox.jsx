@@ -26,6 +26,8 @@ import useCodeStore from '../stores/codeStore';
 import useGalleryStore from '../stores/galleryStore';
 import TeamProjectsPanel from '../components/team/TeamProjectsPanel';
 import ProjectGate from '../components/team/ProjectGate';
+import SavedCodeList from '../components/code/SavedCodeList';
+import RevisionTimeline from '../components/code/RevisionTimeline';
 import useProjectStore from '../stores/projectStore';
 import PublishModal from '../components/gallery/PublishModal';
 import SendCodeModal from '../components/codeshare/SendCodeModal';
@@ -64,6 +66,8 @@ export default function Sandbox() {
   const [shareMsg, setShareMsg] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
   const [showTeam, setShowTeam] = useState(false);
+  const [showSavedCodes, setShowSavedCodes] = useState(false);
+  const [historyTarget, setHistoryTarget] = useState(null);
   const [teamInitialAction, setTeamInitialAction] = useState('browse');
   const [showProjectGate, setShowProjectGate] = useState(false);
   const [commitModalOpen, setCommitModalOpen] = useState(false);
@@ -74,6 +78,7 @@ export default function Sandbox() {
   const [commitStartedAt, setCommitStartedAt] = useState(null);
   const [pushToast, setPushToast] = useState(null);  // { nthCommit, message, commitUrl, repoUrl, pagesUrl } | null
   const activeProject = useProjectStore((s) => s.activeProject);
+  const activeCodeId = useProjectStore((s) => s.activeCodeId);
   const activeMembers = useProjectStore((s) => s.activeMembers);
   const lastRemoteUpdate = useProjectStore((s) => s.lastRemoteUpdate);
   const githubSetupStatusById = useProjectStore((s) => s.githubSetupStatusById);
@@ -98,7 +103,7 @@ export default function Sandbox() {
   const activeProjectRole = getProjectRole(activeProject, activeMembers, user?.id);
   const activeProjectCanEdit = !activeProject || activeProjectRole !== 'viewer';
   const activeGithubSetupStatus = activeProject?.id ? githubSetupStatusById[activeProject.id] : null;
-  const { saveCode, autoSave, clearAutoSave, saveStatus } = useCodeStore();
+  const { saveCode, autoSave, clearAutoSave, saveStatus, setCurrentCodeId } = useCodeStore();
   const {
     sharedCodes, unreadCount, panelOpen, sendModalOpen, lastReceivedAt,
     initialize: initCodeShare, unsubscribe: unsubCodeShare,
@@ -726,9 +731,9 @@ export default function Sandbox() {
       const response = await Promise.race([
         savePromise,
         waitForSaveTimeout(
-          saveType === 'record' ? 20000 : 60000,
+          saveType === 'record' ? 40000 : 60000,
           saveType === 'record'
-            ? '기록 저장이 20초 안에 끝나지 않았습니다. 화면을 새로고침한 뒤 이력에 반영됐는지 확인해주세요.'
+            ? '기록 저장이 40초 안에 끝나지 않았습니다. 화면을 새로고침한 뒤 이력에 반영됐는지 확인해주세요.'
             : '코드 저장이 60초 안에 끝나지 않았습니다. 화면을 새로고침한 뒤 이력에 반영됐는지 확인해주세요.',
         ),
       ]);
@@ -792,6 +797,18 @@ export default function Sandbox() {
       setSaveMsg(t('code.saved'));
       setTimeout(() => setSaveMsg(''), 2000);
     }
+  };
+
+  const handleOpenHistory = () => {
+    if (!user) {
+      useAuthStore.getState().setAuthModalOpen(true);
+      return;
+    }
+    if (activeProject && activeCodeId) {
+      setHistoryTarget({ id: activeCodeId, title: activeProject.title });
+      return;
+    }
+    setShowSavedCodes(true);
   };
 
   // GitHub 작품 업데이트 (edit 모드)
@@ -959,6 +976,9 @@ export default function Sandbox() {
           <button onClick={handleSaveAs} className="toolbar-btn" title="새 이름으로 저장 (별도 코드로 분기)">
             {t('code.saveAs') || '다른 이름으로 저장'}
           </button>
+          <button onClick={handleOpenHistory} className="toolbar-btn" title="현재 코드의 저장 이력과 복원 기록 보기">
+            📜 저장 이력
+          </button>
           <button onClick={() => setShowExamples(true)} className="toolbar-btn --examples">
             {t('editor.examples') || '예제'}
           </button>
@@ -1034,6 +1054,7 @@ export default function Sandbox() {
                 { label: t('editor.export'), action: () => { handleExport(); setMobileMore(false); } },
                 { label: activeProjectRole === 'viewer' ? '보기 전용' : (saveMsg || '💾 저장'), action: () => { handleSave(); setMobileMore(false); } },
                 { label: t('code.saveAs') || '다른 이름으로 저장', action: () => { handleSaveAs(); setMobileMore(false); } },
+                { label: '📜 저장 이력', action: () => { handleOpenHistory(); setMobileMore(false); } },
                 { label: t('editor.examples') || '예제', action: () => { setShowExamples(true); setMobileMore(false); } },
                 { label: activeProject ? `📁 ${activeProject.title}` : '📁 프로젝트', action: () => { setTeamInitialAction('browse'); setShowTeam(true); setMobileMore(false); } },
                 { label: t('gallery.publish') || '갤러리에 올리기', action: () => { openPublishModal(); setMobileMore(false); } },
@@ -1369,6 +1390,35 @@ export default function Sandbox() {
             setTeamInitialAction('browse');
           }}
           onClose={() => { setShowTeam(false); setTeamInitialAction('browse'); }}
+        />
+      )}
+
+      {/* 현재 프로젝트/코드 저장 이력 */}
+      {historyTarget && (
+        <RevisionTimeline
+          codeId={historyTarget.id}
+          codeTitle={historyTarget.title}
+          onClose={() => setHistoryTarget(null)}
+          onRestored={(snapshotCode) => {
+            updateCode(snapshotCode);
+            initialCodeRef.current = snapshotCode;
+            setHistoryTarget(null);
+            addOutput('선택한 저장 이력을 에디터로 복원했습니다. GitHub에도 맞추려면 코드 저장을 눌러주세요.', 'success');
+          }}
+        />
+      )}
+
+      {/* 저장된 코드 목록과 각 코드의 이력 */}
+      {showSavedCodes && (
+        <SavedCodeList
+          onClose={() => setShowSavedCodes(false)}
+          onLoadCode={(loadedCode, codeId) => {
+            updateCode(loadedCode);
+            initialCodeRef.current = loadedCode;
+            if (codeId) setCurrentCodeId(codeId);
+            setShowSavedCodes(false);
+            addOutput('저장된 코드를 에디터로 불러왔습니다.', 'success');
+          }}
         />
       )}
 

@@ -102,11 +102,11 @@ export default function SavedCodeList({ onLoadCode, onClose }) {
                     e.stopPropagation();
                     setHistoryTarget({ id: item.id, title: item.title });
                   }}
-                  className="text-[10px] cursor-pointer border-none bg-transparent ml-2 opacity-60 hover:opacity-100"
+                  className="text-[10px] cursor-pointer border-none bg-transparent ml-2 opacity-70 hover:opacity-100"
                   style={{ color: 'var(--color-text-secondary)' }}
                   title="이 코드의 저장 이력 보기"
                 >
-                  📜
+                  📜 이력
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleMakeTeam(item); }}
