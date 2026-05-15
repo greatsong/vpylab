@@ -383,30 +383,35 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
           </StatusBanner>
         )}
 
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
+              최근 프로젝트
+            </h3>
+            <p className="mt-0.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              마지막 코드 저장 시각 기준으로 정렬됩니다.
+            </p>
+          </div>
+          {myProjects.length > 0 && (
+            <button
+              onClick={openCreate}
+              disabled={creating}
+              className="px-3 py-2 text-xs font-semibold cursor-pointer border disabled:opacity-50"
+              style={{
+                backgroundColor: 'var(--color-bg-panel)',
+                borderColor: 'var(--color-accent)',
+                color: 'var(--color-accent)',
+              }}
+            >
+              새 프로젝트
+            </button>
+          )}
+        </div>
+
         <div
           className="grid gap-4"
           style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
         >
-          <button
-            onClick={openCreate}
-            disabled={creating}
-            className="text-left cursor-pointer border disabled:opacity-50 transition-colors flex flex-col justify-between min-h-[190px]"
-            style={{
-              backgroundColor: 'var(--color-bg-primary)',
-              borderColor: 'var(--color-accent)',
-              color: 'var(--color-text-primary)',
-              padding: 22,
-            }}
-          >
-            <span className="inline-flex h-9 w-9 items-center justify-center border text-xl" style={{ borderColor: 'var(--color-border)', color: 'var(--color-accent)' }}>+</span>
-            <span>
-              <span className="block text-base font-bold mb-1">새 프로젝트 만들기</span>
-              <span className="block text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-                VPyLab 먼저 생성 · GitHub 선택
-              </span>
-            </span>
-          </button>
-
           {!loadingProjects && myProjects.map((p) => (
             <ProjectCard
               key={p.id}
@@ -419,6 +424,28 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
               onConnectGithub={() => openGithubConnect(p)}
             />
           ))}
+
+          {!loadingProjects && myProjects.length === 0 && (
+            <button
+              onClick={openCreate}
+              disabled={creating}
+              className="text-left cursor-pointer border disabled:opacity-50 transition-colors flex flex-col justify-between min-h-[190px]"
+              style={{
+                backgroundColor: 'var(--color-bg-primary)',
+                borderColor: 'var(--color-accent)',
+                color: 'var(--color-text-primary)',
+                padding: 22,
+              }}
+            >
+              <span className="inline-flex h-9 w-9 items-center justify-center border text-xl" style={{ borderColor: 'var(--color-border)', color: 'var(--color-accent)' }}>+</span>
+              <span>
+                <span className="block text-base font-bold mb-1">새 프로젝트 만들기</span>
+                <span className="block text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+                  VPyLab 먼저 생성 · GitHub 선택
+                </span>
+              </span>
+            </button>
+          )}
 
           {loadingProjects && (
             <div className="col-span-full text-center text-sm py-8" style={{ color: 'var(--color-text-muted)' }}>
@@ -568,7 +595,7 @@ function ProjectCard({
   const repoUrl = repo ? `https://github.com/${repo}` : null;
   const pagesUrl = repo ? `https://${repo.split('/')[0]}.github.io/${repo.split('/')[1]}/` : null;
   const pagesHelpText = '처음 연결 직후에는 GitHub Pages 배포가 1~2분 걸릴 수 있습니다. 404가 계속 보이면 GitHub로 다시 로그인한 뒤 프로젝트를 한 번 저장해주세요.';
-  const lastTouched = project.github_last_pushed_at || project.updated_at;
+  const lastTouched = project.activity_at || project.latest_code_updated_at || project.github_last_pushed_at || project.updated_at;
   const isOwner = project.my_role === 'owner';
   const memberCount = project.member_count || 1;
   const isGithubPending = !repo && (setupStatus?.state === 'pending' || project.githubSetupPending);

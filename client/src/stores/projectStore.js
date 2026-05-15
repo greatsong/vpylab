@@ -32,6 +32,19 @@ const GITHUB_SYNC_FORCE_RETRYABLE_BLOCKED_CODES = new Set([
 const githubSyncChains = new Map();
 const githubSyncInFlightJobs = new Map();
 
+function latestIso(...values) {
+  let latest = '';
+  let latestTime = 0;
+  values.filter(Boolean).forEach((value) => {
+    const time = new Date(value).getTime();
+    if (Number.isFinite(time) && time > latestTime) {
+      latestTime = time;
+      latest = value;
+    }
+  });
+  return latest || values.find(Boolean) || null;
+}
+
 function normalizeError(error) {
   if (!error) return { message: '알 수 없는 오류', status: null, code: null };
   if (typeof error === 'string') return { message: error, status: null, code: null };
@@ -417,17 +430,39 @@ const useProjectStore = create((set, get) => ({
         '프로젝트 멤버 수 조회가 15초 안에 끝나지 않았습니다.',
       ).catch(() => ({ data: memberRows || [] }));
 
+      const { data: codeRows } = await withTimeout(
+        supabase
+          .from('vpylab_saved_code')
+          .select('project_id, updated_at')
+          .in('project_id', projectIds),
+        SUPABASE_TIMEOUT_MS,
+        '최근 프로젝트 저장 시각 조회가 15초 안에 끝나지 않았습니다.',
+      ).catch((e) => {
+        console.warn('[projectStore] 최근 코드 저장 시각 조회 실패:', e.message);
+        return { data: [] };
+      });
+
       // 내 역할 매핑
       const roleByProject = Object.fromEntries((memberRows || []).map(r => [r.project_id, r.role]));
       const memberCountByProject = (allMemberRows || []).reduce((acc, row) => {
         acc[row.project_id] = (acc[row.project_id] || 0) + 1;
         return acc;
       }, {});
+      const latestCodeAtByProject = (codeRows || []).reduce((acc, row) => {
+        if (!row.project_id || !row.updated_at) return acc;
+        acc[row.project_id] = latestIso(acc[row.project_id], row.updated_at);
+        return acc;
+      }, {});
       const enriched = (projects || []).map(p => ({
         ...p,
         my_role: roleByProject[p.id],
         member_count: memberCountByProject[p.id] || 1,
-      }));
+        latest_code_updated_at: latestCodeAtByProject[p.id] || null,
+        activity_at: latestIso(p.github_last_pushed_at, latestCodeAtByProject[p.id], p.updated_at, p.created_at),
+      })).sort((a, b) => (
+        new Date(b.activity_at || b.updated_at || b.created_at).getTime()
+        - new Date(a.activity_at || a.updated_at || a.created_at).getTime()
+      ));
 
       set({ myProjects: enriched, loadingProjects: false });
       return enriched;
