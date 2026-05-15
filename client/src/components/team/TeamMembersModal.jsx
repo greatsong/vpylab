@@ -172,7 +172,7 @@ export default function TeamMembersModal({ project, onClose }) {
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-sm flex-shrink-0">②</span>
                   <strong className="text-xs truncate" style={{ color: 'var(--color-text-primary)' }}>
-                    GitHub 직접 반영 안내
+                    GitHub 공동 작업자 초대
                     <span className="font-normal" style={{ color: 'var(--color-text-muted)' }}> · 선택 사항</span>
                   </strong>
                 </div>
@@ -183,17 +183,20 @@ export default function TeamMembersModal({ project, onClose }) {
                   className="font-semibold no-underline flex-shrink-0"
                   style={{ color: 'var(--color-accent)' }}
                 >
-                  {isOwner ? '권한 설정' : '저장소'}
+                  {isOwner ? '공동 작업자 초대' : '저장소 보기'}
                 </a>
               </div>
               <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
-                VPyLab 초대 코드로 합류한 편집 멤버는 GitHub 권한과 상관없이 앱 안에서 코드 저장과 기록 남기기를 할 수 있습니다.
+                VPyLab 초대는 앱 안에서 함께 작업하는 권한이고, GitHub 초대는 저장소에 직접 반영하는 추가 권한입니다.
               </p>
               <div className="mt-2 space-y-1 text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
-                <p>GitHub에도 직접 반영하려면 팀장이 GitHub 저장소의 Collaborators 메뉴에서 팀원의 GitHub 사용자명을 초대합니다.</p>
-                <p>팀원은 GitHub 알림이나 이메일에서 초대를 수락한 뒤 VPyLab에서 GitHub 계정으로 다시 로그인합니다.</p>
-                <p>수락 후에는 VPyLab 저장이 먼저 완료되고, 권한이 확인되면 GitHub 저장소 반영까지 이어집니다.</p>
-                <p>GitHub에서 2단계 인증(2FA)을 요구하거나 권한이 아직 없으면 VPyLab 저장은 유지되고 GitHub 반영만 보류됩니다.</p>
+                <p><strong style={{ color: 'var(--color-text-secondary)' }}>추가 전:</strong> 팀장만 GitHub에 기록 가능 / <strong style={{ color: 'var(--color-text-secondary)' }}>추가 후:</strong> 팀원도 GitHub에 기록 가능</p>
+                <p><strong style={{ color: 'var(--color-text-secondary)' }}>좋아지는 점:</strong> 내 저장이 GitHub 커밋과 Pages 실행 페이지에도 남아 팀 작품을 공개 링크와 포트폴리오처럼 보여줄 수 있습니다.</p>
+                <p><strong style={{ color: 'var(--color-text-secondary)' }}>팀장:</strong> Manage access → Add people → 팀원 GitHub 아이디 검색 → Invite collaborator</p>
+                <p><strong style={{ color: 'var(--color-text-secondary)' }}>팀장:</strong> Add people 단계에서 GitHub가 2FA를 요구하면 먼저 2FA 설정(휴대폰이 필요할 수 있음)을 마친 뒤 다시 초대</p>
+                <p><strong style={{ color: 'var(--color-text-secondary)' }}>팀원:</strong> GitHub 알림 또는 이메일 열기 → Accept invitation 클릭 → VPyLab에서 GitHub로 다시 로그인</p>
+                <p><strong style={{ color: 'var(--color-text-secondary)' }}>팀원:</strong> 수락 단계에서 2FA를 요구하면 설정을 마친 뒤 다시 Accept invitation</p>
+                <p>초대 수락 전에도 VPyLab 저장은 가능하고, GitHub 반영만 권한 확인 뒤 이어집니다.</p>
               </div>
               {editableMembers.length > 0 && (
                 <div className="mt-2 space-y-1">

@@ -15,6 +15,9 @@ import rateLimit from 'express-rate-limit';
 import { generateStandaloneHTML } from '../utils/export-html.js';
 
 const router = Router();
+const GITHUB_API_TIMEOUT_MS = Number(process.env.GITHUB_API_TIMEOUT_MS || 20_000);
+const GITHUB_PAGES_API_TIMEOUT_MS = Math.min(GITHUB_API_TIMEOUT_MS, 8_000);
+const PAGES_ENABLE_RETRY_DELAYS_MS = [0, 1_000, 2_500, 5_000, 9_000];
 
 // 발행 전용 rate-limit (분당 3회)
 const publishLimiter = rateLimit({
@@ -76,15 +79,32 @@ function checkSensitiveContent(code) {
  * GitHub API 호출 헬퍼 (에러 처리 포함)
  */
 async function githubFetch(url, token, options = {}) {
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/vnd.github.v3+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(options.headers || {}),
-    },
-  });
+  const { timeoutMs = GITHUB_API_TIMEOUT_MS, headers = {}, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res;
+  try {
+    res = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...headers,
+      },
+    });
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      const err = new Error(`GitHub API 응답 시간이 ${Math.round(timeoutMs / 1000)}초를 넘었습니다.`);
+      err.status = 504;
+      throw err;
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -96,6 +116,70 @@ async function githubFetch(url, token, options = {}) {
   }
 
   return res.json();
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryablePagesActivationError(error) {
+  const status = error?.status;
+  const text = [
+    error?.message,
+    ...(Array.isArray(error?.githubErrors)
+      ? error.githubErrors.map((item) => `${item?.message || ''} ${item?.code || ''}`)
+      : []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if ([404, 409, 422, 503, 504].includes(status)) return true;
+  return /not ready|not yet|pending|building|repository is empty|git repository is empty|pages is not enabled|page build/i.test(text);
+}
+
+async function ensurePagesEnabledOnce(owner, repoName, token) {
+  try {
+    const page = await githubFetch(`${buildRepoApiBase(owner, repoName)}/pages`, token, {
+      timeoutMs: GITHUB_PAGES_API_TIMEOUT_MS,
+    });
+    return {
+      active: true,
+      status: page.status || null,
+      htmlUrl: page.html_url || null,
+    };
+  } catch (e) {
+    if (e.status !== 404) throw e;
+    const page = await githubFetch(`${buildRepoApiBase(owner, repoName)}/pages`, token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: { branch: 'main', path: '/' } }),
+      timeoutMs: GITHUB_PAGES_API_TIMEOUT_MS,
+    });
+    return {
+      active: true,
+      status: page.status || 'building',
+      htmlUrl: page.html_url || null,
+    };
+  }
+}
+
+async function ensurePagesEnabled(owner, repoName, token) {
+  let lastError = null;
+  for (let attempt = 0; attempt < PAGES_ENABLE_RETRY_DELAYS_MS.length; attempt += 1) {
+    const waitMs = PAGES_ENABLE_RETRY_DELAYS_MS[attempt];
+    if (waitMs) await sleep(waitMs);
+    try {
+      return await ensurePagesEnabledOnce(owner, repoName, token);
+    } catch (e) {
+      lastError = e;
+      const canRetry = attempt < PAGES_ENABLE_RETRY_DELAYS_MS.length - 1
+        && isRetryablePagesActivationError(e);
+      if (!canRetry) throw e;
+      console.log(`[publish/pages] ${owner}/${repoName} 활성화 재시도 예정 (${attempt + 1}, 사유: ${e.status || 'ERR'} ${e.message})`);
+    }
+  }
+  throw lastError || new Error('GitHub Pages 활성화 확인 실패');
 }
 
 /**
@@ -139,6 +223,7 @@ function generateReadme(title, description, owner, repoName, remixFrom) {
   const openInVpylabUrl = buildOpenInVpylabUrl(owner, repoName);
   let readme = `# ${title}\n\n> VPyLab에서 만든 3D Python 작품\n\n${description || ''}\n\n`;
   readme += `## 실행하기\n[VPyLab에서 열기](${openInVpylabUrl}) | [GitHub Pages](https://${owner}.github.io/${repoName}/)\n\n`;
+  readme += `> 처음 만든 직후에는 GitHub Pages 배포가 1~2분 걸릴 수 있습니다. 링크가 404로 보이면 잠시 뒤 새로고침하거나, VPyLab에서 GitHub로 다시 로그인한 뒤 다시 발행해주세요.\n\n`;
   if (remixFrom) {
     readme += `## 원본\n이 작품은 [원본 작품](${APP_URL}/gallery/${remixFrom})에서 영감을 받았습니다.\n\n`;
   }
@@ -287,19 +372,9 @@ router.post('/', publishLimiter, async (req, res) => {
 
     // === 5단계: GitHub Pages 활성화 ===
     try {
-      await githubFetch(
-        `${buildRepoApiBase(owner, repoName)}/pages`,
-        githubToken,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            source: { branch: 'main', path: '/' },
-          }),
-        },
-      );
-    } catch {
-      // 이미 Pages가 활성화된 경우 무시 (409 Conflict)
+      await ensurePagesEnabled(owner, repoName, githubToken);
+    } catch (e) {
+      console.warn('[publish] Pages 활성화 확인 실패:', e.message);
     }
 
     // === 결과 반환 ===
@@ -459,17 +534,9 @@ router.put('/update', publishLimiter, async (req, res) => {
 
     // Pages가 꺼져 있던 기존 저장소도 업데이트 흐름에서 다시 켭니다.
     try {
-      await githubFetch(
-        `${buildRepoApiBase(owner, repoName)}/pages`,
-        githubToken,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source: { branch: 'main', path: '/' } }),
-        },
-      );
-    } catch {
-      // 이미 활성화된 경우
+      await ensurePagesEnabled(owner, repoName, githubToken);
+    } catch (e) {
+      console.warn('[publish/update] Pages 활성화 확인 실패:', e.message);
     }
 
     res.json({
@@ -518,17 +585,9 @@ router.post('/fork', publishLimiter, async (req, res) => {
 
     // GitHub Pages 활성화
     try {
-      await githubFetch(
-        `${buildRepoApiBase(forked.owner.login, forked.name)}/pages`,
-        githubToken,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source: { branch: 'main', path: '/' } }),
-        },
-      );
-    } catch {
-      // 이미 활성화된 경우
+      await ensurePagesEnabled(forked.owner.login, forked.name, githubToken);
+    } catch (e) {
+      console.warn('[publish/fork] Pages 활성화 확인 실패:', e.message);
     }
 
     res.json({

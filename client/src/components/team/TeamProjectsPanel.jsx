@@ -565,6 +565,7 @@ function ProjectCard({
   const repo = project.github_repo;
   const repoUrl = repo ? `https://github.com/${repo}` : null;
   const pagesUrl = repo ? `https://${repo.split('/')[0]}.github.io/${repo.split('/')[1]}/` : null;
+  const pagesHelpText = '처음 연결 직후에는 GitHub Pages 배포가 1~2분 걸릴 수 있습니다. 404가 계속 보이면 GitHub로 다시 로그인한 뒤 프로젝트를 한 번 저장해주세요.';
   const lastTouched = project.github_last_pushed_at || project.updated_at;
   const isOwner = project.my_role === 'owner';
   const memberCount = project.member_count || 1;
@@ -641,6 +642,7 @@ function ProjectCard({
               className="text-[10px] px-2 py-1 inline-flex items-center gap-1 no-underline"
               style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
               onClick={(e) => e.stopPropagation()}
+              title={pagesHelpText}
             >Pages</a>
           )}
           <a

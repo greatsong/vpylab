@@ -504,27 +504,44 @@ export default function Guide() {
               GitHub는 VPyLab 팀 협업을 시작하기 위한 필수 조건이 아닙니다.
               다만 저장소 코드까지 직접 반영하거나, GitHub Pages 주소로 작품을 공개하려면 GitHub 권한이 필요합니다.
             </p>
+            <InfoBox kind="tip">
+              추가 전에는 팀장만 GitHub에 기록할 수 있고, 추가 후에는 팀원도 GitHub에 기록할 수 있습니다.
+              <br />
+              공동 작업자가 되면 내 저장이 GitHub 커밋과 Pages 실행 페이지에도 남습니다.
+              팀 작품을 공개 링크로 보여줄 수 있고, README와 커밋 기록이 작은 포트폴리오처럼 쌓입니다.
+            </InfoBox>
             <ol className="list-decimal pl-5 space-y-2">
               <li>
                 팀장이 프로젝트 카드에서 <strong>GitHub 저장소 연결</strong>을 시작합니다.
                 급하면 이 단계는 나중에 해도 됩니다.
               </li>
               <li>
-                팀장이 GitHub 저장소의 <strong>Settings → Collaborators</strong>에서 팀원의 GitHub 사용자명을 초대합니다.
-                VPyLab 안에서는 안내만 하고, 실제 초대와 수락은 GitHub에서 진행합니다.
+                <strong>팀장:</strong> GitHub 저장소에서 <strong>Manage access → Add people</strong>로 들어갑니다.
               </li>
               <li>
-                팀원은 GitHub 알림이나 이메일에서 초대를 열고 <strong>Accept invitation</strong>을 눌러 수락합니다.
+                <strong>팀장:</strong> 이 <strong>Add people</strong> 단계에서 GitHub가 2단계 인증(2FA)을 요구할 수 있습니다.
+                이때는 먼저 <strong>2FA 설정</strong>을 마칩니다. 휴대폰이 필요할 수 있습니다.
               </li>
               <li>
-                팀원은 VPyLab에서 GitHub 계정으로 다시 로그인하거나 재로그인합니다.
-                그래야 VPyLab이 "이 사용자가 저장소에 쓸 권한이 있구나"를 확인할 수 있습니다.
+                <strong>팀장:</strong> 팀원의 GitHub 아이디를 검색하고 <strong>Invite collaborator</strong>를 누릅니다.
               </li>
               <li>
-                그다음부터는 VPyLab에서 저장하면 <strong>VPyLab 이력에 먼저 저장</strong>되고,
-                GitHub 토큰과 권한이 확인되면 GitHub 저장소에도 이어서 반영됩니다.
+                <strong>팀원:</strong> GitHub 알림이나 이메일에서 초대를 열고 <strong>Accept invitation</strong>을 누릅니다.
+              </li>
+              <li>
+                <strong>팀원:</strong> 수락 단계에서 GitHub가 2FA를 요구하면 같은 방식으로 설정을 마친 뒤 다시 수락합니다.
+              </li>
+              <li>
+                <strong>팀원:</strong> VPyLab으로 돌아와 GitHub 계정으로 다시 로그인한 뒤 프로젝트를 저장합니다.
               </li>
             </ol>
+            <p className="mt-3">
+              초대 수락 후에는 VPyLab에서 저장하면 <strong>VPyLab 이력에 먼저 저장</strong>되고,
+              GitHub 토큰과 권한이 확인되면 GitHub 저장소에도 이어서 반영됩니다.
+            </p>
+            <InfoBox kind="safe">
+              VPyLab 초대 코드는 앱 안에서 함께 작업하는 권한입니다. GitHub 공동 작업자 초대는 GitHub 저장소에 직접 반영하기 위한 추가 권한입니다.
+            </InfoBox>
             <InfoBox kind="safe">
               GitHub 초대를 수락해도 <strong>VPyLab 초대 코드로 팀에 들어와 있어야</strong> VPyLab 안에서 프로젝트를 수정할 수 있습니다.
               반대로 VPyLab 팀원이지만 GitHub 초대를 아직 수락하지 않았다면, VPyLab 저장은 가능하고 GitHub 반영만 보류될 수 있습니다.
@@ -1224,9 +1241,10 @@ VPyLab에서 main.py 열고 ▶ 실행 버튼만 누르면 돼요.
           </FAQ>
 
           <FAQ q="GitHub 초대는 어떻게 수락하나요?">
-            팀장이 GitHub 저장소의 Collaborators 메뉴에서 초대하면, 팀원은 GitHub 알림이나 이메일에서 초대를 열어
-            <strong>Accept invitation</strong>을 눌러야 합니다. 그 뒤 VPyLab에서 GitHub 계정으로 다시 로그인하면
-            저장소 반영 권한을 확인할 수 있습니다. GitHub가 2단계 인증(2FA)을 요구하면 먼저 GitHub 계정에서 2FA를 켜주세요.
+            팀장은 GitHub 저장소에서 <strong>Manage access → Add people</strong>로 들어가 팀원 아이디를 초대합니다.
+            이 Add people 단계에서 GitHub가 2단계 인증(2FA)을 요구할 수 있고, 이때는 먼저 2FA 설정을 마쳐야 합니다.
+            휴대폰이 필요할 수 있습니다. 팀원은 GitHub 알림이나 이메일에서 초대를 열어 <strong>Accept invitation</strong>을 누르고,
+            수락 단계에서 2FA가 뜨면 같은 방식으로 설정한 뒤 VPyLab에서 GitHub 계정으로 다시 로그인합니다.
           </FAQ>
 
           <FAQ q="실수로 잘못 저장했어요. 되돌릴 수 있나요?">

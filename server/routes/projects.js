@@ -33,6 +33,8 @@ const MAX_HISTORY_BYTES = 256 * 1024;
 const MAX_HTML_BYTES = 1024 * 1024;
 const APP_URL = process.env.PUBLIC_APP_URL || 'https://vpylab.vercel.app';
 const GITHUB_API_TIMEOUT_MS = Number(process.env.GITHUB_API_TIMEOUT_MS || 20_000);
+const GITHUB_PAGES_API_TIMEOUT_MS = Math.min(GITHUB_API_TIMEOUT_MS, 8_000);
+const PAGES_ENABLE_RETRY_DELAYS_MS = [0, 1_000, 2_500, 5_000, 9_000];
 let _supabase = null;
 
 // ========================================
@@ -92,6 +94,10 @@ function escapeHtml(s) {
   return String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function encodeBase64Url(s) {
@@ -926,9 +932,41 @@ function versionedPagesUrl(owner, repo, sha) {
   return sha ? `${base}?v=${sha.slice(0, 12)}` : base;
 }
 
-async function ensurePagesEnabled(owner, repo, token) {
+function isRetryablePagesActivationError(error) {
+  const status = error?.status;
+  const text = [
+    error?.message,
+    ...(Array.isArray(error?.githubErrors)
+      ? error.githubErrors.map((item) => `${item?.message || ''} ${item?.code || ''}`)
+      : []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if ([404, 409, 422, 503, 504].includes(status)) return true;
+  return /not ready|not yet|pending|building|repository is empty|git repository is empty|pages is not enabled|page build/i.test(text);
+}
+
+function getPagesActivationWarning(error) {
+  if (!error) return null;
+  if (error.status === 401) {
+    return 'GitHub 로그인이 만료되어 Pages 배포 확인을 마치지 못했습니다. VPyLab 저장은 완료됐고, GitHub로 다시 로그인한 뒤 저장하면 Pages를 다시 확인합니다.';
+  }
+  if (error.status === 403 && isGithubTwoFactorRequired(error)) {
+    return 'GitHub 계정의 2단계 인증(2FA) 요구 때문에 Pages 배포 확인을 마치지 못했습니다. GitHub에서 2FA를 켠 뒤 다시 저장해주세요.';
+  }
+  if (error.status === 403) {
+    return 'GitHub Pages를 켤 권한이 부족합니다. 저장소 Settings → Pages 권한을 확인하거나, 저장소 소유자가 GitHub로 다시 로그인한 뒤 저장해주세요.';
+  }
+  return 'GitHub Pages 배포 확인이 아직 끝나지 않았습니다. README 링크가 404로 보이면 1~2분 뒤 새로고침하거나, VPyLab에서 GitHub로 다시 로그인한 뒤 저장해주세요.';
+}
+
+async function ensurePagesEnabledOnce(owner, repo, token) {
   try {
-    const page = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/pages`, token);
+    const page = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/pages`, token, {
+      timeoutMs: GITHUB_PAGES_API_TIMEOUT_MS,
+    });
     return {
       active: true,
       status: page.status || null,
@@ -940,6 +978,7 @@ async function ensurePagesEnabled(owner, repo, token) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ source: { branch: 'main', path: '/' } }),
+      timeoutMs: GITHUB_PAGES_API_TIMEOUT_MS,
     });
     return {
       active: true,
@@ -949,11 +988,34 @@ async function ensurePagesEnabled(owner, repo, token) {
   }
 }
 
+async function ensurePagesEnabled(owner, repo, token) {
+  let lastError = null;
+  for (let attempt = 0; attempt < PAGES_ENABLE_RETRY_DELAYS_MS.length; attempt += 1) {
+    const waitMs = PAGES_ENABLE_RETRY_DELAYS_MS[attempt];
+    if (waitMs) await sleep(waitMs);
+    try {
+      const page = await ensurePagesEnabledOnce(owner, repo, token);
+      if (attempt > 0) {
+        console.log(`[pages] ${owner}/${repo} 활성화 확인 성공 (재시도 ${attempt}회)`);
+      }
+      return page;
+    } catch (e) {
+      lastError = e;
+      const canRetry = attempt < PAGES_ENABLE_RETRY_DELAYS_MS.length - 1
+        && isRetryablePagesActivationError(e);
+      if (!canRetry) throw e;
+      console.log(`[pages] ${owner}/${repo} 활성화 재시도 예정 (${attempt + 1}/${PAGES_ENABLE_RETRY_DELAYS_MS.length - 1}, 사유: ${e.status || 'ERR'} ${e.message})`);
+    }
+  }
+  throw lastError || new Error('GitHub Pages 활성화 확인 실패');
+}
+
 async function requestPagesBuild(owner, repo, token) {
   try {
     await ghFetch(`https://api.github.com/repos/${owner}/${repo}/pages/builds`, token, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      timeoutMs: GITHUB_PAGES_API_TIMEOUT_MS,
     });
     return { requested: true, warning: null };
   } catch (e) {
@@ -1022,6 +1084,8 @@ ${description ? description + '\n' : ''}
 
 - 🌐 [GitHub Pages 실행 페이지](https://${owner}.github.io/${repo}/)
 - ▶️ [VPyLab에서 이 코드 실행](${openInVpylabUrl})
+
+> 처음 만든 직후에는 GitHub Pages 배포가 1~2분 걸릴 수 있습니다. 링크가 404로 보이면 잠시 뒤 새로고침하거나, VPyLab에서 GitHub로 다시 로그인한 뒤 프로젝트를 한 번 저장해주세요.
 
 ## 파일
 
@@ -1269,7 +1333,7 @@ router.post('/setup', limiter, async (req, res) => {
       step('Pages build 요청');
     } catch (e) {
       console.warn('[projects/setup] Pages 활성화 실패:', e.message);
-      pagesWarning = e.message;
+      pagesWarning = getPagesActivationWarning(e);
       step(`Pages 단계 실패: ${e.message}`);
     }
 
@@ -1780,7 +1844,7 @@ router.post('/commit', limiter, async (req, res) => {
           pagesBuildRequested = build.requested;
         } catch (e) {
           console.warn('[projects/commit] Pages 배포 확인 실패:', e.message);
-          pagesWarning = e.message;
+          pagesWarning = getPagesActivationWarning(e);
         }
       }
     }
