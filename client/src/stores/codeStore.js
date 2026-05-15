@@ -2,6 +2,18 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import useAuthStore from './authStore';
 
+const CODE_WRITE_TIMEOUT_MS = 22000;
+const REVISION_WRITE_TIMEOUT_MS = 12000;
+
+function withTimeout(promise, timeoutMs, message) {
+  let timerId;
+  const timeout = new Promise((_, reject) => {
+    timerId = setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+  return Promise.race([Promise.resolve(promise), timeout])
+    .finally(() => clearTimeout(timerId));
+}
+
 async function getCurrentUser() {
   const cachedUser = useAuthStore.getState().user;
   if (cachedUser?.id) return cachedUser;
@@ -138,56 +150,89 @@ const useCodeStore = create((set, get) => ({
     let savedRow;
     let saveError;
 
-    if (id) {
-      // UPDATE — 팀 코드는 user_id 필터를 걸지 않음 (RLS가 멤버십 검사)
-      const updatePayload = { title, code, mission_id: missionId, updated_at: new Date().toISOString() };
-      if (projectId !== undefined && projectId !== null) updatePayload.project_id = projectId;
+    try {
+      if (id) {
+        // UPDATE — 팀 코드는 user_id 필터를 걸지 않음 (RLS가 멤버십 검사)
+        const updatePayload = { title, code, mission_id: missionId, updated_at: new Date().toISOString() };
+        if (projectId !== undefined && projectId !== null) updatePayload.project_id = projectId;
 
-      let q = supabase
-        .from('vpylab_saved_code')
-        .update(updatePayload)
-        .eq('id', id);
-      if (!projectId) q = q.eq('user_id', user.id);
+        let q = supabase
+          .from('vpylab_saved_code')
+          .update(updatePayload)
+          .eq('id', id);
+        if (!projectId) q = q.eq('user_id', user.id);
 
-      const { data, error } = await q.select().single();
-      savedRow = data;
-      saveError = error;
-    } else {
-      const { data, error } = await supabase
-        .from('vpylab_saved_code')
-        .insert({
-          user_id: user.id,
-          title,
-          code,
-          mission_id: missionId,
-          project_id: projectId,
-        })
-        .select()
-        .single();
-      savedRow = data;
-      saveError = error;
+        const { data, error } = await withTimeout(
+          q.select().single(),
+          CODE_WRITE_TIMEOUT_MS,
+          'VPyLab 코드 본문 저장이 지연되고 있습니다. 네트워크 상태를 확인한 뒤 다시 저장해주세요.',
+        );
+        savedRow = data;
+        saveError = error;
+      } else {
+        const { data, error } = await withTimeout(
+          supabase
+            .from('vpylab_saved_code')
+            .insert({
+              user_id: user.id,
+              title,
+              code,
+              mission_id: missionId,
+              project_id: projectId,
+            })
+            .select()
+            .single(),
+          CODE_WRITE_TIMEOUT_MS,
+          'VPyLab 코드 본문 저장이 지연되고 있습니다. 네트워크 상태를 확인한 뒤 다시 저장해주세요.',
+        );
+        savedRow = data;
+        saveError = error;
+      }
+    } catch (error) {
+      return {
+        data: null,
+        error: { message: error.message || 'VPyLab 코드 본문 저장이 지연되고 있습니다.' },
+      };
     }
 
     if (saveError) return { data: null, error: saveError };
 
     // === revision 생성 (실패해도 저장 자체는 성공으로 간주) ===
     let revision = null;
+    let revisionWarning = '';
     if (!skipRevision && savedRow) {
-      const { data: createdRevision } = await get()._createRevision({
-        codeId: savedRow.id,
-        code,
-        userId: user.id,
-        message: commitMessage,
-        source,
-        projectId: savedRow.project_id || null,
-        skipParentLookup,
-      });
-      revision = createdRevision || null;
+      try {
+        const { data: createdRevision, error: revisionError } = await withTimeout(
+          get()._createRevision({
+            codeId: savedRow.id,
+            code,
+            userId: user.id,
+            message: commitMessage,
+            source,
+            projectId: savedRow.project_id || null,
+            skipParentLookup,
+          }),
+          REVISION_WRITE_TIMEOUT_MS,
+          '코드 본문은 저장됐지만 저장 이력 생성 응답이 지연되고 있습니다. 잠시 뒤 저장 이력을 확인하거나 다시 저장해주세요.',
+        );
+        if (revisionError) {
+          revisionWarning = revisionError.message || '저장 이력 생성에 실패했습니다.';
+        }
+        revision = createdRevision || null;
+      } catch (error) {
+        revisionWarning = error.message || '저장 이력 생성 응답이 지연되고 있습니다.';
+        console.warn('[codeStore] revision 생성 지연:', revisionWarning);
+      }
     }
 
     get().fetchSavedCodes();
+    const result = revision ? { ...savedRow, _revision: revision } : { ...savedRow };
+    if (revisionWarning) {
+      result._revisionPending = true;
+      result._revisionWarning = revisionWarning;
+    }
     return {
-      data: revision ? { ...savedRow, _revision: revision } : savedRow,
+      data: result,
       error: null,
     };
   },

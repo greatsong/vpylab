@@ -18,7 +18,7 @@ const GITHUB_SETUP_TIMEOUT_MS = 90000;
 const AUTH_TIMEOUT_MS = 10000;
 const GITHUB_AUTH_TIMEOUT_MS = 3000;
 const SUPABASE_TIMEOUT_MS = 15000;
-const SUPABASE_WRITE_TIMEOUT_MS = 30000;
+const SUPABASE_WRITE_TIMEOUT_MS = 40000;
 const GITHUB_SYNC_RETRY_BASE_MS = 60_000;
 const GITHUB_SYNC_RETRY_MAX_MS = 30 * 60_000;
 const GITHUB_SYNC_PENDING_STORAGE_KEY = 'vpylab:github-sync-pending:v1';
@@ -1552,6 +1552,13 @@ const useProjectStore = create((set, get) => ({
     const user = await getCurrentUserForSave();
     if (!user) return fail('로그인이 필요합니다');
 
+    const mergeRevisionWarning = (saved, warning) => {
+      if (!saved?._revisionWarning) return warning;
+      return warning
+        ? `${saved._revisionWarning} ${warning}`
+        : saved._revisionWarning;
+    };
+
     const finishLocalCodeSave = async ({ saved, warning, pendingGitHub = false }) => {
       const { count: revisionCount } = await withTimeout(
         supabase
@@ -1569,7 +1576,7 @@ const useProjectStore = create((set, get) => ({
           pendingGitHub,
           nthCommit: revisionCount || 1,
           savedCodeId: saved?.id,
-          pagesWarning: warning,
+          pagesWarning: mergeRevisionWarning(saved, warning),
           voyageEntry: voyageEntry ? { localOnly: true } : null,
         },
         error: null,
@@ -1595,7 +1602,7 @@ const useProjectStore = create((set, get) => ({
           skipParentLookup: true,
         }),
         SUPABASE_WRITE_TIMEOUT_MS,
-        'VPyLab 코드 저장이 30초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 저장해주세요.',
+        'VPyLab 코드 저장이 40초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 저장해주세요.',
       );
       if (saveErr) return failWithError(saveErr);
 
@@ -1622,13 +1629,13 @@ const useProjectStore = create((set, get) => ({
         skipParentLookup: true,
       }),
       SUPABASE_WRITE_TIMEOUT_MS,
-      'VPyLab 코드 저장이 30초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 저장해주세요.',
+      'VPyLab 코드 저장이 40초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 저장해주세요.',
     );
     if (saveErr) return failWithError(saveErr);
 
     // 방금 만든 revision을 우선 사용하고, 구버전 반환값이면 1건 조회로 보완
     let lastRev = saved?._revision || null;
-    if (!lastRev) {
+    if (!lastRev && !saved?._revisionPending) {
       const { data } = await withTimeout(
         supabase
           .from('vpylab_code_revisions')
@@ -1695,7 +1702,13 @@ const useProjectStore = create((set, get) => ({
 
     if (syncResult?.data) {
       set({ projectSaveStatus: null });
-      return { data: syncResult.data, error: null };
+      return {
+        data: {
+          ...syncResult.data,
+          pagesWarning: mergeRevisionWarning(saved, syncResult.data.pagesWarning),
+        },
+        error: null,
+      };
     }
 
     if (syncResult?.error) {
@@ -1757,7 +1770,7 @@ const useProjectStore = create((set, get) => ({
         skipParentLookup: true,
       }),
       SUPABASE_WRITE_TIMEOUT_MS,
-      'VPyLab 기록 저장이 30초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 기록해주세요.',
+      'VPyLab 기록 저장이 40초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 기록해주세요.',
     );
     if (revisionError) return failWithError(revisionError);
 

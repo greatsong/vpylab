@@ -731,9 +731,9 @@ export default function Sandbox() {
       const response = await Promise.race([
         savePromise,
         waitForSaveTimeout(
-          saveType === 'record' ? 40000 : 60000,
+          saveType === 'record' ? 50000 : 60000,
           saveType === 'record'
-            ? '기록 저장이 40초 안에 끝나지 않았습니다. 화면을 새로고침한 뒤 이력에 반영됐는지 확인해주세요.'
+            ? '기록 저장이 50초 안에 끝나지 않았습니다. 화면을 새로고침한 뒤 이력에 반영됐는지 확인해주세요.'
             : '코드 저장이 60초 안에 끝나지 않았습니다. 화면을 새로고침한 뒤 이력에 반영됐는지 확인해주세요.',
         ),
       ]);
