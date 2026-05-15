@@ -91,7 +91,7 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
   const [openError, setOpenError] = useState('');
   const [membersTarget, setMembersTarget] = useState(null);
   const [createError, setCreateError] = useState('');
-  const [tokenStatus, setTokenStatus] = useState('checking');  // 'checking' | 'ok' | 'missing'
+  const [tokenStatus, setTokenStatus] = useState('idle');  // 'idle' | 'checking' | 'ok' | 'missing'
 
   useEffect(() => {
     if (user) fetchMyProjects();
@@ -116,23 +116,6 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
   }, [connectingProjectId, connectStartedAt]);
-
-  // GitHub 토큰 보유 여부 체크 (token이 없으면 재인증 버튼 노출)
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      if (!user) { setTokenStatus('checking'); return; }
-      if (githubTokenExpired) {
-        setTokenStatus('missing');
-        return;
-      }
-      const t = await withUiTimeout(useAuthStore.getState().getGitHubToken(), 3000, null)
-        .catch(() => null);
-      if (!alive) return;
-      setTokenStatus(t ? 'ok' : 'missing');
-    })();
-    return () => { alive = false; };
-  }, [user, githubTokenExpired]);
 
   useEffect(() => {
     let alive = true;
@@ -164,6 +147,22 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
     });
   };
 
+  const checkGitHubTokenForAction = async () => {
+    if (!user) {
+      setTokenStatus('missing');
+      return false;
+    }
+    if (githubTokenExpired) {
+      setTokenStatus('missing');
+      return false;
+    }
+    setTokenStatus('checking');
+    const token = await withUiTimeout(useAuthStore.getState().getGitHubToken(), 3000, null)
+      .catch(() => null);
+    setTokenStatus(token ? 'ok' : 'missing');
+    return Boolean(token);
+  };
+
   const openCreate = () => {
     setCreateError('');
     setCreateOpen(true);
@@ -177,8 +176,8 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
       setCreateError('이름을 입력해주세요.');
       return;
     }
-    if (createWithGithub && tokenStatus === 'missing') {
-      setCreateError('GitHub까지 바로 연결하려면 먼저 GitHub 재로그인이 필요합니다. 체크를 끄면 프로젝트만 바로 만들 수 있습니다.');
+    if (createWithGithub && !(await checkGitHubTokenForAction())) {
+      setCreateError('GitHub 저장소까지 바로 연결하려면 GitHub 연결 확인이 필요합니다. 체크를 끄면 VPyLab 프로젝트만 바로 만들 수 있습니다.');
       return;
     }
     setCreating(true);
@@ -218,11 +217,11 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
     }
   };
 
-  const openGithubConnect = (project) => {
+  const openGithubConnect = async (project) => {
     setOpenError('');
     setConnectError('');
-    if (tokenStatus === 'missing') {
-      setOpenError('GitHub 인증이 만료되었습니다. 위의 "GitHub 재로그인" 버튼을 눌러주세요.');
+    if (!(await checkGitHubTokenForAction())) {
+      setOpenError('GitHub 저장소 연결에는 GitHub 연결 확인이 필요합니다. VPyLab 프로젝트 작업은 그대로 할 수 있습니다.');
       return;
     }
     setConnectTarget(project);
@@ -315,10 +314,10 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
         <StatusBanner tone="warning">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-              GitHub 재로그인 필요
+              GitHub 연결 확인 필요
             </p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
-              저장소 연결·권한 초대 때만 필요합니다.
+              VPyLab 저장은 그대로 됩니다. GitHub 저장소 연결·반영 때만 필요합니다.
             </p>
           </div>
           <button
@@ -329,7 +328,7 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
               color: 'var(--color-accent-text, white)',
             }}
           >
-            GitHub 재로그인
+            GitHub 연결
           </button>
         </StatusBanner>
       )}
@@ -449,7 +448,10 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
           hasCode={Boolean(currentCode?.trim())}
           onTitleChange={setCreateTitle}
           onDescriptionChange={setCreateDescription}
-          onSetupGithubChange={setCreateWithGithub}
+          onSetupGithubChange={(next) => {
+            setCreateWithGithub(next);
+            if (next) checkGitHubTokenForAction();
+          }}
           onRepoNameChange={(value) => {
             setRepoNameTouched(true);
             setCreateRepoName(normalizeRepoNameInput(value));
