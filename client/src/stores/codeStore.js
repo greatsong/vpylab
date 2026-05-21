@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import useAuthStore from './authStore';
 
-const CODE_WRITE_TIMEOUT_MS = 22000;
-const REVISION_WRITE_TIMEOUT_MS = 12000;
+const CODE_WRITE_TIMEOUT_MS = 30000;
+const REVISION_WRITE_TIMEOUT_MS = 20000;
 
 function withTimeout(promise, timeoutMs, message) {
   let timerId;
@@ -247,7 +247,7 @@ const useCodeStore = create((set, get) => ({
     if (_saveTimer) clearTimeout(_saveTimer);
 
     const timer = setTimeout(async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser().catch(() => null);
       if (!user) return;
 
       set({ saveStatus: 'saving' });
@@ -255,13 +255,12 @@ const useCodeStore = create((set, get) => ({
       const currentId = get().currentCodeId;
 
       if (currentId) {
-        // 기존 레코드 업데이트 (본인 소유분만)
-        // count로 실제 갱신된 행 수를 확인하여 user_id 불일치 시 false-positive 'saved' 방지
+        // 기존 레코드 업데이트. 개인/팀 권한은 RLS가 최종 판단한다.
+        // 팀 프로젝트에서는 생성자 user_id와 현재 저장자가 다를 수 있다.
         const { error, count } = await supabase
           .from('vpylab_saved_code')
           .update({ code, updated_at: new Date().toISOString() }, { count: 'exact' })
-          .eq('id', currentId)
-          .eq('user_id', user.id);
+          .eq('id', currentId);
 
         if (error || count === 0) {
           set({ saveStatus: 'error' });

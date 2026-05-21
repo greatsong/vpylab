@@ -48,7 +48,7 @@ const DEFAULT_MATERIAL_PARAMS = {
 
 const DEFAULT_OBJECT_PROPS = {
   sphere: { radius: 1 },
-  box: { size: [1, 1, 1] },
+  box: { size: [1, 1, 1], axis: [1, 0, 0], up: [0, 1, 0] },
   cylinder: { radius: 1, axis: [1, 0, 0] },
   arrow: { axis: [1, 0, 0], shaftwidth: 0.1 },
   cone: { radius: 1, axis: [1, 0, 0] },
@@ -70,6 +70,76 @@ function cloneDefaultProps(type) {
   );
 }
 
+function asNumber(value, fallback = 0) {
+  const next = Number(value);
+  return Number.isFinite(next) ? next : fallback;
+}
+
+function asVectorArray(value, fallback = [0, 0, 0]) {
+  if (!Array.isArray(value)) return [...fallback];
+  return [
+    asNumber(value[0], fallback[0] ?? 0),
+    asNumber(value[1], fallback[1] ?? 0),
+    asNumber(value[2], fallback[2] ?? 0),
+  ];
+}
+
+function resolveBoxSize(cmd, fallback = DEFAULT_OBJECT_PROPS.box.size) {
+  const base = Array.isArray(cmd.size) ? cmd.size : fallback;
+  const size = [
+    asNumber(base?.[0], DEFAULT_OBJECT_PROPS.box.size[0]),
+    asNumber(base?.[1], DEFAULT_OBJECT_PROPS.box.size[1]),
+    asNumber(base?.[2], DEFAULT_OBJECT_PROPS.box.size[2]),
+  ];
+  if (cmd.length !== undefined) size[0] = asNumber(cmd.length, size[0]);
+  if (cmd.height !== undefined) size[1] = asNumber(cmd.height, size[1]);
+  if (cmd.width !== undefined) size[2] = asNumber(cmd.width, size[2]);
+  return size;
+}
+
+function applyAxisUpOrientation(object, axisValue, upValue) {
+  const axis = asVectorArray(axisValue, DEFAULT_OBJECT_PROPS.box.axis);
+  const up = asVectorArray(upValue, DEFAULT_OBJECT_PROPS.box.up);
+  const xAxis = new THREE.Vector3(...axis);
+  if (xAxis.lengthSq() < 1e-12) {
+    xAxis.set(1, 0, 0);
+  } else {
+    xAxis.normalize();
+  }
+
+  const yAxis = new THREE.Vector3(...up);
+  if (yAxis.lengthSq() < 1e-12) yAxis.set(0, 1, 0);
+  yAxis.addScaledVector(xAxis, -yAxis.dot(xAxis));
+  if (yAxis.lengthSq() < 1e-12) {
+    if (Math.abs(xAxis.y) < 0.9) {
+      yAxis.set(0, 1, 0);
+    } else {
+      yAxis.set(0, 0, 1);
+    }
+    yAxis.addScaledVector(xAxis, -yAxis.dot(xAxis));
+  }
+  yAxis.normalize();
+
+  const zAxis = new THREE.Vector3().crossVectors(xAxis, yAxis).normalize();
+  yAxis.crossVectors(zAxis, xAxis).normalize();
+  const matrix = new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis);
+  object.quaternion.setFromRotationMatrix(matrix);
+}
+
+function applyMaterialToObject(object, callback) {
+  const visit = (child) => {
+    if (child.material) callback(child.material, child);
+    if (child.children) child.children.forEach(visit);
+  };
+  if (typeof object.traverse === 'function') {
+    object.traverse((child) => {
+      if (child.material) callback(child.material, child);
+    });
+  } else {
+    visit(object);
+  }
+}
+
 /**
  * VPython 색상 배열 [r,g,b] (0~1) → Three.js Color
  */
@@ -89,7 +159,12 @@ function getRegistryProps(cmd) {
     ...cloneDefaultProps(cmd.type),
   };
 
-  for (const key of ['radius', 'size', 'axis', 'thickness', 'shaftwidth', 'intensity', 'direction', 'emissive']) {
+  if (cmd.type === 'box') {
+    props.size = resolveBoxSize(cmd, props.size);
+  }
+
+  for (const key of ['radius', 'size', 'axis', 'up', 'length', 'height', 'width', 'thickness', 'shaftwidth', 'intensity', 'direction', 'emissive']) {
+    if (cmd.type === 'box' && key === 'size') continue;
     if (cmd[key] !== undefined) props[key] = cmd[key];
   }
 
@@ -232,9 +307,18 @@ function createObject(cmd, scene) {
       break;
 
     case 'box': {
-      const size = cmd.size || [1, 1, 1];
+      const size = resolveBoxSize(cmd);
       geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
       mesh = new THREE.Mesh(geometry, material);
+      mesh.userData = {
+        ...(mesh.userData || {}),
+        vpType: 'box',
+        axisUp: true,
+        boxSize: size,
+        axis: asVectorArray(cmd.axis, DEFAULT_OBJECT_PROPS.box.axis),
+        up: asVectorArray(cmd.up, DEFAULT_OBJECT_PROPS.box.up),
+      };
+      applyAxisUpOrientation(mesh, mesh.userData.axis, mesh.userData.up);
       break;
     }
 
@@ -591,9 +675,7 @@ function updateMesh(cmd) {
       mesh.color = toThreeColor(cmd.color);
     } else if (mesh.isGroup) {
       // compound(Group) — 모든 자식 재질 색상 변경
-      mesh.traverse((child) => {
-        if (child.material) updateMaterialColor(child.material, toThreeColor(cmd.color));
-      });
+      applyMaterialToObject(mesh, (material) => updateMaterialColor(material, toThreeColor(cmd.color)));
     } else if (mesh.material) {
       updateMaterialColor(mesh.material, toThreeColor(cmd.color));
     }
@@ -618,11 +700,9 @@ function updateMesh(cmd) {
   if (cmd.opacity !== undefined) {
     if (mesh.isGroup) {
       // compound(Group) — 모든 자식 재질 투명도 변경
-      mesh.traverse((child) => {
-        if (child.material) {
-          child.material.opacity = cmd.opacity;
-          child.material.transparent = cmd.opacity < 1;
-        }
+      applyMaterialToObject(mesh, (material) => {
+        material.opacity = cmd.opacity;
+        material.transparent = cmd.opacity < 1;
       });
     } else if (mesh.material) {
       mesh.material.opacity = cmd.opacity;
@@ -641,7 +721,7 @@ function updateMesh(cmd) {
       mat.needsUpdate = true;
     };
     if (mesh.isGroup) {
-      mesh.traverse((child) => apply(child.material));
+      applyMaterialToObject(mesh, (material) => apply(material));
     } else {
       apply(mesh.material);
     }
@@ -650,9 +730,7 @@ function updateMesh(cmd) {
 
   if (cmd.emissive !== undefined && !mesh.isLight) {
     if (mesh.isGroup) {
-      mesh.traverse((child) => {
-        if (child.material) setMaterialEmissive(child.material, cmd.emissive);
-      });
+      applyMaterialToObject(mesh, (material) => setMaterialEmissive(material, cmd.emissive));
     } else if (mesh.material) {
       setMaterialEmissive(mesh.material, cmd.emissive);
     }
@@ -681,18 +759,31 @@ function updateMesh(cmd) {
     }
   }
 
-  if (cmd.size !== undefined && mesh.geometry) {
-    registryUpdates.size = cmd.size;
-    const s = cmd.size;
+  const isBox = mesh.userData?.vpType === 'box' || mesh.geometry?.type === 'BoxGeometry';
+  if (
+    (cmd.size !== undefined || (isBox && (cmd.length !== undefined || cmd.height !== undefined || cmd.width !== undefined)))
+    && mesh.geometry
+  ) {
+    const s = isBox
+      ? resolveBoxSize(cmd, mesh.userData?.boxSize || DEFAULT_OBJECT_PROPS.box.size)
+      : cmd.size;
+    registryUpdates.size = s;
     if (mesh.geometry.type === 'BoxGeometry') {
       const newGeom = new THREE.BoxGeometry(s[0], s[1], s[2]);
       mesh.geometry.dispose();
       mesh.geometry = newGeom;
+      mesh.userData = {
+        ...(mesh.userData || {}),
+        boxSize: s,
+      };
     } else if (mesh.geometry.type === 'SphereGeometry') {
       // ellipsoid는 sphere + scale로 표현하므로 size 갱신은 scale 변경
       mesh.scale.set(s[0], s[1], s[2]);
     }
   }
+  if (cmd.length !== undefined) registryUpdates.length = cmd.length;
+  if (cmd.height !== undefined) registryUpdates.height = cmd.height;
+  if (cmd.width !== undefined) registryUpdates.width = cmd.width;
 
   // 라벨 텍스트/색상 갱신 — Sprite를 새 캔버스 텍스처로 교체
   if (mesh.isSprite && (cmd.text !== undefined || cmd.color !== undefined)) {
@@ -712,11 +803,25 @@ function updateMesh(cmd) {
     mesh.geometry = newGeom;
   }
 
-  if (cmd.axis !== undefined) {
-    const dir = new THREE.Vector3(...cmd.axis).normalize();
-    const up = new THREE.Vector3(0, 1, 0);
-    mesh.quaternion.setFromUnitVectors(up, dir);
-    registryUpdates.axis = cmd.axis;
+  if (cmd.axis !== undefined || cmd.up !== undefined) {
+    if (mesh.userData?.axisUp) {
+      const nextAxis = cmd.axis !== undefined
+        ? asVectorArray(cmd.axis, DEFAULT_OBJECT_PROPS.box.axis)
+        : mesh.userData.axis || DEFAULT_OBJECT_PROPS.box.axis;
+      const nextUp = cmd.up !== undefined
+        ? asVectorArray(cmd.up, DEFAULT_OBJECT_PROPS.box.up)
+        : mesh.userData.up || DEFAULT_OBJECT_PROPS.box.up;
+      mesh.userData.axis = nextAxis;
+      mesh.userData.up = nextUp;
+      applyAxisUpOrientation(mesh, nextAxis, nextUp);
+      registryUpdates.axis = nextAxis;
+      registryUpdates.up = nextUp;
+    } else if (cmd.axis !== undefined) {
+      const dir = new THREE.Vector3(...cmd.axis).normalize();
+      const up = new THREE.Vector3(0, 1, 0);
+      mesh.quaternion.setFromUnitVectors(up, dir);
+      registryUpdates.axis = cmd.axis;
+    }
   }
 
   if (cmd.shaftwidth !== undefined) {
@@ -809,28 +914,49 @@ export function processBatch(commands, scene) {
       }
       case 'compound': {
         const group = new THREE.Group();
-        // 기존 메시를 그룹으로 이동
-        for (const subId of cmd.sub_ids) {
+        const subMeshes = (cmd.sub_ids || [])
+          .map((subId) => meshRegistry.get(subId))
+          .filter(Boolean);
+        const origin = cmd.pos
+          ? new THREE.Vector3(cmd.pos[0], cmd.pos[1], cmd.pos[2])
+          : subMeshes.reduce(
+            (acc, subMesh) => acc.add(subMesh.position),
+            new THREE.Vector3(0, 0, 0),
+          ).multiplyScalar(subMeshes.length ? 1 / subMeshes.length : 0);
+
+        // 기존 메시를 그룹 로컬 좌표로 이동한다.
+        for (const subId of (cmd.sub_ids || [])) {
           const subMesh = meshRegistry.get(subId);
           if (subMesh) {
             scene.remove(subMesh);
+            subMesh.position.set(
+              subMesh.position.x - origin.x,
+              subMesh.position.y - origin.y,
+              subMesh.position.z - origin.z,
+            );
             group.add(subMesh);
           }
         }
-        if (cmd.pos) group.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
+        group.position.set(origin.x, origin.y, origin.z);
         if (cmd.color) {
-          group.traverse((child) => {
-            if (child.material) child.material.color = toThreeColor(cmd.color);
+          applyMaterialToObject(group, (material) => {
+            updateMaterialColor(material, toThreeColor(cmd.color));
           });
         }
         if (cmd.opacity !== undefined && cmd.opacity < 1) {
-          group.traverse((child) => {
-            if (child.material) {
-              child.material.opacity = cmd.opacity;
-              child.material.transparent = true;
-            }
+          applyMaterialToObject(group, (material) => {
+            material.opacity = cmd.opacity;
+            material.transparent = true;
           });
         }
+        group.userData = {
+          ...(group.userData || {}),
+          vpType: 'compound',
+          axisUp: true,
+          axis: asVectorArray(cmd.axis, DEFAULT_OBJECT_PROPS.box.axis),
+          up: asVectorArray(cmd.up, DEFAULT_OBJECT_PROPS.box.up),
+        };
+        applyAxisUpOrientation(group, group.userData.axis, group.userData.up);
         group.visible = cmd.visible !== false;
         scene.add(group);
         meshRegistry.set(cmd.id, group);

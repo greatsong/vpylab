@@ -8,22 +8,53 @@
  *
  * 보안:
  *   - GitHub OAuth token은 매 요청마다 클라이언트가 전송, 서버 저장 X
- *   - rate-limit: 분당 10회
+ *   - rate-limit: 학교 NAT 환경을 고려해 IP + 로그인/토큰 단위로 분리
  *   - 코드 크기 100KB 상한
  *   - Supabase 행 INSERT/UPDATE는 클라이언트가 자기 JWT로 수행 (RLS 그대로 적용)
  */
 import { Router } from 'express';
 import crypto from 'crypto';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { generateStandaloneHTML } from '../utils/export-html.js';
 
 const router = Router();
 
-const limiter = rateLimit({
+function requestTokenKey(req) {
+  const rawToken = String(
+    req.body?.githubToken
+    || req.body?.accessToken
+    || req.get('authorization')?.replace(/^Bearer\s+/i, '')
+    || '',
+  ).trim();
+  if (!rawToken) return 'anonymous';
+  return crypto.createHash('sha256').update(rawToken).digest('hex').slice(0, 16);
+}
+
+function projectRateLimitKey(req) {
+  return `${ipKeyGenerator(req.ip)}:${requestTokenKey(req)}`;
+}
+
+const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
-  message: { error: '잠시 후 다시 시도해주세요. (분당 10회)' },
+  max: 60,
+  keyGenerator: projectRateLimitKey,
+  message: {
+    error: '요청이 잠시 몰렸습니다. 몇 초 뒤 다시 시도해주세요.',
+    code: 'rate_limited',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const githubHeavyLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  keyGenerator: projectRateLimitKey,
+  message: {
+    error: 'GitHub 작업 요청이 잠시 많습니다. VPyLab 저장은 유지되니 잠시 뒤 다시 시도해주세요.',
+    code: 'github_rate_limited',
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -1250,7 +1281,7 @@ function generateIndexHtml({ title, code, owner, repo }) {
 // POST /api/projects/setup
 // 프로젝트 신규 생성: GitHub 레포 + 초기 파일 + Pages 활성화
 // ========================================
-router.post('/setup', limiter, async (req, res) => {
+router.post('/setup', githubHeavyLimiter, async (req, res) => {
   let createdRepoFullName = null;
   // 단계별 timing 측정: Railway 로그에 [setup] +Xms (총 Yms) <단계>로 남깁니다.
   // 5분 hang 같은 사고 시 어느 단계에서 멎었는지 즉시 식별 가능.
@@ -1373,7 +1404,7 @@ router.post('/setup', limiter, async (req, res) => {
 // POST /api/projects/access
 // 현재 GitHub 토큰이 프로젝트 레포에 쓰기 권한을 갖는지 확인
 // ========================================
-router.post('/access', limiter, async (req, res) => {
+router.post('/access', generalLimiter, async (req, res) => {
   try {
     const { repoFullName, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1415,7 +1446,7 @@ router.post('/access', limiter, async (req, res) => {
 // POST /api/projects/members/github-usernames
 // 프로젝트 멤버의 GitHub OAuth username 조회
 // ========================================
-router.post('/members/github-usernames', limiter, async (req, res) => {
+router.post('/members/github-usernames', generalLimiter, async (req, res) => {
   try {
     const { projectId, accessToken } = req.body;
     if (!projectId) return res.status(400).json({ error: '프로젝트 ID가 없습니다.', code: 'missing_project_id' });
@@ -1471,7 +1502,7 @@ router.post('/members/github-usernames', limiter, async (req, res) => {
 // POST /api/projects/collaborators/invite
 // 저장소 소유자가 팀원의 GitHub 계정을 collaborator로 초대
 // ========================================
-router.post('/collaborators/invite', limiter, async (req, res) => {
+router.post('/collaborators/invite', githubHeavyLimiter, async (req, res) => {
   try {
     const { repoFullName, username, usernames, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1573,7 +1604,7 @@ router.post('/collaborators/invite', limiter, async (req, res) => {
 //
 // POST로 한 이유: GitHub OAuth token을 body로 받아야 해서 (URL에 토큰 노출 금지).
 // ========================================
-router.post('/collaborators/pending', limiter, async (req, res) => {
+router.post('/collaborators/pending', generalLimiter, async (req, res) => {
   try {
     const { repoFullName, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1613,7 +1644,7 @@ router.post('/collaborators/pending', limiter, async (req, res) => {
 // (DELETE 메서드를 쓰면 URL에 invitationId가 들어가는데 토큰을 body로 보내는 패턴과
 //  맞추기 위해 POST + invitationId를 body로 받습니다.)
 // ========================================
-router.post('/collaborators/cancel', limiter, async (req, res) => {
+router.post('/collaborators/cancel', generalLimiter, async (req, res) => {
   try {
     const { repoFullName, invitationId, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1645,7 +1676,7 @@ router.post('/collaborators/cancel', limiter, async (req, res) => {
 // POST /api/projects/commit
 // 기존 프로젝트에 코드 변경 commit + history.md 갱신 + index.html 갱신
 // ========================================
-router.post('/commit', limiter, async (req, res) => {
+router.post('/commit', githubHeavyLimiter, async (req, res) => {
   try {
     const {
       repoFullName, code, htmlContent, title, message, githubToken,

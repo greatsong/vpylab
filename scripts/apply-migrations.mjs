@@ -30,6 +30,7 @@ const DEFAULT_MIGRATIONS = [
   '011_github_sync.sql',
   '012_fix_rls_recursion.sql',
   '014_gallery_project_links.sql',
+  '015_github_username_profiles.sql',
 ];
 
 function listAvailable() {

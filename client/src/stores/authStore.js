@@ -1,6 +1,23 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
+function extractGitHubUsername(user) {
+  const githubIdentity = user?.identities?.find((identity) => identity.provider === 'github');
+  return [
+    user?.user_metadata?.user_name,
+    user?.user_metadata?.preferred_username,
+    githubIdentity?.identity_data?.user_name,
+    githubIdentity?.identity_data?.preferred_username,
+  ]
+    .map((value) => String(value || '').trim().replace(/^@/, ''))
+    .find((value) => /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(value))
+    || null;
+}
+
+function isMissingGithubUsernameColumn(error) {
+  return /github_username/i.test(error?.message || '');
+}
+
 const useAuthStore = create((set, get) => ({
   user: null,
   profile: null,
@@ -81,22 +98,60 @@ const useAuthStore = create((set, get) => ({
       || user.email?.split('@')[0]
       || '';
     const avatarUrl = user.user_metadata?.avatar_url || null;
+    const githubUsername = extractGitHubUsername(user);
 
-    const { error: insertError } = await supabase.from('vpylab_profiles').upsert({
+    const baseProfile = {
       id: user.id,
       display_name: displayName,
       avatar_url: avatarUrl,
-    }, { onConflict: 'id', ignoreDuplicates: true });
+    };
+    const profileWithGithub = {
+      ...baseProfile,
+      ...(githubUsername ? { github_username: githubUsername } : {}),
+    };
+
+    let { error: insertError } = await supabase
+      .from('vpylab_profiles')
+      .upsert(profileWithGithub, { onConflict: 'id', ignoreDuplicates: true });
+
+    if (insertError && isMissingGithubUsernameColumn(insertError)) {
+      const retry = await supabase
+        .from('vpylab_profiles')
+        .upsert(baseProfile, { onConflict: 'id', ignoreDuplicates: true });
+      insertError = retry.error;
+    }
+
     if (insertError) {
       console.warn('프로필 생성 실패:', insertError.message);
     }
 
-    if (!avatarUrl) return;
+    if (!avatarUrl && !githubUsername) return;
 
-    const { error: updateError } = await supabase
+    const profileUpdates = {
+      ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+      ...(githubUsername ? { github_username: githubUsername } : {}),
+      updated_at: new Date().toISOString(),
+    };
+    let { error: updateError } = await supabase
       .from('vpylab_profiles')
-      .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+      .update(profileUpdates)
       .eq('id', user.id);
+
+    if (updateError && isMissingGithubUsernameColumn(updateError)) {
+      const fallbackUpdates = {
+        ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+        updated_at: new Date().toISOString(),
+      };
+      if (Object.keys(fallbackUpdates).length > 1) {
+        const retry = await supabase
+          .from('vpylab_profiles')
+          .update(fallbackUpdates)
+          .eq('id', user.id);
+        updateError = retry.error;
+      } else {
+        updateError = null;
+      }
+    }
 
     if (updateError) {
       console.warn('프로필 갱신 실패:', updateError.message);

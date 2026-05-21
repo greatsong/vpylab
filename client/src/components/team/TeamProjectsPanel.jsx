@@ -60,7 +60,13 @@ function withUiTimeout(promise, ms, fallback = null) {
     .finally(() => window.clearTimeout(timerId));
 }
 
-export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode, initialAction = 'browse' }) {
+export default function TeamProjectsPanel({
+  onOpenProject,
+  onClose,
+  currentCode,
+  initialAction = 'browse',
+  initialInviteCode = '',
+}) {
   const { user, githubTokenExpired } = useAuthStore();
   const {
     myProjects, loadingProjects, projectCreationStatus,
@@ -96,6 +102,13 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
   useEffect(() => {
     if (user) fetchMyProjects();
   }, [user, fetchMyProjects]);
+
+  useEffect(() => {
+    const code = String(initialInviteCode || '').trim();
+    if (!code) return;
+    setJoinCode(code);
+    setJoinError('초대 코드가 입력되었습니다. 합류를 누르면 프로젝트에 들어갑니다.');
+  }, [initialInviteCode]);
 
   useEffect(() => {
     if (!creating || !createStartedAt) return undefined;

@@ -30,14 +30,40 @@ vi.mock('three', () => {
 
   class Vector3 {
     constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
-    normalize() { return this; }
+    set(x, y, z) { this.x = x; this.y = y; this.z = z; return this; }
+    clone() { return new Vector3(this.x, this.y, this.z); }
+    lengthSq() { return this.x ** 2 + this.y ** 2 + this.z ** 2; }
+    normalize() {
+      const len = Math.sqrt(this.lengthSq()) || 1;
+      this.x /= len; this.y /= len; this.z /= len;
+      return this;
+    }
+    add(v) { this.x += v.x; this.y += v.y; this.z += v.z; return this; }
+    addScaledVector(v, s) { this.x += v.x * s; this.y += v.y * s; this.z += v.z * s; return this; }
+    multiplyScalar(s) { this.x *= s; this.y *= s; this.z *= s; return this; }
+    dot(v) { return this.x * v.x + this.y * v.y + this.z * v.z; }
+    crossVectors(a, b) {
+      this.x = a.y * b.z - a.z * b.y;
+      this.y = a.z * b.x - a.x * b.z;
+      this.z = a.x * b.y - a.y * b.x;
+      return this;
+    }
   }
 
   class Quaternion {
     setFromUnitVectors() { return this; }
+    setFromRotationMatrix() { return this; }
+  }
+
+  class Matrix4 {
+    makeBasis() { return this; }
   }
 
   class Geometry {
+    constructor(type = 'Geometry', parameters = {}) {
+      this.type = type;
+      this.parameters = parameters;
+    }
     dispose() {}
   }
 
@@ -55,6 +81,7 @@ vi.mock('three', () => {
       this.position = { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } };
       this.quaternion = new Quaternion();
       this.visible = true;
+      this.userData = {};
     }
   }
 
@@ -64,8 +91,17 @@ vi.mock('three', () => {
       this.position = { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } };
       this.quaternion = new Quaternion();
       this.visible = true;
+      this.userData = {};
+      this.isGroup = true;
     }
     add(child) { this.children.push(child); }
+    traverse(callback) {
+      callback(this);
+      for (const child of this.children) {
+        callback(child);
+        if (child.children) child.children.forEach(callback);
+      }
+    }
   }
 
   class Light {
@@ -130,15 +166,16 @@ vi.mock('three', () => {
   return {
     Color,
     Vector3,
+    Matrix4,
     Mesh,
     Group,
     PointLight,
     DirectionalLight,
-    SphereGeometry: class extends Geometry {},
-    BoxGeometry: class extends Geometry {},
-    CylinderGeometry: class extends Geometry {},
-    ConeGeometry: class extends Geometry {},
-    TorusGeometry: class extends Geometry {},
+    SphereGeometry: class extends Geometry { constructor(radius) { super('SphereGeometry', { radius }); } },
+    BoxGeometry: class extends Geometry { constructor(width, height, depth) { super('BoxGeometry', { width, height, depth }); } },
+    CylinderGeometry: class extends Geometry { constructor(radiusTop, radiusBottom, height) { super('CylinderGeometry', { radiusTop, radiusBottom, height }); } },
+    ConeGeometry: class extends Geometry { constructor(radius, height) { super('ConeGeometry', { radius, height }); } },
+    TorusGeometry: class extends Geometry { constructor(radius, tube) { super('TorusGeometry', { radius, tube }); } },
     MeshStandardMaterial: class extends Material {},
     TextureLoader,
     CanvasTexture,
@@ -214,6 +251,39 @@ describe('vpython-bridge: processBatch', () => {
 
     expect(getMesh('obj_2')).toBeDefined();
     expect(scene.children.length).toBe(1);
+  });
+
+  it('box size, axis, up을 레지스트리에 보존한다', () => {
+    processBatch([{
+      action: 'create', id: 'obj_box_oriented', type: 'box',
+      pos: [0, 0, 0], color: [0.2, 0.3, 0.4], visible: true, opacity: 1,
+      size: [4, 0.2, 2],
+      axis: [0, 0, 4],
+      up: [0, 1, 0],
+    }], scene);
+
+    const mesh = getMesh('obj_box_oriented');
+    expect(mesh).toBeDefined();
+    expect(mesh.userData.vpType).toBe('box');
+    const snapshot = getSnapshot().find(item => item.id === 'obj_box_oriented');
+    expect(snapshot.props.size).toEqual([4, 0.2, 2]);
+    expect(snapshot.props.axis).toEqual([0, 0, 4]);
+    expect(snapshot.props.up).toEqual([0, 1, 0]);
+  });
+
+  it('compound는 자식 위치를 그룹 로컬 좌표로 다시 잡는다', () => {
+    processBatch([
+      { action: 'create', id: 'lid', type: 'box', pos: [2, 0, 0], color: [1, 1, 1], visible: true, opacity: 1, size: [2, 0.1, 1] },
+      { action: 'create', id: 'base', type: 'box', pos: [0, 0, 0], color: [1, 1, 1], visible: true, opacity: 1, size: [2, 0.1, 1] },
+      { action: 'compound', id: 'laptop', sub_ids: ['lid', 'base'], pos: [1, 0, 0], axis: [0, 0, 1], up: [0, 1, 0] },
+    ], scene);
+
+    const group = getMesh('laptop');
+    expect(group).toBeDefined();
+    expect(group.position.x).toBe(1);
+    expect(group.children.length).toBe(2);
+    expect(group.children[0].position.x).toBe(1);
+    expect(group.children[1].position.x).toBe(-1);
   });
 
   it('cylinder create 커맨드 → 씬에 추가', () => {

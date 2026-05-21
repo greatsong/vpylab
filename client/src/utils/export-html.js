@@ -530,6 +530,41 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
     }
   }
 
+  function asNumber(value, fallback = 0) {
+    const next = Number(value);
+    return Number.isFinite(next) ? next : fallback;
+  }
+
+  function asVectorArray(value, fallback = [0,0,0]) {
+    if (!Array.isArray(value)) return [...fallback];
+    return [asNumber(value[0], fallback[0]??0), asNumber(value[1], fallback[1]??0), asNumber(value[2], fallback[2]??0)];
+  }
+
+  function resolveBoxSize(cmd, fallback = [1,1,1]) {
+    const base = Array.isArray(cmd.size) ? cmd.size : fallback;
+    const size = [asNumber(base?.[0], 1), asNumber(base?.[1], 1), asNumber(base?.[2], 1)];
+    if (cmd.length !== undefined) size[0] = asNumber(cmd.length, size[0]);
+    if (cmd.height !== undefined) size[1] = asNumber(cmd.height, size[1]);
+    if (cmd.width !== undefined) size[2] = asNumber(cmd.width, size[2]);
+    return size;
+  }
+
+  function applyAxisUpOrientation(object, axisValue, upValue) {
+    const xAxis = new THREE.Vector3(...asVectorArray(axisValue, [1,0,0]));
+    if (xAxis.lengthSq() < 1e-12) xAxis.set(1,0,0); else xAxis.normalize();
+    const yAxis = new THREE.Vector3(...asVectorArray(upValue, [0,1,0]));
+    if (yAxis.lengthSq() < 1e-12) yAxis.set(0,1,0);
+    yAxis.addScaledVector(xAxis, -yAxis.dot(xAxis));
+    if (yAxis.lengthSq() < 1e-12) {
+      if (Math.abs(xAxis.y) < 0.9) yAxis.set(0,1,0); else yAxis.set(0,0,1);
+      yAxis.addScaledVector(xAxis, -yAxis.dot(xAxis));
+    }
+    yAxis.normalize();
+    const zAxis = new THREE.Vector3().crossVectors(xAxis, yAxis).normalize();
+    yAxis.crossVectors(zAxis, xAxis).normalize();
+    object.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis));
+  }
+
   function processCmd(cmd) {
     if (cmd.action === 'create') {
       let mesh;
@@ -542,7 +577,13 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
       });
       switch (cmd.type) {
         case 'sphere': mesh = new THREE.Mesh(new THREE.SphereGeometry(cmd.radius || 0.5, 32, 16), mat); break;
-        case 'box': { const s = cmd.size || [1,1,1]; mesh = new THREE.Mesh(new THREE.BoxGeometry(s[0],s[1],s[2]), mat); break; }
+        case 'box': {
+          const s = resolveBoxSize(cmd);
+          mesh = new THREE.Mesh(new THREE.BoxGeometry(s[0],s[1],s[2]), mat);
+          mesh.userData = { ...(mesh.userData||{}), vpType:'box', axisUp:true, boxSize:s, axis:asVectorArray(cmd.axis,[1,0,0]), up:asVectorArray(cmd.up,[0,1,0]) };
+          applyAxisUpOrientation(mesh, mesh.userData.axis, mesh.userData.up);
+          break;
+        }
         case 'cylinder': {
           const r = cmd.radius||0.5; const a = cmd.axis||[1,0,0]; const l = Math.hypot(...a)||1;
           mesh = new THREE.Mesh(new THREE.CylinderGeometry(r,r,l,32), mat);
@@ -705,9 +746,24 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
         else if(m.geometry.type==='TorusGeometry') ng=new THREE.TorusGeometry(cmd.radius,m.geometry.parameters?.tube||0.1,16,48);
         if(ng){m.geometry.dispose();m.geometry=ng;}
       }
-      if (cmd.size !== undefined && m.geometry) { const s=cmd.size; const ng=new THREE.BoxGeometry(s[0],s[1],s[2]); m.geometry.dispose(); m.geometry=ng; }
+      const isBox = m.userData?.vpType === 'box' || m.geometry?.type === 'BoxGeometry';
+      if ((cmd.size !== undefined || (isBox && (cmd.length !== undefined || cmd.height !== undefined || cmd.width !== undefined))) && m.geometry) {
+        const s = isBox ? resolveBoxSize(cmd, m.userData?.boxSize || [1,1,1]) : cmd.size;
+        if (m.geometry.type === 'SphereGeometry') m.scale.set(s[0],s[1],s[2]);
+        else { const ng=new THREE.BoxGeometry(s[0],s[1],s[2]); m.geometry.dispose(); m.geometry=ng; }
+        if (isBox) m.userData = { ...(m.userData||{}), boxSize:s };
+      }
       if (cmd.thickness !== undefined && m.geometry?.type==='TorusGeometry') { const r=m.geometry.parameters?.radius||1; const ng=new THREE.TorusGeometry(r,cmd.thickness,16,48); m.geometry.dispose(); m.geometry=ng; }
-      if (cmd.axis !== undefined) { const dir=new THREE.Vector3(...cmd.axis).normalize(); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
+      if (cmd.axis !== undefined || cmd.up !== undefined) {
+        if (m.userData?.axisUp) {
+          const nextAxis = cmd.axis !== undefined ? asVectorArray(cmd.axis,[1,0,0]) : m.userData.axis || [1,0,0];
+          const nextUp = cmd.up !== undefined ? asVectorArray(cmd.up,[0,1,0]) : m.userData.up || [0,1,0];
+          m.userData.axis = nextAxis; m.userData.up = nextUp;
+          applyAxisUpOrientation(m, nextAxis, nextUp);
+        } else if (cmd.axis !== undefined) {
+          const dir=new THREE.Vector3(...cmd.axis).normalize(); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+        }
+      }
     } else if (cmd.action === 'scene' && cmd.property === 'background') {
       scene.background = toColor(cmd.value);
     } else if (cmd.action === 'trail_update') {
@@ -725,13 +781,23 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
       if (c) { c.positions.length = 0; c.line.geometry.setAttribute('position', new THREE.Float32BufferAttribute([], 3)); c.line.geometry.computeBoundingSphere(); }
     } else if (cmd.action === 'compound') {
       const group = new THREE.Group();
+      const subMeshes = (cmd.sub_ids||[]).map(subId => meshes.get(subId)).filter(Boolean);
+      const origin = cmd.pos
+        ? new THREE.Vector3(cmd.pos[0], cmd.pos[1], cmd.pos[2])
+        : subMeshes.reduce((acc, subMesh) => acc.add(subMesh.position), new THREE.Vector3(0,0,0)).multiplyScalar(subMeshes.length ? 1/subMeshes.length : 0);
       for (const subId of (cmd.sub_ids||[])) {
         const subMesh = meshes.get(subId);
-        if (subMesh) { scene.remove(subMesh); group.add(subMesh); }
+        if (subMesh) {
+          scene.remove(subMesh);
+          subMesh.position.set(subMesh.position.x-origin.x, subMesh.position.y-origin.y, subMesh.position.z-origin.z);
+          group.add(subMesh);
+        }
       }
-      if (cmd.pos) group.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
+      group.position.set(origin.x, origin.y, origin.z);
       if (cmd.color) group.traverse(c => { if(c.material) c.material.color = toColor(cmd.color); });
       if (cmd.opacity !== undefined && cmd.opacity < 1) group.traverse(c => { if(c.material){c.material.opacity=cmd.opacity;c.material.transparent=true;} });
+      group.userData = { ...(group.userData||{}), vpType:'compound', axisUp:true, axis:asVectorArray(cmd.axis,[1,0,0]), up:asVectorArray(cmd.up,[0,1,0]) };
+      applyAxisUpOrientation(group, group.userData.axis, group.userData.up);
       group.visible = cmd.visible !== false;
       scene.add(group);
       meshes.set(cmd.id, group);
@@ -980,6 +1046,25 @@ class vector:
 
 vec = vector
 
+def _serialize_command_value(value):
+    if isinstance(value, vector): return value.to_list()
+    if isinstance(value, (int, float, bool, str)): return value
+    if isinstance(value, (list, tuple)):
+        out = []
+        for item in value:
+            converted = _serialize_command_value(item)
+            if converted is None: return None
+            out.append(converted)
+        return out
+    return None
+
+def _coerce_vector(value, default=None):
+    if isinstance(value, vector): return value
+    if isinstance(value, (list, tuple)) and len(value) >= 3:
+        return vector(value[0], value[1], value[2])
+    if isinstance(default, vector): return default.clone()
+    return default
+
 # === 30색 팔레트 ===
 class _ColorPalette:
     red=vector(1,0,0); green=vector(0,0.8,0); blue=vector(0,0,1)
@@ -1031,14 +1116,18 @@ class _GObject:
         self._opacity = kwargs.get('opacity', 1.0)
         self._emissive = kwargs.get('emissive', False)
         self._velocity = kwargs.get('velocity', vector(0,0,0))
+        extra = {}
+        for k,v in kwargs.items():
+            if k in ('pos','color','visible','opacity','velocity'): continue
+            serialized = _serialize_command_value(v)
+            if serialized is not None: extra[k] = serialized
         _add_command({
             "action":"create","id":self._id,"type":obj_type,
             "pos":self._pos.to_list(),"color":self._color.to_list(),
             "visible":self._visible,"opacity":self._opacity,
             "make_trail":self._make_trail,
             "trail_color":self._trail_color.to_list() if self._trail_color else None,
-            **{k:v for k,v in kwargs.items() if k not in ('pos','color','visible','opacity','velocity') and isinstance(v,(int,float,bool,str))},
-            **{k:v.to_list() for k,v in kwargs.items() if k not in ('pos','color','visible','opacity','velocity') and isinstance(v,vector)},
+            **extra,
         })
     @property
     def pos(self): return self._pos
@@ -1095,6 +1184,8 @@ class _GObject:
         self.pos = origin + new_rel
         if hasattr(self, '_axis') and isinstance(self._axis, vector):
             self.axis = self._axis.rotate(angle, axis=axis)
+        if hasattr(self, '_up') and isinstance(self._up, vector):
+            self.up = self._up.rotate(angle, axis=axis)
     def clear_trail(self):
         _add_command({"action":"trail_clear","id":self._id})
     def attach_trail(self, color=None, retain=10000):
@@ -1118,21 +1209,50 @@ class sphere(_GObject):
 
 class box(_GObject):
     def __init__(self, **kw):
-        self._size = kw.pop('size', vector(1,1,1))
-        super().__init__('box', size=self._size.to_list() if isinstance(self._size,vector) else self._size, **kw)
+        size_arg = kw.pop('size', None)
+        length_arg = kw.pop('length', None); height_arg = kw.pop('height', None); width_arg = kw.pop('width', None)
+        axis_arg = _coerce_vector(kw.pop('axis', vector(1,0,0)), vector(1,0,0))
+        up_arg = _coerce_vector(kw.pop('up', vector(0,1,0)), vector(0,1,0))
+        if size_arg is None:
+            self._size = vector(length_arg if length_arg is not None else (axis_arg.mag if axis_arg.mag > 0 else 1),
+                                height_arg if height_arg is not None else 1,
+                                width_arg if width_arg is not None else 1)
+        else:
+            self._size = _coerce_vector(size_arg, vector(1,1,1))
+            if length_arg is not None: self._size.x = float(length_arg)
+            if height_arg is not None: self._size.y = float(height_arg)
+            if width_arg is not None: self._size.z = float(width_arg)
+        axis_dir = axis_arg.hat if axis_arg.mag > 0 else vector(1,0,0)
+        self._axis = axis_dir * self._size.x
+        self._up = up_arg if up_arg.mag > 0 else vector(0,1,0)
+        super().__init__('box', size=self._size, axis=self._axis, up=self._up, **kw)
     @property
     def size(self): return self._size
     @size.setter
     def size(self, v):
-        self._size = v
-        s = v.to_list() if isinstance(v,vector) else v
-        _add_command({"action":"update","id":self._id,"size":s})
+        self._size = _coerce_vector(v, vector(1,1,1))
+        axis_dir = self._axis.hat if self._axis.mag > 0 else vector(1,0,0)
+        self._axis = axis_dir * self._size.x
+        _add_command({"action":"update","id":self._id,"size":self._size.to_list(),"axis":self._axis.to_list()})
+    @property
+    def axis(self): return self._axis
+    @axis.setter
+    def axis(self, v):
+        self._axis = _coerce_vector(v, vector(1,0,0))
+        if self._axis.mag > 0: self._size.x = self._axis.mag
+        _add_command({"action":"update","id":self._id,"axis":self._axis.to_list(),"size":self._size.to_list()})
+    @property
+    def up(self): return self._up
+    @up.setter
+    def up(self, v):
+        self._up = _coerce_vector(v, vector(0,1,0))
+        _add_command({"action":"update","id":self._id,"up":self._up.to_list()})
 
 class cylinder(_GObject):
     def __init__(self, **kw):
         self._radius = kw.pop('radius', 0.5)
-        self._axis = kw.pop('axis', vector(1,0,0))
-        super().__init__('cylinder', radius=self._radius, axis=self._axis.to_list(), **kw)
+        self._axis = _coerce_vector(kw.pop('axis', vector(1,0,0)), vector(1,0,0))
+        super().__init__('cylinder', radius=self._radius, axis=self._axis, **kw)
     @property
     def radius(self): return self._radius
     @radius.setter
@@ -1143,20 +1263,20 @@ class cylinder(_GObject):
     def axis(self): return self._axis
     @axis.setter
     def axis(self, v):
-        self._axis = v
-        _add_command({"action":"update","id":self._id,"axis":v.to_list()})
+        self._axis = _coerce_vector(v, vector(1,0,0))
+        _add_command({"action":"update","id":self._id,"axis":self._axis.to_list()})
 
 class arrow(_GObject):
     def __init__(self, **kw):
-        self._axis = kw.pop('axis', vector(1,0,0))
+        self._axis = _coerce_vector(kw.pop('axis', vector(1,0,0)), vector(1,0,0))
         self._shaftwidth = kw.pop('shaftwidth', 0.1)
-        super().__init__('arrow', axis=self._axis.to_list(), shaftwidth=self._shaftwidth, **kw)
+        super().__init__('arrow', axis=self._axis, shaftwidth=self._shaftwidth, **kw)
     @property
     def axis(self): return self._axis
     @axis.setter
     def axis(self, v):
-        self._axis = v
-        _add_command({"action":"update","id":self._id,"axis":v.to_list()})
+        self._axis = _coerce_vector(v, vector(1,0,0))
+        _add_command({"action":"update","id":self._id,"axis":self._axis.to_list()})
     @property
     def shaftwidth(self): return self._shaftwidth
     @shaftwidth.setter
@@ -1167,8 +1287,8 @@ class arrow(_GObject):
 class cone(_GObject):
     def __init__(self, **kw):
         self._radius = kw.pop('radius', 0.5)
-        self._axis = kw.pop('axis', vector(1,0,0))
-        super().__init__('cone', radius=self._radius, axis=self._axis.to_list(), **kw)
+        self._axis = _coerce_vector(kw.pop('axis', vector(1,0,0)), vector(1,0,0))
+        super().__init__('cone', radius=self._radius, axis=self._axis, **kw)
     @property
     def radius(self): return self._radius
     @radius.setter
@@ -1179,8 +1299,8 @@ class cone(_GObject):
     def axis(self): return self._axis
     @axis.setter
     def axis(self, v):
-        self._axis = v
-        _add_command({"action":"update","id":self._id,"axis":v.to_list()})
+        self._axis = _coerce_vector(v, vector(1,0,0))
+        _add_command({"action":"update","id":self._id,"axis":self._axis.to_list()})
 
 class ring(_GObject):
     def __init__(self, **kw):
@@ -1210,6 +1330,8 @@ class compound:
         self._color = kw.get('color', None)
         self._visible = kw.get('visible', True)
         self._opacity = kw.get('opacity', 1.0)
+        self._axis = _coerce_vector(kw.get('axis', vector(1,0,0)), vector(1,0,0))
+        self._up = _coerce_vector(kw.get('up', vector(0,1,0)), vector(0,1,0))
         self._make_trail = kw.pop('make_trail', False)
         self._trail_color = kw.pop('trail_color', None)
         _add_command({
@@ -1218,6 +1340,7 @@ class compound:
             "pos":self._pos.to_list(),
             "color":self._color.to_list() if self._color else None,
             "visible":self._visible,"opacity":self._opacity,
+            "axis":self._axis.to_list(),"up":self._up.to_list(),
             "make_trail":self._make_trail,
             "trail_color":self._trail_color.to_list() if self._trail_color else None,
         })
@@ -1249,31 +1372,41 @@ class compound:
     def opacity(self, v):
         self._opacity = v
         _add_command({"action":"update","id":self._id,"opacity":v})
+    @property
+    def axis(self): return self._axis
+    @axis.setter
+    def axis(self, v):
+        self._axis = _coerce_vector(v, vector(1,0,0))
+        _add_command({"action":"update","id":self._id,"axis":self._axis.to_list()})
+    @property
+    def up(self): return self._up
+    @up.setter
+    def up(self, v):
+        self._up = _coerce_vector(v, vector(0,1,0))
+        _add_command({"action":"update","id":self._id,"up":self._up.to_list()})
 
 
 # === 새 프리미티브 (v3) ===
 class pyramid(_GObject):
     def __init__(self, **kw):
-        self._size = kw.pop('size', vector(1,1,1))
-        self._axis = kw.pop('axis', vector(1,0,0))
-        s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
-        super().__init__('pyramid', size=s, axis=self._axis.to_list(), **kw)
+        self._size = _coerce_vector(kw.pop('size', vector(1,1,1)), vector(1,1,1))
+        self._axis = _coerce_vector(kw.pop('axis', vector(1,0,0)), vector(1,0,0))
+        super().__init__('pyramid', size=self._size, axis=self._axis, **kw)
 
 class ellipsoid(_GObject):
     def __init__(self, **kw):
-        self._size = kw.pop('size', vector(1,1,1))
-        s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
-        super().__init__('ellipsoid', size=s, **kw)
+        self._size = _coerce_vector(kw.pop('size', vector(1,1,1)), vector(1,1,1))
+        super().__init__('ellipsoid', size=self._size, **kw)
 
 class helix(_GObject):
     def __init__(self, **kw):
         self._radius = kw.pop('radius', 1.0)
-        self._axis = kw.pop('axis', vector(1,0,0))
+        self._axis = _coerce_vector(kw.pop('axis', vector(1,0,0)), vector(1,0,0))
         self._length = kw.pop('length', None)
         self._coils = kw.pop('coils', 5)
         self._thickness = kw.pop('thickness', 0.05)
         length = self._length if self._length is not None else self._axis.mag
-        super().__init__('helix', radius=self._radius, axis=self._axis.to_list(),
+        super().__init__('helix', radius=self._radius, axis=self._axis,
                          length=float(length), coils=int(self._coils), thickness=float(self._thickness), **kw)
 
 class label:

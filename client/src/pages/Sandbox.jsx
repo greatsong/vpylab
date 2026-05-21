@@ -119,6 +119,7 @@ export default function Sandbox() {
   const loadedRepoParamRef = useRef(null);
   const repoParam = searchParams.get('repo');
   const repoAutorun = searchParams.get('autorun') === '1';
+  const teamInviteCode = searchParams.get('team') || '';
 
   const updateCode = useCallback((nextCode) => {
     setCode((prev) => {
@@ -132,6 +133,12 @@ export default function Sandbox() {
   useEffect(() => {
     codeRef.current = code;
   }, [code]);
+
+  useEffect(() => {
+    if (!teamInviteCode) return;
+    setTeamInitialAction('browse');
+    setShowTeam(true);
+  }, [teamInviteCode]);
 
   // GitHub 재인증 후 복원된 코드
   useEffect(() => {
@@ -1358,6 +1365,7 @@ export default function Sandbox() {
         <TeamProjectsPanel
           currentCode={codeRef.current}
           initialAction={teamInitialAction}
+          initialInviteCode={teamInviteCode}
           onOpenProject={async (projectId, prefetched = null) => {
             // 프로젝트의 코드를 에디터에 로드 + 활성 프로젝트로 전환
             const { default: useProjectStore } = await import('../stores/projectStore');
