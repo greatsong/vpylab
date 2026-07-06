@@ -541,10 +541,10 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
         transparent: (cmd.opacity ?? 1) < 1, opacity: cmd.opacity ?? 1,
       });
       switch (cmd.type) {
-        case 'sphere': mesh = new THREE.Mesh(new THREE.SphereGeometry(cmd.radius || 0.5, 32, 16), mat); break;
-        case 'box': { const s = cmd.size || [1,1,1]; mesh = new THREE.Mesh(new THREE.BoxGeometry(s[0],s[1],s[2]), mat); break; }
+        case 'sphere': mesh = new THREE.Mesh(new THREE.SphereGeometry(cmd.radius || 1, 32, 16), mat); break;
+        case 'box': { const s = cmd.size || [cmd.length||1, cmd.height||1, cmd.width||1]; mesh = new THREE.Mesh(new THREE.BoxGeometry(s[0],s[1],s[2]), mat); break; }
         case 'cylinder': {
-          const r = cmd.radius||0.5; const a = cmd.axis||[1,0,0]; const l = Math.hypot(...a)||1;
+          const r = cmd.radius||1; const a = cmd.axis||[1,0,0]; const l = Math.hypot(...a)||1;
           mesh = new THREE.Mesh(new THREE.CylinderGeometry(r,r,l,32), mat);
           const dir = new THREE.Vector3(...a).normalize();
           mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
@@ -562,7 +562,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
           mesh = group; break;
         }
         case 'cone': {
-          const r = cmd.radius||0.5; const a = cmd.axis||[1,0,0]; const l = Math.hypot(...a)||1;
+          const r = cmd.radius||1; const a = cmd.axis||[1,0,0]; const l = Math.hypot(...a)||1;
           mesh = new THREE.Mesh(new THREE.ConeGeometry(r,l,32), mat);
           const dir = new THREE.Vector3(...a).normalize();
           mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
@@ -1088,7 +1088,7 @@ class _GObject:
 
 class sphere(_GObject):
     def __init__(self, **kw):
-        self._radius = kw.pop('radius', 0.5)
+        self._radius = kw.pop('radius', 1.0)
         super().__init__('sphere', radius=self._radius, **kw)
     @property
     def radius(self): return self._radius
@@ -1099,7 +1099,12 @@ class sphere(_GObject):
 
 class box(_GObject):
     def __init__(self, **kw):
-        self._size = kw.pop('size', vector(1,1,1))
+        _sz = kw.pop('size', None)
+        if _sz is None:
+            _sz = vector(kw.pop('length', 1), kw.pop('height', 1), kw.pop('width', 1))
+        else:
+            kw.pop('length', None); kw.pop('height', None); kw.pop('width', None)
+        self._size = _sz
         super().__init__('box', size=self._size.to_list() if isinstance(self._size,vector) else self._size, **kw)
     @property
     def size(self): return self._size
@@ -1111,7 +1116,7 @@ class box(_GObject):
 
 class cylinder(_GObject):
     def __init__(self, **kw):
-        self._radius = kw.pop('radius', 0.5)
+        self._radius = kw.pop('radius', 1.0)
         self._axis = kw.pop('axis', vector(1,0,0))
         super().__init__('cylinder', radius=self._radius, axis=self._axis.to_list(), **kw)
     @property
@@ -1147,7 +1152,7 @@ class arrow(_GObject):
 
 class cone(_GObject):
     def __init__(self, **kw):
-        self._radius = kw.pop('radius', 0.5)
+        self._radius = kw.pop('radius', 1.0)
         self._axis = kw.pop('axis', vector(1,0,0))
         super().__init__('cone', radius=self._radius, axis=self._axis.to_list(), **kw)
     @property
