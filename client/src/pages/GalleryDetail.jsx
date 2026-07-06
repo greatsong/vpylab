@@ -48,7 +48,7 @@ export default function GalleryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { locale: lang } = useI18n();
-  const { currentWork, loading, fetchWork, toggleLike, checkIfLiked, forkWork } = useGalleryStore();
+  const { currentWork, loading, fetchWork, toggleLike, checkIfLiked, forkWork, republishWork } = useGalleryStore();
   const user = useAuthStore(s => s.user);
   const getGitHubToken = useAuthStore(s => s.getGitHubToken);
   const isGitHubUser = useAuthStore(s => s.isGitHubUser);
@@ -59,6 +59,8 @@ export default function GalleryDetail() {
   const [forking, setForking] = useState(false);
   const [copied, setCopied] = useState(false);
   const [detailThumbnail, setDetailThumbnail] = useState(null);
+  const [makingPublic, setMakingPublic] = useState(false);
+  const [repoStatus, setRepoStatus] = useState(null); // { repo, broken }
 
   useEffect(() => {
     fetchWork(id);
@@ -84,16 +86,19 @@ export default function GalleryDetail() {
   const isLiked = !!user && likeState.id === id && likeState.value;
   const repoUrl = currentWork?.github_repo ? `https://github.com/${currentWork.github_repo}` : '';
   const issuesUrl = currentWork?.github_repo ? `${repoUrl}/issues/new` : '';
+  // repo 소실 대비: repo 경로에도 play 파라미터를 병기해 Sandbox가 스냅샷으로 폴백할 수 있게 함
   const runPath = currentWork?.github_repo
-    ? `/sandbox?repo=${encodeURIComponent(currentWork.github_repo)}&autorun=1`
+    ? `/sandbox?repo=${encodeURIComponent(currentWork.github_repo)}&autorun=1&play=${id}`
     : `/sandbox?play=${id}`;
   const projectState = useMemo(() => {
     if (!currentWork) return [];
-    return [
+    const flags = [
       currentWork.github_repo ? 'GitHub 저장소 연결' : '갤러리 코드 스냅샷',
       currentWork.github_url ? 'Pages 실행 페이지' : 'Pages 미발행',
       currentWork.project_id ? 'VPyLab 프로젝트에서 발행' : '독립 작품',
     ];
+    if (currentWork.is_public === false) flags.push('비공개 초안');
+    return flags;
   }, [currentWork]);
   const posterThumbnail = useMemo(() => createPosterThumbnail({
     title: currentWork?.title,
@@ -116,6 +121,25 @@ export default function GalleryDetail() {
     });
     return () => { alive = false; };
   }, [currentWork?.id, currentWork?.thumbnail]);
+
+  // 저장소 연결 상태 확인 — repo 정보는 있는데 GitHub에서 사라진 경우 뱃지 표시
+  useEffect(() => {
+    let alive = true;
+    const repo = currentWork?.github_repo;
+    if (!repo) return () => { alive = false; };
+    fetch(`https://api.github.com/repos/${repo}`)
+      .then(res => {
+        if (alive) setRepoStatus({ repo, broken: res.status === 404 });
+      })
+      .catch(() => {
+        // 네트워크 오류는 저장소 소실로 단정하지 않음
+      });
+    return () => { alive = false; };
+  }, [currentWork?.github_repo]);
+
+  const repoBroken = !!(currentWork?.github_repo
+    && repoStatus?.repo === currentWork.github_repo
+    && repoStatus.broken);
 
   if (loading || !currentWork) {
     return (
@@ -177,6 +201,24 @@ export default function GalleryDetail() {
     navigate(`/sandbox?edit=${result.data.id}`);
   };
 
+  // Fork 초안 등 비공개 작품을 갤러리에 공개
+  const handleMakePublic = async () => {
+    if (!user) {
+      useAuthStore.getState().setAuthModalOpen(true);
+      return;
+    }
+    setMakingPublic(true);
+    const result = await republishWork(id);
+    setMakingPublic(false);
+    if (result.error) {
+      alert((lang === 'ko' ? '공개 실패: ' : 'Publish failed: ') + result.error);
+      return;
+    }
+    alert(lang === 'ko'
+      ? '작품이 갤러리에 공개되었습니다. 이제 누구나 실행하고 Remix할 수 있습니다.'
+      : 'Your work is now public in the gallery.');
+  };
+
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(currentWork.code);
@@ -219,6 +261,16 @@ export default function GalleryDetail() {
                   {currentWork.github_repo}
                 </span>
               )}
+              {repoBroken && (
+                <span style={{ color: '#E84393' }}>
+                  {lang === 'ko' ? '저장소 연결 끊김' : 'Repo unavailable'}
+                </span>
+              )}
+              {currentWork.is_public === false && (
+                <span style={{ color: 'var(--color-text-secondary, #888)' }}>
+                  {lang === 'ko' ? '비공개' : 'Private'}
+                </span>
+              )}
             </div>
 
             <h1>{currentWork.title}</h1>
@@ -234,6 +286,18 @@ export default function GalleryDetail() {
                 </svg>
                 {lang === 'ko' ? '원작에서 Remix' : 'Remixed from'}: {currentWork.originalWork.title}
               </Link>
+            )}
+
+            {/* 원작 row가 삭제된 경우 — 비정규화된 스냅샷으로 출처 표기 유지 */}
+            {!currentWork.originalWork && currentWork.remix_from_title && (
+              <p className="gallery-origin-link" style={{ opacity: 0.75, cursor: 'default' }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path d="M2 4l3-3v2h6a3 3 0 013 3v2h-2V6a1 1 0 00-1-1H5v2L2 4zm12 8l-3 3v-2H5a3 3 0 01-3-3v-2h2v2a1 1 0 001 1h6v-2l3 3z" />
+                </svg>
+                {lang === 'ko'
+                  ? `원작: ${currentWork.remix_from_title} by ${currentWork.remix_from_author || '익명'} (삭제됨)`
+                  : `Original: ${currentWork.remix_from_title} by ${currentWork.remix_from_author || 'Anonymous'} (deleted)`}
+              </p>
             )}
 
             <div className="gallery-detail-stats">
@@ -264,6 +328,18 @@ export default function GalleryDetail() {
                 <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5 2l9 6-9 6V2z" /></svg>
                 VPyLab에서 실행
               </button>
+              {isMyWork && currentWork.is_public === false && (
+                <button
+                  className="gallery-detail-action primary"
+                  onClick={handleMakePublic}
+                  disabled={makingPublic}
+                  type="button"
+                >
+                  {makingPublic
+                    ? (lang === 'ko' ? '공개 처리 중' : 'Publishing')
+                    : (lang === 'ko' ? '갤러리에 공개하기' : 'Publish to gallery')}
+                </button>
+              )}
               <button className="gallery-detail-action" onClick={() => navigate(`/sandbox?remix=${id}`)} type="button">
                 Remix 프로젝트
               </button>

@@ -25,6 +25,18 @@ async function attachProfiles(works) {
   }));
 }
 
+/**
+ * /api/publish 계열 요청 공통 헤더
+ * 서버가 Supabase 인증을 요구하므로 액세스 토큰을 Authorization 헤더로 전달
+ */
+async function buildPublishHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
 const useGalleryStore = create((set, get) => ({
   works: [],
   featuredWorks: [],
@@ -195,6 +207,7 @@ const useGalleryStore = create((set, get) => ({
     authorAlias,
     projectId = null,
     existingRepo = null,
+    sourceRevisionId = null,
   }) => {
     set({ publishing: true });
 
@@ -205,30 +218,57 @@ const useGalleryStore = create((set, get) => ({
       let githubUrl = null;
       let githubRepo = null;
       let warnings = [];
+      let githubPending = false;
+      let githubError = null;
 
       if (githubToken && htmlContent) {
-        const res = await fetch(`${API_BASE}/api/publish`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code: htmlContent,
-            pythonCode: code,
-            title,
-            description,
-            category,
-            remixFrom,
-            existingRepo,
-            githubToken,
-          }),
-        });
-        const result = await res.json();
+        // GitHub 발행 실패(401/403/네트워크)여도 갤러리 스냅샷 등록은 계속 진행합니다.
+        try {
+          const res = await fetch(`${API_BASE}/api/publish`, {
+            method: 'POST',
+            headers: await buildPublishHeaders(),
+            body: JSON.stringify({
+              code: htmlContent,
+              pythonCode: code,
+              title,
+              description,
+              category,
+              remixFrom,
+              existingRepo,
+              githubToken,
+            }),
+          });
+          const result = await res.json();
 
-        if (res.ok && result.success) {
-          githubUrl = result.githubUrl;
-          githubRepo = result.githubRepo;
-          warnings = result.warnings || [];
-        } else {
-          throw new Error(result.error || 'GitHub Pages 발행 실패');
+          if (res.ok && result.success) {
+            githubUrl = result.githubUrl;
+            githubRepo = result.githubRepo;
+            warnings = result.warnings || [];
+          } else {
+            githubPending = true;
+            githubError = result.error || 'GitHub Pages 발행 실패';
+          }
+        } catch (netErr) {
+          githubPending = true;
+          githubError = netErr.message || 'GitHub 발행 서버에 연결할 수 없습니다.';
+        }
+      }
+
+      // Remix 출처 비정규화 — 원작이 나중에 삭제되어도 출처 표기를 유지합니다.
+      let remixFromTitle = null;
+      let remixFromAuthor = null;
+      if (remixFrom) {
+        const { data: original } = await supabase
+          .from('vpylab_gallery')
+          .select('title, author_alias, user_id')
+          .eq('id', remixFrom)
+          .single();
+        if (original) {
+          remixFromTitle = original.title;
+          const [origWithProfile] = await attachProfiles([original]);
+          remixFromAuthor = origWithProfile?.vpylab_profiles?.display_name
+            || original.author_alias
+            || '익명';
         }
       }
 
@@ -244,6 +284,9 @@ const useGalleryStore = create((set, get) => ({
         github_repo: githubRepo,
         author_alias: authorAlias || '익명',
         project_id: projectId || null,
+        source_revision_id: sourceRevisionId || null,
+        remix_from_title: remixFromTitle,
+        remix_from_author: remixFromAuthor,
       };
 
       let { data, error } = await supabase
@@ -252,9 +295,17 @@ const useGalleryStore = create((set, get) => ({
         .select()
         .single();
 
-      // 아직 project_id 마이그레이션이 적용되지 않은 배포 환경에서도 발행 자체는 살립니다.
-      if (error && /project_id/i.test(error.message || '')) {
-        delete galleryInsert.project_id;
+      // 아직 마이그레이션이 적용되지 않은 배포 환경에서도 발행 자체는 살립니다.
+      // 오류 메시지에 언급된 선택적 컬럼을 하나씩 제거하며 재시도합니다.
+      const optionalColumns = ['project_id', 'source_revision_id', 'remix_from_title', 'remix_from_author'];
+      const removed = new Set();
+      while (error) {
+        const missing = optionalColumns.find(
+          col => !removed.has(col) && (error.message || '').includes(col)
+        );
+        if (!missing) break;
+        removed.add(missing);
+        delete galleryInsert[missing];
         const retry = await supabase
           .from('vpylab_gallery')
           .insert(galleryInsert)
@@ -271,7 +322,7 @@ const useGalleryStore = create((set, get) => ({
       }
 
       set({ publishing: false });
-      return { data, githubUrl, warnings };
+      return { data, githubUrl, warnings, githubPending, githubError };
     } catch (err) {
       set({ publishing: false });
       return { error: err.message };
@@ -321,7 +372,7 @@ const useGalleryStore = create((set, get) => ({
 
     const { data } = await supabase
       .from('vpylab_gallery')
-      .select('id, title, thumbnail, category, is_public, view_count, like_count, github_url, created_at')
+      .select('id, title, description, thumbnail, category, is_public, view_count, like_count, remix_count, github_url, github_repo, author_alias, created_at, user_id, remix_from')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -332,7 +383,7 @@ const useGalleryStore = create((set, get) => ({
   fetchCodeFromGitHub: async (githubRepo, githubToken) => {
     const res = await fetch(`${API_BASE}/api/publish/fetch`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await buildPublishHeaders(),
       body: JSON.stringify({ repo: githubRepo, githubToken }),
     });
     const data = await res.json();
@@ -341,14 +392,16 @@ const useGalleryStore = create((set, get) => ({
   },
 
   // === 기존 작품 업데이트 (GitHub + Supabase) ===
-  updateWork: async ({ id, title, description, code, htmlContent, githubRepo, githubToken }) => {
+  // makePublic: true — 비공개(Fork 초안) 작품을 갤러리에 공개하며,
+  // 최초 공개 시에만 원작의 remix_count를 증가시킵니다.
+  updateWork: async ({ id, title, description, code, htmlContent, githubRepo, githubToken, makePublic = false }) => {
     set({ publishing: true });
     try {
       // GitHub 리포 업데이트
       if (githubRepo && githubToken && htmlContent) {
         const res = await fetch(`${API_BASE}/api/publish/update`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await buildPublishHeaders(),
           body: JSON.stringify({ githubRepo, title, code: htmlContent, pythonCode: code, description, githubToken }),
         });
         const result = await res.json();
@@ -356,20 +409,86 @@ const useGalleryStore = create((set, get) => ({
       }
 
       // Supabase 레코드 업데이트
-      const updates = { code };
+      const updates = {};
+      if (code !== undefined) updates.code = code;
       if (title) updates.title = title;
       if (description !== undefined) updates.description = description;
 
+      // 공개 전환: 중복 remix_count 증가 방지를 위해 이전 공개 상태를 먼저 확인
+      let wasPublic = null;
+      let remixFromId = null;
+      if (makePublic) {
+        const { data: existing } = await supabase
+          .from('vpylab_gallery')
+          .select('is_public, remix_from')
+          .eq('id', id)
+          .single();
+        wasPublic = existing?.is_public ?? null;
+        remixFromId = existing?.remix_from || null;
+        updates.is_public = true;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const { error } = await supabase
+          .from('vpylab_gallery')
+          .update(updates)
+          .eq('id', id);
+
+        if (error) throw error;
+      }
+
+      // 최초 공개일 때만 원작 remix_count 증가 (재공개 시 중복 방지)
+      if (makePublic && wasPublic === false && remixFromId) {
+        supabase.rpc('vpylab_increment_remix', { work_id: remixFromId });
+      }
+
+      set({ publishing: false });
+      return { success: true, madePublic: makePublic && wasPublic === false };
+    } catch (err) {
+      set({ publishing: false });
+      return { error: err.message };
+    }
+  },
+
+  // === 비공개 작품(Fork 초안 등)을 갤러리에 공개 ===
+  republishWork: async (id) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('로그인이 필요합니다.');
+
+      const { data: work, error: fetchError } = await supabase
+        .from('vpylab_gallery')
+        .select('id, is_public, remix_from, user_id')
+        .eq('id', id)
+        .single();
+
+      if (fetchError || !work) throw new Error('작품을 찾을 수 없습니다.');
+      if (work.user_id !== user.id) throw new Error('내 작품만 공개할 수 있습니다.');
+
+      // 이미 공개된 작품 — remix_count 중복 증가 없이 그대로 종료
+      if (work.is_public) return { success: true, alreadyPublic: true };
+
       const { error } = await supabase
         .from('vpylab_gallery')
-        .update(updates)
+        .update({ is_public: true })
         .eq('id', id);
 
       if (error) throw error;
-      set({ publishing: false });
+
+      // Fork(Remix) 작품의 최초 공개 시점에만 원작 remix_count 증가
+      if (work.remix_from) {
+        supabase.rpc('vpylab_increment_remix', { work_id: work.remix_from });
+      }
+
+      // 로컬 상태 갱신
+      const current = get().currentWork;
+      if (current?.id === id) {
+        set({ currentWork: { ...current, is_public: true } });
+      }
+      set({ myWorks: get().myWorks.map(w => (w.id === id ? { ...w, is_public: true } : w)) });
+
       return { success: true };
     } catch (err) {
-      set({ publishing: false });
       return { error: err.message };
     }
   },
@@ -381,7 +500,7 @@ const useGalleryStore = create((set, get) => ({
       // GitHub fork
       const res = await fetch(`${API_BASE}/api/publish/fork`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildPublishHeaders(),
         body: JSON.stringify({ sourceRepo, githubToken }),
       });
       const result = await res.json();
@@ -390,11 +509,17 @@ const useGalleryStore = create((set, get) => ({
       // 원본 작품 정보 가져오기
       const { data: source } = await supabase
         .from('vpylab_gallery')
-        .select('title, description, code, category, thumbnail')
+        .select('title, description, code, category, thumbnail, author_alias, user_id')
         .eq('id', sourceId)
         .single();
 
       if (!source) throw new Error('원본 작품을 찾을 수 없습니다.');
+
+      // 원작 작성자 표시명 (attribution 스냅샷용)
+      const [sourceWithProfile] = await attachProfiles([source]);
+      const sourceAuthor = sourceWithProfile?.vpylab_profiles?.display_name
+        || source.author_alias
+        || '익명';
 
       // 갤러리에 새 작품 등록 (비공개 초안)
       const { data: { user } } = await supabase.auth.getUser();
@@ -406,23 +531,41 @@ const useGalleryStore = create((set, get) => ({
         .eq('id', user.id)
         .single();
 
-      const { data, error } = await supabase
+      const forkInsert = {
+        user_id: user.id,
+        title: `${source.title} (Remix)`,
+        description: source.description,
+        code: source.code,
+        thumbnail: source.thumbnail,
+        category: source.category,
+        remix_from: sourceId,
+        github_url: result.githubUrl,
+        github_repo: result.forkedRepo,
+        author_alias: myProfile?.display_name || '익명',
+        is_public: false,
+        // 출처 스냅샷 — 원작이 삭제되어도 attribution 유지
+        remix_from_title: source.title,
+        remix_from_author: sourceAuthor,
+      };
+
+      let { data, error } = await supabase
         .from('vpylab_gallery')
-        .insert({
-          user_id: user.id,
-          title: `${source.title} (Remix)`,
-          description: source.description,
-          code: source.code,
-          thumbnail: source.thumbnail,
-          category: source.category,
-          remix_from: sourceId,
-          github_url: result.githubUrl,
-          github_repo: result.forkedRepo,
-          author_alias: myProfile?.display_name || '익명',
-          is_public: false,
-        })
+        .insert(forkInsert)
         .select()
         .single();
+
+      // attribution 마이그레이션이 아직 적용되지 않은 환경에서도 Fork 자체는 살립니다.
+      if (error && /remix_from_(title|author)/i.test(error.message || '')) {
+        delete forkInsert.remix_from_title;
+        delete forkInsert.remix_from_author;
+        const retry = await supabase
+          .from('vpylab_gallery')
+          .insert(forkInsert)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) throw error;
 

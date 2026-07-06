@@ -30,6 +30,8 @@ const useCodeStore = create((set, get) => ({
   currentCodeId: null,      // 현재 작업 중인 코드 레코드 ID
   saveStatus: 'idle',       // 'idle' | 'saving' | 'saved' | 'error'
   _saveTimer: null,
+  _autoSaveInFlight: false,   // 자동 저장 요청 진행 중 가드
+  _autoSavePendingArgs: null, // 진행 중에 들어온 최신 자동 저장 인자 (완료 후 재예약)
 
   setPanelOpen: (open) => set({ panelOpen: open }),
   setCurrentCodeId: (id) => set({ currentCodeId: id }),
@@ -246,12 +248,29 @@ const useCodeStore = create((set, get) => ({
     const { _saveTimer } = get();
     if (_saveTimer) clearTimeout(_saveTimer);
 
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
+      get()._runAutoSave(code, { title, missionId });
+    }, 2000);
+
+    set({ _saveTimer: timer, saveStatus: 'idle' });
+  },
+
+  // 자동 저장 실제 실행 — in-flight 가드 포함
+  _runAutoSave: async (code, { title = '제목 없음', missionId = null } = {}) => {
+    // 진행 중이면 최신 인자만 보관했다가 완료 후 다시 예약 (요청 중복/경합 방지)
+    if (get()._autoSaveInFlight) {
+      set({ _autoSavePendingArgs: [code, { title, missionId }] });
+      return;
+    }
+    set({ _autoSaveInFlight: true });
+
+    try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       set({ saveStatus: 'saving' });
 
+      // 비동기 경계 이후 재확인 — 다른 경로(코드 열기 등)에서 id가 생겼으면 중복 INSERT 방지
       const currentId = get().currentCodeId;
 
       if (currentId) {
@@ -277,21 +296,50 @@ const useCodeStore = create((set, get) => ({
           .single();
 
         if (!error && data) {
-          set({ currentCodeId: data.id, saveStatus: 'saved' });
+          // INSERT 응답 대기 중 다른 경로에서 currentCodeId가 생겼으면 그 값을 유지 (중복 INSERT 결과 무시)
+          set({ currentCodeId: get().currentCodeId || data.id, saveStatus: 'saved' });
         } else {
           set({ saveStatus: 'error' });
         }
       }
-    }, 2000);
-
-    set({ _saveTimer: timer, saveStatus: 'idle' });
+    } catch {
+      set({ saveStatus: 'error' });
+    } finally {
+      set({ _autoSaveInFlight: false });
+      // 진행 중에 들어온 최신 변경이 있으면 다음 debounce로 재예약
+      const pending = get()._autoSavePendingArgs;
+      if (pending) {
+        set({ _autoSavePendingArgs: null });
+        get().autoSave(pending[0], pending[1]);
+      }
+    }
   },
 
   // 자동 저장 타이머 정리
   clearAutoSave: () => {
     const { _saveTimer } = get();
     if (_saveTimer) clearTimeout(_saveTimer);
-    set({ _saveTimer: null, currentCodeId: null, saveStatus: 'idle' });
+    set({
+      _saveTimer: null,
+      _autoSavePendingArgs: null,
+      currentCodeId: null,
+      saveStatus: 'idle',
+    });
+  },
+
+  // 로그아웃 시 개인 데이터/타이머 초기화 (authStore._cleanupStoresOnSignOut에서 호출)
+  resetOnSignOut: () => {
+    const { _saveTimer } = get();
+    if (_saveTimer) clearTimeout(_saveTimer);
+    set({
+      _saveTimer: null,
+      _autoSaveInFlight: false,
+      _autoSavePendingArgs: null,
+      currentCodeId: null,
+      savedCodes: [],
+      saveStatus: 'idle',
+      panelOpen: false,
+    });
   },
 
   /**

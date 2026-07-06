@@ -9,24 +9,47 @@ import useAuthStore from '../../stores/authStore';
 export default function TeamMembersModal({ project, onClose }) {
   const { user } = useAuthStore();
   const {
-    activeProject, activeMembers, openProject, removeMember, setMemberRole,
+    fetchProjectMembers, removeMember, setMemberRole,
     leaveProject, regenerateInviteCode, deleteProject,
   } = useProjectStore();
 
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [modalProject, setModalProject] = useState(project || null);
+  const [modalMembers, setModalMembers] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    if (project?.id) openProject(project.id);
-  }, [project?.id, openProject]);
+    let alive = true;
+    const load = async () => {
+      if (!project?.id) return;
+      setLoadingMembers(true);
+      setLoadError('');
+      const { data, error } = await fetchProjectMembers(project.id);
+      if (!alive) return;
+      if (error) {
+        setLoadError(error.message || '멤버 정보를 불러오지 못했습니다.');
+        setModalProject(project);
+        setModalMembers([]);
+      } else {
+        setModalProject(data.project);
+        setModalMembers(data.members || []);
+      }
+      setLoadingMembers(false);
+    };
+    load();
+    return () => { alive = false; };
+  }, [project, fetchProjectMembers]);
 
-  const isOwner = activeProject && user && activeProject.owner_id === user.id;
-  const inviteCode = activeProject?.invite_code || project?.invite_code || '';
-  const inviteUrl = inviteCode ? `${window.location.origin}/?team=${inviteCode}` : '';
-  const repoFullName = activeProject?.github_repo || project?.github_repo || '';
+  const displayProject = modalProject || project || {};
+  const isOwner = displayProject && user && displayProject.owner_id === user.id;
+  const inviteCode = displayProject?.invite_code || '';
+  const sandboxInviteUrl = inviteCode ? `${window.location.origin}/sandbox?team=${inviteCode}` : '';
+  const repoFullName = displayProject?.github_repo || '';
   const repoUrl = repoFullName ? `https://github.com/${repoFullName}` : '';
   const collaboratorUrl = repoFullName ? `https://github.com/${repoFullName}/settings/access` : '';
-  const editableMembers = activeMembers.filter((m) => m.role === 'owner' || m.role === 'editor');
+  const editableMembers = modalMembers.filter((m) => m.role === 'owner' || m.role === 'editor');
 
   const getMemberDisplay = (member) => (
     member?.profile?.display_name || member?.user_id?.slice(0, 8) || '팀원'
@@ -34,7 +57,7 @@ export default function TeamMembersModal({ project, onClose }) {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(inviteUrl || inviteCode);
+      await navigator.clipboard.writeText(sandboxInviteUrl || inviteCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -45,20 +68,32 @@ export default function TeamMembersModal({ project, onClose }) {
   const handleRemove = async (uid) => {
     if (!window.confirm('이 멤버를 내보낼까요?')) return;
     setBusy(true);
-    await removeMember(activeProject.id, uid);
+    const { error } = await removeMember(displayProject.id, uid);
+    if (error) {
+      window.alert(`내보내기 실패: ${error.message}`);
+    } else {
+      setModalMembers((members) => members.filter((member) => member.user_id !== uid));
+    }
     setBusy(false);
   };
 
   const handleRoleChange = async (uid, role) => {
     setBusy(true);
-    await setMemberRole(activeProject.id, uid, role);
+    const { error } = await setMemberRole(displayProject.id, uid, role);
+    if (error) {
+      window.alert(`권한 변경 실패: ${error.message}`);
+    } else {
+      setModalMembers((members) => members.map((member) => (
+        member.user_id === uid ? { ...member, role } : member
+      )));
+    }
     setBusy(false);
   };
 
   const handleLeave = async () => {
     if (!window.confirm('이 팀에서 나가시겠어요?')) return;
     setBusy(true);
-    const { error } = await leaveProject(activeProject.id);
+    const { error } = await leaveProject(displayProject.id);
     setBusy(false);
     if (error) {
       window.alert(`나가기 실패: ${error.message}`);
@@ -70,7 +105,12 @@ export default function TeamMembersModal({ project, onClose }) {
   const handleRegenerate = async () => {
     if (!window.confirm('초대 코드를 재발급하면 기존 코드는 더 이상 동작하지 않습니다. 계속할까요?')) return;
     setBusy(true);
-    await regenerateInviteCode(activeProject.id);
+    const { data, error } = await regenerateInviteCode(displayProject.id);
+    if (error) {
+      window.alert(`초대 코드 재발급 실패: ${error.message}`);
+    } else if (data) {
+      setModalProject(data);
+    }
     setBusy(false);
   };
 
@@ -80,7 +120,7 @@ export default function TeamMembersModal({ project, onClose }) {
       : '\n\n연결된 GitHub 저장소는 없습니다.';
     if (!window.confirm(`정말 이 프로젝트를 VPyLab에서 삭제하시겠어요?\n관련 코드와 VPyLab 이력이 함께 삭제됩니다.${githubNote}`)) return;
     setBusy(true);
-    const { error } = await deleteProject(activeProject.id);
+    const { error } = await deleteProject(displayProject.id);
     setBusy(false);
     if (error) {
       window.alert(`삭제 실패: ${error.message}`);
@@ -107,10 +147,10 @@ export default function TeamMembersModal({ project, onClose }) {
         >
           <div className="min-w-0 flex-1">
             <h3 className="text-sm font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>
-              👥 {activeProject?.title || project?.title || '팀 프로젝트'}
+              👥 {displayProject?.title || '팀 프로젝트'}
             </h3>
             <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-              멤버 {activeMembers.length}명
+              멤버 {modalMembers.length}명
             </p>
           </div>
           <button onClick={onClose} className="cursor-pointer border-none bg-transparent text-lg" style={{ color: 'var(--color-text-muted)' }}>✕</button>
@@ -224,12 +264,20 @@ export default function TeamMembersModal({ project, onClose }) {
 
         {/* 멤버 목록 */}
         <div className="flex-1 overflow-y-auto p-2">
-          {activeMembers.length === 0 ? (
+          {loadingMembers ? (
             <div className="p-6 text-center text-xs" style={{ color: 'var(--color-text-muted)' }}>
               불러오는 중…
             </div>
+          ) : loadError ? (
+            <div className="p-6 text-center text-xs" style={{ color: 'var(--color-error, #e03131)' }}>
+              {loadError}
+            </div>
+          ) : modalMembers.length === 0 ? (
+            <div className="p-6 text-center text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              아직 표시할 멤버 정보가 없습니다. 초대 코드를 공유해 팀원을 합류시켜주세요.
+            </div>
           ) : (
-            activeMembers.map((m) => {
+            modalMembers.map((m) => {
               const isMe = m.user_id === user?.id;
               const isOwnerRow = m.role === 'owner';
               const display = getMemberDisplay(m);

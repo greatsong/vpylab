@@ -16,6 +16,15 @@ import useAuthStore from './authStore';
 // 다른 스토어와 동일한 VITE_API_URL을 사용 (Vercel 환경변수 컨벤션)
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
 
+// 서버 GitHub 프록시 인증용 Supabase access token (없으면 null)
+async function getSupabaseAccessToken() {
+  try {
+    return (await useAuthStore.getState().getAccessToken?.()) || null;
+  } catch {
+    return null;
+  }
+}
+
 const useGithubSyncStore = create((set) => ({
   syncing: false,
   lastSyncedAt: null,
@@ -69,9 +78,14 @@ const useGithubSyncStore = create((set) => ({
         || user.email?.split('@')[0]
         || user.id.slice(0, 8);
 
+      // 서버가 GitHub 프록시 요청에 Supabase 인증을 요구함 (Authorization: Bearer <access_token>)
+      const accessToken = await getSupabaseAccessToken();
       const resp = await fetch(`${API_BASE}/api/sync/github`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           code: args.code,
           title: args.title,

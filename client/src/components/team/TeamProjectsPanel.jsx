@@ -60,12 +60,19 @@ function withUiTimeout(promise, ms, fallback = null) {
     .finally(() => window.clearTimeout(timerId));
 }
 
-export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode, initialAction = 'browse' }) {
+export default function TeamProjectsPanel({
+  onOpenProject,
+  onClose,
+  currentCode,
+  initialAction = 'browse',
+  initialJoinCode = '',
+}) {
   const { user, githubTokenExpired } = useAuthStore();
   const {
-    myProjects, loadingProjects, projectCreationStatus,
+    myProjects, loadingProjects, projectsError, projectCreationStatus,
     githubSetupStatusById,
     fetchMyProjects, createProject, connectGithubProject, joinByInviteCode,
+    joinError: storeJoinError,
   } = useProjectStore();
 
   const [creating, setCreating] = useState(false);
@@ -84,7 +91,7 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
   const [connectingProjectId, setConnectingProjectId] = useState(null);
   const [connectElapsed, setConnectElapsed] = useState(0);
   const [connectStartedAt, setConnectStartedAt] = useState(null);
-  const [joinCode, setJoinCode] = useState('');
+  const [joinCode, setJoinCode] = useState(initialJoinCode);
   const [joinError, setJoinError] = useState('');
   const [joining, setJoining] = useState(false);
   const [openingProjectId, setOpeningProjectId] = useState(null);
@@ -96,6 +103,10 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
   useEffect(() => {
     if (user) fetchMyProjects();
   }, [user, fetchMyProjects]);
+
+  useEffect(() => {
+    if (initialJoinCode) setJoinCode(initialJoinCode);
+  }, [initialJoinCode]);
 
   useEffect(() => {
     if (!creating || !createStartedAt) return undefined;
@@ -370,9 +381,9 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
           >
             {joining ? '합류 중' : '합류'}
           </button>
-          {joinError && (
+          {(joinError || storeJoinError) && (
             <p className="text-xs sm:basis-full sm:pl-28" style={{ color: 'var(--color-error, #e03131)' }}>
-              {joinError}
+              {joinError || storeJoinError}
             </p>
           )}
         </form>
@@ -425,7 +436,32 @@ export default function TeamProjectsPanel({ onOpenProject, onClose, currentCode,
             />
           ))}
 
-          {!loadingProjects && myProjects.length === 0 && (
+          {!loadingProjects && projectsError && (
+            <div
+              className="col-span-full flex flex-col items-center gap-3 border px-4 py-6 text-center"
+              style={{
+                backgroundColor: 'var(--color-bg-primary)',
+                borderColor: 'var(--color-border)',
+              }}
+            >
+              <p className="text-sm" style={{ color: 'var(--color-error, #e03131)' }}>
+                프로젝트 목록을 불러오지 못했습니다: {projectsError}
+              </p>
+              <button
+                onClick={() => fetchMyProjects()}
+                className="px-4 py-2 text-xs font-semibold cursor-pointer border"
+                style={{
+                  backgroundColor: 'var(--color-bg-panel)',
+                  borderColor: 'var(--color-accent)',
+                  color: 'var(--color-accent)',
+                }}
+              >
+                다시 시도
+              </button>
+            </div>
+          )}
+
+          {!loadingProjects && !projectsError && myProjects.length === 0 && (
             <button
               onClick={openCreate}
               disabled={creating}

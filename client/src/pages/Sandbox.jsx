@@ -69,6 +69,7 @@ export default function Sandbox() {
   const [showSavedCodes, setShowSavedCodes] = useState(false);
   const [historyTarget, setHistoryTarget] = useState(null);
   const [teamInitialAction, setTeamInitialAction] = useState('browse');
+  const [teamInitialJoinCode, setTeamInitialJoinCode] = useState('');
   const [showProjectGate, setShowProjectGate] = useState(false);
   const [commitModalOpen, setCommitModalOpen] = useState(false);
   const [commitMustDetailed, setCommitMustDetailed] = useState(false);
@@ -110,15 +111,19 @@ export default function Sandbox() {
     setPanelOpen, setSendModalOpen, clearCodes, selectedClassId,
   } = useCodeShareStore();
   const [codeShareToast, setCodeShareToast] = useState(false);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   // 초기화 시 되돌릴 "원본 코드" — 예제/lesson/remix 로드 시 갱신, 미설정 시 DEFAULT_CODE
   const initialCodeRef = useRef(DEFAULT_CODE);
   const codeRef = useRef(DEFAULT_CODE);
   const pendingPlayRef = useRef(null); // 자동 실행할 코드
   const loadedRepoParamRef = useRef(null);
+  const handledTeamInviteRef = useRef('');
+  const waitingTeamInviteRef = useRef('');
   const repoParam = searchParams.get('repo');
   const repoAutorun = searchParams.get('autorun') === '1';
+  const playParam = searchParams.get('play');
+  const teamInviteCode = (searchParams.get('team') || '').trim().toLowerCase();
 
   const updateCode = useCallback((nextCode) => {
     setCode((prev) => {
@@ -222,6 +227,20 @@ export default function Sandbox() {
           setOutputs([{ text: `${repoParam} 프로젝트 코드를 불러왔습니다.`, type: 'success', id: Date.now() }]);
         } catch (e) {
           pendingPlayRef.current = null;
+          // ?play=가 함께 있으면 갤러리 스냅샷으로 폴백 (저장소 삭제/404 대응)
+          if (playParam) {
+            const playCode = await useGalleryStore.getState()
+              .fetchWorkCode(playParam)
+              .catch(() => null);
+            if (playCode) {
+              updateCode(playCode);
+              initialCodeRef.current = playCode;
+              pendingPlayRef.current = playCode;
+              setRepoLoadStatus(null);
+              setOutputs([{ text: '저장소를 불러올 수 없어 갤러리 스냅샷으로 실행합니다', type: 'warning', id: Date.now() }]);
+              return;
+            }
+          }
           setRepoLoadStatus('error');
           setOutputs([{ text: e.message || 'GitHub 프로젝트 코드를 불러오지 못했습니다.', type: 'error', id: Date.now() }]);
         }
@@ -240,7 +259,7 @@ export default function Sandbox() {
         setOutputs([{ text: t('share.externalCode'), type: 'warning', id: Date.now() }]);
       }
     }
-  }, [location.state?.sharedCode, location.state?.autoPlay, repoAutorun, repoParam, t, updateCode]);
+  }, [location.state?.sharedCode, location.state?.autoPlay, repoAutorun, repoParam, playParam, t, updateCode]);
 
   // 자동 저장: 코드 변경 시 2초 debounce
   // 활성 프로젝트가 있으면 GitHub commit 흐름(수동 저장)을 사용하므로 자동 저장은 건너뜁니다.
@@ -249,7 +268,8 @@ export default function Sandbox() {
   useEffect(() => {
     if (!user || !code || code === DEFAULT_CODE) return;
     if (activeProject) return;
-    if (repoLoadStatus) return;
+    // 로드 중일 때만 차단 — 'error' 상태에서 자동 저장이 영구 차단되지 않도록
+    if (repoLoadStatus === 'loading') return;
     autoSave(code, { title: '자유 코딩' });
   }, [code, user, activeProject, repoLoadStatus, autoSave]);
 
@@ -306,8 +326,9 @@ export default function Sandbox() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+    // handleSave는 codeRef를 사용하므로 code 변경마다 리스너를 재등록할 필요가 없음
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, user]);
+  }, [user]);
 
   const addOutput = useCallback((text, type = 'log') => {
     setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
@@ -356,9 +377,10 @@ export default function Sandbox() {
   }, [searchParams, addOutput, updateCode]);
 
   // Play 파라미터 처리 (?play=galleryId) — 코드 로드 후 자동 실행
+  // ?repo=와 함께 오면 repo 로드가 우선이고, repo 실패 시 위 폴백에서 스냅샷을 사용
   useEffect(() => {
     const playId = searchParams.get('play');
-    if (!playId) return;
+    if (!playId || repoParam) return;
 
     let cancelled = false;
     (async () => {
@@ -369,7 +391,7 @@ export default function Sandbox() {
       pendingPlayRef.current = playCode;
     })();
     return () => { cancelled = true; };
-  }, [searchParams, updateCode]);
+  }, [searchParams, repoParam, updateCode]);
 
   // Example 파라미터 처리 (?example=<id>) — 예제 코드를 에디터에 자동 로드
   useEffect(() => {
@@ -572,6 +594,93 @@ export default function Sandbox() {
     setActiveTab('editor');
     addOutput('다른 멤버가 저장한 최신 코드를 가져왔습니다.', 'success');
   };
+
+  const openProjectInEditor = useCallback(async (projectId, prefetched = null) => {
+    const store = useProjectStore.getState();
+    const result = prefetched?.code && store.activeProject?.id === projectId
+      ? { project: store.activeProject, code: prefetched.code }
+      : await store.openProject(projectId) || {};
+    if (result.error) {
+      throw new Error(result.error.message || '프로젝트를 열지 못했습니다.');
+    }
+    const codeRow = result.code;
+    if (codeRow?.code == null) {
+      throw new Error('프로젝트 코드를 찾을 수 없습니다.');
+    }
+
+    stopAllSounds();
+    stopExecution();
+    if (sceneRef.current) clearScene(sceneRef.current);
+    clearRegistry();
+    setOutputs([]);
+    setActiveTab('editor');
+    updateCode(codeRow.code);
+    initialCodeRef.current = codeRow.code;
+    if (codeRow.id) useCodeStore.getState().setCurrentCodeId(codeRow.id);
+    addOutput(`프로젝트 "${result.project?.title || '제목 없음'}"을 열었습니다.`, 'success');
+    if (!result.project?.github_repo) {
+      addOutput('GitHub 저장소는 아직 연결되지 않았습니다. 프로젝트 카드에서 나중에 연결할 수 있습니다.', 'log');
+    }
+    setShowTeam(false);
+    setTeamInitialAction('browse');
+    setTeamInitialJoinCode('');
+  }, [addOutput, stopExecution, updateCode]);
+
+  useEffect(() => {
+    if (!teamInviteCode) return;
+    setTeamInitialJoinCode(teamInviteCode);
+    setTeamInitialAction('browse');
+    setShowTeam(true);
+
+    if (!user) {
+      if (waitingTeamInviteRef.current !== teamInviteCode) {
+        waitingTeamInviteRef.current = teamInviteCode;
+        try {
+          localStorage.setItem('vpylab-oauth-return-path', `/sandbox?team=${teamInviteCode}`);
+        } catch { /* localStorage 사용 불가 환경 무시 */ }
+        useAuthStore.getState().setAuthModalOpen(true);
+        addOutput('로그인하면 초대 코드가 입력된 프로젝트 패널에서 바로 합류할 수 있습니다.', 'warning');
+      }
+      return;
+    }
+
+    if (handledTeamInviteRef.current === teamInviteCode) return;
+    handledTeamInviteRef.current = teamInviteCode;
+
+    // join 처리 후 URL에서 team 파라미터 제거 — 새로고침 시 반복 합류 방지
+    const clearTeamParam = () => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('team');
+        return next;
+      }, { replace: true });
+    };
+
+    (async () => {
+      const store = useProjectStore.getState();
+      const { data, error } = await store.joinByInviteCode(teamInviteCode);
+      clearTeamParam();
+      if (error) {
+        // 실패 메시지는 projectStore.joinError를 통해 TeamProjectsPanel에 표시됨
+        return;
+      }
+
+      // 에디터에 기본 예제가 아닌 코드가 있으면 교체 전에 확인
+      const hasUserCode = (codeRef.current || '').trim().length > 0
+        && codeRef.current !== DEFAULT_CODE;
+      if (hasUserCode && !window.confirm('현재 코드를 팀 프로젝트로 교체할까요? 저장하지 않은 내용은 사라집니다.')) {
+        addOutput('팀 프로젝트에 합류했습니다. 프로젝트 패널에서 열 수 있습니다.', 'success');
+        return;
+      }
+
+      try {
+        await openProjectInEditor(data.projectId);
+        addOutput('초대 코드로 팀 프로젝트에 합류했습니다.', 'success');
+      } catch (e) {
+        useProjectStore.getState().setJoinError(e.message || '팀 프로젝트를 열지 못했습니다.');
+      }
+    })();
+  }, [addOutput, openProjectInEditor, setSearchParams, teamInviteCode, user]);
 
   const handleShare = async () => {
     const ok = await copyCodeLink(codeRef.current);
@@ -1099,6 +1208,7 @@ export default function Sandbox() {
         <div className="hidden md:flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
           {user && saveStatus === 'saving' && <span>저장 중...</span>}
           {user && saveStatus === 'saved' && <span style={{ color: 'var(--color-success)' }}>저장됨 ✓</span>}
+          {user && saveStatus === 'error' && <span style={{ color: 'var(--color-error, #e03131)' }}>⚠️ 자동 저장 실패 — 수동 저장해주세요</span>}
           <span className="flex items-center gap-1.5">
             <span className={`status-dot ${isRunning ? '--running' : isReady ? '--ready' : '--idle'}`} />
             {isRunning ? t('editor.run') + '...' : isReady ? 'Ready' : '...'}
@@ -1358,38 +1468,9 @@ export default function Sandbox() {
         <TeamProjectsPanel
           currentCode={codeRef.current}
           initialAction={teamInitialAction}
-          onOpenProject={async (projectId, prefetched = null) => {
-            // 프로젝트의 코드를 에디터에 로드 + 활성 프로젝트로 전환
-            const { default: useProjectStore } = await import('../stores/projectStore');
-            const store = useProjectStore.getState();
-            const result = prefetched?.code && store.activeProject?.id === projectId
-              ? { project: store.activeProject, code: prefetched.code }
-              : await store.openProject(projectId) || {};
-            if (result.error) {
-              throw new Error(result.error.message || '프로젝트를 열지 못했습니다.');
-            }
-            const codeRow = result.code;
-            if (codeRow?.code == null) {
-              throw new Error('프로젝트 코드를 찾을 수 없습니다.');
-            }
-
-            stopAllSounds();
-            stopExecution();
-            if (sceneRef.current) clearScene(sceneRef.current);
-            clearRegistry();
-            setOutputs([]);
-            setActiveTab('editor');
-            updateCode(codeRow.code);
-            initialCodeRef.current = codeRow.code;
-            if (codeRow.id) useCodeStore.getState().setCurrentCodeId(codeRow.id);
-            addOutput(`프로젝트 "${result.project?.title || '제목 없음'}"을 열었습니다.`, 'success');
-            if (!result.project?.github_repo) {
-              addOutput('GitHub 저장소는 아직 연결되지 않았습니다. 프로젝트 카드에서 나중에 연결할 수 있습니다.', 'log');
-            }
-            setShowTeam(false);
-            setTeamInitialAction('browse');
-          }}
-          onClose={() => { setShowTeam(false); setTeamInitialAction('browse'); }}
+          initialJoinCode={teamInitialJoinCode}
+          onOpenProject={openProjectInEditor}
+          onClose={() => { setShowTeam(false); setTeamInitialAction('browse'); setTeamInitialJoinCode(''); }}
         />
       )}
 

@@ -15,6 +15,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
+import { requireSupabaseUser, requireProjectMemberIfProjectId } from '../middleware/require-supabase-user.js';
 
 const router = Router();
 
@@ -186,7 +187,7 @@ function generateMeta(title, codeId, projectId) {
  *
  * Returns: { repoFullName, commitSha, repoUrl }
  */
-router.post('/github', syncLimiter, async (req, res) => {
+router.post('/github', syncLimiter, requireSupabaseUser, requireProjectMemberIfProjectId, async (req, res) => {
   try {
     const {
       code,
@@ -308,7 +309,10 @@ router.post('/github', syncLimiter, async (req, res) => {
     if (err.status === 429) {
       return res.status(429).json({ error: 'GitHub API 한도에 도달했습니다.' });
     }
-    res.status(500).json({ error: `GitHub 동기화 중 오류: ${err.message}` });
+    // GitHub API 유래 에러는 메시지 유지, 내부 예외는 일반 메시지로 대체
+    res.status(500).json({
+      error: err.status ? `GitHub 동기화 중 오류: ${err.message}` : '서버 오류가 발생했습니다.',
+    });
   }
 });
 

@@ -48,7 +48,7 @@ const DEFAULT_MATERIAL_PARAMS = {
 
 const DEFAULT_OBJECT_PROPS = {
   sphere: { radius: 1 },
-  box: { size: [1, 1, 1] },
+  box: { size: [1, 1, 1], axis: [1, 0, 0], up: [0, 1, 0] },
   cylinder: { radius: 1, axis: [1, 0, 0] },
   arrow: { axis: [1, 0, 0], shaftwidth: 0.1 },
   cone: { radius: 1, axis: [1, 0, 0] },
@@ -70,6 +70,64 @@ function cloneDefaultProps(type) {
   );
 }
 
+function asNumber(value, fallback = 0) {
+  const next = Number(value);
+  return Number.isFinite(next) ? next : fallback;
+}
+
+function asVectorArray(value, fallback = [0, 0, 0]) {
+  if (!Array.isArray(value)) return [...fallback];
+  return [
+    asNumber(value[0], fallback[0] ?? 0),
+    asNumber(value[1], fallback[1] ?? 0),
+    asNumber(value[2], fallback[2] ?? 0),
+  ];
+}
+
+function resolveBoxSize(cmd, fallback = DEFAULT_OBJECT_PROPS.box.size) {
+  const base = Array.isArray(cmd.size) ? cmd.size : fallback;
+  const size = [
+    asNumber(base?.[0], DEFAULT_OBJECT_PROPS.box.size[0]),
+    asNumber(base?.[1], DEFAULT_OBJECT_PROPS.box.size[1]),
+    asNumber(base?.[2], DEFAULT_OBJECT_PROPS.box.size[2]),
+  ];
+  if (cmd.length !== undefined) size[0] = asNumber(cmd.length, size[0]);
+  if (cmd.height !== undefined) size[1] = asNumber(cmd.height, size[1]);
+  if (cmd.width !== undefined) size[2] = asNumber(cmd.width, size[2]);
+  return size;
+}
+
+function applyBoxOrientation(mesh, axisValue, upValue) {
+  const axis = asVectorArray(axisValue, DEFAULT_OBJECT_PROPS.box.axis);
+  const up = asVectorArray(upValue, DEFAULT_OBJECT_PROPS.box.up);
+  const xAxis = new THREE.Vector3(...axis);
+  if (!xAxis.lengthSq || xAxis.lengthSq() < 1e-12) {
+    xAxis.set(1, 0, 0);
+  } else {
+    xAxis.normalize();
+  }
+
+  const yAxis = new THREE.Vector3(...up);
+  if (!yAxis.lengthSq || yAxis.lengthSq() < 1e-12) {
+    yAxis.set(0, 1, 0);
+  }
+  yAxis.addScaledVector(xAxis, -yAxis.dot(xAxis));
+  if (yAxis.lengthSq() < 1e-12) {
+    if (Math.abs(xAxis.y) < 0.9) {
+      yAxis.set(0, 1, 0);
+    } else {
+      yAxis.set(0, 0, 1);
+    }
+    yAxis.addScaledVector(xAxis, -yAxis.dot(xAxis));
+  }
+  yAxis.normalize();
+
+  const zAxis = new THREE.Vector3().crossVectors(xAxis, yAxis).normalize();
+  yAxis.crossVectors(zAxis, xAxis).normalize();
+  const matrix = new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis);
+  mesh.quaternion.setFromRotationMatrix(matrix);
+}
+
 /**
  * VPython 색상 배열 [r,g,b] (0~1) → Three.js Color
  */
@@ -89,7 +147,12 @@ function getRegistryProps(cmd) {
     ...cloneDefaultProps(cmd.type),
   };
 
-  for (const key of ['radius', 'size', 'axis', 'thickness', 'shaftwidth', 'intensity', 'direction', 'emissive']) {
+  if (cmd.type === 'box') {
+    props.size = resolveBoxSize(cmd, props.size);
+  }
+
+  for (const key of ['radius', 'size', 'axis', 'up', 'length', 'height', 'width', 'thickness', 'shaftwidth', 'intensity', 'direction', 'emissive']) {
+    if (cmd.type === 'box' && key === 'size') continue;
     if (cmd[key] !== undefined) props[key] = cmd[key];
   }
 
@@ -232,9 +295,17 @@ function createObject(cmd, scene) {
       break;
 
     case 'box': {
-      const size = cmd.size || [1, 1, 1];
+      const size = resolveBoxSize(cmd);
       geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
       mesh = new THREE.Mesh(geometry, material);
+      mesh.userData = {
+        ...(mesh.userData || {}),
+        vpType: 'box',
+        boxSize: size,
+        boxAxis: asVectorArray(cmd.axis, DEFAULT_OBJECT_PROPS.box.axis),
+        boxUp: asVectorArray(cmd.up, DEFAULT_OBJECT_PROPS.box.up),
+      };
+      applyBoxOrientation(mesh, mesh.userData.boxAxis, mesh.userData.boxUp);
       break;
     }
 
@@ -550,7 +621,8 @@ function createTrail(cmd, scene) {
   trailRegistry.set(cmd.id, {
     line: trailLine,
     positions: positions,
-    maxPoints: 10000,
+    // retain 지정 시 해당 값을 최대 포인트 수로 사용 (attach_trail 경로와 동일)
+    maxPoints: cmd.retain > 0 ? cmd.retain : 10000,
   });
 }
 
@@ -681,13 +753,21 @@ function updateMesh(cmd) {
     }
   }
 
-  if (cmd.size !== undefined && mesh.geometry) {
-    registryUpdates.size = cmd.size;
-    const s = cmd.size;
+  const isBox = mesh.userData?.vpType === 'box' || mesh.geometry?.type === 'BoxGeometry';
+  if (
+    (cmd.size !== undefined || (isBox && (cmd.length !== undefined || cmd.height !== undefined || cmd.width !== undefined)))
+    && mesh.geometry
+  ) {
+    const s = isBox
+      ? resolveBoxSize(cmd, mesh.userData?.boxSize || DEFAULT_OBJECT_PROPS.box.size)
+      : cmd.size;
+    registryUpdates.size = s;
     if (mesh.geometry.type === 'BoxGeometry') {
       const newGeom = new THREE.BoxGeometry(s[0], s[1], s[2]);
       mesh.geometry.dispose();
       mesh.geometry = newGeom;
+      mesh.userData = mesh.userData || {};
+      mesh.userData.boxSize = s;
     } else if (mesh.geometry.type === 'SphereGeometry') {
       // ellipsoid는 sphere + scale로 표현하므로 size 갱신은 scale 변경
       mesh.scale.set(s[0], s[1], s[2]);
@@ -712,7 +792,14 @@ function updateMesh(cmd) {
     mesh.geometry = newGeom;
   }
 
-  if (cmd.axis !== undefined) {
+  if (isBox && (cmd.axis !== undefined || cmd.up !== undefined)) {
+    mesh.userData = mesh.userData || {};
+    mesh.userData.boxAxis = asVectorArray(cmd.axis || mesh.userData.boxAxis, DEFAULT_OBJECT_PROPS.box.axis);
+    mesh.userData.boxUp = asVectorArray(cmd.up || mesh.userData.boxUp, DEFAULT_OBJECT_PROPS.box.up);
+    applyBoxOrientation(mesh, mesh.userData.boxAxis, mesh.userData.boxUp);
+    if (cmd.axis !== undefined) registryUpdates.axis = cmd.axis;
+    if (cmd.up !== undefined) registryUpdates.up = cmd.up;
+  } else if (cmd.axis !== undefined) {
     const dir = new THREE.Vector3(...cmd.axis).normalize();
     const up = new THREE.Vector3(0, 1, 0);
     mesh.quaternion.setFromUnitVectors(up, dir);
@@ -901,13 +988,22 @@ export function clearScene(scene) {
   // 메시 레지스트리 정리
   for (const [, mesh] of meshRegistry) {
     scene.remove(mesh);
+    // distant_light의 target도 씬에서 제거 (생성 시 scene.add(light.target) 됨)
+    if (mesh.isDirectionalLight && mesh.target) scene.remove(mesh.target);
     if (mesh.geometry) mesh.geometry.dispose();
-    if (mesh.material) mesh.material.dispose();
+    if (mesh.material) {
+      // 텍스처(label CanvasTexture 등)도 함께 해제
+      mesh.material.map?.dispose();
+      mesh.material.dispose();
+    }
     // Group(compound)의 자식도 정리
     if (mesh.isGroup) {
       mesh.traverse((child) => {
         if (child.geometry) child.geometry.dispose();
-        if (child.material) child.material.dispose();
+        if (child.material) {
+          child.material.map?.dispose();
+          child.material.dispose();
+        }
       });
     }
   }

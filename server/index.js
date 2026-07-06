@@ -16,8 +16,13 @@ app.set('trust proxy', 1);
 
 // === 보안 미들웨어 (CRITICAL — 보안 감사 결과 반영) ===
 app.use(helmet());
+// ALLOWED_ORIGINS: 콤마 구분 목록. 공백/빈 항목 제거 후 비어 있으면 localhost로 폴백
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:4033'],
+  origin: allowedOrigins.length > 0 ? allowedOrigins : ['http://localhost:4033'],
 }));
 app.use(express.json({ limit: '1mb' }));
 
@@ -62,6 +67,24 @@ app.use('/api/sync', syncRoutes);
 // 프로젝트 = GitHub 레포 1:1 (Phase 4-A — 프로젝트 생성 + 자동 Pages + commit)
 import projectsRoutes from './routes/projects.js';
 app.use('/api/projects', projectsRoutes);
+
+// === 404 핸들러 (모든 라우트 뒤) ===
+app.use((req, res) => {
+  res.status(404).json({ error: '요청한 경로를 찾을 수 없습니다.' });
+});
+
+// === 전역 에러 핸들러 ===
+// 내부 에러 상세는 콘솔에만 남기고, 응답에는 일반 메시지만 노출 (err.message 노출 금지)
+app.use((err, req, res, next) => {
+  console.error('[VPyLab] 처리되지 않은 에러:', err);
+  if (res.headersSent) return next(err);
+  // body-parser 등 클라이언트 입력 문제(4xx)는 해당 상태 코드 유지
+  const status = err.status || err.statusCode;
+  if (status && status >= 400 && status < 500) {
+    return res.status(status).json({ error: '요청 형식이 올바르지 않습니다.' });
+  }
+  res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+});
 
 app.listen(PORT, () => {
   console.log(`[VPyLab] Express 서버 실행: http://localhost:${PORT}`);

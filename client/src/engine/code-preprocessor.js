@@ -99,7 +99,8 @@ export function preprocessCode(code) {
 
     for (let fi = 0; fi < ASYNC_FUNCTIONS.length; fi++) {
       const fn = ASYNC_FUNCTIONS[fi];
-      const pattern = new RegExp(`(?<!\\w)(${fn}\\s*\\()`, 'g');
+      // 앞에 단어문자·점·한글이 있으면 제외 — time.sleep(), 내악기() 오탐 방지
+      const pattern = new RegExp(`(?<![\\w.가-힣])(${fn}\\s*\\()`, 'g');
       let match;
 
       while ((match = pattern.exec(processed)) !== null) {

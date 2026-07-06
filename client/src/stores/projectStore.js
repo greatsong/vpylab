@@ -23,6 +23,7 @@ const GITHUB_SYNC_RETRY_BASE_MS = 60_000;
 const GITHUB_SYNC_RETRY_MAX_MS = 30 * 60_000;
 const GITHUB_SYNC_PENDING_STORAGE_KEY = 'vpylab:github-sync-pending:v1';
 const GITHUB_SYNC_MAX_PENDING_JOBS = 50;
+const DEBUG_PROJECTS = import.meta.env.DEV;
 const GITHUB_SYNC_FORCE_RETRYABLE_BLOCKED_CODES = new Set([
   'github_auth_required',
   'github_2fa_required',
@@ -57,6 +58,25 @@ function normalizeError(error) {
 
 function classifyGithubSyncError(error) {
   const { message, status, code } = normalizeError(error);
+
+  // 서버 GitHub 프록시의 Supabase 인증 실패 (401 code: 'auth_required')
+  if (code === 'auth_required') {
+    return {
+      code: 'auth_required',
+      blocked: true,
+      message: 'VPyLab 로그인이 만료되었습니다. 다시 로그인한 뒤 저장하면 GitHub 반영이 재시도됩니다.',
+    };
+  }
+
+  // 서버 GitHub 프록시의 프로젝트 멤버십 검증 실패 (403 code: 'not_project_member')
+  if (code === 'not_project_member') {
+    return {
+      code: 'not_project_member',
+      blocked: true,
+      message: '이 프로젝트의 멤버가 아니어서 GitHub 반영이 거부되었습니다. 초대 코드로 합류한 계정인지 확인해주세요.',
+    };
+  }
+
   if (
     code === 'github_auth_required'
     || status === 401
@@ -170,6 +190,24 @@ async function getCurrentUserForSave(message = '로그인 확인이 지연되고
     message,
   );
   return user;
+}
+
+// 서버 GitHub 프록시 인증용 Supabase access token (없으면 null)
+async function getSupabaseAccessToken() {
+  try {
+    return (await useAuthStore.getState().getAccessToken?.()) || null;
+  } catch {
+    return null;
+  }
+}
+
+// Supabase 인증 헤더를 포함한 서버 API 공통 헤더
+async function buildAuthorizedApiHeaders() {
+  const accessToken = await getSupabaseAccessToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  };
 }
 
 async function getGithubTokenForSave(message = 'GitHub 인증 확인이 지연되고 있습니다.') {
@@ -310,12 +348,26 @@ async function parseApiJson(response) {
   }
 }
 
+async function bestEffortSupabaseWrite(promise, timeoutMessage, label) {
+  try {
+    const { error } = await withTimeout(promise, SUPABASE_TIMEOUT_MS, timeoutMessage);
+    if (error) {
+      console.warn(`[projectStore] ${label} 실패:`, error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn(`[projectStore] ${label} 지연/실패:`, e.message);
+    return false;
+  }
+}
+
 async function fetchProfilesForMembers(userIds) {
   try {
     const { data, error } = await withTimeout(
       supabase
         .from('vpylab_profiles')
-        .select('id, display_name, avatar_url')
+        .select('id, display_name, avatar_url, github_username')
         .in('id', userIds),
       SUPABASE_TIMEOUT_MS,
       '멤버 프로필 조회가 15초 안에 끝나지 않았습니다.',
@@ -330,6 +382,45 @@ async function fetchProfilesForMembers(userIds) {
     console.warn('[projectStore] 멤버 프로필 조회 실패:', e.message);
     return [];
   }
+}
+
+async function buildProjectMembers(project, { includeGithubUsernames = false } = {}) {
+  const { data: members, error: membersError } = await withTimeout(
+    supabase
+      .from('vpylab_project_members')
+      .select('user_id, role, joined_at')
+      .eq('project_id', project.id)
+      .order('joined_at', { ascending: true }),
+    SUPABASE_TIMEOUT_MS,
+    '프로젝트 멤버 조회가 15초 안에 끝나지 않았습니다.',
+  );
+
+  if (membersError) throw membersError;
+
+  let memberWithProfile = members || [];
+  if (memberWithProfile.length === 0) return [];
+
+  const userIds = memberWithProfile.map(m => m.user_id);
+  const profiles = await fetchProfilesForMembers(userIds);
+  const byId = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+  memberWithProfile = memberWithProfile.map(m => ({ ...m, profile: byId[m.user_id] || null }));
+
+  if (includeGithubUsernames && project.github_repo) {
+    const githubUsernames = await fetchMemberGithubUsernames(project.id);
+    memberWithProfile = memberWithProfile.map((member) => {
+      const githubUsername = githubUsernames[member.user_id];
+      if (!githubUsername || member.profile?.github_username) return member;
+      return {
+        ...member,
+        profile: {
+          ...(member.profile || { id: member.user_id }),
+          github_username: githubUsername,
+        },
+      };
+    });
+  }
+
+  return memberWithProfile;
 }
 
 async function fetchMemberGithubUsernames(projectId) {
@@ -365,8 +456,10 @@ const useProjectStore = create((set, get) => ({
   // 내가 owner거나 멤버인 프로젝트 목록
   myProjects: [],
   loadingProjects: false,
+  projectsError: null,        // 프로젝트 목록 조회 실패 메시지 (기존 목록은 유지)
   projectCreationStatus: null,
   projectSaveStatus: null,
+  joinError: null,            // 초대 코드 합류 실패 메시지 (TeamProjectsPanel 표시용)
   githubSetupStatusById: {},  // { [projectId]: { state, message, repoFullName?, error? } }
 
   // 현재 활성화된 팀 프로젝트(에디터에서 열고 있는)
@@ -378,7 +471,11 @@ const useProjectStore = create((set, get) => ({
   // 다른 멤버가 코드를 저장했음을 알리는 신호 (UI 토스트용)
   lastRemoteUpdate: null,     // { byUserId, at, codeId, revisionId, kind } | null
 
+  // Realtime 구독 상태 (추후 UI 표시용)
+  realtimeStatus: null,       // 'SUBSCRIBED' | 'CHANNEL_ERROR' | 'TIMED_OUT' | 'CLOSED' | null
+
   _channel: null,
+  _realtimeRetriedFor: null,  // 재구독을 1회 시도한 projectId
 
   // -------------------------------------------------
   // 1) 내 프로젝트 목록
@@ -386,10 +483,10 @@ const useProjectStore = create((set, get) => ({
   fetchMyProjects: async () => {
     const user = await getCurrentUserForSave('로그인 확인이 지연되고 있습니다.').catch(() => null);
     if (!user) {
-      set({ myProjects: [] });
+      set({ myProjects: [], projectsError: null });
       return [];
     }
-    set({ loadingProjects: true });
+    set({ loadingProjects: true, projectsError: null });
 
     try {
       // 내가 멤버인 모든 프로젝트
@@ -464,12 +561,16 @@ const useProjectStore = create((set, get) => ({
         - new Date(a.activity_at || a.updated_at || a.created_at).getTime()
       ));
 
-      set({ myProjects: enriched, loadingProjects: false });
+      set({ myProjects: enriched, loadingProjects: false, projectsError: null });
       return enriched;
     } catch (e) {
       console.warn('[projectStore] fetchMyProjects 실패:', e.message);
-      set({ myProjects: [], loadingProjects: false });
-      return [];
+      // 실패를 빈 목록으로 위장하지 않는다 — 기존 목록을 유지하고 에러만 표시
+      set({
+        loadingProjects: false,
+        projectsError: e.message || '프로젝트 목록을 불러오지 못했습니다.',
+      });
+      return get().myProjects;
     }
   },
 
@@ -485,6 +586,7 @@ const useProjectStore = create((set, get) => ({
     initialCode = '# 새 작품',
     repoName = '',
     setupGithub = false,
+    fromCodeId = null,
   }) => {
     // 단계별 timing 진단 — 브라우저 콘솔에 [createProject] +Xms (총 Yms): 단계로 남깁니다.
     // 다음 학생 시연에서 어느 단계가 몇 초 걸렸는지 즉시 식별 가능.
@@ -492,13 +594,34 @@ const useProjectStore = create((set, get) => ({
     let lastT = t0;
     const step = (label) => {
       const now = performance.now();
-      console.log(`[createProject] +${Math.round(now - lastT)}ms (총 ${Math.round(now - t0)}ms): ${label}`);
+      if (DEBUG_PROJECTS) {
+        console.log(`[createProject] +${Math.round(now - lastT)}ms (총 ${Math.round(now - t0)}ms): ${label}`);
+      }
       lastT = now;
     };
 
     const user = await getCurrentUserForSave();
     if (!user) return { error: { message: '로그인이 필요합니다' } };
     step('auth 사용자 조회');
+
+    if (fromCodeId) {
+      const { data: sourceCode, error: sourceError } = await withTimeout(
+        supabase
+          .from('vpylab_saved_code')
+          .select('id, title, code')
+          .eq('id', fromCodeId)
+          .eq('user_id', user.id)
+          .single(),
+        SUPABASE_TIMEOUT_MS,
+        '기존 코드를 15초 안에 불러오지 못했습니다.',
+      ).catch((e) => ({ data: null, error: e }));
+      if (sourceError || !sourceCode) {
+        return { error: { message: sourceError?.message || '팀 프로젝트로 바꿀 코드를 찾지 못했습니다.' } };
+      }
+      initialCode = sourceCode.code || initialCode;
+      title = title || sourceCode.title || '팀 프로젝트';
+      step('기존 코드 불러오기');
+    }
 
     let githubToken = null;
     let githubTokenError = null;
@@ -523,43 +646,55 @@ const useProjectStore = create((set, get) => ({
 
       // === 1) Supabase에 프로젝트를 먼저 예약 ===
       // GitHub 레포를 먼저 만들면 DB/RLS 실패 시 고아 public repo가 남을 수 있습니다.
-      const { data: project, error: projErr } = await supabase
-        .from('vpylab_projects')
-        .insert({
-          owner_id: user.id,
-          title,
-          description,
-        })
-        .select()
-        .single();
+      const { data: project, error: projErr } = await withTimeout(
+        supabase
+          .from('vpylab_projects')
+          .insert({
+            owner_id: user.id,
+            title,
+            description,
+          })
+          .select()
+          .single(),
+        SUPABASE_WRITE_TIMEOUT_MS,
+        '프로젝트 공간 생성이 지연되고 있습니다. 네트워크 상태를 확인한 뒤 다시 시도해주세요.',
+      );
       if (projErr) throw new Error(`Supabase project 실패: ${projErr.message}`);
       reservedProjectId = project.id;
       step('Supabase project insert');
 
       set({ projectCreationStatus: '첫 코드를 저장하고 이력을 만드는 중입니다.' });
-      const { data: codeRow, error: codeErr } = await supabase
-        .from('vpylab_saved_code')
-        .insert({
-          user_id: user.id,
-          title,
-          code: initialCode,
-          project_id: project.id,
-        })
-        .select()
-        .single();
+      const { data: codeRow, error: codeErr } = await withTimeout(
+        supabase
+          .from('vpylab_saved_code')
+          .insert({
+            user_id: user.id,
+            title,
+            code: initialCode,
+            project_id: project.id,
+          })
+          .select()
+          .single(),
+        SUPABASE_WRITE_TIMEOUT_MS,
+        '첫 코드 저장이 지연되고 있습니다. 네트워크 상태를 확인한 뒤 다시 시도해주세요.',
+      );
       if (codeErr) throw new Error(`Supabase code 실패: ${codeErr.message}`);
       reservedCodeId = codeRow.id;
       step('Supabase code insert');
 
-      const { error: revisionErr } = await supabase.from('vpylab_code_revisions').insert({
-        code_id: codeRow.id,
-        author_id: user.id,
-        project_id: project.id,
-        message: '🌱 프로젝트 생성',
-        code_snapshot: initialCode,
-        code_size: initialCode.length,
-        source: 'manual',
-      });
+      const { error: revisionErr } = await withTimeout(
+        supabase.from('vpylab_code_revisions').insert({
+          code_id: codeRow.id,
+          author_id: user.id,
+          project_id: project.id,
+          message: '🌱 프로젝트 생성',
+          code_snapshot: initialCode,
+          code_size: initialCode.length,
+          source: 'manual',
+        }),
+        SUPABASE_WRITE_TIMEOUT_MS,
+        '첫 저장 이력 생성이 지연되고 있습니다. 네트워크 상태를 확인한 뒤 다시 시도해주세요.',
+      );
       if (revisionErr) throw new Error(`Supabase revision 실패: ${revisionErr.message}`);
       step('Supabase revision insert');
 
@@ -634,13 +769,12 @@ const useProjectStore = create((set, get) => ({
       return { data: enriched, error: null };
     } catch (e) {
       set({ loadingProjects: false, projectCreationStatus: null });
-      // GitHub 셋업 전/중 실패하면 예약해둔 DB 행은 정리합니다.
-      // GitHub 레포 삭제 권한(delete_repo)은 요청하지 않으므로, GitHub 생성 이후 실패는 안내로 남깁니다.
+      if (reservedCodeId) {
+        await supabase.from('vpylab_saved_code').delete().eq('id', reservedCodeId).eq('user_id', user.id);
+        useCodeStore.getState().setCurrentCodeId(null);
+      }
       if (reservedProjectId) {
         await supabase.from('vpylab_projects').delete().eq('id', reservedProjectId);
-      }
-      if (reservedCodeId) {
-        useCodeStore.getState().setCurrentCodeId(null);
       }
       return { error: { message: e.message } };
     }
@@ -672,7 +806,7 @@ const useProjectStore = create((set, get) => ({
       const htmlContent = await buildProjectPageHtml(code, title);
       const ghRes = await fetchWithTimeout(`${API_BASE}/api/projects/setup`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthorizedApiHeaders(),
         body: JSON.stringify({
           title,
           description,
@@ -889,9 +1023,17 @@ const useProjectStore = create((set, get) => ({
   // -------------------------------------------------
   // 4) 초대 코드로 합류 (RPC)
   // -------------------------------------------------
+  setJoinError: (message) => set({ joinError: message || null }),
+
   joinByInviteCode: async (inviteCode) => {
+    const failJoin = (message) => {
+      set({ joinError: message });
+      return { error: { message } };
+    };
+
+    set({ joinError: null });
     const trimmed = (inviteCode || '').trim().toLowerCase();
-    if (!trimmed) return { error: { message: '초대 코드를 입력해주세요' } };
+    if (!trimmed) return failJoin('초대 코드를 입력해주세요');
 
     let result;
     try {
@@ -903,13 +1045,13 @@ const useProjectStore = create((set, get) => ({
         '초대 코드 합류가 15초 안에 끝나지 않았습니다. 네트워크를 확인한 뒤 다시 시도해주세요.',
       );
     } catch (e) {
-      return { error: { message: e.message || '합류에 실패했습니다' } };
+      return failJoin(e.message || '합류에 실패했습니다');
     }
 
     const { data, error } = result;
 
     if (error) {
-      return { error: { message: error.message || '합류에 실패했습니다' } };
+      return failJoin(error.message || '합류에 실패했습니다');
     }
 
     get().fetchMyProjects().catch((e) => {
@@ -939,46 +1081,17 @@ const useProjectStore = create((set, get) => ({
       return { error: { message: projectError?.message || '프로젝트를 찾을 수 없습니다.' } };
     }
 
-    const { data: members } = await withTimeout(
-      supabase
-        .from('vpylab_project_members')
-        .select('user_id, role, joined_at')
-        .eq('project_id', projectId)
-        .order('joined_at', { ascending: true }),
-      SUPABASE_TIMEOUT_MS,
-      '프로젝트 멤버 조회가 15초 안에 끝나지 않았습니다.',
-    ).catch((e) => {
-      console.warn('[projectStore] 프로젝트 멤버 조회 실패:', e.message);
-      return { data: [] };
-    });
-
-    // 멤버 표시명: vpylab_profiles에서 display_name 가져오기 (실패해도 무시)
-    let memberWithProfile = members || [];
-    if (members && members.length > 0) {
-      const userIds = members.map(m => m.user_id);
-      const profiles = await fetchProfilesForMembers(userIds);
-      const byId = Object.fromEntries((profiles || []).map(p => [p.id, p]));
-      memberWithProfile = members.map(m => ({ ...m, profile: byId[m.user_id] || null }));
-
-      let currentUser = useAuthStore.getState().user;
-      if (!currentUser) {
-        currentUser = await getCurrentUserForSave().catch(() => null);
-      }
-      if (project.github_repo && project.owner_id === currentUser?.id) {
-        const githubUsernames = await fetchMemberGithubUsernames(projectId);
-        memberWithProfile = memberWithProfile.map((member) => {
-          const githubUsername = githubUsernames[member.user_id];
-          if (!githubUsername || member.profile?.github_username) return member;
-          return {
-            ...member,
-            profile: {
-              ...(member.profile || { id: member.user_id }),
-              github_username: githubUsername,
-            },
-          };
-        });
-      }
+    // 멤버 표시명: 실패해도 프로젝트 열기를 막지 않고 빈 목록으로 둔다.
+    let currentUser = useAuthStore.getState().user;
+    if (!currentUser) {
+      currentUser = await getCurrentUserForSave().catch(() => null);
     }
+    const memberWithProfile = await buildProjectMembers(project, {
+      includeGithubUsernames: project.owner_id === currentUser?.id,
+    }).catch((e) => {
+      console.warn('[projectStore] 프로젝트 멤버 조회 실패:', e.message);
+      return [];
+    });
 
     // 이 프로젝트의 코드 1건 (가장 최근에 업데이트된 것)
     const { data: codeRow, error: codeError } = await withTimeout(
@@ -1033,6 +1146,38 @@ const useProjectStore = create((set, get) => ({
   // -------------------------------------------------
   // 5) 멤버 관리
   // -------------------------------------------------
+  fetchProjectMembers: async (projectId) => {
+    if (!projectId) return { error: { message: '프로젝트 ID가 없습니다.' } };
+
+    const { data: project, error: projectError } = await withTimeout(
+      supabase
+        .from('vpylab_projects')
+        .select('id, owner_id, title, description, invite_code, github_repo, github_last_pushed_at, created_at, updated_at')
+        .eq('id', projectId)
+        .single(),
+      SUPABASE_TIMEOUT_MS,
+      '프로젝트 정보를 15초 안에 불러오지 못했습니다.',
+    ).catch((e) => ({ data: null, error: e }));
+
+    if (projectError || !project) {
+      return { error: { message: projectError?.message || '프로젝트를 찾을 수 없습니다.' } };
+    }
+
+    let currentUser = useAuthStore.getState().user;
+    if (!currentUser) {
+      currentUser = await getCurrentUserForSave().catch(() => null);
+    }
+
+    try {
+      const members = await buildProjectMembers(project, {
+        includeGithubUsernames: project.owner_id === currentUser?.id,
+      });
+      return { data: { project, members }, error: null };
+    } catch (e) {
+      return { error: { message: e.message || '프로젝트 멤버를 불러오지 못했습니다.' } };
+    }
+  },
+
   removeMember: async (projectId, userId) => {
     const { error } = await supabase
       .from('vpylab_project_members')
@@ -1040,8 +1185,12 @@ const useProjectStore = create((set, get) => ({
       .eq('project_id', projectId)
       .eq('user_id', userId);
     if (!error) {
-      const filtered = get().activeMembers.filter(m => m.user_id !== userId);
-      set({ activeMembers: filtered });
+      // 활성 프로젝트가 대상 프로젝트일 때만 멤버 목록 갱신 (다른 프로젝트 상태 오염 방지)
+      set((state) => (
+        state.activeProject?.id === projectId
+          ? { activeMembers: state.activeMembers.filter(m => m.user_id !== userId) }
+          : {}
+      ));
     }
     return { error };
   },
@@ -1053,10 +1202,16 @@ const useProjectStore = create((set, get) => ({
       .eq('project_id', projectId)
       .eq('user_id', userId);
     if (!error) {
-      const updated = get().activeMembers.map(m =>
-        m.user_id === userId ? { ...m, role } : m,
-      );
-      set({ activeMembers: updated });
+      // 활성 프로젝트가 대상 프로젝트일 때만 멤버 목록 갱신 (다른 프로젝트 상태 오염 방지)
+      set((state) => (
+        state.activeProject?.id === projectId
+          ? {
+            activeMembers: state.activeMembers.map(m => (
+              m.user_id === userId ? { ...m, role } : m
+            )),
+          }
+          : {}
+      ));
     }
     return { error };
   },
@@ -1090,7 +1245,14 @@ const useProjectStore = create((set, get) => ({
       .select()
       .single();
     if (!error && data) {
-      set({ activeProject: { ...get().activeProject, invite_code: data.invite_code } });
+      set((state) => ({
+        activeProject: state.activeProject?.id === projectId
+          ? { ...state.activeProject, invite_code: data.invite_code }
+          : state.activeProject,
+        myProjects: state.myProjects.map((project) => (
+          project.id === projectId ? { ...project, invite_code: data.invite_code } : project
+        )),
+      }));
     }
     return { data, error };
   },
@@ -1232,15 +1394,46 @@ const useProjectStore = create((set, get) => ({
   },
 
   deleteProject: async (projectId) => {
-    const { error } = await supabase
-      .from('vpylab_projects')
-      .delete()
-      .eq('id', projectId);
-    if (!error) {
-      get().closeProject();
-      await get().fetchMyProjects();
+    const user = await getCurrentUserForSave().catch(() => null);
+    if (!user) return { error: { message: '로그인이 필요합니다' } };
+
+    // 1) 프로젝트 row를 먼저 삭제 — RLS가 owner 권한 검증을 겸한다.
+    //    (코드를 먼저 지우면 삭제 권한이 없어도 코드만 사라지는 사고가 날 수 있음)
+    try {
+      const { error: projectDeleteError } = await withTimeout(
+        supabase
+          .from('vpylab_projects')
+          .delete()
+          .eq('id', projectId),
+        SUPABASE_WRITE_TIMEOUT_MS,
+        '프로젝트 삭제가 지연되고 있습니다. 네트워크 상태를 확인한 뒤 다시 시도해주세요.',
+      );
+      if (projectDeleteError) return { error: projectDeleteError };
+    } catch (e) {
+      return { error: { message: e.message || '프로젝트 삭제가 지연되고 있습니다.' } };
     }
-    return { error };
+
+    // 2) 프로젝트 삭제 성공 시에만 남은 코드 정리 (best-effort)
+    try {
+      const { error: codeDeleteError } = await withTimeout(
+        supabase
+          .from('vpylab_saved_code')
+          .delete()
+          .eq('project_id', projectId)
+          .eq('user_id', user.id),
+        SUPABASE_TIMEOUT_MS,
+        '프로젝트 코드 정리가 지연되고 있습니다.',
+      );
+      if (codeDeleteError) {
+        console.warn('[projectStore] 프로젝트 코드 정리 실패:', codeDeleteError.message);
+      }
+    } catch (e) {
+      console.warn('[projectStore] 프로젝트 코드 정리 지연/실패:', e.message);
+    }
+
+    get().closeProject();
+    await get().fetchMyProjects();
+    return { error: null };
   },
 
   // -------------------------------------------------
@@ -1278,7 +1471,26 @@ const useProjectStore = create((set, get) => ({
           });
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        set({ realtimeStatus: status });
+        if (status === 'SUBSCRIBED') {
+          // 정상 구독되면 재시도 이력 초기화 (다음 오류 시 다시 1회 재시도 가능)
+          set({ _realtimeRetriedFor: null });
+          return;
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(`[projectStore] Realtime 구독 문제(${status}) — 프로젝트 ${projectId}`);
+          if (get()._realtimeRetriedFor !== projectId) {
+            set({ _realtimeRetriedFor: projectId });
+            // 1회만 재구독 시도
+            setTimeout(() => {
+              if (get().activeProject?.id === projectId) {
+                get()._subscribeRealtime(projectId);
+              }
+            }, 1000);
+          }
+        }
+      });
 
     set({ _channel: channel });
   },
@@ -1287,7 +1499,7 @@ const useProjectStore = create((set, get) => ({
     const ch = get()._channel;
     if (ch) {
       supabase.removeChannel(ch);
-      set({ _channel: null });
+      set({ _channel: null, realtimeStatus: null });
     }
   },
 
@@ -1322,7 +1534,7 @@ const useProjectStore = create((set, get) => ({
     if (job.kind === 'record') {
       const r = await fetchWithTimeout(`${API_BASE}/api/projects/commit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthorizedApiHeaders(),
         body: JSON.stringify({
           repoFullName: job.repoFullName,
           projectId: job.projectId,
@@ -1349,30 +1561,30 @@ const useProjectStore = create((set, get) => ({
       const nowIso = new Date().toISOString();
       const commitSha = commitResult.voyageEntry?.commitSha || commitResult.commitSha || null;
       if (job.revisionId && commitSha) {
-        await withTimeout(
+        await bestEffortSupabaseWrite(
           supabase.from('vpylab_code_revisions')
             .update({ github_commit_sha: commitSha })
             .eq('id', job.revisionId),
-          SUPABASE_TIMEOUT_MS,
           'GitHub 커밋 표시 갱신이 지연되고 있습니다.',
+          'revision GitHub 커밋 표시 갱신',
         );
       }
-      await withTimeout(
+      await bestEffortSupabaseWrite(
         supabase.from('vpylab_projects')
           .update({ github_last_pushed_at: nowIso })
           .eq('id', job.projectId),
-        SUPABASE_TIMEOUT_MS,
         '프로젝트 GitHub 반영 시각 갱신이 지연되고 있습니다.',
+        '프로젝트 GitHub 반영 시각 갱신',
       );
-      await withTimeout(
+      await bestEffortSupabaseWrite(
         supabase.from('vpylab_saved_code')
           .update({
             github_last_pushed_at: nowIso,
             github_last_pushed_revision_id: job.revisionId || null,
           })
           .eq('id', job.codeId),
-        SUPABASE_TIMEOUT_MS,
         '코드 GitHub 반영 시각 갱신이 지연되고 있습니다.',
+        '코드 GitHub 반영 시각 갱신',
       );
 
       set((state) => (
@@ -1425,7 +1637,7 @@ const useProjectStore = create((set, get) => ({
     const htmlContent = await buildProjectPageHtml(code, job.title);
     const r = await fetchWithTimeout(`${API_BASE}/api/projects/commit`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await buildAuthorizedApiHeaders(),
       body: JSON.stringify({
         repoFullName: job.repoFullName,
         projectId: job.projectId,
@@ -1451,29 +1663,29 @@ const useProjectStore = create((set, get) => ({
 
     const nowIso = new Date().toISOString();
     if (!commitResult.staleRevision && job.revisionId && commitResult.commitSha) {
-      await withTimeout(
+      await bestEffortSupabaseWrite(
         supabase.from('vpylab_code_revisions')
           .update({ github_commit_sha: commitResult.commitSha })
           .eq('id', job.revisionId),
-        SUPABASE_TIMEOUT_MS,
         'GitHub 커밋 표시 갱신이 지연되고 있습니다.',
+        'revision GitHub 커밋 표시 갱신',
       );
-      await withTimeout(
+      await bestEffortSupabaseWrite(
         supabase.from('vpylab_projects')
           .update({ github_last_pushed_at: nowIso })
           .eq('id', job.projectId),
-        SUPABASE_TIMEOUT_MS,
         '프로젝트 GitHub 반영 시각 갱신이 지연되고 있습니다.',
+        '프로젝트 GitHub 반영 시각 갱신',
       );
-      await withTimeout(
+      await bestEffortSupabaseWrite(
         supabase.from('vpylab_saved_code')
           .update({
             github_last_pushed_at: nowIso,
             github_last_pushed_revision_id: job.revisionId || null,
           })
           .eq('id', job.codeId),
-        SUPABASE_TIMEOUT_MS,
         '코드 GitHub 반영 시각 갱신이 지연되고 있습니다.',
+        '코드 GitHub 반영 시각 갱신',
       );
 
       set((state) => (

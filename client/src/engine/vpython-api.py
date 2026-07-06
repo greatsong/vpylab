@@ -160,6 +160,35 @@ class vector:
 vec = vector
 
 
+def _serialize_command_value(value):
+    """Three.js 브릿지로 보낼 수 있는 JSON 친화 값으로 변환."""
+    if isinstance(value, vector):
+        return value.to_list()
+    if isinstance(value, (int, float, bool, str)):
+        return value
+    if isinstance(value, (list, tuple)):
+        serialized = []
+        for item in value:
+            converted = _serialize_command_value(item)
+            if converted is None:
+                return None
+            serialized.append(converted)
+        return serialized
+    return None
+
+
+def _coerce_vector(value, default=None):
+    """vector, list, tuple을 vector로 맞춘다."""
+    if isinstance(value, vector):
+        # 사용자 벡터와 내부 상태 공유(aliasing) 방지 — 복제본 반환
+        return value.clone()
+    if isinstance(value, (list, tuple)) and len(value) >= 3:
+        return vector(value[0], value[1], value[2])
+    if isinstance(default, vector):
+        return default.clone()
+    return default
+
+
 # === 색상 팔레트 (30색) ===
 # color.red, color['빨'], 색상['빨강'] 모두 가능
 
@@ -311,6 +340,14 @@ class _GObject:
         self._texture = kwargs.get('texture', None)
 
         # 객체 생성 커맨드
+        extra = {}
+        for k, v in kwargs.items():
+            if k in ('pos', 'color', 'visible', 'opacity', 'velocity'):
+                continue
+            serialized = _serialize_command_value(v)
+            if serialized is not None:
+                extra[k] = serialized
+
         _add_command({
             "action": "create",
             "id": self._id,
@@ -321,12 +358,7 @@ class _GObject:
             "opacity": self._opacity,
             "make_trail": self._make_trail,
             "trail_color": self._trail_color.to_list() if self._trail_color else None,
-            **{k: v for k, v in kwargs.items()
-               if k not in ('pos', 'color', 'visible', 'opacity', 'velocity')
-               and isinstance(v, (int, float, bool, str))},
-            **{k: v.to_list() for k, v in kwargs.items()
-               if k not in ('pos', 'color', 'visible', 'opacity', 'velocity')
-               and isinstance(v, vector)},
+            **extra,
         })
 
     @property
@@ -453,9 +485,11 @@ class _GObject:
         rel = self._pos - origin
         new_rel = rel.rotate(angle, axis=axis)
         self.pos = origin + new_rel
-        # axis 속성 보유 시 함께 회전
+        # axis/up 속성 보유 시 함께 회전
         if hasattr(self, '_axis') and isinstance(self._axis, vector):
             self.axis = self._axis.rotate(angle, axis=axis)
+        if hasattr(self, '_up') and isinstance(self._up, vector):
+            self.up = self._up.rotate(angle, axis=axis)
 
     def clear_trail(self):
         """누적된 궤적(trail)을 모두 지움"""
@@ -496,8 +530,37 @@ class sphere(_GObject):
 
 class box(_GObject):
     def __init__(self, **kwargs):
-        self._size = kwargs.pop('size', vector(1, 1, 1))
-        super().__init__('box', size=self._size.to_list() if isinstance(self._size, vector) else self._size, **kwargs)
+        size_arg = kwargs.pop('size', None)
+        length_arg = kwargs.pop('length', None)
+        height_arg = kwargs.pop('height', None)
+        width_arg = kwargs.pop('width', None)
+        axis_arg = _coerce_vector(kwargs.pop('axis', vector(1, 0, 0)), vector(1, 0, 0))
+        up_arg = _coerce_vector(kwargs.pop('up', vector(0, 1, 0)), vector(0, 1, 0))
+
+        if size_arg is None:
+            length = length_arg if length_arg is not None else (axis_arg.mag if axis_arg.mag > 0 else 1)
+            height = height_arg if height_arg is not None else 1
+            width = width_arg if width_arg is not None else 1
+            self._size = vector(length, height, width)
+        else:
+            self._size = _coerce_vector(size_arg, vector(1, 1, 1))
+            if length_arg is not None:
+                self._size.x = float(length_arg)
+            if height_arg is not None:
+                self._size.y = float(height_arg)
+            if width_arg is not None:
+                self._size.z = float(width_arg)
+
+        axis_dir = axis_arg.hat if axis_arg.mag > 0 else vector(1, 0, 0)
+        self._axis = axis_dir * self._size.x
+        self._up = up_arg if up_arg.mag > 0 else vector(0, 1, 0)
+        super().__init__(
+            'box',
+            size=self._size,
+            axis=self._axis,
+            up=self._up,
+            **kwargs,
+        )
 
     @property
     def size(self):
@@ -505,14 +568,93 @@ class box(_GObject):
 
     @size.setter
     def size(self, value):
-        self._size = value
-        s = value.to_list() if isinstance(value, vector) else value
-        _add_command({"action": "update", "id": self._id, "size": s})
+        self._size = _coerce_vector(value, vector(1, 1, 1))
+        axis_dir = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
+        self._axis = axis_dir * self._size.x
+        _add_command({
+            "action": "update",
+            "id": self._id,
+            "size": self._size.to_list(),
+            "axis": self._axis.to_list(),
+        })
+
+    @property
+    def length(self):
+        return self._size.x
+
+    @length.setter
+    def length(self, value):
+        self._size.x = float(value)
+        axis_dir = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
+        self._axis = axis_dir * self._size.x
+        _add_command({
+            "action": "update",
+            "id": self._id,
+            "size": self._size.to_list(),
+            "axis": self._axis.to_list(),
+            "length": self._size.x,
+        })
+
+    @property
+    def height(self):
+        return self._size.y
+
+    @height.setter
+    def height(self, value):
+        self._size.y = float(value)
+        _add_command({
+            "action": "update",
+            "id": self._id,
+            "size": self._size.to_list(),
+            "height": self._size.y,
+        })
+
+    @property
+    def width(self):
+        return self._size.z
+
+    @width.setter
+    def width(self, value):
+        self._size.z = float(value)
+        _add_command({
+            "action": "update",
+            "id": self._id,
+            "size": self._size.to_list(),
+            "width": self._size.z,
+        })
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @axis.setter
+    def axis(self, value):
+        self._axis = _coerce_vector(value, vector(1, 0, 0))
+        if self._axis.mag > 0:
+            self._size.x = self._axis.mag
+        _add_command({
+            "action": "update",
+            "id": self._id,
+            "axis": self._axis.to_list(),
+            "size": self._size.to_list(),
+        })
+
+    @property
+    def up(self):
+        return self._up
+
+    @up.setter
+    def up(self, value):
+        self._up = _coerce_vector(value, vector(0, 1, 0))
+        _add_command({"action": "update", "id": self._id, "up": self._up.to_list()})
 
     def _clone_kwargs(self):
-        s = self._size
-        size = s.clone() if isinstance(s, vector) else list(s) if hasattr(s, '__iter__') else s
-        return {**super()._clone_kwargs(), 'size': size}
+        return {
+            **super()._clone_kwargs(),
+            'size': self._size.clone(),
+            'axis': self._axis.clone(),
+            'up': self._up.clone(),
+        }
 
 
 class cylinder(_GObject):
@@ -1296,7 +1438,7 @@ class _GSeriesBase:
         if g is None:
             # 기존에 만들어진 가장 최근 graph 재사용 (없으면 새로 생성)
             if _active_graphs:
-                g = next(iter(_active_graphs.values()))
+                g = next(reversed(list(_active_graphs.values())))
             else:
                 g = graph()
         self._graph = g

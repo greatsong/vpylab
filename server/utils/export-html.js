@@ -861,7 +861,7 @@ def _send_commands():
       return true;
     }).join('\\n');
 
-    const hasRate = /(?<!\\w)(rate|sleep)\\s*\\(/.test(filtered);
+    const hasRate = /(?<![\\w.가-힣])(rate|sleep)\\s*\\(/.test(filtered);
     let processed = filtered;
     if (hasRate) {
       const lines = filtered.split('\\n');
@@ -871,7 +871,7 @@ def _send_commands():
         if (line.trimStart().startsWith('import ') || (line.trimStart().startsWith('from ') && line.includes('import'))) {
           imports.push(line);
         } else {
-          body.push(line.replace(/(?<!\\w)(rate|sleep)(\\s*\\()/g, 'await $1$2'));
+          body.push(line.replace(/(?<![\\w.가-힣])(rate|sleep)(\\s*\\()/g, 'await $1$2'));
         }
       }
       processed = imports.join('\\n') + '\\nimport asyncio\\nasync def __main__():\\n' + body.map(l => l ? '    ' + l : l).join('\\n') + '\\n\\nawait __main__()';

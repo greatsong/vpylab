@@ -17,6 +17,7 @@ import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { generateStandaloneHTML } from '../utils/export-html.js';
+import { requireSupabaseUser, requireProjectMemberIfProjectId } from '../middleware/require-supabase-user.js';
 
 const router = Router();
 
@@ -1250,7 +1251,7 @@ function generateIndexHtml({ title, code, owner, repo }) {
 // POST /api/projects/setup
 // 프로젝트 신규 생성: GitHub 레포 + 초기 파일 + Pages 활성화
 // ========================================
-router.post('/setup', limiter, async (req, res) => {
+router.post('/setup', limiter, requireSupabaseUser, async (req, res) => {
   let createdRepoFullName = null;
   // 단계별 timing 측정: Railway 로그에 [setup] +Xms (총 Yms) <단계>로 남깁니다.
   // 5분 hang 같은 사고 시 어느 단계에서 멎었는지 즉시 식별 가능.
@@ -1365,7 +1366,11 @@ router.post('/setup', limiter, async (req, res) => {
       const detail = e.githubErrors?.map(x => x.message).join(', ') || e.message;
       return res.status(422).json({ error: `GitHub 요청 오류: ${detail}`, repoFullName: createdRepoFullName });
     }
-    res.status(500).json({ error: e.message, repoFullName: createdRepoFullName });
+    // GitHub API 유래 에러(e.status 존재)는 메시지 유지, 내부 예외는 일반 메시지로 대체
+    res.status(500).json({
+      error: e.status ? e.message : '서버 오류가 발생했습니다.',
+      repoFullName: createdRepoFullName,
+    });
   }
 });
 
@@ -1407,7 +1412,11 @@ router.post('/access', limiter, async (req, res) => {
         code: 'repo_not_accessible',
       });
     }
-    res.status(500).json({ error: e.message, code: 'github_access_check_failed' });
+    // GitHub API 유래 에러는 메시지 유지, 내부 예외는 일반 메시지로 대체
+    res.status(500).json({
+      error: e.status ? e.message : '서버 오류가 발생했습니다.',
+      code: 'github_access_check_failed',
+    });
   }
 });
 
@@ -1445,7 +1454,8 @@ router.post('/members/github-usernames', limiter, async (req, res) => {
       .select('user_id, role')
       .eq('project_id', projectId);
     if (memberError) {
-      return res.status(500).json({ error: memberError.message, code: 'members_lookup_failed' });
+      console.error('[projects/members/github-usernames] 멤버 조회 실패:', memberError.message);
+      return res.status(500).json({ error: '서버 오류가 발생했습니다.', code: 'members_lookup_failed' });
     }
 
     const githubUsernames = {};
@@ -1462,8 +1472,8 @@ router.post('/members/github-usernames', limiter, async (req, res) => {
 
     res.json({ ok: true, githubUsernames });
   } catch (e) {
-    console.error('[projects/members/github-usernames]', e.message);
-    res.status(500).json({ error: e.message, code: 'github_usernames_failed' });
+    console.error('[projects/members/github-usernames]', e);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.', code: 'github_usernames_failed' });
   }
 });
 
@@ -1645,7 +1655,7 @@ router.post('/collaborators/cancel', limiter, async (req, res) => {
 // POST /api/projects/commit
 // 기존 프로젝트에 코드 변경 commit + history.md 갱신 + index.html 갱신
 // ========================================
-router.post('/commit', limiter, async (req, res) => {
+router.post('/commit', limiter, requireSupabaseUser, requireProjectMemberIfProjectId, async (req, res) => {
   try {
     const {
       repoFullName, code, htmlContent, title, message, githubToken,
@@ -1863,6 +1873,23 @@ router.post('/commit', limiter, async (req, res) => {
       + `history=${historySha ? historySha.slice(0, 7) : 'skip'}`,
     );
 
+    // 오픈소스 플로우 — GitHub 커밋 성공 시 갤러리에 연결된 작품 코드도 동기화.
+    // 실패해도 커밋 자체는 성공이므로 응답은 그대로 유지 (경고 로그만 남김).
+    if (!recordOnly && mainSha && projectId) {
+      try {
+        const supabase = getSupabase();
+        const { error: galleryError } = await supabase
+          .from('vpylab_gallery')
+          .update({ code, github_last_synced_at: new Date().toISOString() })
+          .eq('project_id', projectId);
+        if (galleryError) {
+          console.warn('[projects/commit] 갤러리 코드 동기화 실패:', galleryError.message);
+        }
+      } catch (e) {
+        console.warn('[projects/commit] 갤러리 코드 동기화 실패:', e.message);
+      }
+    }
+
     res.json({
       success: true,
       recordOnly,
@@ -1894,7 +1921,11 @@ router.post('/commit', limiter, async (req, res) => {
     }
     if (e.status === 413) return res.status(413).json({ error: e.message, code: 'github_content_too_large' });
     if (e.status === 403) return res.status(403).json({ error: `GitHub 권한 부족: ${e.message}`, code: 'github_forbidden' });
-    res.status(500).json({ error: e.message, code: 'github_commit_failed' });
+    // GitHub API 유래 에러는 메시지 유지, 내부 예외는 일반 메시지로 대체
+    res.status(500).json({
+      error: e.status ? e.message : '서버 오류가 발생했습니다.',
+      code: 'github_commit_failed',
+    });
   }
 });
 

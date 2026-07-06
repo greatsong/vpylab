@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useGalleryStore from '../stores/galleryStore';
+import useAuthStore from '../stores/authStore';
 import GalleryCard from '../components/gallery/GalleryCard';
 import Header from '../components/layout/Header';
 import { useI18n } from '../i18n/useI18n';
@@ -24,12 +25,18 @@ const SORTS = [
 
 export default function Gallery() {
   const { locale: lang } = useI18n();
-  const { works, loading, hasMore, filters, setFilters, fetchWorks } = useGalleryStore();
+  const { works, loading, hasMore, filters, setFilters, fetchWorks, myWorks, fetchMyWorks } = useGalleryStore();
+  const user = useAuthStore(s => s.user);
   const [search, setSearch] = useState(filters.search || '');
 
   useEffect(() => {
     fetchWorks(true);
   }, [fetchWorks, filters.category, filters.sort, filters.search]);
+
+  // 내 작품 목록 (비공개 Fork 초안 포함) — 로그인 시에만 조회
+  useEffect(() => {
+    if (user) fetchMyWorks();
+  }, [user, fetchMyWorks]);
 
   const stats = useMemo(() => {
     const pages = works.filter(work => work.github_url || work.github_repo).length;
@@ -136,6 +143,47 @@ export default function Gallery() {
             </div>
           </div>
         </section>
+
+        {user && myWorks.length > 0 && (
+          <section aria-label={lang === 'ko' ? '내 작품' : 'My works'} style={{ marginBottom: '2.5rem' }}>
+            <div className="gallery-section-head compact">
+              <div>
+                <h2>{lang === 'ko' ? '내 작품' : 'My Works'}</h2>
+                <p>
+                  {lang === 'ko'
+                    ? '비공개 작품(Fork 초안 포함)은 상세 페이지에서 갤러리에 공개할 수 있습니다.'
+                    : 'Private works (including fork drafts) can be published from their detail page.'}
+                </p>
+              </div>
+            </div>
+            <div className="gallery-grid">
+              {myWorks.map(work => (
+                <div key={work.id} style={{ position: 'relative' }}>
+                  {work.is_public === false && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 10,
+                        right: 10,
+                        zIndex: 2,
+                        padding: '3px 9px',
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: '#fff',
+                        backgroundColor: 'rgba(20, 20, 28, 0.72)',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      {lang === 'ko' ? '비공개' : 'Private'}
+                    </span>
+                  )}
+                  <GalleryCard work={work} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="gallery-section-head">
           <div>

@@ -30,11 +30,36 @@ vi.mock('three', () => {
 
   class Vector3 {
     constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
-    normalize() { return this; }
+    set(x, y, z) { this.x = x; this.y = y; this.z = z; return this; }
+    lengthSq() { return this.x ** 2 + this.y ** 2 + this.z ** 2; }
+    normalize() {
+      const len = Math.sqrt(this.lengthSq()) || 1;
+      this.x /= len; this.y /= len; this.z /= len;
+      return this;
+    }
+    dot(v) { return this.x * v.x + this.y * v.y + this.z * v.z; }
+    addScaledVector(v, s) {
+      this.x += v.x * s; this.y += v.y * s; this.z += v.z * s;
+      return this;
+    }
+    crossVectors(a, b) {
+      this.x = a.y * b.z - a.z * b.y;
+      this.y = a.z * b.x - a.x * b.z;
+      this.z = a.x * b.y - a.y * b.x;
+      return this;
+    }
   }
 
   class Quaternion {
     setFromUnitVectors() { return this; }
+    setFromRotationMatrix(matrix) { this.matrix = matrix; return this; }
+  }
+
+  class Matrix4 {
+    makeBasis(xAxis, yAxis, zAxis) {
+      this.basis = { xAxis, yAxis, zAxis };
+      return this;
+    }
   }
 
   class Geometry {
@@ -54,6 +79,8 @@ vi.mock('three', () => {
       this.material = material;
       this.position = { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } };
       this.quaternion = new Quaternion();
+      this.scale = { x: 1, y: 1, z: 1, set(x, y, z) { this.x = x; this.y = y; this.z = z; } };
+      this.userData = {};
       this.visible = true;
     }
   }
@@ -130,15 +157,34 @@ vi.mock('three', () => {
   return {
     Color,
     Vector3,
+    Matrix4,
     Mesh,
     Group,
     PointLight,
     DirectionalLight,
-    SphereGeometry: class extends Geometry {},
-    BoxGeometry: class extends Geometry {},
-    CylinderGeometry: class extends Geometry {},
-    ConeGeometry: class extends Geometry {},
-    TorusGeometry: class extends Geometry {},
+    SphereGeometry: class extends Geometry {
+      constructor(radius) { super(); this.type = 'SphereGeometry'; this.parameters = { radius }; }
+    },
+    BoxGeometry: class extends Geometry {
+      constructor(width, height, depth) {
+        super();
+        this.type = 'BoxGeometry';
+        this.parameters = { width, height, depth };
+      }
+    },
+    CylinderGeometry: class extends Geometry {
+      constructor(radiusTop, radiusBottom, height) {
+        super();
+        this.type = 'CylinderGeometry';
+        this.parameters = { radiusTop, radiusBottom, height };
+      }
+    },
+    ConeGeometry: class extends Geometry {
+      constructor(radius, height) { super(); this.type = 'ConeGeometry'; this.parameters = { radius, height }; }
+    },
+    TorusGeometry: class extends Geometry {
+      constructor(radius, tube) { super(); this.type = 'TorusGeometry'; this.parameters = { radius, tube }; }
+    },
     MeshStandardMaterial: class extends Material {},
     TextureLoader,
     CanvasTexture,
@@ -214,6 +260,42 @@ describe('vpython-bridge: processBatch', () => {
 
     expect(getMesh('obj_2')).toBeDefined();
     expect(scene.children.length).toBe(1);
+  });
+
+  it('box length/height/width 별칭으로 크기를 만든다', () => {
+    processBatch([{
+      action: 'create', id: 'obj_box_alias', type: 'box',
+      pos: [0, 0, 0], color: [0, 1, 0], visible: true, opacity: 1,
+      length: 4, height: 0.2, width: 2,
+    }], scene);
+
+    const mesh = getMesh('obj_box_alias');
+    expect(mesh.geometry.parameters).toMatchObject({ width: 4, height: 0.2, depth: 2 });
+    expect(mesh.userData.boxSize).toEqual([4, 0.2, 2]);
+    const [snapshot] = getSnapshot().filter((item) => item.id === 'obj_box_alias');
+    expect(snapshot.props.size).toEqual([4, 0.2, 2]);
+  });
+
+  it('box axis/up 변경은 박스 전용 방향값으로 갱신한다', () => {
+    processBatch([{
+      action: 'create', id: 'obj_box_oriented', type: 'box',
+      pos: [0, 0, 0], color: [0, 1, 0], visible: true, opacity: 1,
+      size: [4, 0.2, 2], axis: [0, 4, 0], up: [1, 0, 0],
+    }], scene);
+
+    const mesh = getMesh('obj_box_oriented');
+    expect(mesh.quaternion.matrix).toBeDefined();
+
+    processBatch([{
+      action: 'update', id: 'obj_box_oriented',
+      axis: [0, 0, 4], up: [0, 1, 0],
+    }], scene);
+
+    expect(mesh.userData.boxAxis).toEqual([0, 0, 4]);
+    expect(mesh.userData.boxUp).toEqual([0, 1, 0]);
+    const [snapshot] = getSnapshot().filter((item) => item.id === 'obj_box_oriented');
+    expect(snapshot.props.axis).toEqual([0, 0, 4]);
+    expect(snapshot.props.up).toEqual([0, 1, 0]);
   });
 
   it('cylinder create 커맨드 → 씬에 추가', () => {

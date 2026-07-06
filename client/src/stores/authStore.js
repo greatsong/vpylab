@@ -1,6 +1,19 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
+function extractGitHubUsername(user) {
+  const githubIdentity = user?.identities?.find((identity) => identity.provider === 'github');
+  return [
+    user?.user_metadata?.user_name,
+    user?.user_metadata?.preferred_username,
+    githubIdentity?.identity_data?.user_name,
+    githubIdentity?.identity_data?.preferred_username,
+  ]
+    .map((value) => String(value || '').trim().replace(/^@/, ''))
+    .find((value) => /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(value))
+    || null;
+}
+
 const useAuthStore = create((set, get) => ({
   user: null,
   profile: null,
@@ -54,7 +67,8 @@ const useAuthStore = create((set, get) => ({
         const { default: useAppStore } = await import('./appStore');
         useAppStore.getState().syncProgressToServer();
       } else if (event === 'SIGNED_OUT') {
-        set({ user: null, profile: null });
+        set({ user: null, profile: null, githubTokenExpired: false });
+        get()._cleanupStoresOnSignOut();
       }
     });
 
@@ -81,21 +95,27 @@ const useAuthStore = create((set, get) => ({
       || user.email?.split('@')[0]
       || '';
     const avatarUrl = user.user_metadata?.avatar_url || null;
+    const githubUsername = extractGitHubUsername(user);
 
     const { error: insertError } = await supabase.from('vpylab_profiles').upsert({
       id: user.id,
       display_name: displayName,
       avatar_url: avatarUrl,
+      github_username: githubUsername,
     }, { onConflict: 'id', ignoreDuplicates: true });
     if (insertError) {
       console.warn('프로필 생성 실패:', insertError.message);
     }
 
-    if (!avatarUrl) return;
+    if (!avatarUrl && !githubUsername) return;
 
     const { error: updateError } = await supabase
       .from('vpylab_profiles')
-      .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+      .update({
+        ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+        ...(githubUsername ? { github_username: githubUsername } : {}),
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', user.id);
 
     if (updateError) {
@@ -164,10 +184,36 @@ const useAuthStore = create((set, get) => ({
       || user?.identities?.some(i => i.provider === 'github');
   },
 
+  // 서버 API 호출용 Supabase access token 조회 (없으면 null)
+  getAccessToken: async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session?.access_token || null;
+    } catch {
+      return null;
+    }
+  },
+
+  // 로그아웃 시 다른 스토어의 개인 상태 정리
+  // codeStore/projectStore가 authStore를 import하므로 순환 import 방지를 위해 동적 import 사용
+  _cleanupStoresOnSignOut: async () => {
+    try {
+      const [{ default: useProjectStore }, { default: useCodeStore }] = await Promise.all([
+        import('./projectStore'),
+        import('./codeStore'),
+      ]);
+      useProjectStore.getState().closeProject();     // Realtime 채널 해제 포함
+      useCodeStore.getState().resetOnSignOut();      // 자동 저장 타이머/개인 코드 목록 초기화
+    } catch (e) {
+      console.warn('로그아웃 스토어 정리 실패:', e.message);
+    }
+  },
+
   // 로그아웃
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ user: null, profile: null });
+    await get()._cleanupStoresOnSignOut();
+    set({ user: null, profile: null, githubTokenExpired: false });
   },
 
   // 프로필 업데이트

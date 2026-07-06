@@ -13,6 +13,7 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { generateStandaloneHTML } from '../utils/export-html.js';
+import { requireSupabaseUser } from '../middleware/require-supabase-user.js';
 
 const router = Router();
 const GITHUB_API_TIMEOUT_MS = Number(process.env.GITHUB_API_TIMEOUT_MS || 20_000);
@@ -266,7 +267,7 @@ function generateMeta(title, category, remixFrom) {
  * Body: { code, pythonCode, title, description, category, remixFrom, existingRepo, githubToken }
  * Returns: { githubUrl, githubRepo, warnings }
  */
-router.post('/', publishLimiter, async (req, res) => {
+router.post('/', publishLimiter, requireSupabaseUser, async (req, res) => {
   try {
     const { code, pythonCode, title, description, category, remixFrom, existingRepo, githubToken } = req.body;
 
@@ -408,7 +409,10 @@ router.post('/', publishLimiter, async (req, res) => {
       return res.status(422).json({ error: `GitHub 요청 오류: ${detail}` });
     }
 
-    res.status(500).json({ error: `발행 중 오류: ${err.message}` });
+    // GitHub API 유래 에러는 메시지 유지, 내부 예외는 일반 메시지로 대체
+    res.status(500).json({
+      error: err.status ? `발행 중 오류: ${err.message}` : '서버 오류가 발생했습니다.',
+    });
   }
 });
 
@@ -418,7 +422,7 @@ router.post('/', publishLimiter, async (req, res) => {
  * Body: { repo, githubToken }
  * 보안: 토큰을 URL 쿼리스트링이 아닌 POST body로 전달
  */
-router.post('/fetch', publishLimiter, async (req, res) => {
+router.post('/fetch', publishLimiter, requireSupabaseUser, async (req, res) => {
   try {
     const { repo, githubToken } = req.body;
 
@@ -488,7 +492,7 @@ router.post('/fetch', publishLimiter, async (req, res) => {
  * 기존 GitHub 리포의 파일들을 업데이트
  * Body: { githubRepo, title, description, category, remixFrom, code (완성 HTML), pythonCode, githubToken }
  */
-router.put('/update', publishLimiter, async (req, res) => {
+router.put('/update', publishLimiter, requireSupabaseUser, async (req, res) => {
   try {
     const { githubRepo, title, description, category, remixFrom, code, pythonCode, githubToken } = req.body;
 
@@ -557,7 +561,7 @@ router.put('/update', publishLimiter, async (req, res) => {
  * 다른 사용자의 리포를 fork
  * Body: { sourceRepo, githubToken }
  */
-router.post('/fork', publishLimiter, async (req, res) => {
+router.post('/fork', publishLimiter, requireSupabaseUser, async (req, res) => {
   try {
     const { sourceRepo, githubToken } = req.body;
 

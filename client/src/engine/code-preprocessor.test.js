@@ -68,6 +68,27 @@ describe('preprocessCode', () => {
     expect(code).not.toContain('await generate');
   });
 
+  it('메서드 호출(time.sleep)은 변환하지 않는다', () => {
+    // 회귀: time.sleep(1) → time.await sleep(1) SyntaxError 발생하던 버그
+    const input = 'import time\ntime.sleep(1)\nsleep(1)';
+    const { code } = preprocessCode(input);
+    expect(code).toContain('time.sleep(1)');
+    expect(code).not.toContain('time.await sleep');
+    expect(code).toContain('await sleep(1)');
+  });
+
+  it('한글 접두 식별자(내악기)는 변환하지 않는다', () => {
+    // 회귀: 내악기(1) → 내await 악기(1) 오탐 발생하던 버그
+    const { code } = preprocessCode('내악기(1)');
+    expect(code).not.toContain('await');
+    expect(code).toContain('내악기(1)');
+  });
+
+  it('악기() 단독 호출은 await로 변환한다', () => {
+    const { code } = preprocessCode('악기(1)');
+    expect(code).toContain('await 악기(1)');
+  });
+
   it('여러 줄에 걸쳐 rate()가 있으면 모두 변환한다', () => {
     const input = 'rate(30)\nx += 1\nrate(60)';
     const { code } = preprocessCode(input);
