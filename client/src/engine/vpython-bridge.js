@@ -129,6 +129,44 @@ function applyBoxOrientation(mesh, axisValue, upValue) {
 }
 
 /**
+ * arrow 그룹(화살대+화살촉)의 geometry를 새 길이/굵기로 재구성
+ * VPython 호환: axis 벡터의 크기가 곧 화살표 길이
+ */
+function rebuildArrow(group, len, sw) {
+  const [shaft, head] = group.children;
+  if (shaft?.geometry) {
+    shaft.geometry.dispose();
+    shaft.geometry = new THREE.CylinderGeometry(sw / 2, sw / 2, len * 0.8, 8);
+    shaft.position.y = len * 0.4;
+  }
+  if (head?.geometry) {
+    head.geometry.dispose();
+    head.geometry = new THREE.ConeGeometry(sw * 1.5, len * 0.2, 8);
+    head.position.y = len * 0.9;
+  }
+}
+
+/**
+ * helix Line geometry를 새 길이로 재구성 (radius/coils는 생성 시 userData 값 유지)
+ */
+function rebuildHelixGeometry(line, len) {
+  const r = line.userData?.helixRadius ?? DEFAULT_OBJECT_PROPS.helix.radius;
+  const coils = line.userData?.helixCoils ?? DEFAULT_OBJECT_PROPS.helix.coils;
+  const segments = Math.max(64, coils * 32);
+  const positions = [];
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const angle = t * coils * Math.PI * 2;
+    positions.push(t * len, r * Math.cos(angle), r * Math.sin(angle));
+  }
+  line.geometry.dispose();
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  g.computeBoundingSphere();
+  line.geometry = g;
+}
+
+/**
  * VPython 색상 배열 [r,g,b] (0~1) → Three.js Color
  */
 function toThreeColor(arr) {
@@ -315,6 +353,7 @@ function createObject(cmd, scene) {
       const len = Math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2) || 1;
       geometry = new THREE.CylinderGeometry(r, r, len, 32);
       mesh = new THREE.Mesh(geometry, material);
+      mesh.userData = { ...(mesh.userData || {}), vpType: 'cylinder' };
       // 실린더를 축 방향으로 회전
       if (axis) {
         const dir = new THREE.Vector3(...axis).normalize();
@@ -347,6 +386,7 @@ function createObject(cmd, scene) {
       const up = new THREE.Vector3(0, 1, 0);
       group.quaternion.setFromUnitVectors(up, dir);
 
+      group.userData = { ...(group.userData || {}), vpType: 'arrow', arrowLen: len, arrowShaftwidth: sw };
       mesh = group;
       break;
     }
@@ -357,6 +397,7 @@ function createObject(cmd, scene) {
       const len = Math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2) || 1;
       geometry = new THREE.ConeGeometry(r, len, 32);
       mesh = new THREE.Mesh(geometry, material);
+      mesh.userData = { ...(mesh.userData || {}), vpType: 'cone' };
       const dir = new THREE.Vector3(...axis).normalize();
       const up = new THREE.Vector3(0, 1, 0);
       mesh.quaternion.setFromUnitVectors(up, dir);
@@ -425,6 +466,7 @@ function createObject(cmd, scene) {
         opacity: cmd.opacity ?? 1,
       });
       mesh = new THREE.Line(helixGeom, helixMat);
+      mesh.userData = { ...(mesh.userData || {}), vpType: 'helix', helixRadius: r, helixCoils: coils };
       // axis 방향으로 회전 (기본 X축 → axis)
       const dir = new THREE.Vector3(...axis).normalize();
       const xAxis = new THREE.Vector3(1, 0, 0);
@@ -800,14 +842,41 @@ function updateMesh(cmd) {
     if (cmd.axis !== undefined) registryUpdates.axis = cmd.axis;
     if (cmd.up !== undefined) registryUpdates.up = cmd.up;
   } else if (cmd.axis !== undefined) {
-    const dir = new THREE.Vector3(...cmd.axis).normalize();
-    const up = new THREE.Vector3(0, 1, 0);
-    mesh.quaternion.setFromUnitVectors(up, dir);
+    // VPython 호환: axis 벡터의 크기가 곧 길이 — 방향과 길이를 함께 반영
+    const axisArr = asVectorArray(cmd.axis, [1, 0, 0]);
+    const len = Math.hypot(...axisArr) || 1;
+    const dir = new THREE.Vector3(...axisArr).normalize();
+    const vpType = mesh.userData?.vpType;
+    if (vpType === 'cylinder' && mesh.geometry) {
+      const r = mesh.geometry.parameters?.radiusTop ?? 1;
+      mesh.geometry.dispose();
+      mesh.geometry = new THREE.CylinderGeometry(r, r, len, 32);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    } else if (vpType === 'cone' && mesh.geometry) {
+      const r = mesh.geometry.parameters?.radius ?? 1;
+      mesh.geometry.dispose();
+      mesh.geometry = new THREE.ConeGeometry(r, len, 32);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    } else if (vpType === 'arrow') {
+      mesh.userData.arrowLen = len;
+      rebuildArrow(mesh, len, mesh.userData.arrowShaftwidth ?? DEFAULT_OBJECT_PROPS.arrow.shaftwidth);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    } else if (vpType === 'helix') {
+      rebuildHelixGeometry(mesh, len);
+      // helix 기본 진행축은 +X (생성 시와 동일)
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), dir);
+    } else {
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    }
     registryUpdates.axis = cmd.axis;
   }
 
   if (cmd.shaftwidth !== undefined) {
     registryUpdates.shaftwidth = cmd.shaftwidth;
+    if (mesh.userData?.vpType === 'arrow') {
+      mesh.userData.arrowShaftwidth = cmd.shaftwidth;
+      rebuildArrow(mesh, mesh.userData.arrowLen ?? 1, cmd.shaftwidth);
+    }
   }
 
   if (Object.keys(registryUpdates).length > 0) {

@@ -488,6 +488,44 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
   const curves = new Map();   // curve/points 동적 라인
   function toColor(arr) { return new THREE.Color(arr[0], arr[1], arr[2]); }
 
+  // box를 axis/up 기준으로 회전 (Gram-Schmidt 직교화 — 메인 엔진과 동일)
+  function applyBoxOrientation(mesh) {
+    const axis = mesh.userData.boxAxis || [1,0,0];
+    const up = mesh.userData.boxUp || [0,1,0];
+    const xAxis = new THREE.Vector3(...axis);
+    if (xAxis.lengthSq() < 1e-12) xAxis.set(1,0,0); else xAxis.normalize();
+    const yAxis = new THREE.Vector3(...up);
+    if (yAxis.lengthSq() < 1e-12) yAxis.set(0,1,0);
+    yAxis.addScaledVector(xAxis, -yAxis.dot(xAxis));
+    if (yAxis.lengthSq() < 1e-12) {
+      if (Math.abs(xAxis.y) < 0.9) yAxis.set(0,1,0); else yAxis.set(0,0,1);
+      yAxis.addScaledVector(xAxis, -yAxis.dot(xAxis));
+    }
+    yAxis.normalize();
+    const zAxis = new THREE.Vector3().crossVectors(xAxis, yAxis).normalize();
+    yAxis.crossVectors(zAxis, xAxis).normalize();
+    mesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis));
+  }
+
+  // arrow 그룹 길이/굵기 재구성 (VPython: |axis| = 길이)
+  function rebuildArrow(group, len, sw) {
+    const [shaft, head] = group.children;
+    if (shaft?.geometry) { shaft.geometry.dispose(); shaft.geometry = new THREE.CylinderGeometry(sw/2, sw/2, len*0.8, 8); shaft.position.y = len*0.4; }
+    if (head?.geometry) { head.geometry.dispose(); head.geometry = new THREE.ConeGeometry(sw*1.5, len*0.2, 8); head.position.y = len*0.9; }
+  }
+
+  // helix 길이 재구성 (radius/coils는 생성 시 값 유지)
+  function rebuildHelixLen(line, len) {
+    const r = line.userData.helixRadius || 1; const coils = line.userData.helixCoils || 5;
+    const seg = Math.max(64, coils*32); const positions = [];
+    for (let i=0;i<=seg;i++){const t=i/seg;const ang=t*coils*Math.PI*2;positions.push(t*len, r*Math.cos(ang), r*Math.sin(ang));}
+    line.geometry.dispose();
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    g.computeBoundingSphere();
+    line.geometry = g;
+  }
+
   function createTrail(cmd) {
     const trailColor = cmd.trail_color ? toColor(cmd.trail_color) : toColor(cmd.color || [1,1,1]);
     const trailMat = new THREE.LineBasicMaterial({ color: trailColor });
@@ -675,6 +713,10 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
       }
       if (cmd.pos) mesh.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
       mesh.visible = cmd.visible !== false;
+      mesh.userData = Object.assign(mesh.userData || {}, { vpType: cmd.type });
+      if (cmd.type === 'arrow') { const a0 = cmd.axis || [1,0,0]; mesh.userData.arrowLen = Math.hypot(...a0) || 1; mesh.userData.shaftwidth = cmd.shaftwidth || 0.1; }
+      if (cmd.type === 'helix') { mesh.userData.helixRadius = cmd.radius || 1; mesh.userData.helixCoils = cmd.coils || 5; }
+      if (cmd.type === 'box' && (cmd.axis || cmd.up)) { mesh.userData.boxAxis = cmd.axis || [1,0,0]; mesh.userData.boxUp = cmd.up || [0,1,0]; applyBoxOrientation(mesh); }
       scene.add(mesh);
       meshes.set(cmd.id, mesh);
       if (cmd.make_trail) createTrail(cmd);
@@ -705,9 +747,28 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
         else if(m.geometry.type==='TorusGeometry') ng=new THREE.TorusGeometry(cmd.radius,m.geometry.parameters?.tube||0.1,16,48);
         if(ng){m.geometry.dispose();m.geometry=ng;}
       }
-      if (cmd.size !== undefined && m.geometry) { const s=cmd.size; const ng=new THREE.BoxGeometry(s[0],s[1],s[2]); m.geometry.dispose(); m.geometry=ng; }
+      if (cmd.size !== undefined && m.geometry) {
+        const s=cmd.size;
+        if (m.geometry.type==='SphereGeometry') { m.scale.set(s[0],s[1],s[2]); } // ellipsoid: sphere+scale — 상자로 바꾸지 않음
+        else { const ng=new THREE.BoxGeometry(s[0],s[1],s[2]); m.geometry.dispose(); m.geometry=ng; }
+      }
       if (cmd.thickness !== undefined && m.geometry?.type==='TorusGeometry') { const r=m.geometry.parameters?.radius||1; const ng=new THREE.TorusGeometry(r,cmd.thickness,16,48); m.geometry.dispose(); m.geometry=ng; }
-      if (cmd.axis !== undefined) { const dir=new THREE.Vector3(...cmd.axis).normalize(); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
+      if (cmd.axis !== undefined || cmd.up !== undefined) {
+        const vpType = m.userData?.vpType;
+        if (vpType === 'box') {
+          if (cmd.axis) m.userData.boxAxis = cmd.axis;
+          if (cmd.up) m.userData.boxUp = cmd.up;
+          applyBoxOrientation(m);
+        } else if (cmd.axis !== undefined) {
+          const len = Math.hypot(...cmd.axis) || 1;
+          const dir = new THREE.Vector3(...cmd.axis).normalize();
+          if (vpType === 'cylinder' && m.geometry) { const r=m.geometry.parameters?.radiusTop??1; m.geometry.dispose(); m.geometry=new THREE.CylinderGeometry(r,r,len,32); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
+          else if (vpType === 'cone' && m.geometry) { const r=m.geometry.parameters?.radius??1; m.geometry.dispose(); m.geometry=new THREE.ConeGeometry(r,len,32); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
+          else if (vpType === 'arrow') { m.userData.arrowLen=len; rebuildArrow(m, len, m.userData.shaftwidth||0.1); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
+          else if (vpType === 'helix') { rebuildHelixLen(m, len); m.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),dir); }
+          else { m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
+        }
+      }
     } else if (cmd.action === 'scene' && cmd.property === 'background') {
       scene.background = toColor(cmd.value);
     } else if (cmd.action === 'trail_update') {
@@ -1020,6 +1081,7 @@ class _GObject:
             "trail_color":self._trail_color.to_list() if self._trail_color else None,
             **{k:v for k,v in kwargs.items() if k not in ('pos','color','visible','opacity','velocity') and isinstance(v,(int,float,bool,str))},
             **{k:v.to_list() for k,v in kwargs.items() if k not in ('pos','color','visible','opacity','velocity') and isinstance(v,vector)},
+            **{k:list(v) for k,v in kwargs.items() if k not in ('pos','color','visible','opacity','velocity') and isinstance(v,(list,tuple))},
         })
     @property
     def pos(self): return self._pos
@@ -1105,7 +1167,24 @@ class box(_GObject):
         else:
             kw.pop('length', None); kw.pop('height', None); kw.pop('width', None)
         self._size = _sz
-        super().__init__('box', size=self._size.to_list() if isinstance(self._size,vector) else self._size, **kw)
+        self._axis = kw.pop('axis', None)
+        self._up = kw.pop('up', None)
+        _extra = {}
+        if self._axis is not None: _extra['axis'] = self._axis.to_list() if isinstance(self._axis,vector) else self._axis
+        if self._up is not None: _extra['up'] = self._up.to_list() if isinstance(self._up,vector) else self._up
+        super().__init__('box', size=self._size.to_list() if isinstance(self._size,vector) else self._size, **_extra, **kw)
+    @property
+    def axis(self): return self._axis
+    @axis.setter
+    def axis(self, v):
+        self._axis = v
+        _add_command({"action":"update","id":self._id,"axis":v.to_list() if isinstance(v,vector) else v})
+    @property
+    def up(self): return self._up
+    @up.setter
+    def up(self, v):
+        self._up = v
+        _add_command({"action":"update","id":self._id,"up":v.to_list() if isinstance(v,vector) else v})
     @property
     def size(self): return self._size
     @size.setter

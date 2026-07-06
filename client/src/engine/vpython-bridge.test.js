@@ -611,4 +611,53 @@ describe('vpython-bridge: processBatch', () => {
     expect(light.color.r).toBe(1);
     expect(light.color.g).toBe(0);
   });
+  // === axis 갱신 시 길이 반영 (VPython 호환: |axis| = 길이) ===
+
+  it('arrow axis 갱신 시 화살대/화살촉 길이가 새 |axis|를 반영한다', () => {
+    processBatch([
+      { action: 'create', id: 'ar_1', type: 'arrow', pos: [0, 0, 0], color: [1, 1, 1], axis: [1, 0, 0], shaftwidth: 0.1 },
+      { action: 'update', id: 'ar_1', axis: [0, 5, 0] },
+    ], scene);
+
+    const group = getMesh('ar_1');
+    const [shaft, head] = group.children;
+    expect(shaft.geometry.parameters.height).toBeCloseTo(5 * 0.8);
+    expect(shaft.position.y).toBeCloseTo(5 * 0.4);
+    expect(head.geometry.parameters.height).toBeCloseTo(5 * 0.2);
+    expect(head.position.y).toBeCloseTo(5 * 0.9);
+  });
+
+  it('cylinder axis 갱신 시 geometry 높이가 새 |axis|를 반영한다', () => {
+    processBatch([
+      { action: 'create', id: 'cy_1', type: 'cylinder', pos: [0, 0, 0], color: [1, 1, 1], radius: 0.5, axis: [2, 0, 0] },
+      { action: 'update', id: 'cy_1', axis: [0, 0, 7] },
+    ], scene);
+
+    const mesh = getMesh('cy_1');
+    expect(mesh.geometry.parameters.height).toBeCloseTo(7);
+    expect(mesh.geometry.parameters.radiusTop).toBeCloseTo(0.5); // 반지름은 유지
+  });
+
+  it('cone axis 갱신 시 높이가 반영되고 방향이 바뀐다', () => {
+    processBatch([
+      { action: 'create', id: 'co_1', type: 'cone', pos: [0, 0, 0], color: [1, 1, 1], radius: 1, axis: [1, 0, 0] },
+      { action: 'update', id: 'co_1', axis: [0, 3, 0] },
+    ], scene);
+
+    const mesh = getMesh('co_1');
+    expect(mesh.geometry.parameters.height).toBeCloseTo(3);
+    expect(mesh.geometry.parameters.radius).toBeCloseTo(1); // 반지름은 유지
+  });
+
+  it('arrow shaftwidth 갱신 시 굵기가 재반영된다', () => {
+    processBatch([
+      { action: 'create', id: 'ar_2', type: 'arrow', pos: [0, 0, 0], color: [1, 1, 1], axis: [4, 0, 0], shaftwidth: 0.1 },
+      { action: 'update', id: 'ar_2', shaftwidth: 0.5 },
+    ], scene);
+
+    const group = getMesh('ar_2');
+    const [shaft] = group.children;
+    expect(shaft.geometry.parameters.radiusTop).toBeCloseTo(0.25);
+    expect(shaft.geometry.parameters.height).toBeCloseTo(4 * 0.8); // 길이 유지
+  });
 });
