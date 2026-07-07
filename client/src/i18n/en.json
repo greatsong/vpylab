@@ -185,7 +185,21 @@
     "changeRole": "Change Role",
     "makeTeacher": "Make Teacher",
     "makeStudent": "Make Student",
-    "noUsers": "No users found"
+    "noUsers": "No users found",
+    "team": {
+      "tab": "Team Projects",
+      "loginRequired": "Login required.",
+      "loadError": "Failed to load team projects.",
+      "noClasses": "Create a class in the 'Classes' tab first.",
+      "noProjects": "No team projects yet for students in this class.",
+      "studentCount": "Students",
+      "projectCount": "Team projects",
+      "members": "Members",
+      "revisions": "Revisions",
+      "lastActivity": "Last activity",
+      "owner": "Leader",
+      "external": "External"
+    }
   },
   "about": {
     "title": "VPyLab",

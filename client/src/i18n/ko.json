@@ -185,7 +185,21 @@
     "changeRole": "역할 변경",
     "makeTeacher": "교사로 변경",
     "makeStudent": "학생으로 변경",
-    "noUsers": "사용자가 없습니다"
+    "noUsers": "사용자가 없습니다",
+    "team": {
+      "tab": "팀 프로젝트",
+      "loginRequired": "로그인이 필요합니다.",
+      "loadError": "팀 프로젝트를 불러오지 못했습니다.",
+      "noClasses": "먼저 '학급' 탭에서 학급을 만들어 주세요.",
+      "noProjects": "이 학급 학생들이 참여 중인 팀 프로젝트가 아직 없습니다.",
+      "studentCount": "학생 수",
+      "projectCount": "팀 프로젝트",
+      "members": "팀원",
+      "revisions": "저장 이력",
+      "lastActivity": "최근 활동",
+      "owner": "리더",
+      "external": "외부 참여자"
+    }
   },
   "about": {
     "title": "VPyLab",

@@ -70,25 +70,51 @@ export async function requireSupabaseUser(req, res, next) {
 }
 
 /**
- * 프로젝트 멤버십 검증 미들웨어 (requireSupabaseUser 이후에 사용).
- * body에 projectId가 있을 때만 vpylab_project_members 에서 멤버십을 확인한다.
- * projectId가 없는 요청(개인 저장 등 하위 호환)은 통과.
+ * 팀 프로젝트 접근 권한 검증 미들웨어 (requireSupabaseUser 이후에 사용).
+ *
+ * body의 projectId 또는 repoFullName으로 대상 팀 프로젝트를 판별한 뒤,
+ * 팀 프로젝트라면 요청자가 그 멤버인지 확인한다.
+ *
+ * 중요: projectId만 신뢰하면, 클라이언트가 projectId를 생략하고 repoFullName만
+ * 보내 멤버십 검사를 우회할 수 있다(추방된 사용자가 팀 repo에 계속 커밋 등).
+ * 따라서 projectId가 없어도 repoFullName이 팀 프로젝트(vpylab_projects.github_repo)에
+ * 연결돼 있으면 그 프로젝트의 멤버십을 강제한다.
+ * 어느 프로젝트에도 연결되지 않은 개인 repo(하위 호환)만 통과시킨다.
  */
-export async function requireProjectMemberIfProjectId(req, res, next) {
-  const projectId = req.body?.projectId;
-  if (!projectId) return next();
-
+export async function requireTeamProjectAccess(req, res, next) {
   if (!req.supabaseUser) {
-    // requireSupabaseUser 선행 누락 — 방어적으로 401
     return res.status(401).json({ error: '로그인이 필요합니다.', code: 'auth_required' });
   }
 
+  const projectId = req.body?.projectId || null;
+  const repoFullName = req.body?.repoFullName || null;
+
   try {
     const supabase = getServiceClient();
+
+    // 대상 팀 프로젝트 판별: projectId 우선, 없으면 repoFullName으로 역조회
+    let targetProjectId = projectId;
+    if (!targetProjectId && repoFullName) {
+      const { data: projRows, error: projErr } = await supabase
+        .from('vpylab_projects')
+        .select('id')
+        .eq('github_repo', repoFullName)
+        .limit(1);
+      if (projErr) {
+        console.error('[auth] repo→프로젝트 역조회 실패:', projErr.message);
+        return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+      }
+      if (projRows && projRows.length > 0) targetProjectId = projRows[0].id;
+    }
+
+    // 팀 프로젝트가 아니면(개인 repo/저장) 통과
+    if (!targetProjectId) return next();
+
+    // 멤버십 확인
     const { data: membership, error } = await supabase
       .from('vpylab_project_members')
-      .select('project_id, user_id')
-      .eq('project_id', projectId)
+      .select('project_id')
+      .eq('project_id', targetProjectId)
       .eq('user_id', req.supabaseUser.id)
       .maybeSingle();
 
@@ -101,7 +127,7 @@ export async function requireProjectMemberIfProjectId(req, res, next) {
     }
     return next();
   } catch (e) {
-    console.error('[auth] 프로젝트 멤버십 검증 오류:', e.message);
+    console.error('[auth] 팀 프로젝트 접근 검증 오류:', e.message);
     return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 }

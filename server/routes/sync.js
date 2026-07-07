@@ -15,7 +15,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
-import { requireSupabaseUser, requireProjectMemberIfProjectId } from '../middleware/require-supabase-user.js';
+import { requireSupabaseUser, requireTeamProjectAccess } from '../middleware/require-supabase-user.js';
 
 const router = Router();
 
@@ -187,7 +187,7 @@ function generateMeta(title, codeId, projectId) {
  *
  * Returns: { repoFullName, commitSha, repoUrl }
  */
-router.post('/github', syncLimiter, requireSupabaseUser, requireProjectMemberIfProjectId, async (req, res) => {
+router.post('/github', syncLimiter, requireSupabaseUser, requireTeamProjectAccess, async (req, res) => {
   try {
     const {
       code,

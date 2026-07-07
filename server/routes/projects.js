@@ -17,7 +17,7 @@ import crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { generateStandaloneHTML } from '../utils/export-html.js';
-import { requireSupabaseUser, requireProjectMemberIfProjectId } from '../middleware/require-supabase-user.js';
+import { requireSupabaseUser, requireTeamProjectAccess } from '../middleware/require-supabase-user.js';
 
 const router = Router();
 
@@ -1378,7 +1378,7 @@ router.post('/setup', limiter, requireSupabaseUser, async (req, res) => {
 // POST /api/projects/access
 // 현재 GitHub 토큰이 프로젝트 레포에 쓰기 권한을 갖는지 확인
 // ========================================
-router.post('/access', limiter, async (req, res) => {
+router.post('/access', limiter, requireSupabaseUser, async (req, res) => {
   try {
     const { repoFullName, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1481,7 +1481,7 @@ router.post('/members/github-usernames', limiter, async (req, res) => {
 // POST /api/projects/collaborators/invite
 // 저장소 소유자가 팀원의 GitHub 계정을 collaborator로 초대
 // ========================================
-router.post('/collaborators/invite', limiter, async (req, res) => {
+router.post('/collaborators/invite', limiter, requireSupabaseUser, async (req, res) => {
   try {
     const { repoFullName, username, usernames, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1583,7 +1583,7 @@ router.post('/collaborators/invite', limiter, async (req, res) => {
 //
 // POST로 한 이유: GitHub OAuth token을 body로 받아야 해서 (URL에 토큰 노출 금지).
 // ========================================
-router.post('/collaborators/pending', limiter, async (req, res) => {
+router.post('/collaborators/pending', limiter, requireSupabaseUser, async (req, res) => {
   try {
     const { repoFullName, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1623,7 +1623,7 @@ router.post('/collaborators/pending', limiter, async (req, res) => {
 // (DELETE 메서드를 쓰면 URL에 invitationId가 들어가는데 토큰을 body로 보내는 패턴과
 //  맞추기 위해 POST + invitationId를 body로 받습니다.)
 // ========================================
-router.post('/collaborators/cancel', limiter, async (req, res) => {
+router.post('/collaborators/cancel', limiter, requireSupabaseUser, async (req, res) => {
   try {
     const { repoFullName, invitationId, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1655,7 +1655,7 @@ router.post('/collaborators/cancel', limiter, async (req, res) => {
 // POST /api/projects/commit
 // 기존 프로젝트에 코드 변경 commit + history.md 갱신 + index.html 갱신
 // ========================================
-router.post('/commit', limiter, requireSupabaseUser, requireProjectMemberIfProjectId, async (req, res) => {
+router.post('/commit', limiter, requireSupabaseUser, requireTeamProjectAccess, async (req, res) => {
   try {
     const {
       repoFullName, code, htmlContent, title, message, githubToken,
@@ -1926,6 +1926,133 @@ router.post('/commit', limiter, requireSupabaseUser, requireProjectMemberIfProje
       error: e.status ? e.message : '서버 오류가 발생했습니다.',
       code: 'github_commit_failed',
     });
+  }
+});
+
+// ========================================
+// GET /api/projects/class-overview?classId=...
+// 교사 학급 대시보드 — 학급 학생들이 참여 중인 팀 프로젝트와 기여 이력을 집계.
+// 팀 데이터는 RLS로 멤버만 읽을 수 있으므로 service-role로 집계하되,
+// 요청자가 해당 학급의 담당 교사임을 반드시 먼저 검증한다.
+// ========================================
+router.get('/class-overview', limiter, requireSupabaseUser, async (req, res) => {
+  try {
+    const classId = req.query.classId;
+    if (!classId) {
+      return res.status(400).json({ error: '학급 ID가 필요합니다.', code: 'class_id_required' });
+    }
+
+    const supabase = getSupabase();
+
+    // 1. 요청자가 이 학급의 담당 교사인지 검증 (소유권 확인 — service-role 남용 방지)
+    const { data: cls, error: clsErr } = await supabase
+      .from('vpylab_classes')
+      .select('id, name, teacher_id')
+      .eq('id', classId)
+      .maybeSingle();
+    if (clsErr) {
+      console.error('[class-overview] 학급 조회 실패:', clsErr.message);
+      return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    }
+    if (!cls) {
+      return res.status(404).json({ error: '학급을 찾을 수 없습니다.', code: 'class_not_found' });
+    }
+    if (cls.teacher_id !== req.supabaseUser.id) {
+      return res.status(403).json({ error: '이 학급의 담당 교사가 아닙니다.', code: 'not_class_teacher' });
+    }
+
+    // 2. 학급 학생 목록
+    const { data: students, error: stuErr } = await supabase
+      .from('vpylab_profiles')
+      .select('id, display_name, avatar_url')
+      .eq('class_id', classId);
+    if (stuErr) {
+      console.error('[class-overview] 학생 조회 실패:', stuErr.message);
+      return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    }
+    const studentIds = (students || []).map((s) => s.id);
+    const studentMap = new Map((students || []).map((s) => [s.id, s]));
+    if (studentIds.length === 0) {
+      return res.json({ ok: true, className: cls.name, projects: [], studentCount: 0 });
+    }
+
+    // 3. 학생들이 속한 팀 프로젝트 id 수집
+    const { data: memberRows, error: memErr } = await supabase
+      .from('vpylab_project_members')
+      .select('project_id, user_id, role')
+      .in('user_id', studentIds);
+    if (memErr) {
+      console.error('[class-overview] 멤버십 조회 실패:', memErr.message);
+      return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    }
+    const projectIds = [...new Set((memberRows || []).map((m) => m.project_id))];
+    if (projectIds.length === 0) {
+      return res.json({ ok: true, className: cls.name, projects: [], studentCount: studentIds.length });
+    }
+
+    // 4. 프로젝트 메타 + 전체 멤버 + 리비전(기여 이력) 병렬 조회
+    const [{ data: projects }, { data: allMembers }, { data: revisions }, { data: allProfiles }] = await Promise.all([
+      supabase.from('vpylab_projects').select('id, title, owner_id, updated_at, created_at').in('id', projectIds),
+      supabase.from('vpylab_project_members').select('project_id, user_id, role').in('project_id', projectIds),
+      supabase.from('vpylab_code_revisions').select('project_id, author_id, message, github_commit_sha, created_at').in('project_id', projectIds),
+      supabase.from('vpylab_profiles').select('id, display_name, avatar_url').in(
+        'id',
+        [...new Set((memberRows || []).map((m) => m.user_id))],
+      ),
+    ]);
+
+    // 프로젝트→github repo (saved_code.project_id로 연결된 코드에서 유추 대신 gallery/sync 정보가 없으므로 revisions의 sha 유무로 대체)
+    const profileMap = new Map((allProfiles || []).map((p) => [p.id, p]));
+    for (const s of studentMap.values()) profileMap.set(s.id, s);
+
+    // 5. 프로젝트별 집계
+    const byProject = projectIds.map((pid) => {
+      const meta = (projects || []).find((p) => p.id === pid);
+      const members = (allMembers || []).filter((m) => m.project_id === pid);
+      const revs = (revisions || []).filter((r) => r.project_id === pid);
+
+      // 작성자별 리비전 수 (기여도)
+      const contribMap = {};
+      let lastCommitAt = null;
+      let githubCommits = 0;
+      for (const r of revs) {
+        contribMap[r.author_id] = (contribMap[r.author_id] || 0) + 1;
+        if (!lastCommitAt || r.created_at > lastCommitAt) lastCommitAt = r.created_at;
+        if (r.github_commit_sha) githubCommits += 1;
+      }
+      const contributions = members.map((m) => {
+        const p = profileMap.get(m.user_id);
+        return {
+          userId: m.user_id,
+          name: p?.display_name || '이름 없음',
+          avatar: p?.avatar_url || null,
+          role: m.role,
+          isClassStudent: studentMap.has(m.user_id),
+          revisionCount: contribMap[m.user_id] || 0,
+        };
+      }).sort((a, b) => b.revisionCount - a.revisionCount);
+
+      return {
+        projectId: pid,
+        title: meta?.title || '제목 없는 프로젝트',
+        updatedAt: meta?.updated_at || null,
+        lastCommitAt,
+        totalRevisions: revs.length,
+        githubCommits,
+        memberCount: members.length,
+        contributions,
+      };
+    }).sort((a, b) => {
+      // 최근 활동 순
+      const at = a.lastCommitAt || a.updatedAt || '';
+      const bt = b.lastCommitAt || b.updatedAt || '';
+      return bt.localeCompare(at);
+    });
+
+    res.json({ ok: true, className: cls.name, studentCount: studentIds.length, projects: byProject });
+  } catch (e) {
+    console.error('[class-overview]', e);
+    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
 

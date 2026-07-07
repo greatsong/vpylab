@@ -5,6 +5,7 @@ import { useI18n } from '../i18n/useI18n';
 import useAuthStore from '../stores/authStore';
 import ClassManager from '../components/dashboard/ClassManager';
 import StudentProgress from '../components/dashboard/StudentProgress';
+import ClassTeamOverview from '../components/dashboard/ClassTeamOverview';
 import UserManagement from '../components/dashboard/UserManagement';
 
 export default function Dashboard() {
@@ -51,6 +52,7 @@ export default function Dashboard() {
   const tabs = [
     { id: 'classes', label: t('dashboard.classes') },
     { id: 'progress', label: t('dashboard.studentProgress') },
+    { id: 'teams', label: t('dashboard.team.tab') },
     ...(isAdmin ? [{ id: 'users', label: t('dashboard.userManagement') }] : []),
   ];
 
@@ -88,6 +90,7 @@ export default function Dashboard() {
         {/* 콘텐츠 */}
         {activeTab === 'classes' && <ClassManager />}
         {activeTab === 'progress' && <StudentProgress />}
+        {activeTab === 'teams' && <ClassTeamOverview />}
         {activeTab === 'users' && <UserManagement />}
       </main>
     </div>

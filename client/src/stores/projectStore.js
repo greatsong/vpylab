@@ -1276,7 +1276,7 @@ const useProjectStore = create((set, get) => ({
     try {
       const response = await fetchWithTimeout(`${API_BASE}/api/projects/collaborators/invite`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthorizedApiHeaders(),
         body: JSON.stringify({
           repoFullName: activeProject.github_repo,
           usernames: safeUsernames,
@@ -1338,7 +1338,7 @@ const useProjectStore = create((set, get) => ({
     try {
       const response = await fetchWithTimeout(`${API_BASE}/api/projects/collaborators/pending`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthorizedApiHeaders(),
         body: JSON.stringify({ repoFullName: target, githubToken }),
       }, 15000);
       const result = await parseApiJson(response);
@@ -1374,7 +1374,7 @@ const useProjectStore = create((set, get) => ({
     try {
       const response = await fetchWithTimeout(`${API_BASE}/api/projects/collaborators/cancel`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthorizedApiHeaders(),
         body: JSON.stringify({ repoFullName: target, invitationId, githubToken }),
       }, 15000);
       const result = await parseApiJson(response);
