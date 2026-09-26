@@ -33,9 +33,11 @@ npm install
 cd client && npm install && cd ..
 cd server && npm install && cd ..
 
-# 환경변수 설정
-cp .env.example .env
-# .env 파일을 편집하여 Supabase 키 등을 입력합니다
+# 환경변수 설정 (클라이언트·서버가 각자 자기 폴더의 .env를 읽습니다)
+cp client/.env.example client/.env
+cp server/.env.example server/.env
+# 각 .env 파일을 편집하여 Supabase 키 등을 입력합니다
+# (키가 없어도 코드 실행·미션·예제는 동작하고, 로그인·저장·갤러리만 비활성화됩니다)
 
 # 개발 서버 시작
 npm run dev
@@ -250,8 +252,9 @@ npm install
 cd client && npm install && cd ..
 cd server && npm install && cd ..
 
-# Set up environment
-cp .env.example .env
+# Set up environment (client and server each read the .env in their own folder)
+cp client/.env.example client/.env
+cp server/.env.example server/.env
 
 # Start dev server
 npm run dev
