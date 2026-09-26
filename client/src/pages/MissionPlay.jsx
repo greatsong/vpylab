@@ -17,6 +17,7 @@ import missions from '../data/missions';
 import useAppStore from '../stores/appStore';
 import useCodeStore from '../stores/codeStore';
 import useAuthStore from '../stores/authStore';
+import { appendOutput } from '../utils/console-output';
 
 /**
  * 미션 플레이 페이지
@@ -65,7 +66,7 @@ export default function MissionPlay() {
   }, [code, user]);
 
   const addOutput = useCallback((text, type = 'log') => {
-    setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
+    setOutputs((prev) => appendOutput(prev, text, type));
   }, []);
 
   const handleBatch = useCallback((commands) => {

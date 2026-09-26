@@ -9,11 +9,17 @@ Three.js 메인 스레드로 JSON 커맨드를 전송하는 방식.
 import js
 import json
 import asyncio
+import sys as _sys
+import time as _time
 from typing import Optional
 
 # === 커맨드 버퍼 (배칭) ===
 _command_buffer = []
 _object_counter = 0
+
+# === print 출력 주기 전송 ===
+_last_print_flush = 0.0
+_PRINT_FLUSH_INTERVAL = 0.1  # 초
 
 
 def _send_commands():
@@ -27,6 +33,33 @@ def _send_commands():
             "commands": _command_buffer
         }))
         _command_buffer = []
+
+
+def _flush_prints():
+    """print() 출력을 메인 스레드 콘솔로 전달
+
+    sys.stdout은 실행마다 StringIO로 교체되고 실행이 끝나야 비워지므로,
+    while True + rate() 루프의 print는 이 함수가 없으면 영영 보이지 않는다.
+    완성된 줄만 보내고, 마지막 줄바꿈 뒤의 미완성 줄은 버퍼에 남겨 다음에 이어 붙인다.
+    """
+    global _last_print_flush
+    out = _sys.stdout
+    if not hasattr(out, 'getvalue'):
+        return
+    now = _time.monotonic()
+    if now - _last_print_flush < _PRINT_FLUSH_INTERVAL:
+        return
+    text = out.getvalue()
+    cut = text.rfind('\n')
+    if cut < 0:
+        return
+    _last_print_flush = now
+    out.seek(0)
+    out.truncate(0)
+    out.write(text[cut + 1:])
+    run_id = _current_run_id()
+    for line in text[:cut].split('\n'):
+        js.postMessage(json.dumps({"type": "stdout", "runId": run_id, "text": line}))
 
 
 def _add_command(cmd):
@@ -1913,6 +1946,7 @@ async def rate(fps):
     else:
         # 커맨드가 없어도 하트비트 전송 (활동 타이머 리셋용)
         js.postMessage(json.dumps({"type": "batch", "runId": _current_run_id(), "commands": []}))
+    _flush_prints()
     delay = 1.0 / fps
     await asyncio.sleep(delay)
 
@@ -1928,6 +1962,7 @@ async def sleep(seconds):
         _send_commands()
     else:
         js.postMessage(json.dumps({"type": "batch", "runId": _current_run_id(), "commands": []}))
+    _flush_prints()
     await asyncio.sleep(seconds)
 
 

@@ -56,8 +56,8 @@ function clearInputQueues() {
   for (const key of Object.keys(_widgetValues)) delete _widgetValues[key];
 }
 
-async function flushOutputStreams(runId = currentRunId) {
-  if (!pyodide) return;
+// 실행마다 StringIO로 교체한 sys.stdout/stderr 버퍼를 읽고 비운다
+async function drainOutputStreams() {
   const stdout = await pyodide.runPythonAsync('sys.stdout.getvalue()');
   const stderr = await pyodide.runPythonAsync('sys.stderr.getvalue()');
 
@@ -65,17 +65,49 @@ async function flushOutputStreams(runId = currentRunId) {
 sys.stdout.seek(0); sys.stdout.truncate(0)
 sys.stderr.seek(0); sys.stderr.truncate(0)
 `);
+  return { stdout, stderr };
+}
 
-  if (stdout) {
-    const lines = stdout.split('\n');
-    if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
-    for (const line of lines) sendRunMessage(runId, 'stdout', { text: line });
-  }
-  if (stderr) {
-    const lines = stderr.split('\n');
-    if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
-    for (const line of lines) sendRunMessage(runId, 'stderr', { text: line });
-  }
+function sendLines(runId, type, text) {
+  if (!text) return;
+  const lines = text.split('\n');
+  if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+  for (const line of lines) sendRunMessage(runId, type, { text: line });
+}
+
+async function flushOutputStreams(runId = currentRunId) {
+  if (!pyodide) return;
+  const { stdout, stderr } = await drainOutputStreams();
+  sendLines(runId, 'stdout', stdout);
+  sendLines(runId, 'stderr', stderr);
+}
+
+/**
+ * 예외 발생 시 에러 메시지와 출력 복구
+ * - sys.stderr를 StringIO로 바꿔 두었기 때문에 Pyodide는 traceback을 그 버퍼에 쓰고
+ *   err.message는 비어 있다 (콘솔에 "PythonError"만 보이던 원인). 버퍼에서 traceback을 꺼낸다.
+ * - 예외 직전까지 만든 3D 객체(커맨드 버퍼)와 print 출력도 버리지 않고 전달한다.
+ */
+async function recoverErrorOutput(err, runId) {
+  let message = err?.message || '';
+  try {
+    await pyodide.runPythonAsync('_send_commands()');
+  } catch { /* 커맨드 전송 실패는 무시하고 에러 보고를 계속 */ }
+  try {
+    const { stdout, stderr } = await drainOutputStreams();
+    sendLines(runId, 'stdout', stdout);
+    const tracebackStart = stderr.lastIndexOf('Traceback (most recent call last)');
+    // traceback 앞부분(학생이 stderr로 출력한 내용, 경고 등)은 그대로 보여준다
+    if (tracebackStart >= 0) {
+      sendLines(runId, 'stderr', stderr.slice(0, tracebackStart));
+      if (!message.trim()) message = stderr.slice(tracebackStart);
+    } else if (message.trim()) {
+      sendLines(runId, 'stderr', stderr);
+    } else {
+      message = stderr;
+    }
+  } catch { /* 출력 버퍼를 읽지 못해도 에러 보고는 계속 */ }
+  return message || String(err);
 }
 
 async function dispatchQueuedEvents() {
@@ -88,7 +120,7 @@ _send_commands()
 `);
     await flushOutputStreams();
   } catch (err) {
-    const msg = err.message || String(err);
+    const msg = await recoverErrorOutput(err, currentRunId);
     sendRunMessage(currentRunId, 'error', { error: formatPythonError(msg), raw: msg });
   } finally {
     isDispatchingEvents = false;
@@ -345,7 +377,7 @@ sys.stderr = StringIO()
     isRunningCode = false;
     sendRunMessage(runId, 'done');
   } catch (err) {
-    const msg = err.message || String(err);
+    const msg = await recoverErrorOutput(err, runId);
     // 사용자 중지로 인한 예외는 에러가 아닌 정상 종료로 처리
     // shouldStop 플래그 또는 예외 메시지로 판별
     if (shouldStop || msg.includes('_StopExecution') || msg.includes('실행이 중지되었습니다')) {

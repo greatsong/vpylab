@@ -36,6 +36,7 @@ import CodeShareToast from '../components/codeshare/CodeShareToast';
 import useCodeShareStore from '../stores/codeShareStore';
 import EXAMPLES, { EXAMPLE_CATEGORIES } from '../data/examples';
 import { getLesson } from '../data/courses';
+import { appendOutput } from '../utils/console-output';
 
 function getProjectRole(project, members, userId) {
   if (!project || !userId) return null;
@@ -331,7 +332,7 @@ export default function Sandbox() {
   }, [user]);
 
   const addOutput = useCallback((text, type = 'log') => {
-    setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
+    setOutputs((prev) => appendOutput(prev, text, type));
   }, []);
 
   useEffect(() => {
