@@ -929,10 +929,12 @@ def _send_commands():
       const imports = [];
       const body = [];
       for (const line of lines) {
-        if (line.trimStart().startsWith('import ') || (line.trimStart().startsWith('from ') && line.includes('import'))) {
+        // 들여쓰지 않은 모듈 수준 import만 끌어올린다 (함수 안 import까지 올리면 IndentationError)
+        if (line.startsWith('import ') || (line.startsWith('from ') && line.includes('import'))) {
           imports.push(line);
         } else {
-          body.push(line.replace(/(?<![\\w.가-힣])(rate|sleep)(\\s*\\()/g, 'await $1$2'));
+          // 이미 await가 붙은 호출은 건너뛴다 (await await → SyntaxError)
+          body.push(line.replace(/(?<![\\w.가-힣])(?<!await\\s+)(rate|sleep)(\\s*\\()/g, 'await $1$2'));
         }
       }
       processed = imports.join('\\n') + '\\nimport asyncio\\nasync def __main__():\\n' + body.map(l => l ? '    ' + l : l).join('\\n') + '\\n\\nawait __main__()';
@@ -1549,12 +1551,24 @@ class _GSeriesNoOp:
         self._graph = g
         g._add_series(self)
     def plot(self, *args, **kw): pass
+    def clear(self): pass
     def delete(self): pass
 
 class gcurve(_GSeriesNoOp): pass
 class gdots(_GSeriesNoOp): pass
 class gvbars(_GSeriesNoOp): pass
 class ghbars(_GSeriesNoOp): pass
+
+
+# === 텍스처 — standalone export는 이미지 텍스처 미지원 (이름만 제공해 코드가 멈추지 않게 함) ===
+class _TexturePresets:
+    def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(name)
+        return 'preset:' + name
+
+textures = _TexturePresets()
+텍스처 = textures
 
 
 # === 조명 ===
