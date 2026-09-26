@@ -158,7 +158,8 @@ for i in range(5):
 
 scene_background(색상['검정'])
 
-for i in range(8):
+# 무지개는 7색이라 인덱스는 0~6까지
+for i in range(7):
     크기 = 0.2 + i * 0.1
     높이 = i * 0.6
     sphere(pos=vector(0, 높이, 0), radius=크기, color=무지개[i])
@@ -1020,7 +1021,9 @@ x = [random.uniform(-3, 3) for i in range(50)]
 y = [random.uniform(-3, 3) for i in range(50)]   # ★ 데이터 소스
 z = [random.uniform(-3, 3) for i in range(50)]
 
-scatter3d(x, y, z, color=색상['하늘'])
+# scatter3d는 [[x, y, z], ...] 형태의 점 리스트를 받는다
+points = [[x[i], y[i], z[i]] for i in range(50)]
+scatter3d(points, size=0.1)
 `,
       },
       {
