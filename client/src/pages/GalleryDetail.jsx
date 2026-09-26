@@ -48,7 +48,7 @@ export default function GalleryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { locale: lang } = useI18n();
-  const { currentWork, loading, fetchWork, toggleLike, checkIfLiked, forkWork, republishWork } = useGalleryStore();
+  const { currentWork, workNotFound, loading, fetchWork, toggleLike, checkIfLiked, forkWork, republishWork } = useGalleryStore();
   const user = useAuthStore(s => s.user);
   const getGitHubToken = useAuthStore(s => s.getGitHubToken);
   const isGitHubUser = useAuthStore(s => s.isGitHubUser);
@@ -108,10 +108,12 @@ export default function GalleryDetail() {
     repo: currentWork?.github_repo,
     author,
   }), [author, currentWork?.category, currentWork?.code, currentWork?.description, currentWork?.github_repo, currentWork?.title]);
-  const stageThumbnail = detailThumbnail?.id === currentWork?.id && detailThumbnail.src
+  // 작품을 불러오기 전(currentWork·detailThumbnail 모두 null)에도 안전하게 계산
+  const capturedThumbnail = currentWork && detailThumbnail?.id === currentWork.id
     ? detailThumbnail.src
-    : posterThumbnail;
-  const hasStageCapturedThumbnail = detailThumbnail?.id === currentWork?.id && !!detailThumbnail.src;
+    : null;
+  const stageThumbnail = capturedThumbnail || posterThumbnail;
+  const hasStageCapturedThumbnail = !!capturedThumbnail;
 
   useEffect(() => {
     let alive = true;
@@ -140,6 +142,22 @@ export default function GalleryDetail() {
   const repoBroken = !!(currentWork?.github_repo
     && repoStatus?.repo === currentWork.github_repo
     && repoStatus.broken);
+
+  if (workNotFound) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+        <Header />
+        <main className="gallery-detail-page">
+          <div className="gallery-loading">
+            {lang === 'ko' ? '작품을 찾을 수 없습니다. 삭제되었거나 비공개로 바뀌었을 수 있습니다.' : 'Work not found. It may have been deleted or made private.'}
+          </div>
+          <Link to="/gallery" className="btn-secondary no-underline inline-block">
+            {lang === 'ko' ? '← 갤러리로' : '← Back to gallery'}
+          </Link>
+        </main>
+      </div>
+    );
+  }
 
   if (loading || !currentWork) {
     return (

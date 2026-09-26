@@ -41,6 +41,7 @@ const useGalleryStore = create((set, get) => ({
   works: [],
   featuredWorks: [],
   currentWork: null,
+  workNotFound: false,
   myWorks: [],
   loading: false,
   publishing: false,
@@ -148,7 +149,7 @@ const useGalleryStore = create((set, get) => ({
 
   // === 작품 상세 조회 ===
   fetchWork: async (id) => {
-    set({ loading: true, currentWork: null });
+    set({ loading: true, currentWork: null, workNotFound: false });
 
     const { data } = await supabase
       .from('vpylab_gallery')
@@ -190,7 +191,8 @@ const useGalleryStore = create((set, get) => ({
         set({ currentWork: { ...get().currentWork, remixes: remixesWithProfiles } });
       }
     } else {
-      set({ loading: false });
+      // 삭제·비공개 작품: 무한 로딩 대신 '찾을 수 없음' 표시
+      set({ loading: false, workNotFound: true });
     }
   },
 
