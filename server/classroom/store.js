@@ -85,7 +85,7 @@ export function createStore({ filename = ':memory:', localMode = false } = {}) {
       const findJob=db.prepare('SELECT kind,payload FROM github_jobs WHERE id=? AND project_id=?');
       return events.map(event=>{
         const author=identities.get(event.githubAuthorId),metadata=event.metadata||{};let requester=null;
-        if(['app','simulator'].includes(event.source)&&metadata.serviceGenerated===true&&typeof metadata.jobId==='string'&&typeof metadata.requestedByUserId==='string') {
+        if(['app','simulator','local_cli_test'].includes(event.source)&&metadata.serviceGenerated===true&&typeof metadata.jobId==='string'&&typeof metadata.requestedByUserId==='string') {
           const job=findJob.get(metadata.jobId,id),payload=job?parse(job.payload,{}):null;
           if(job&&payload.authorId===metadata.requestedByUserId&&((job.kind==='proposal'&&event.kind==='pull_request')||(job.kind==='issue'&&event.kind==='issue')))requester=members.get(payload.authorId)||null;
         }

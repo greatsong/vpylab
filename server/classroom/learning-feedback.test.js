@@ -86,3 +86,49 @@ test('App 봇 PR은 실제 GitHub 작성자와 검증된 VPyLab 제출자를 구
   const team=await a(`/projects/${id}/learning`);for(const eventId of [forgedWebhook,wrongRequester,foreign])assert.equal(team.data.events.find(item=>item.id===eventId).requestedByUserId,null);
   const sameAuthor=seedEvent(store,id,{source:'simulator',authorId:910000002,metadata});const updated=await a(`/projects/${id}/student-evidence/${studentA.id}`);assert.equal(updated.data.events.filter(item=>item.id===sameAuthor).length,1);assert.equal(store.githubIdentity(studentA.id).githubId,910000002);
 });
+
+test('로컬 CLI 시험의 실제 GitHub 작성자와 서버 작업 제출자는 PR·Issue에서 독립적으로 귀속된다',async(t)=>{
+  const {store,apiFor,id}=await fixture(t),a=apiFor(studentA.id),b=apiFor(studentB.id),tc=apiFor(teacher.id);
+  const proposal=store.enqueueJob({projectId:id,kind:'proposal',payload:{authorId:studentA.id},dedupeKey:'cli-proposal-proof'});
+  const issue=store.enqueueJob({projectId:id,kind:'issue',payload:{authorId:studentA.id},dedupeKey:'cli-issue-proof'});
+  const pullId=seedEvent(store,id,{source:'local_cli_test',authorId:910000003,login:'변경된-GitHub-이름',metadata:{serviceGenerated:true,jobId:proposal.id,requestedByUserId:studentA.id}});
+  const issueId=seedEvent(store,id,{source:'local_cli_test',kind:'issue',authorId:998877,login:'교사가-사용한-실제-계정',metadata:{serviceGenerated:true,jobId:issue.id,requestedByUserId:studentA.id}});
+  const team=await tc(`/projects/${id}/learning`);assert.equal(team.status,200);
+  const pull=team.data.events.find(event=>event.id===pullId),question=team.data.events.find(event=>event.id===issueId);
+  assert.equal(pull.githubAuthorId,910000003);assert.equal(pull.authorUserId,studentB.id);assert.equal(pull.authorName,studentB.name);
+  assert.equal(pull.requestedByUserId,studentA.id);assert.equal(pull.requestedByName,studentA.name);assert.equal(pull.attributionLabel,'VPyLab 제출자');
+  assert.equal(question.githubAuthorId,998877);assert.equal(question.authorUserId,null);assert.equal(question.requestedByUserId,studentA.id);
+  const ownA=await a(`/projects/${id}/student-evidence/${studentA.id}`),ownB=await b(`/projects/${id}/student-evidence/${studentB.id}`);
+  assert.deepEqual(new Set(ownA.data.events.map(event=>event.id)),new Set([pullId,issueId]));assert.equal(ownA.data.summary.evidenceCount,2);
+  assert.deepEqual(ownB.data.events.map(event=>event.id),[pullId]);assert.equal(ownB.data.summary.evidenceCount,1);
+  const mineA=await a(`/projects/${id}/learning-evidence?scope=mine`),mineB=await b(`/projects/${id}/learning-evidence?scope=mine`);
+  assert.deepEqual(new Set(mineA.data.events.map(event=>event.id)),new Set([pullId,issueId]));assert.deepEqual(mineB.data.events.map(event=>event.id),[pullId]);
+  assert.equal(store.githubIdentity(studentA.id).githubId,910000002);assert.equal(store.githubIdentity(studentB.id).githubId,910000003);
+});
+
+test('로컬 CLI 출처라도 다른 프로젝트·없는 작업·위조 제출자·사건 종류·비참여자의 제출자 귀속은 거부한다',async(t)=>{
+  const {store,apiFor,id}=await fixture(t),a=apiFor(studentA.id),tc=apiFor(teacher.id);
+  const proposal=store.enqueueJob({projectId:id,kind:'proposal',payload:{authorId:studentA.id},dedupeKey:'cli-invalid-proposal-proof'});
+  const checkpoint=store.enqueueJob({projectId:id,kind:'checkpoint',payload:{authorId:studentA.id},dedupeKey:'cli-invalid-checkpoint-proof'});
+  const another=store.createProject(teacher,{title:'CLI 출처 격리를 검사할 다른 팀',code:''});
+  const foreign=store.enqueueJob({projectId:another.id,kind:'proposal',payload:{authorId:studentA.id},dedupeKey:'cli-foreign-project-proof'});
+  const outsider=store.ensureUser({id:'cli-uninvited-student',name:'이 팀에 참여하지 않은 학생',role:'student'});
+  const outsideJob=store.enqueueJob({projectId:id,kind:'proposal',payload:{authorId:outsider.id},dedupeKey:'cli-uninvited-requester-proof'});
+  const metadata={serviceGenerated:true,jobId:proposal.id,requestedByUserId:studentA.id};
+  const invalid=[
+    {metadata:{...metadata,jobId:foreign.id}},
+    {metadata:{...metadata,jobId:'missing-server-job'}},
+    {metadata:{...metadata,requestedByUserId:studentB.id}},
+    {metadata:{...metadata,jobId:checkpoint.id}},
+    {kind:'issue',metadata},
+    {kind:'review',metadata},
+    {metadata:{...metadata,serviceGenerated:false}},
+    {metadata:{...metadata,jobId:outsideJob.id,requestedByUserId:outsider.id}},
+    {source:'webhook',metadata},
+    {source:'backfill',metadata},
+  ].map(input=>seedEvent(store,id,{source:'local_cli_test',authorId:null,...input}));
+  const team=await tc(`/projects/${id}/learning`);assert.equal(team.status,200);assert.equal(team.data.events.length,invalid.length);
+  for(const eventId of invalid){const event=team.data.events.find(item=>item.id===eventId);assert.equal(event.authorUserId,null);assert.equal(event.requestedByUserId,null);assert.equal(event.requestedByName,null);assert.equal(event.attributionLabel,null);}
+  const mine=await a(`/projects/${id}/learning-evidence?scope=mine`),own=await a(`/projects/${id}/student-evidence/${studentA.id}`);
+  assert.equal(mine.status,200);assert.deepEqual(mine.data.events,[]);assert.equal(own.status,200);assert.deepEqual(own.data.events,[]);assert.equal(own.data.summary.evidenceCount,0);
+});

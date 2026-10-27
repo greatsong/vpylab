@@ -71,7 +71,7 @@ export function createClassroomApp({store:providedStore,filename,localMode=false
   const learningData=req=>{
     if(typeof githubService.listLearningEvents!=='function')throw new HttpError(503,'learning_unavailable','GitHub 학습 기록을 준비하고 있습니다. 로컬 저장은 계속 사용할 수 있습니다.');
     const result=githubService.listLearningEvents(req.params.id,req.actor),sync=result.sync||{state:'never'};
-    return {...result,events:store.attributeLearningEvents(req.params.id,req.actor,result.events||[]),mode:githubService.mode||'offline',sync:{...sync,lastSyncedAt:sync.completedAt||null,partial:sync.state==='partial'||Boolean(result.hasMore),error:sync.errorCode||null}};
+    return {...result,events:store.attributeLearningEvents(req.params.id,req.actor,result.events||[]),mode:githubService.mode||'offline',authMethod:githubService.status?.(req.params.id,req.actor)?.authMethod||githubService.mode||'offline',sync:{...sync,lastSyncedAt:sync.completedAt||null,partial:sync.state==='partial'||Boolean(result.hasMore),error:sync.errorCode||null}};
   };
   api.get('/projects/:id/learning',requireActor,(req,res)=>{
     const data=learningData(req),students=store.members(req.params.id).filter(member=>member.systemRole==='student'&&(req.actor.role==='teacher'||member.id===req.actor.id)).map(member=>{

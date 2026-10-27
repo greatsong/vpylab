@@ -58,7 +58,8 @@ export function classifyGitHubResponse(response, now = Date.now(), body = null) 
   return new GitHubError('github_rejected', 'GitHub에서 요청을 거부했습니다. 저장소 설정과 변경 사항을 확인해주세요.', { status: response.status, permanent: true });
 }
 
-export function createGitHubAppClient({ config, fetchImpl = fetch, now = Date.now, pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)) }) {
+export function createGitHubAppClient({ config, fetchImpl = fetch, now = Date.now, pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)), installationTokenProvider } = {}) {
+  if (installationTokenProvider !== undefined && typeof installationTokenProvider !== 'function') throw new TypeError('GitHub 테스트 인증 공급자는 함수여야 합니다.');
   const tokenCache = new Map();
   let lastMutation = -Infinity;
   let requestChain = Promise.resolve();
@@ -82,6 +83,13 @@ export function createGitHubAppClient({ config, fetchImpl = fetch, now = Date.no
     return includeHeaders ? { data, link: response.headers.get('link') } : data;
   }
   async function tokenFor(binding) {
+    // 명시적인 코드 주입만 허용합니다. 환경변수·HTTP로 켜지지 않으며 토큰을 저장하지 않습니다.
+    if (installationTokenProvider) {
+      let token;
+      try { token = await installationTokenProvider(Object.freeze({ ...binding })); } catch { throw new GitHubError('github_auth_required', '로컬 GitHub 테스트 인증을 확인해주세요.', { permanent: true, status: 503 }); }
+      if (typeof token !== 'string' || !/^[\x21-\x7e]{1,4096}$/.test(token)) throw new GitHubError('github_auth_required', '로컬 GitHub 테스트 인증을 확인해주세요.', { permanent: true, status: 503 });
+      return token;
+    }
     if (!config.appId || !config.privateKey) throw new GitHubError('github_offline', 'GitHub App 설정이 없습니다. 로컬 저장은 계속 사용할 수 있습니다.', { permanent: true, status: 503 });
     const key = `${binding.installationId}:${binding.repositoryId}`;
     const cached = tokenCache.get(key);
@@ -172,11 +180,13 @@ export function createGitHubAppClient({ config, fetchImpl = fetch, now = Date.no
   return { fetchRemote, publishProposal, createIssue, reconcileIssue, collectLearning, stop: () => shutdown.abort() };
 }
 
-export function createGitHubService({ store, localMode = false, config = githubConfigFromEnv(), fetchImpl, now = Date.now, pause } = {}) {
+export function createGitHubService({ store, localMode = false, config = githubConfigFromEnv(), fetchImpl, now = Date.now, pause, installationTokenProvider } = {}) {
   const mode = config.mode || (localMode ? 'simulator' : 'offline');
   if (!['simulator', 'offline', 'live'].includes(mode) || (!localMode && mode === 'simulator')) throw new Error('GitHub simulator는 로컬 수업 실험 모드에서만 사용할 수 있습니다.');
+  if (installationTokenProvider !== undefined && (!localMode || mode !== 'live')) throw new Error('GitHub 테스트 인증 주입은 로컬 live 검증에서만 사용할 수 있습니다.');
+  const authMethod = mode === 'live' ? installationTokenProvider ? 'local_cli_test' : 'github_app' : mode;
   const repositories = (config.repositories || []).map(validBinding);
-  const client = createGitHubAppClient({ config, fetchImpl, now, pause });
+  const client = createGitHubAppClient({ config, fetchImpl, now, pause, installationTokenProvider });
   const db = store.db;
   initGitHubLearningSchema(db);
   db.exec(`CREATE TABLE IF NOT EXISTS github_job_progress(job_id TEXT PRIMARY KEY REFERENCES github_jobs(id),data TEXT NOT NULL);
@@ -203,8 +213,8 @@ export function createGitHubService({ store, localMode = false, config = githubC
     return binding;
   }
   function assertOnline() { if (mode === 'offline') throw new GitHubError('github_offline', 'GitHub 연결을 기다리고 있습니다. 초안과 팀 저장본은 로컬 서버에 보존됩니다.', { permanent: true, status: 503 }); }
-  function recordLearning(projectId, binding, event, payload, { source = mode === 'simulator' ? 'simulator' : 'app', receivedAt = iso(now()), ...options } = {}) {
-    return normalizeGitHubLearningEvent(db, { projectId, binding, event, payload, source, receivedAt, ...options });
+  function recordLearning(projectId, binding, event, payload, { source = mode === 'simulator' ? 'simulator' : authMethod === 'local_cli_test' ? 'local_cli_test' : 'app', receivedAt = iso(now()), ...options } = {}) {
+    return normalizeGitHubLearningEvent(db, { projectId, binding, event, payload, source, receivedAt, ...options, context: { authMethod, ...options.context } });
   }
   function recordJobLearning(job, result, binding) {
     if (!['proposal', 'issue'].includes(job.kind)) return;
@@ -282,7 +292,7 @@ export function createGitHubService({ store, localMode = false, config = githubC
     status(projectId, actor) {
       store.accessProject(projectId, actor);
       const state = ensureState(projectId);
-      return { mode, binding: publicBinding(state.binding), remote: state.remote, lastEvent: state.lastEvent || null, simulatedPulls: state.simulatedPulls || [], simulatedIssues: state.simulatedIssues || [], jobs: service.jobs(projectId), repositories: repositories.filter(binding => !binding.projectId || binding.projectId === projectId).map(publicBinding) };
+      return { mode, authMethod, binding: publicBinding(state.binding), remote: state.remote, lastEvent: state.lastEvent || null, simulatedPulls: state.simulatedPulls || [], simulatedIssues: state.simulatedIssues || [], jobs: service.jobs(projectId), repositories: repositories.filter(binding => !binding.projectId || binding.projectId === projectId).map(publicBinding) };
     },
     jobs(projectId) { return store.getJobs(projectId).map(({ payload, ...job }) => ({ ...job, result: parse(db.prepare('SELECT data FROM github_job_progress WHERE job_id=?').get(job.id)?.data).result || null })); },
     bind(projectId, actor, key) {

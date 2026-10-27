@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { once } from 'node:events';
 import { createStore } from './store.js';
 import { createClassroomApp } from './app.js';
-import { classifyGitHubResponse, createAppJwt, createGitHubService, verifyGitHubSignature } from './github.js';
+import { classifyGitHubResponse, createAppJwt, createGitHubAppClient, createGitHubService, verifyGitHubSignature } from './github.js';
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const teacher = { id: 'teacher', name: '선생님', role: 'teacher' };
@@ -17,12 +17,12 @@ const repository = { key: 'class-team', owner: 'classroom', repo: 'team-one', in
 const reply = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', ...headers } });
 const signature = (body, secret = 'test-secret') => `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
 
-function fixture({ mode = 'simulator', filename = ':memory:', mock } = {}) {
+function fixture({ mode = 'simulator', filename = ':memory:', mock, installationTokenProvider } = {}) {
   const store = createStore({ filename, localMode: true });
   const project = store.listProjects(teacher)[0];
   let clock = Date.now() + 1000;
   const config = { mode, repositories: [repository], appId: 'Iv1.test', privateKey, webhookSecret: 'test-secret' };
-  const service = createGitHubService({ store, localMode: true, config, fetchImpl: mock?.fetch, now: () => clock, pause: async delay => { clock += delay; } });
+  const service = createGitHubService({ store, localMode: true, config, fetchImpl: mock?.fetch, now: () => clock, pause: async delay => { clock += delay; }, installationTokenProvider });
   return { store, service, project, config, now: () => clock, advance: delay => { clock += delay; } };
 }
 
@@ -145,6 +145,66 @@ test('외부 GitHub 코드는 비교본으로 가져오고 팀 저장본을 보�
   assert.deepEqual(tokenCall.body, { repository_ids: [456], permissions: { contents: 'write', issues: 'write', pull_requests: 'write' } });
   assert.equal(JSON.stringify(status).includes('server-memory-only-test-token'), false);
   assert.equal(JSON.stringify(f.store.getGithub(f.project.id)).includes('privateKey'), false);
+  assert.equal(status.authMethod, 'github_app');
+});
+
+test('명시적인 로컬 테스트 인증 공급자는 App 토큰 발급 없이 같은 실제 어댑터를 사용한다', async t => {
+  const mock = githubMock(), token = 'local-cli-test-memory-only-token', received = [];
+  const f = fixture({ mode: 'live', mock, installationTokenProvider: async binding => { received.push(binding); return token; } });
+  t.after(() => f.store.close());
+  f.service.bind(f.project.id, teacher, repository.key);
+  const status = await f.service.fetchRemote(f.project.id, teacher);
+  assert.equal(status.authMethod, 'local_cli_test');
+  assert.equal(status.remote.sha, BASE);
+  assert.ok(received.length > 0);
+  assert.ok(received.every(binding => Object.isFrozen(binding) && binding.repositoryId === repository.repositoryId));
+  assert.equal(mock.calls.some(call => call.path.startsWith('/app/')), false);
+  assert.ok(mock.calls.every(call => call.headers.Authorization === `Bearer ${token}`));
+  f.service.enqueueProposal(f.project.id, student, proposalInput(status.remote));
+  const job = await f.service.runOnce();
+  assert.equal(job.state, 'succeeded');
+  const event = f.service.listLearningEvents(f.project.id, teacher).events[0];
+  assert.equal(event.source, 'local_cli_test');
+  assert.equal(event.metadata.authMethod, 'local_cli_test');
+  assert.equal(event.githubAuthorId, 80001);
+  assert.equal(event.metadata.requestedByUserId, student.id);
+  assert.equal(JSON.stringify(f.service.status(f.project.id, teacher)).includes(token), false);
+  for (const { name } of f.store.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all()) {
+    const rows = f.store.db.prepare(`SELECT * FROM "${name.replaceAll('"', '""')}"`).all();
+    assert.equal(JSON.stringify(rows).includes(token), false, `인증 토큰은 ${name} 테이블에 저장하지 않습니다.`);
+  }
+});
+
+test('테스트 인증도 서버 저장소 허용 목록과 비공개 검사를 유지한다', async t => {
+  let provided = 0;
+  const mock = githubMock({ privateRepository: false });
+  const f = fixture({ mode: 'live', mock, installationTokenProvider: async () => { provided++; return 'test-token'; } });
+  t.after(() => f.store.close());
+  assert.throws(() => f.service.bind(f.project.id, teacher, 'unregistered/repository'), { code: 'repository_not_allowed' });
+  assert.equal(provided, 0);
+  f.service.bind(f.project.id, teacher, repository.key);
+  await assert.rejects(f.service.fetchRemote(f.project.id, teacher), { code: 'private_repository_required' });
+  assert.ok(provided > 0);
+});
+
+test('테스트 인증은 로컬 live 코드 주입만 허용하고 환경 설정으로 활성화되지 않는다', t => {
+  const store = createStore({ localMode: true }); t.after(() => store.close());
+  const provider = async () => 'test-token';
+  assert.throws(() => createGitHubService({ store, config: { mode: 'live' }, installationTokenProvider: provider }), /로컬 live/);
+  assert.throws(() => createGitHubService({ store, localMode: true, config: { mode: 'simulator' }, installationTokenProvider: provider }), /로컬 live/);
+  const ignored = createGitHubService({ store, localMode: true, config: { mode: 'live', installationTokenProvider: provider } });
+  assert.equal(ignored.status(store.listProjects(teacher)[0].id, teacher).authMethod, 'github_app');
+  assert.throws(() => createGitHubAppClient({ config: {}, installationTokenProvider: 'test-token' }), TypeError);
+});
+
+test('테스트 인증 실패와 잘못된 토큰을 일반 오류로 바꾸고 비밀을 노출하지 않는다', async () => {
+  for (const provider of [async () => { throw new Error('secret-value-must-not-leak'); }, async () => '', async () => 'unsafe\r\nheader', async () => ({ token: 'secret-value-must-not-leak' })]) {
+    let calls = 0;
+    const client = createGitHubAppClient({ config: {}, installationTokenProvider: provider, fetchImpl: async () => { calls++; } });
+    await assert.rejects(client.fetchRemote(repository), error => error.code === 'github_auth_required' && !error.message.includes('secret-value-must-not-leak'));
+    assert.equal(calls, 0);
+    client.stop();
+  }
 });
 
 test('실제 어댑터는 새 브랜치와 PR만 생성하고 main ref를 PATCH하지 않는다', async t => {
