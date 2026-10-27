@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { verifiedGitHubIdentity, summarizeLearningEvidence } from './learning-feedback.js';
 
 export class HttpError extends Error {
   constructor(status, code, message, extra = {}) { super(message); Object.assign(this, { status, code, extra }); }
@@ -22,6 +23,7 @@ export function createStore({ filename = ':memory:', localMode = false } = {}) {
   const db = new DatabaseSync(filename);
   db.exec(`PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
     CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT NOT NULL,role TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS github_identities(user_id TEXT PRIMARY KEY REFERENCES users(id),github_id INTEGER NOT NULL UNIQUE,github_login TEXT,source TEXT NOT NULL,verified_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS operations(user_id TEXT NOT NULL REFERENCES users(id),operation_key TEXT NOT NULL,method TEXT NOT NULL,path TEXT NOT NULL,request_hash TEXT NOT NULL,status INTEGER NOT NULL,response TEXT NOT NULL,created_at TEXT NOT NULL,PRIMARY KEY(user_id,operation_key));
     CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),expires_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY,title TEXT NOT NULL,problem TEXT NOT NULL,success_criteria TEXT NOT NULL,code TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 0,owner_id TEXT NOT NULL REFERENCES users(id),invite_code TEXT NOT NULL UNIQUE,ai_policy TEXT NOT NULL DEFAULT 'optional',source TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
@@ -31,7 +33,7 @@ export function createStore({ filename = ':memory:', localMode = false } = {}) {
     CREATE TABLE IF NOT EXISTS issues(id TEXT PRIMARY KEY,project_id TEXT REFERENCES projects(id),title TEXT NOT NULL,body TEXT NOT NULL,author_id TEXT REFERENCES users(id),state TEXT NOT NULL DEFAULT 'open',created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS proposals(id TEXT PRIMARY KEY,project_id TEXT REFERENCES projects(id),title TEXT NOT NULL,code TEXT NOT NULL,base_version INTEGER NOT NULL,evidence TEXT NOT NULL,author_id TEXT REFERENCES users(id),state TEXT NOT NULL DEFAULT 'open',created_at TEXT NOT NULL,merged_at TEXT,merged_by TEXT REFERENCES users(id));
     CREATE TABLE IF NOT EXISTS reviews(id TEXT PRIMARY KEY,project_id TEXT REFERENCES projects(id),proposal_id TEXT REFERENCES proposals(id),author_id TEXT REFERENCES users(id),decision TEXT NOT NULL,comment TEXT NOT NULL,created_at TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS feedback(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),student_id TEXT REFERENCES users(id),teacher_id TEXT NOT NULL REFERENCES users(id),comment TEXT NOT NULL,criteria TEXT NOT NULL,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS feedback(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),student_id TEXT REFERENCES users(id),teacher_id TEXT NOT NULL REFERENCES users(id),comment TEXT NOT NULL,criteria TEXT NOT NULL,created_at TEXT NOT NULL,visibility TEXT NOT NULL DEFAULT 'team',evidence_ids TEXT NOT NULL DEFAULT '[]',evidence_snapshot TEXT NOT NULL DEFAULT '[]');
     CREATE TABLE IF NOT EXISTS github_bindings(project_id TEXT PRIMARY KEY REFERENCES projects(id),data TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS github_jobs(id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),kind TEXT NOT NULL,payload TEXT NOT NULL,state TEXT NOT NULL DEFAULT 'pending',attempts INTEGER NOT NULL DEFAULT 0,available_at TEXT NOT NULL,last_error TEXT,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,dedupe_key TEXT UNIQUE);
     CREATE INDEX IF NOT EXISTS checkpoints_project ON checkpoints(project_id,version);
@@ -39,6 +41,10 @@ export function createStore({ filename = ':memory:', localMode = false } = {}) {
   `);
   if (!db.prepare('PRAGMA table_info(projects)').all().some(column=>column.name==='source')) db.exec('ALTER TABLE projects ADD COLUMN source TEXT');
   if (!db.prepare('PRAGMA table_info(proposals)').all().some(column=>column.name==='merged_by')) db.exec('ALTER TABLE proposals ADD COLUMN merged_by TEXT REFERENCES users(id)');
+  const feedbackColumns=db.prepare('PRAGMA table_info(feedback)').all().map(column=>column.name);
+  if(!feedbackColumns.includes('visibility')) {db.exec('ALTER TABLE feedback ADD COLUMN visibility TEXT');db.exec("UPDATE feedback SET visibility=CASE WHEN student_id IS NULL THEN 'team' ELSE 'student' END WHERE visibility IS NULL");}
+  if(!feedbackColumns.includes('evidence_ids'))db.exec("ALTER TABLE feedback ADD COLUMN evidence_ids TEXT NOT NULL DEFAULT '[]'");
+  if(!feedbackColumns.includes('evidence_snapshot'))db.exec("ALTER TABLE feedback ADD COLUMN evidence_snapshot TEXT NOT NULL DEFAULT '[]'");
   let transactionDepth=0,savepointSerial=0;
   const store = {
     db,
@@ -66,6 +72,32 @@ export function createStore({ filename = ':memory:', localMode = false } = {}) {
     },
     user(id) { return db.prepare('SELECT * FROM users WHERE id=?').get(id) || null; },
     ensureUser(user) { db.prepare('INSERT INTO users(id,name,role) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,role=excluded.role').run(user.id, user.name, user.role); return store.user(user.id); },
+    githubIdentity(userId) { const row=db.prepare('SELECT * FROM github_identities WHERE user_id=?').get(userId); return row?{githubId:row.github_id,login:row.github_login,source:row.source,verifiedAt:row.verified_at}:null; },
+    syncGitHubIdentity(userId,identities) {
+      const identity=verifiedGitHubIdentity(identities);
+      if(!identity){db.prepare('DELETE FROM github_identities WHERE user_id=?').run(userId);return null;}
+      const existing=db.prepare('SELECT user_id FROM github_identities WHERE github_id=?').get(identity.githubId);
+      if(existing&&existing.user_id!==userId)throw new HttpError(409,'github_identity_conflict','이 GitHub 계정의 연결 상태를 관리자가 확인해야 합니다.');
+      db.prepare('INSERT INTO github_identities VALUES(?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET github_id=excluded.github_id,github_login=excluded.github_login,source=excluded.source,verified_at=excluded.verified_at').run(userId,identity.githubId,identity.login,'supabase_verified',now());return store.githubIdentity(userId);
+    },
+    attributeLearningEvents(id,actor,events) {
+      store.accessProject(id,actor);const identities=new Map(db.prepare('SELECT u.id,u.name,g.github_id FROM members m JOIN users u ON u.id=m.user_id JOIN github_identities g ON g.user_id=u.id WHERE m.project_id=?').all(id).map(row=>[row.github_id,row])),members=new Map(store.members(id).map(member=>[member.id,member]));
+      const findJob=db.prepare('SELECT kind,payload FROM github_jobs WHERE id=? AND project_id=?');
+      return events.map(event=>{
+        const author=identities.get(event.githubAuthorId),metadata=event.metadata||{};let requester=null;
+        if(['app','simulator'].includes(event.source)&&metadata.serviceGenerated===true&&typeof metadata.jobId==='string'&&typeof metadata.requestedByUserId==='string') {
+          const job=findJob.get(metadata.jobId,id),payload=job?parse(job.payload,{}):null;
+          if(job&&payload.authorId===metadata.requestedByUserId&&((job.kind==='proposal'&&event.kind==='pull_request')||(job.kind==='issue'&&event.kind==='issue')))requester=members.get(payload.authorId)||null;
+        }
+        return {...event,authorUserId:author?.id||null,authorName:author?.name||null,requestedByUserId:requester?.id||null,requestedByName:requester?.name||null,attributionLabel:requester?'VPyLab 제출자':author?'GitHub 작성자':null};
+      });
+    },
+    studentEvidence(id,actor,studentId,events,options={}) {
+      store.accessProject(id,actor);if(actor.role!=='teacher'&&actor.id!==studentId)throw new HttpError(403,'student_evidence_denied','자신의 학습 근거만 확인할 수 있습니다.');
+      const member=store.members(id).find(candidate=>candidate.id===studentId&&candidate.systemRole==='student');if(!member)throw new HttpError(404,'student_not_found','프로젝트에 참여한 학생을 선택해주세요.');
+      const attributed=store.attributeLearningEvents(id,actor,events),ownEvents=attributed.filter(event=>event.authorUserId===studentId||event.requestedByUserId===studentId),checkpoints=store.checkpoints(id).filter(item=>item.authorId===studentId),reviews=store.reviews(id).filter(item=>item.authorId===studentId),reflections=checkpoints.filter(item=>Object.values(item.evidence).some(Boolean)).map(item=>({checkpointId:item.id,authorId:item.authorId,version:item.version,...item.evidence,createdAt:item.createdAt}));
+      return {student:{id:member.id,name:member.name},githubIdentity:store.githubIdentity(studentId),summary:summarizeLearningEvidence(ownEvents,{checkpoints,reviews,reflections,...options}),events:ownEvents,checkpoints,reviews,reflections,feedback:store.feedback(id,actor).filter(item=>item.visibility==='team'||item.studentId===studentId)};
+    },
     users() { return db.prepare('SELECT * FROM users ORDER BY role,name').all().map(publicUser); },
     session(id) { if(!id)return null; const row = db.prepare('SELECT user_id FROM sessions WHERE id=? AND expires_at>?').get(id, now()); return row ? store.user(row.user_id) : null; },
     createSession(userId) { const id = randomUUID() + randomUUID(); db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(id, userId, new Date(Date.now() + 12*60*60*1000).toISOString()); return id; },
@@ -128,8 +160,24 @@ export function createStore({ filename = ':memory:', localMode = false } = {}) {
     reviews(id) { return db.prepare('SELECT * FROM reviews WHERE project_id=? ORDER BY rowid DESC').all(id).map(row=>({id:row.id,projectId:row.project_id,proposalId:row.proposal_id,authorId:row.author_id,decision:row.decision,comment:row.comment,createdAt:row.created_at})); },
     addReview(id,proposalId,actor,input) { store.accessProject(id,actor,{write:true}); const proposal=store.proposal(id,proposalId); if(proposal.state!=='open') throw new HttpError(409,'proposal_closed','이미 종료된 제안입니다.'); if(proposal.authorId===actor.id) throw new HttpError(403,'self_review','자신의 제안은 직접 승인하거나 검토할 수 없습니다.'); const reviewId=randomUUID(); db.prepare('INSERT INTO reviews VALUES(?,?,?,?,?,?,?)').run(reviewId,id,proposalId,actor.id,input.decision,input.comment||'',now()); return store.reviews(id).find(x=>x.id===reviewId); },
     mergeProposal(id,proposalId,actor) { return store.transaction(()=>{ const project=store.accessProject(id,actor,{write:true}), proposal=store.proposal(id,proposalId); if(proposal.state!=='open') throw new HttpError(409,'proposal_closed','이미 종료된 제안입니다.'); const decisions=new Map(),eligibleReviewers=new Set(store.members(id).filter(member=>member.role!=='viewer'||member.systemRole==='teacher').map(member=>member.id)); for(const review of store.reviews(id).filter(x=>x.proposalId===proposalId&&x.authorId!==proposal.authorId&&eligibleReviewers.has(x.authorId))) if(!decisions.has(review.authorId)) decisions.set(review.authorId,review.decision); if(actor.role!=='teacher' && (![...decisions.values()].includes('approve') || [...decisions.values()].includes('request_changes'))) throw new HttpError(403,'review_required','다른 팀원의 승인과 변경 요청 해결이 필요합니다.'); const checkpoint=store.writeCheckpoint(project,store.user(proposal.authorId),{code:proposal.code,baseVersion:proposal.baseVersion,message:`제안 반영: ${proposal.title}`,evidence:proposal.evidence}); db.prepare("UPDATE proposals SET state='merged',merged_at=?,merged_by=? WHERE id=?").run(now(),actor.id,proposalId); return {checkpoint,proposal:store.proposal(id,proposalId)}; }); },
-    feedback(id,actor) { if(actor)store.accessProject(id,actor); return db.prepare('SELECT * FROM feedback WHERE project_id=? ORDER BY rowid DESC').all(id).filter(row=>!actor||actor.role==='teacher'||row.student_id===null||row.student_id===actor.id).map(row=>({id:row.id,projectId:row.project_id,studentId:row.student_id,teacherId:row.teacher_id,comment:row.comment,criteria:parse(row.criteria,{}),createdAt:row.created_at})); },
-    addFeedback(id,actor,input) { store.accessProject(id,actor); if(actor.role!=='teacher')throw new HttpError(403,'teacher_required','교사만 피드백을 남길 수 있습니다.'); if(input.studentId && !store.members(id).some(member=>member.id===input.studentId))throw new HttpError(422,'invalid_feedback_student','프로젝트에 참여한 학생을 선택해주세요.'); const feedbackId=randomUUID(); db.prepare('INSERT INTO feedback VALUES(?,?,?,?,?,?,?)').run(feedbackId,id,input.studentId||null,actor.id,input.comment,encode(input.criteria||{}),now()); return store.feedback(id).find(item=>item.id===feedbackId); },
+    feedback(id,actor) {
+      if(actor)store.accessProject(id,actor);
+      return db.prepare('SELECT * FROM feedback WHERE project_id=? ORDER BY rowid DESC').all(id).filter(row=>{
+        if(!actor)return true;const visibility=row.visibility||(row.student_id?'student':'team');
+        if(visibility==='private')return row.teacher_id===actor.id;
+        return visibility==='team'||actor.role==='teacher'||row.student_id===actor.id;
+      }).map(row=>({id:row.id,projectId:row.project_id,studentId:row.student_id,teacherId:row.teacher_id,comment:row.comment,criteria:parse(row.criteria,{}),createdAt:row.created_at,visibility:row.visibility||(row.student_id?'student':'team'),evidenceIds:parse(row.evidence_ids,[]),evidence:parse(row.evidence_snapshot,[])}));
+    },
+    addFeedback(id,actor,input) {
+      store.accessProject(id,actor);if(actor.role!=='teacher')throw new HttpError(403,'teacher_required','교사만 피드백을 남길 수 있습니다.');
+      if(input.studentId&&!store.members(id).some(member=>member.id===input.studentId&&member.systemRole==='student'))throw new HttpError(422,'invalid_feedback_student','프로젝트에 참여한 학생을 선택해주세요.');
+      const visibility=input.visibility||(input.studentId?'student':'team'),evidenceIds=input.evidenceIds||[];
+      if(!['private','student','team'].includes(visibility)||(['private','student'].includes(visibility)&&!input.studentId))throw new HttpError(422,'invalid_feedback_visibility','개별 피드백과 관찰 기록에는 대상 학생을 지정해주세요.');
+      if(!Array.isArray(evidenceIds)||evidenceIds.length>50||evidenceIds.some(value=>typeof value!=='string'||!value||value.length>200)||new Set(evidenceIds).size!==evidenceIds.length)throw new HttpError(422,'invalid_evidence_ids','근거는 중복 없이 최대 50개까지 선택할 수 있습니다.');
+      const hasLedger=db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='github_learning_events'").get(),evidence=[];
+      for(const evidenceId of evidenceIds){const row=hasLedger?db.prepare('SELECT id,kind,title,url,sha,source FROM github_learning_events WHERE project_id=? AND id=?').get(id,evidenceId):null;if(!row)throw new HttpError(422,'invalid_feedback_evidence','현재 프로젝트에서 수집한 학습 근거를 선택해주세요.');evidence.push({...row});}
+      const feedbackId=randomUUID();db.prepare('INSERT INTO feedback(id,project_id,student_id,teacher_id,comment,criteria,created_at,visibility,evidence_ids,evidence_snapshot) VALUES(?,?,?,?,?,?,?,?,?,?)').run(feedbackId,id,input.studentId||null,actor.id,input.comment,encode(input.criteria||{}),now(),visibility,encode(evidenceIds),encode(evidence));return store.feedback(id,actor).find(item=>item.id===feedbackId);
+    },
     getGithub(id) { const row=db.prepare('SELECT data FROM github_bindings WHERE project_id=?').get(id); return row ? parse(row.data) : null; },
     setGithub(id,data) { db.prepare('INSERT INTO github_bindings VALUES(?,?) ON CONFLICT(project_id) DO UPDATE SET data=excluded.data').run(id,encode(data)); return data; },
     enqueueJob({projectId,kind,payload,dedupeKey}) { const id=randomUUID(),timestamp=now(); db.prepare('INSERT OR IGNORE INTO github_jobs(id,project_id,kind,payload,available_at,created_at,updated_at,dedupe_key) VALUES(?,?,?,?,?,?,?,?)').run(id,projectId,kind,encode(payload),timestamp,timestamp,timestamp,dedupeKey||null); return store.getJobs(projectId).find(x=>x.id===id)||store.getJobs(projectId).find(x=>x.dedupeKey===dedupeKey); },
@@ -138,7 +186,7 @@ export function createStore({ filename = ':memory:', localMode = false } = {}) {
     teacherOverview(actor) { if(actor.role!=='teacher') throw new HttpError(403,'teacher_required','교사만 확인할 수 있습니다.'); return {projects:store.listProjects(actor).map(project=>{ const detail=store.detail(project.id,actor); return {...project,memberCount:detail.members.length,checkpointCount:detail.checkpoints.length,issueCount:detail.issues.length,proposalCount:detail.proposals.length,reviewCount:detail.reviews.length,feedback:detail.feedback,reflections:detail.reflections,latestCheckpoint:detail.checkpoint}; }),criteria:['문제 정의와 성공 기준','가설과 실험의 연결','관찰을 바탕으로 한 수정','동료 의견에 대한 응답','다음 실험 계획']}; },
   };
   if(localMode) {
-    for(const user of DEMO_USERS) store.ensureUser(user);
+    for(const [index,user] of DEMO_USERS.entries()) {store.ensureUser(user);db.prepare('INSERT INTO github_identities VALUES(?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET github_id=excluded.github_id,github_login=excluded.github_login,source=excluded.source,verified_at=excluded.verified_at').run(user.id,910000001+index,`demo-${user.id}`,'local_demo',now());}
     if(!db.prepare('SELECT id FROM projects LIMIT 1').get()) {
       const project=store.createProject(DEMO_USERS[0],{title:'우리 팀의 첫 번째 3D 실험',problem:'물체의 움직임을 관찰하고 설명할 수 있는 실험을 만듭니다.',successCriteria:'실험 조건을 바꾸고 결과를 비교하여 자신의 설명을 남깁니다.',code:starterCode,aiPolicy:'optional'});
       store.addMember(project.id,DEMO_USERS[0],'student-a','editor'); store.addMember(project.id,DEMO_USERS[0],'student-b','editor');

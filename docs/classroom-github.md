@@ -6,7 +6,7 @@
 
 학생의 개인 초안, 팀 저장본, 사고 과정, 질문, 제안과 동료 검토는 수업 서버의 SQLite에 먼저 저장합니다. 팀 저장본과 outbox 기록은 같은 트랜잭션에서 확정됩니다. GitHub 장애는 학생의 저장을 취소하지 않습니다. 로그인은 브라우저의 Supabase GitHub OAuth를 사용할 수 있지만 저장소 연동에는 학생 OAuth 토큰을 사용하지 않습니다. GitHub App의 개인 키와 설치 토큰은 서버에만 둡니다.
 
-GitHub는 팀의 확정 결과를 제안하고 외부 검토를 받는 저장소입니다. GitHub App이 수업 서버의 자동화 주체로 작동하고, 학생은 VPyLab 학급·프로젝트 권한을 거쳐 요청합니다. 학생 계정으로 GitHub 활동을 가장하지 않습니다. `main`을 직접 갱신하거나 강제 푸시하는 API는 없습니다.
+GitHub는 팀의 문제 정의·해결안 제안·동료 검토·수정을 남기는 협력 공간입니다. VPyLab은 그 이슈·PR·리뷰·커밋을 수집해 학생의 설명과 교사 피드백을 연결합니다. GitHub App이 수업 서버의 자동화 주체로 작동하고, 학생은 VPyLab 프로젝트 권한을 거쳐 요청합니다. 학생 계정으로 GitHub 활동을 가장하지 않습니다. `main`을 직접 갱신하거나 강제 푸시하는 API는 없습니다.
 
 ## 실행 모드
 
@@ -50,7 +50,7 @@ GitHub는 팀의 확정 결과를 제안하고 외부 검토를 받는 저장소
 실제 ID를 서버에서 등록합니다. `projectId`를 지정하면 해당 프로젝트만 선택할 수 있습니다. 생략하면 교사가 이 서버에 등록된 저장소 중 하나를 지정할 수 있습니다. 프로젝트 소유자인 학생도 저장소 연결을 변경할 수 없습니다. 저장소는 기본적으로 비공개여야 하며, 공개가 필요한 교사 소유 예제만 서버 설정에서 명시적으로 `allowPublic: true`를 지정합니다.
 
 4. 교사가 프로젝트의 저장소 선택에서 `key`를 연결합니다. 브라우저가 보낸 owner·installation ID·repository ID를 신뢰하지 않습니다. 작업 실행 시 서버 allowlist를 다시 대조하고 GitHub 응답의 저장소 ID·소유자·이름·공개 여부도 검사합니다.
-5. Webhook URL을 `https://YOUR_CLASSROOM_SERVER/api/v2/github/webhook`으로 설정하고 `push`, `pull_request`를 구독합니다. 설치 변경 이벤트도 처리합니다. 원본 바이트에 대한 `X-Hub-Signature-256` HMAC을 세션/CSRF 및 JSON 파싱 전에 검사합니다. `X-GitHub-Delivery`는 SQLite 기본 키로 기록하여 중복 전송을 재처리하지 않습니다. 같은 ID의 다른 본문은 거부합니다.
+5. Webhook URL을 `https://YOUR_CLASSROOM_SERVER/api/v2/github/webhook`으로 설정하고 `push`, `pull_request`, `pull_request_review`, `pull_request_review_comment`, `issues`, `issue_comment`를 구독합니다. 설치 변경 이벤트도 처리합니다. 원본 바이트에 대한 `X-Hub-Signature-256` HMAC을 세션/CSRF 및 JSON 파싱 전에 검사합니다. `X-GitHub-Delivery`는 SQLite 기본 키로 기록하여 중복 전송을 재처리하지 않습니다. 같은 ID의 다른 본문은 거부합니다.
 
 GitHub App JWT는 서버에서 RS256으로 생성하고, 저장소 ID 하나와 세 권한으로 제한한 installation token을 발급합니다. 토큰은 만료 전까지만 서버 메모리에 캐시합니다. 토큰·개인 키·GitHub 원문 오류를 응답이나 작업 기록에 저장하지 않습니다.
 
@@ -63,6 +63,26 @@ GitHub App JWT는 서버에서 RS256으로 생성하고, 저장소 ID 하나와 
 5. GitHub에서 교사 또는 허가된 팀원이 검토·병합한 뒤 VPyLab에서 다시 가져옵니다. 새 코드는 비교·기존 버전 검사를 거쳐 별도로 팀 저장본에 반영합니다. VPyLab이 GitHub PR을 자동 병합하지 않습니다.
 
 VPyLab의 로컬 동료 제안과 GitHub PR은 현재 별도 기록입니다. GitHub PR을 내보내면 outbox에서 URL과 결과를 추적합니다. GitHub의 리뷰를 VPyLab 자체 리뷰로 자동 복제하지 않습니다.
+
+## 과정 기록과 학생 피드백
+
+‘GitHub 과정’ 화면은 이슈·PR·동료 리뷰·코드 의견·대화·커밋을 시간순으로 보여줍니다. ‘문제와 질문’에 남긴 질문은 명시적인 버튼으로 GitHub Issue 작업에 보낼 수 있습니다. 팀 확정 코드의 PR 제출은 ‘팀·연결’에서 진행합니다.
+
+서명 Webhook으로 받은 기록은 `github_learning_events`에 영속 저장합니다. 수정·삭제 이벤트를 이미 수집한 원문에 덮어쓰지 않고 추가 사건으로 남기며, 원문 URL·SHA·숫자 작성자 ID·발생 시각·수신 시각을 보존합니다. 같은 사건을 다시 받아도 중복 보존하지 않습니다. 원문 링크는 연결된 GitHub 저장소의 HTTPS 주소만 허용합니다. 수집 전에 수정·삭제된 내용을 과거 상태로 복구한다고 보장하지 않습니다.
+
+‘GitHub 과정 기록 가져오기’는 GET API로 기존 기록을 보완합니다. 한 번에 최대 24개 요청, 항목별 최대 2페이지, 최대 10개 PR의 리뷰를 확인합니다. 화면은 최근 200개 사건을 표시하고 더 오래된 기록·부분 수집·수집 실패를 알립니다. 현재 목록에 없다는 이유만으로 학생이 참여하지 않았다고 판정하지 않습니다. Webhook 이전의 전체 브랜치·전체 리뷰·삭제된 기록을 모두 복구하는 기능은 아닙니다.
+
+운영에서는 서버가 검증한 Supabase GitHub provider identity의 숫자 ID를 학생 계정과 연결합니다. 이메일·표시 이름·GitHub 로그인 문자열만으로 작성자를 추측하지 않습니다. push payload에 숫자 커밋 작성자 ID가 없으면 해당 커밋은 미연결 상태로 두며 REST 보완 수집에서 확인할 수 있습니다. App이 생성한 PR·Issue는 GitHub 실제 작성자와 인증된 VPyLab 제출자를 구분합니다. 로컬 데모의 세 계정 연결은 `local_demo`로 표시하며 실제 GitHub 신원이 아닙니다.
+
+교사는 학생을 선택하고 GitHub 원문 근거를 골라 관찰·다음 질문을 남길 수 있습니다. 피드백은 근거 ID와 제목·URL·SHA 스냅샷을 함께 보존하므로 최근 목록 밖의 근거도 다시 확인할 수 있습니다. 공개 범위는 다음과 같습니다.
+
+| 공개 범위 | 조회 가능 대상 |
+| --- | --- |
+| 나만 보는 교사 기록 | 작성한 교사만 |
+| 대상 학생에게 전달 | 대상 학생과 참여 교사 |
+| 팀에 공유 | 해당 프로젝트 참여자 |
+
+이 범위는 조회·학생별 요약·교사 현황·내보내기에도 적용합니다. 교사 개인 메모와 학생 피드백은 GitHub로 전송하지 않습니다. 같은 화면에서 GitHub 근거와 연결하되, 저장소에 접근 가능한 다른 학생에게 개인 관찰이 노출되지 않게 합니다. 학생에게는 본인의 근거와 전달된 피드백, 다음 탐구 질문이 표시됩니다. 기록 건수를 성적·기여도·사고력 점수로 환산하지 않고 AI를 사용하지 않는 수업도 같은 방식으로 관찰합니다.
 
 ## 장애와 재시도
 
@@ -86,7 +106,12 @@ PR 생성 응답이 유실되어도 같은 고유 브랜치의 기존 PR을 찾�
 | `POST /simulate-push` `{code,baseSha}` | 로컬 모의 저장소에서 외부 커밋 재현 |
 | `POST /jobs/:jobId/retry` | 관리 권한으로 중지·실패 작업 재시도 |
 | `POST /jobs/:jobId/reconcile-issue` `{number}` | 교사가 응답 유실된 Issue의 작업 표식을 검증하고 복구 |
+| `GET /learning` | 수집한 GitHub 과정 사건과 수집 상태 |
+| `POST /learning/sync` | 읽기 전용 REST API로 기록 보완 수집 |
+| `POST /learning/simulate` | 로컬 교사만 모의 협력 예시 생성 |
 | `POST /api/v2/github/webhook` | 원본 본문 서명·저장소 연결·중복 전송 검사 |
+
+프로젝트 루트의 `GET /api/v2/projects/:id/learning`은 학생 계정 귀속과 학생별 근거·질문·피드백을 추가합니다. 학생은 본인 요약만, 참여 교사는 참여 학생들의 요약을 봅니다. `POST /api/v2/projects/:id/feedback`은 `visibility`와 `evidenceIds`를 지원하며 다른 프로젝트의 근거 참조를 거부합니다.
 
 ## 검증 범위와 운영 전 확인
 

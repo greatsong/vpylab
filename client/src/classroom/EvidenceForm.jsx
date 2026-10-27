@@ -1,8 +1,8 @@
-export default function EvidenceForm({ value, onChange, aiPolicy, prefix = 'evidence' }) {
+export default function EvidenceForm({ value, onChange, aiPolicy, prefix = 'evidence', disabled = false }) {
   const field = (name, label, placeholder) => (
     <label className="cr-field" htmlFor={`${prefix}-${name}`} key={name}>
       <span>{label}</span>
-      <textarea id={`${prefix}-${name}`} rows={2} maxLength={2000} value={value[name] || ''}
+      <textarea id={`${prefix}-${name}`} disabled={disabled} rows={2} maxLength={2000} value={value[name] || ''}
         placeholder={placeholder} onChange={(event) => onChange({ ...value, [name]: event.target.value })} />
     </label>
   );

@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import RuntimePanel from './RuntimePanel';
 import * as singleton from '../engine/pyodide-singleton';
+import { previewInstrument, setMasterMuted, setMasterVolume, stopAllSounds } from '../engine/sound-system';
+
+const sound = vi.hoisted(() => ({ state: { volume: 0.6, muted: false, playing: false }, listeners: new Set() }));
 
 vi.mock('../components/viewport/Viewport3D', () => ({
   default: function MockViewport({ sceneRef, onSceneReady }) {
@@ -16,9 +19,18 @@ vi.mock('../components/viewport/Viewport3D', () => ({
 }));
 vi.mock('../engine/vpython-bridge', () => ({ processBatch: vi.fn(), clearScene: vi.fn() }));
 vi.mock('../engine/object-registry', () => ({ clearRegistry: vi.fn() }));
-vi.mock('../engine/sound-system', () => ({
-  ensureAudioResumed: vi.fn(), stopAllSounds: vi.fn(), resumeAndRun: (callback) => callback(),
-}));
+vi.mock('../engine/sound-system', () => {
+  const publish = (changes) => { sound.state = { ...sound.state, ...changes }; sound.listeners.forEach((listener) => listener(sound.state)); };
+  const stop = vi.fn(() => publish({ playing: false }));
+  return {
+    ensureAudioResumed: vi.fn(), stopAllSounds: stop, resumeAndRun: (callback) => { callback(); return () => {}; },
+    getAudioState: () => sound.state,
+    subscribeAudioState: (listener) => { sound.listeners.add(listener); return () => sound.listeners.delete(listener); },
+    setMasterVolume: vi.fn((volume) => publish({ volume })),
+    setMasterMuted: vi.fn((muted) => { if (muted) stop(); publish({ muted }); }),
+    previewInstrument: vi.fn(async () => { publish({ playing: true }); return true; }),
+  };
+});
 
 let workers;
 class FakeWorker {
@@ -31,7 +43,7 @@ async function ready() { await act(async () => { workers.at(-1).emit({ type: 're
 function currentRun() { return workers.at(-1).postMessage.mock.calls.map(([message]) => message).findLast((message) => message.type === 'run').runId; }
 
 describe('교실 Python 실행 화면', () => {
-  beforeEach(() => { workers = []; vi.useFakeTimers(); vi.stubGlobal('Worker', FakeWorker); singleton.hardStop(); });
+  beforeEach(() => { workers = []; vi.clearAllMocks(); sound.state = { volume: 0.6, muted: false, playing: false }; sound.listeners.clear(); vi.useFakeTimers(); vi.stubGlobal('Worker', FakeWorker); singleton.hardStop(); });
   afterEach(() => { cleanup(); singleton.hardStop(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
   it('콘솔은 최근 200줄과 32KB를 유지하고 HTML을 텍스트로 표시한다', async () => {
@@ -89,5 +101,38 @@ describe('교실 Python 실행 화면', () => {
     expect(workers).toHaveLength(2);
     await ready();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('음색을 골라도 자동 재생하지 않고 클릭으로 미리 듣기·음량·음소거를 제어한다', async () => {
+    const view = render(<RuntimePanel code="print(1)" />); await ready();
+    expect(previewInstrument).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('미리 듣기 음색'), { target: { value: 'piano' } });
+    fireEvent.change(screen.getByLabelText('소리 음량'), { target: { value: '35' } });
+    expect(setMasterVolume).toHaveBeenCalledWith(0.35);
+    expect(previewInstrument).not.toHaveBeenCalled();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: '♫ 소리 미리 듣기' })); });
+    expect(previewInstrument).toHaveBeenCalledExactlyOnceWith('piano');
+    expect(screen.getByRole('button', { name: '■ 정지' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: '음소거' }));
+    expect(setMasterMuted).toHaveBeenCalledWith(true);
+    expect(screen.getByRole('button', { name: '소리 켜기' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '♫ 소리 미리 듣기' })).toBeDisabled();
+    const stops = stopAllSounds.mock.calls.length; view.unmount();
+    expect(stopAllSounds).toHaveBeenCalledTimes(stops + 1);
+  });
+
+  it('정상 Python 완료는 예약된 음을 자르지 않고 정지·오류는 소리를 정리한다', async () => {
+    render(<RuntimePanel code="play_note('C5', 2)" />); await ready();
+    fireEvent.click(screen.getByRole('button', { name: '▶ 실행' }));
+    act(() => { sound.state = { ...sound.state, playing: true }; sound.listeners.forEach((listener) => listener(sound.state)); });
+    const stops = stopAllSounds.mock.calls.length;
+    act(() => { workers[0].emit({ type: 'done', runId: currentRun() }); });
+    expect(stopAllSounds).toHaveBeenCalledTimes(stops);
+    expect(screen.getByRole('button', { name: '■ 정지' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: '■ 정지' }));
+    expect(stopAllSounds).toHaveBeenCalledTimes(stops + 1);
+    fireEvent.click(screen.getByRole('button', { name: '▶ 실행' }));
+    act(() => { workers[0].emit({ type: 'error', runId: currentRun(), error: '실행 오류' }); });
+    expect(stopAllSounds).toHaveBeenCalledTimes(stops + 3);
   });
 });

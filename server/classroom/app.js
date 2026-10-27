@@ -46,12 +46,12 @@ export function createClassroomApp({store:providedStore,filename,localMode=false
     supabase??=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
     const {data,error}=await supabase.auth.getUser(token);
     if(error||!data.user) throw new HttpError(401,'invalid_session','로그인 정보를 다시 확인해주세요.');
-    return {id:data.user.id,name:data.user.user_metadata?.display_name||data.user.email?.split('@')[0]||'학습자',role:data.user.app_metadata?.classroom_role==='teacher'?'teacher':'student'};
+    return {id:data.user.id,name:data.user.user_metadata?.display_name||data.user.email?.split('@')[0]||'학습자',role:data.user.app_metadata?.classroom_role==='teacher'?'teacher':'student',authUser:data.user};
   };
   app.use(async(req,res,next)=>{
     try {
       if(localMode) req.actor=store.session(cookieValue(req));
-      else { const token=/^Bearer (.+)$/i.exec(req.headers.authorization||'')?.[1]; if(token) { const verified=await tokenVerifier(token); if(!verified?.id) throw new HttpError(401,'invalid_session','로그인 정보를 확인해주세요.'); req.actor=store.ensureUser({id:verified.id,name:verified.name||'학습자',role:verified.role==='teacher'?'teacher':'student'}); } }
+      else { const token=/^Bearer (.+)$/i.exec(req.headers.authorization||'')?.[1]; if(token) { const verified=await tokenVerifier(token); if(!verified?.id) throw new HttpError(401,'invalid_session','로그인 정보를 확인해주세요.'); req.actor=store.transaction(()=>{const actor=store.ensureUser({id:verified.id,name:typeof verified.name==='string'?verified.name.slice(0,120):'학습자',role:verified.role==='teacher'?'teacher':'student'});if(verified.authUser){if(verified.authUser.id!==verified.id)throw new HttpError(401,'invalid_identity','인증된 GitHub 연결 정보를 확인해주세요.');if(Array.isArray(verified.authUser.identities))store.syncGitHubIdentity(actor.id,verified.authUser.identities);}return actor;}); } }
       if(req.headers['x-classroom-user']!==undefined) { if(!req.actor)throw new HttpError(401,'session_changed','로그인이 만료되었거나 계정이 변경되었습니다. 현재 화면을 새로 열어주세요.'); if(req.headers['x-classroom-user']!==req.actor.id)throw new HttpError(409,'session_changed','로그인 계정이 변경되었습니다. 현재 화면을 새로 열어주세요.'); }
       next();
     } catch(error) { next(error); }
@@ -68,6 +68,25 @@ export function createClassroomApp({store:providedStore,filename,localMode=false
     if(result.replayed)res.setHeader('Idempotency-Replayed','true');
     res.status(result.status).json(result.body);
   };
+  const learningData=req=>{
+    if(typeof githubService.listLearningEvents!=='function')throw new HttpError(503,'learning_unavailable','GitHub 학습 기록을 준비하고 있습니다. 로컬 저장은 계속 사용할 수 있습니다.');
+    const result=githubService.listLearningEvents(req.params.id,req.actor),sync=result.sync||{state:'never'};
+    return {...result,events:store.attributeLearningEvents(req.params.id,req.actor,result.events||[]),mode:githubService.mode||'offline',sync:{...sync,lastSyncedAt:sync.completedAt||null,partial:sync.state==='partial'||Boolean(result.hasMore),error:sync.errorCode||null}};
+  };
+  api.get('/projects/:id/learning',requireActor,(req,res)=>{
+    const data=learningData(req),students=store.members(req.params.id).filter(member=>member.systemRole==='student'&&(req.actor.role==='teacher'||member.id===req.actor.id)).map(member=>{
+      const own=store.studentEvidence(req.params.id,req.actor,member.id,data.events,{hasMore:data.hasMore,coverageNotice:data.coverageNotice});
+      return {userId:member.id,name:member.name,identity:own.githubIdentity,evidenceIds:own.events.map(event=>event.id),prompts:own.summary.nextQuestions,summary:own.summary,feedback:own.feedback};
+    });
+    res.json({...data,students,unattributedCount:data.events.filter(event=>!event.authorUserId&&!event.requestedByUserId).length});
+  });
+  api.get('/projects/:id/learning-evidence',requireActor,(req,res)=>{
+    const scope=req.query.scope||'mine';if(!['mine','team'].includes(scope))throw new HttpError(422,'invalid_learning_scope','본인 또는 팀 기록 범위를 선택해주세요.');
+    const data=learningData(req);res.json({...data,scope,events:scope==='mine'?data.events.filter(event=>event.authorUserId===req.actor.id||event.requestedByUserId===req.actor.id):data.events,githubIdentity:store.githubIdentity(req.actor.id),unattributedCount:data.events.filter(event=>!event.authorUserId&&!event.requestedByUserId).length,notice:'숫자 GitHub ID를 검증한 계정만 연결합니다. 기록 건수는 성적이나 사고력의 점수가 아닙니다.'});
+  });
+  api.get('/projects/:id/student-evidence/:studentId',requireActor,(req,res)=>{
+    const data=learningData(req),own=store.studentEvidence(req.params.id,req.actor,req.params.studentId,data.events,{hasMore:data.hasMore,coverageNotice:data.coverageNotice});res.json({...own,mode:data.mode,sync:data.sync,hasMore:data.hasMore,coverageNotice:data.coverageNotice});
+  });
   api.get('/health',(req,res)=>res.json({ok:true,service:'vpylab-classroom-v2',localMode,storage:'sqlite',githubMode:githubService.mode||'offline'}));
   api.get('/readiness',(req,res)=>{
     const checks={database:'unavailable',authentication:localMode?'local':'missing_configuration'};
@@ -125,7 +144,7 @@ export function createClassroomApp({store:providedStore,filename,localMode=false
     const criteria={};
     if(req.body.criteria!==undefined&&(!req.body.criteria||typeof req.body.criteria!=='object'||Array.isArray(req.body.criteria)))throw new HttpError(422,'invalid_criteria','평가 영역별 의견을 확인해주세요.');
     for(const key of ['problem','experiment','reasoning','collaboration','nextStep'])if(req.body.criteria?.[key]!==undefined)criteria[key]=field(req.body.criteria[key],'평가 영역 의견',{max:2000});
-    return {feedback:store.addFeedback(req.params.id,req.actor,{studentId:req.body.studentId==null||req.body.studentId===''?undefined:field(req.body.studentId,'학생 식별자',{required:true,max:200}),comment:field(req.body.comment,'교사 피드백',{required:true,max:2000}),criteria})};
+    return {feedback:store.addFeedback(req.params.id,req.actor,{studentId:req.body.studentId==null||req.body.studentId===''?undefined:field(req.body.studentId,'학생 식별자',{required:true,max:200}),comment:field(req.body.comment,'교사 피드백',{required:true,max:2000}),criteria,visibility:optionalField(req.body.visibility,'공개 범위',{required:true,max:20}),evidenceIds:req.body.evidenceIds??[]})};
   }));
   api.get('/projects/:id/export',requireActor,(req,res)=>{const detail=store.detail(req.params.id,req.actor);res.setHeader('Content-Disposition',`attachment; filename="vpylab-${req.params.id}.json"`);res.json({schemaVersion:2,exportedAt:new Date().toISOString(),...detail});});
   api.get('/teacher',requireActor,(req,res)=>res.json(store.teacherOverview(req.actor)));

@@ -3,7 +3,7 @@ import Viewport3D from '../components/viewport/Viewport3D';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { ensureAudioResumed, stopAllSounds, resumeAndRun } from '../engine/sound-system';
+import { ensureAudioResumed, getAudioState, previewInstrument, resumeAndRun, setMasterMuted, setMasterVolume, stopAllSounds, subscribeAudioState } from '../engine/sound-system';
 
 const MAX_OUTPUT_LINES = 200;
 const MAX_OUTPUT_CHARS = 32_768;
@@ -30,9 +30,17 @@ export default function RuntimePanel({ code, onRunResult }) {
   const activeRunRef = useRef(null);
   const outputRef = useRef([]);
   const outputIdRef = useRef(0);
+  const startCancelRef = useRef(null);
+  const previewRequestRef = useRef(0);
   const [outputs, setOutputs] = useState([]);
   const [lastError, setLastError] = useState('');
   const [sceneReady, setSceneReady] = useState(false);
+  const [audio, setAudio] = useState(getAudioState);
+  const [timbre, setTimbre] = useState('musicbox');
+  const [audioMessage, setAudioMessage] = useState('');
+  const [isStarting, setIsStarting] = useState(false);
+
+  useEffect(() => subscribeAudioState(setAudio), []);
 
   const addOutput = useCallback((value, type = 'log') => {
     const text = String(value ?? '').slice(0, MAX_OUTPUT_CHARS);
@@ -71,7 +79,8 @@ export default function RuntimePanel({ code, onRunResult }) {
       finishRun('error', error);
     },
     onDone: ({ stopped } = {}) => {
-      stopAllSounds();
+      // 본문이 반환돼도 예약된 음표와 자연스러운 잔향은 끝까지 들려줍니다.
+      if (stopped) stopAllSounds();
       addOutput(stopped ? '실행을 종료했습니다.' : '실행을 마쳤습니다.', stopped ? 'warning' : 'success');
       finishRun(stopped ? 'stopped' : 'completed');
     },
@@ -84,6 +93,8 @@ export default function RuntimePanel({ code, onRunResult }) {
     return () => {
       mountedRef.current = false;
       activeRunRef.current = null;
+      previewRequestRef.current += 1;
+      startCancelRef.current?.();
       stopAllSounds();
       if (scene) clearScene(scene);
       clearRegistry();
@@ -93,11 +104,15 @@ export default function RuntimePanel({ code, onRunResult }) {
   const handleSceneReady = useCallback(() => { setSceneReady(true); }, []);
 
   const handleRun = () => {
-    if (!isReady || !sceneReady) return;
+    if (!isReady || !sceneReady || isStarting || activeRunRef.current) return;
+    previewRequestRef.current += 1;
+    stopAllSounds();
+    setAudioMessage('');
+    setIsStarting(true);
     ensureAudioResumed();
-    resumeAndRun(() => {
+    startCancelRef.current = resumeAndRun(() => {
       if (!mountedRef.current || activeRunRef.current) return;
-      stopAllSounds();
+      setIsStarting(false);
       if (sceneRef.current) clearScene(sceneRef.current);
       clearRegistry();
       sceneRef.current?._cameraSystem?.onCodeStart();
@@ -112,9 +127,37 @@ export default function RuntimePanel({ code, onRunResult }) {
   };
 
   const handleStop = () => {
+    previewRequestRef.current += 1;
+    startCancelRef.current?.();
+    setIsStarting(false);
     stopAllSounds();
-    stopExecution();
-    addOutput('실행 종료를 요청했습니다. 종료를 확인한 뒤 다시 실행할 수 있습니다.', 'warning');
+    setAudioMessage('소리와 예약된 연주를 정지했습니다.');
+    if (isRunning) {
+      stopExecution();
+      addOutput('실행 종료를 요청했습니다. 종료를 확인한 뒤 다시 실행할 수 있습니다.', 'warning');
+    } else addOutput('소리와 예약된 연주를 정지했습니다.');
+  };
+
+  const handlePreview = async () => {
+    const requestId = ++previewRequestRef.current;
+    setAudioMessage('소리를 준비하고 있습니다.');
+    try {
+      const played = await previewInstrument(timbre);
+      if (!mountedRef.current || requestId !== previewRequestRef.current) return;
+      setAudioMessage(played ? `${timbre === 'musicbox' ? '맑은 뮤직박스' : '따뜻한 피아노'} 미리 듣기를 시작했습니다. 정지 버튼으로 멈출 수 있습니다.` : '소리를 열지 못했습니다. 음소거·브라우저의 소리 설정을 확인한 뒤 다시 눌러주세요.');
+    } catch {
+      if (mountedRef.current && requestId === previewRequestRef.current) setAudioMessage('이 브라우저에서 소리를 준비하지 못했습니다.');
+    }
+  };
+
+  const handleVolume = (event) => {
+    const volume = Number(event.target.value) / 100;
+    if (volume === 0) {
+      previewRequestRef.current += 1;
+      startCancelRef.current?.();
+      setIsStarting(false);
+    }
+    setMasterVolume(volume);
   };
 
   return (
@@ -122,11 +165,19 @@ export default function RuntimePanel({ code, onRunResult }) {
       <div className="runtime-toolbar">
         <span className={`runtime-status runtime-status--${status}`} role="status">{STATUS_LABELS[status] || STATUS_LABELS.idle}</span>
         <div className="runtime-actions">
-          <button type="button" className="primary" onClick={handleRun} disabled={!isReady || !sceneReady}>▶ 실행</button>
-          <button type="button" onClick={handleStop} disabled={!isRunning}>■ 정지</button>
+          <button type="button" className="primary" onClick={handleRun} disabled={!isReady || !sceneReady || isStarting}>▶ 실행</button>
+          <button type="button" onClick={handleStop} disabled={!isRunning && !audio.playing && !isStarting}>■ 정지</button>
           {(status === 'error' || status === 'idle') && <button type="button" onClick={() => { setLastError(''); void initWorker(); }}>엔진 다시 준비</button>}
         </div>
       </div>
+      <div className="runtime-audio-controls" aria-label="소리 설정">
+        <label>음량 <input aria-label="소리 음량" type="range" min="0" max="100" step="1" value={Math.round(audio.volume * 100)} onChange={handleVolume} /><span>{Math.round(audio.volume * 100)}%</span></label>
+        <button type="button" aria-pressed={audio.muted} onClick={() => { previewRequestRef.current += 1; if (!audio.muted) { startCancelRef.current?.(); setIsStarting(false); } setMasterMuted(!audio.muted); setAudioMessage(audio.muted ? '음소거를 해제했습니다.' : '음소거했습니다. 예약된 연주도 정지했습니다.'); }}>{audio.muted ? '소리 켜기' : '음소거'}</button>
+        <div className="runtime-audio-preview"><label>미리 듣기 음색 <select aria-label="미리 듣기 음색" value={timbre} onChange={(event) => setTimbre(event.target.value)}><option value="musicbox">맑은 뮤직박스</option><option value="piano">따뜻한 피아노</option></select></label><button type="button" onClick={handlePreview} disabled={isRunning || isStopping || isStarting || audio.muted || audio.volume === 0}>♫ 소리 미리 듣기</button></div>
+        <span>{audio.muted ? '음소거 중' : audio.playing ? '소리 재생 중' : '소리 재생 대기'}</span>
+      </div>
+      {audioMessage && <p className="runtime-audio-message" aria-live="polite">{audioMessage}</p>}
+      <details className="runtime-audio-example"><summary>내 코드에서 이 음색 연주하기</summary><pre>{`from vpython import *\nplay_note("C5", 0.5, "${timbre}")\nsleep(0.5)\nplay_note("E5", 0.5, "${timbre}")`}</pre><p>음표 사이에 <code>sleep()</code>을 넣으면 순서대로 들을 수 있습니다.</p></details>
       {status === 'loading' && <div className="runtime-progress"><progress value={progress} max="100" aria-label="Python 준비 진행률" /><span>{progressMessage}</span></div>}
       {isStopping && <p className="runtime-progress">반복문이 응답하지 않으면 실행 환경을 새로 준비합니다.</p>}
       {lastError && <p className="runtime-error" role="alert">{lastError}</p>}

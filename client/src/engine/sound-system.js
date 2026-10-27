@@ -19,61 +19,153 @@ let iosMediaUnlocked = false;
 let iosMediaUnlockPending = null;
 let silentMediaDataUri = null;
 
-// suspended 상태에서 대기 중인 오디오 콜백 큐
-let pendingAudioQueue = [];
+// 모든 수업 음원은 하나의 출력 경로와 같은 음량·음소거 설정을 사용합니다.
+export const MAX_AUDIO_VOICES = 24;
+export const MAX_AUDIO_TIMERS = 256;
+const HEADROOM = 0.45;
+const STOP_FADE = 0.018;
+let masterGain = null;
+let masterVolume = 0.6;
+let masterMuted = false;
+let audioGeneration = 0;
+let pendingPreviewCancel = null;
+const activeVoices = new Map();
+const activeTimeouts = new Set();
+const audioListeners = new Set();
+let audioState = { volume: masterVolume, muted: masterMuted, playing: false, voiceCount: 0, pendingCount: 0 };
 
-// 활성 오디오 노드 추적 — 다음 실행 시 잔존음 끊기 위함
-const activeOscillators = new Set();   // 현재 울리는 oscillator
-const activeGains = new Set();         // gain 노드 (페이드아웃 후 정지)
-const activeTimeouts = new Set();      // 시퀀스/효과음 setTimeout id
-function trackOsc(osc, gain) {
-  activeOscillators.add(osc);
-  if (gain) activeGains.add(gain);
-  // 테스트 환경이나 비표준 oscillator는 addEventListener가 없을 수 있음 — 가드
-  if (typeof osc.addEventListener === 'function') {
-    osc.addEventListener('ended', () => {
-      activeOscillators.delete(osc);
-      if (gain) activeGains.delete(gain);
-    });
+function notifyAudioState() {
+  const voiceCount = [...activeVoices.values()].filter((voice) => !voice.retiring).length;
+  const playing = voiceCount > 0 || activeTimeouts.size > 0 || pendingPreviewCancel !== null;
+  const pendingCount = activeTimeouts.size + (pendingPreviewCancel ? 1 : 0);
+  if (audioState.volume === masterVolume && audioState.muted === masterMuted && audioState.playing === playing && audioState.voiceCount === voiceCount && audioState.pendingCount === pendingCount) return;
+  audioState = { volume: masterVolume, muted: masterMuted, playing, voiceCount, pendingCount };
+  for (const listener of audioListeners) listener(audioState);
+}
+
+export function getAudioState() { return audioState; }
+export function subscribeAudioState(listener) {
+  audioListeners.add(listener);
+  return () => audioListeners.delete(listener);
+}
+
+function holdParameter(parameter, time) {
+  if (typeof parameter.cancelAndHoldAtTime === 'function') parameter.cancelAndHoldAtTime(time);
+  else {
+    parameter.cancelScheduledValues?.(time);
+    parameter.setValueAtTime(Math.max(0, parameter.value), time);
   }
 }
-// setTimeout 래퍼 — stopAllSounds에서 일괄 취소되도록 추적
+
+function updateMasterGain() {
+  if (!masterGain || !audioCtx) return;
+  const time = audioCtx.currentTime;
+  holdParameter(masterGain.gain, time);
+  masterGain.gain.linearRampToValueAtTime(masterMuted ? 0 : masterVolume * HEADROOM, time + 0.02);
+}
+
+export function setMasterVolume(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return;
+  masterVolume = Math.max(0, Math.min(1, number));
+  if (masterVolume === 0) stopAllSounds();
+  updateMasterGain();
+  notifyAudioState();
+}
+
+export function setMasterMuted(value) {
+  masterMuted = Boolean(value);
+  if (masterMuted) stopAllSounds();
+  updateMasterGain();
+  notifyAudioState();
+}
+
+function createMasterGraph(ctx) {
+  masterGain = ctx.createGain();
+  masterGain.gain.value = masterMuted ? 0 : masterVolume * HEADROOM;
+  let output = masterGain;
+  if (typeof ctx.createDynamicsCompressor === 'function') {
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = -18;
+    compressor.knee.value = 12;
+    compressor.ratio.value = 12;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.18;
+    output.connect(compressor);
+    output = compressor;
+  }
+  if (typeof ctx.createWaveShaper === 'function') {
+    const limiter = ctx.createWaveShaper();
+    const curve = new Float32Array(2049);
+    for (let index = 0; index < curve.length; index++) {
+      const input = index / (curve.length - 1) * 2 - 1;
+      curve[index] = 0.85 * Math.tanh(input / 0.85);
+    }
+    limiter.curve = curve;
+    limiter.oversample = '2x';
+    output.connect(limiter);
+    output = limiter;
+  }
+  output.connect(ctx.destination);
+}
+
+function connectOutput(node) { node.connect(masterGain); }
+
+function trackOsc(source, gain, duration = 10, nodes = [], group = 'lesson') {
+  const voice = { source, gain, nodes, group, retiring: false, timer: null };
+  const cleanup = () => {
+    if (!activeVoices.has(source)) return;
+    clearTimeout(voice.timer);
+    activeVoices.delete(source);
+    try { source.stop?.(); } catch { /* 이미 끝난 소스입니다. */ }
+    for (const node of [source, gain, ...nodes]) {
+      try { node?.disconnect?.(); } catch { /* 이미 정리된 노드는 무시합니다. */ }
+    }
+    notifyAudioState();
+  };
+  voice.cleanup = cleanup;
+  activeVoices.set(source, voice);
+  source.addEventListener?.('ended', cleanup, { once: true });
+  // 비표준 환경이나 중단된 context에서도 노드를 무기한 남기지 않습니다.
+  voice.timer = setTimeout(cleanup, Math.max(0.03, duration) * 1000 + 250);
+  notifyAudioState();
+}
+
+function retireVoice(voice) {
+  if (voice.retiring) return;
+  voice.retiring = true;
+  const time = audioCtx?.currentTime || 0;
+  try {
+    holdParameter(voice.gain.gain, time);
+    voice.gain.gain.linearRampToValueAtTime(0, time + STOP_FADE);
+    voice.source.stop(time + STOP_FADE + 0.002);
+  } catch { /* 이미 종료된 소스입니다. */ }
+  clearTimeout(voice.timer);
+  voice.timer = setTimeout(voice.cleanup, 25);
+}
+
 function _st(fn, ms) {
+  if (masterMuted || activeTimeouts.size >= MAX_AUDIO_TIMERS) return null;
+  const generation = audioGeneration;
   const id = setTimeout(() => {
     activeTimeouts.delete(id);
-    fn();
-  }, ms);
+    if (generation === audioGeneration && !masterMuted) fn();
+    notifyAudioState();
+  }, Math.max(0, Math.min(60_000, Number(ms) || 0)));
   activeTimeouts.add(id);
+  notifyAudioState();
   return id;
 }
 
-/**
- * 모든 사운드 강제 정지 — 새 코드 실행 전 잔존음 제거
- * - 활성 oscillator를 즉시 stop()
- * - gain을 0으로 ramp해 in-flight 사운드 페이드아웃
- * - 큐된 setTimeout 모두 취소
- * - BGM도 함께 정지
- */
+/** 예약음을 취소하고 짧게 감쇠한 뒤 모든 소스·필터를 연결 해제합니다. */
 export function stopAllSounds() {
+  audioGeneration += 1;
+  pendingPreviewCancel?.();
   stopBgm();
-  for (const osc of activeOscillators) {
-    try { osc.stop(0); } catch { /* 이미 끝남 */ }
-    try { osc.disconnect(); } catch { /* 무시 */ }
-  }
-  activeOscillators.clear();
-  for (const gain of activeGains) {
-    try {
-      gain.gain.cancelScheduledValues(0);
-      gain.gain.value = 0;
-      gain.disconnect();
-    } catch { /* 무시 */ }
-  }
-  activeGains.clear();
-  for (const id of activeTimeouts) {
-    clearTimeout(id);
-  }
+  for (const id of activeTimeouts) clearTimeout(id);
   activeTimeouts.clear();
-  pendingAudioQueue.length = 0;
+  for (const voice of activeVoices.values()) retireVoice(voice);
+  notifyAudioState();
 }
 
 // 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
@@ -83,12 +175,11 @@ export function setNotePlayCallback(cb) { _onNotePlay = cb; }
 function getAudioContext() {
   const AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext;
   if (!AudioContextClass) return null;
-  if (!audioCtx) {
+  if (!audioCtx || audioCtx.state === 'closed') {
     audioCtx = new AudioContextClass();
+    createMasterGraph(audioCtx);
   }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
-  }
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
   return audioCtx;
 }
 
@@ -190,14 +281,20 @@ function playSilentUnlockBuffer(ctx) {
     const buf = ctx.createBuffer(1, 1, 22050);
     const src = ctx.createBufferSource();
     src.buffer = buf;
-    src.connect(ctx.destination);
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    src.connect(gain);
+    connectOutput(gain);
     src.start(0);
+    src.stop(ctx.currentTime + 0.01);
+    trackOsc(src, gain, 0.01);
   } catch { /* 중복 호출 시 무시 */ }
 }
 
 export async function ensureAudioReady() {
   const ctx = getAudioContext();
   if (!ctx) return false;
+  const generation = audioGeneration;
 
   const iosReadyPromise = ensureIOSMediaPlayback();
 
@@ -214,6 +311,8 @@ export async function ensureAudioReady() {
       } catch {
         // 모바일 정책으로 실패하면 다음 사용자 제스처에서 다시 시도
       }
+
+      if (generation !== audioGeneration) return false;
 
       playSilentUnlockBuffer(ctx);
       const iosReady = await iosReadyPromise;
@@ -251,33 +350,9 @@ export function isAudioUnlocked() {
  * fn()이 아예 호출되지 않는 버그가 있었음.
  */
 function withRunningContext(fn) {
+  if (masterMuted || masterVolume === 0 || activeVoices.size >= MAX_AUDIO_VOICES) return;
   const ctx = getAudioContext();
-  if (!ctx) return;
-
-  if (ctx.state === 'running') {
-
-    fn(ctx);
-    return;
-  }
-
-
-  pendingAudioQueue.push(fn);
-  fn(ctx);
-}
-
-/** 큐에 쌓인 오디오 콜백을 flush (resume 완료 후 호출) */
-function flushAudioQueue() {
-  const ctx = audioCtx;
-  if (!ctx || ctx.state !== 'running') return;
-  audioUnlocked = true;
-  const queue = pendingAudioQueue.splice(0);
-  queue.forEach(f => {
-    try {
-      f(ctx);
-    } catch {
-      // 실패한 오디오 콜백은 다음 재생을 막지 않도록 건너뜁니다.
-    }
-  });
+  if (ctx) fn(ctx);
 }
 
 /**
@@ -321,46 +396,35 @@ export function ensureAudioResumed() {
  * - iOS에서 suspended→running 전환 시간을 확보하면서도 실행을 보장
  */
 export function resumeAndRun(callback) {
+  const generation = audioGeneration;
   const ctx = getAudioContext();
-  if (!ctx) { callback(); return; }
-
-  if (ctx.state === 'running') {
-    audioUnlocked = true;
+  if (!ctx || ctx.state === 'running') {
+    if (ctx) audioUnlocked = true;
     callback();
-    return;
+    return () => {};
   }
-
-  // 사용자 제스처 콜스택에서 동기적으로 resume 호출
   const resumePromise = ctx.resume().catch(() => {});
-
-  // 무음 버퍼 재생 — Web Audio 잠금 해제 트릭
-  try {
-    const buf = ctx.createBuffer(1, 1, 22050);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(ctx.destination);
-    src.start(0);
-  } catch {
-    // 중복 호출 또는 브라우저 정책 실패는 실행 흐름을 막지 않습니다.
-  }
-
-  // iOS: HTMLAudioElement로 오디오 세션 활성화
+  playSilentUnlockBuffer(ctx);
   ensureIOSMediaPlayback().catch(() => {});
-
-  // resume 완료되면 즉시 실행, 최대 500ms 후 강제 실행
   let done = false;
-  const run = () => {
-    if (done) return;
+  let timer = null;
+  const cancel = () => {
     done = true;
+    clearTimeout(timer);
+    activeTimeouts.delete(timer);
+    notifyAudioState();
+  };
+  const run = () => {
+    if (done || generation !== audioGeneration) return;
+    cancel();
     if (ctx.state === 'running') audioUnlocked = true;
     callback();
   };
-
-  resumePromise.then(() => {
-    run();
-    flushAudioQueue();
-  });
-  _st(run, 500);
+  timer = setTimeout(run, 500);
+  activeTimeouts.add(timer);
+  notifyAudioState();
+  resumePromise.then(run);
+  return cancel;
 }
 
 // ===================================================================
@@ -374,24 +438,74 @@ export function resumeAndRun(callback) {
  * @param {string} type - 파형 ('sine'|'square'|'sawtooth'|'triangle')
  * @param {number} volume - 볼륨 (0~1)
  */
-export function beep(frequency = 440, duration = 0.3, type = 'sine', volume = 0.3) {
-  withRunningContext(ctx => {
+function scheduleEnvelope(gain, ctx, peak, duration, attack = 0.008) {
+  const time = ctx.currentTime;
+  const rise = Math.min(attack, duration / 4);
+  gain.gain.value = 0;
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(peak, time + rise);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + Math.max(rise, duration - 0.012));
+  gain.gain.linearRampToValueAtTime(0, time + duration);
+}
+
+function richTone(ctx, frequency, duration, timbre, volume, group) {
+  const partials = timbre === 'musicbox' ? [[1, 0.78], [2, 0.16], [3.01, 0.06]] : [[1, 0.72], [2, 0.2], [3, 0.08]];
+  const tail = timbre === 'musicbox' ? 0.28 : 0.16;
+  for (const [ratio, strength] of partials) {
+    if (activeVoices.size >= MAX_AUDIO_VOICES || frequency * ratio > 18_000) break;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
+    const length = duration + tail / ratio;
+    osc.type = 'sine';
+    osc.frequency.value = frequency * ratio;
+    scheduleEnvelope(gain, ctx, volume * strength, length, timbre === 'musicbox' ? 0.006 : 0.01);
+    osc.connect(gain); connectOutput(gain);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + length);
+    trackOsc(osc, gain, length, [], group);
+  }
+}
 
-    osc.type = type;
-    osc.frequency.value = frequency;
-    gain.gain.value = volume;
+export function beep(frequency = 440, duration = 0.3, type = 'sine', volume = 0.3, group = 'lesson') {
+  const pitch = Number(frequency); const seconds = Number(duration); const level = Number(volume);
+  if (!Number.isFinite(pitch) || pitch < 20 || pitch > 18_000 || !Number.isFinite(seconds) || seconds <= 0 || !Number.isFinite(level) || level <= 0) return;
+  const length = Math.max(0.025, Math.min(10, seconds));
+  const peak = Math.min(1, level);
+  withRunningContext(ctx => {
+    if (type === 'piano' || type === 'musicbox') { richTone(ctx, pitch, length, type, peak, group); return; }
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = ['sine', 'triangle', 'square', 'sawtooth'].includes(type) ? type : 'sine';
+    osc.frequency.value = pitch;
+    scheduleEnvelope(gain, ctx, peak, length);
+    osc.connect(gain); connectOutput(gain);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + length);
+    trackOsc(osc, gain, length, [], group);
+  });
+}
 
-    gain.gain.setValueAtTime(volume, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + duration);
-    trackOsc(osc, gain);
+/** 명시적인 클릭에서만 실행하는 짧은 오리지널 음색 예제입니다. */
+export async function previewInstrument(timbre = 'piano') {
+  stopAllSounds();
+  const generation = audioGeneration;
+  if (masterMuted || masterVolume === 0) return false;
+  return new Promise((resolve) => {
+    let cancelResume = null;
+    const finish = (played) => {
+      if (pendingPreviewCancel === cancel) pendingPreviewCancel = null;
+      notifyAudioState();
+      resolve(played);
+    };
+    const cancel = () => { cancelResume?.(); finish(false); };
+    pendingPreviewCancel = cancel;
+    notifyAudioState();
+    // 제스처 안에서 resume을 요청하고, 500ms 뒤에도 막혀 있으면 재시도를 안내합니다.
+    ensureAudioResumed();
+    cancelResume = resumeAndRun(() => {
+      if (masterMuted || generation !== audioGeneration || getAudioContext()?.state !== 'running') { finish(false); return; }
+      const names = timbre === 'musicbox' ? ['C5', 'E5', 'G5', 'B5', 'C6'] : ['C4', 'E4', 'G4', 'B4', 'C5'];
+      playSequence(names.map((name, index) => ({ freq: noteToFreq(name), duration: index === names.length - 1 ? 0.75 : 0.3, type: timbre === 'musicbox' ? 'musicbox' : 'piano', volume: 0.42 })));
+      finish(true);
+    });
   });
 }
 
@@ -458,9 +572,8 @@ export function playNote(name, duration = 0.5, type = 'sine', volume = 0.4) {
  */
 export function playChord(frequencies, duration = 1.0, type = 'sine', volume = 0.25) {
   if (!frequencies || frequencies.length === 0) return;
-  for (const freq of frequencies) {
-    beep(freq, duration, type, volume);
-  }
+  const notes = frequencies.slice(0, 24);
+  for (const freq of notes) beep(freq, duration, type, volume / Math.sqrt(notes.length));
 }
 
 /**
@@ -468,16 +581,15 @@ export function playChord(frequencies, duration = 1.0, type = 'sine', volume = 0
  * @param {Array<{freq: number, duration: number, type?: string, volume?: number}>} notes
  */
 export function playSequence(notes) {
-  if (!notes || notes.length === 0) return;
+  if (!Array.isArray(notes) || notes.length === 0) return;
   let delay = 0;
-  for (const n of notes) {
-    if (delay === 0) {
-      beep(n.freq, n.duration, n.type || 'sine', n.volume || 0.4);
-    } else {
-      const d = delay;
-      _st(() => beep(n.freq, n.duration, n.type || 'sine', n.volume || 0.4), d);
-    }
-    delay += n.duration * 1000;
+  for (const n of notes.slice(0, 128)) {
+    if (delay > 60_000) break;
+    const duration = Number.isFinite(Number(n.duration)) && Number(n.duration) > 0 ? Math.min(10, Number(n.duration)) : 0.3;
+    const sound = () => beep(n.freq, duration, n.type || 'sine', n.volume ?? 0.4);
+    if (delay === 0) sound();
+    else _st(sound, delay);
+    delay += duration * 1000;
   }
 }
 
@@ -527,14 +639,13 @@ export function sfxJump() {
     osc.frequency.setValueAtTime(300, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15);
 
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    scheduleEnvelope(gain, ctx, 0.2, 0.2);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    connectOutput(gain);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.2);
-    trackOsc(osc, gain);
+    trackOsc(osc, gain, 0.2);
   });
 }
 
@@ -578,14 +689,13 @@ export function sfxFireball() {
     osc.frequency.setValueAtTime(900, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
 
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    scheduleEnvelope(gain, ctx, 0.15, 0.15);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    connectOutput(gain);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
-    trackOsc(osc, gain);
+    trackOsc(osc, gain, 0.15);
   });
 }
 
@@ -602,15 +712,13 @@ export function sfxPipe() {
     osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.2);
     osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.4);
 
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.3);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    scheduleEnvelope(gain, ctx, 0.15, 0.4);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    connectOutput(gain);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.4);
-    trackOsc(osc, gain);
+    trackOsc(osc, gain, 0.4);
   });
 }
 
@@ -657,8 +765,7 @@ export function sfxExplosion() {
     noise.buffer = buffer;
 
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    scheduleEnvelope(gain, ctx, 0.3, 0.4);
 
     // 로우패스 필터로 둔탁한 느낌
     const filter = ctx.createBiquadFilter();
@@ -668,9 +775,10 @@ export function sfxExplosion() {
 
     noise.connect(filter);
     filter.connect(gain);
-    gain.connect(ctx.destination);
+    connectOutput(gain);
     noise.start(ctx.currentTime);
     noise.stop(ctx.currentTime + 0.4);
+    trackOsc(noise, gain, 0.4, [filter]);
   });
 }
 
@@ -686,14 +794,13 @@ export function sfxLaser() {
     osc.frequency.setValueAtTime(1500, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.2);
 
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    scheduleEnvelope(gain, ctx, 0.15, 0.2);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    connectOutput(gain);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.2);
-    trackOsc(osc, gain);
+    trackOsc(osc, gain, 0.2);
   });
 }
 
@@ -843,7 +950,13 @@ export function startBgm(name, loop = true) {
 
   const { notes, durations, type, volume } = pattern;
   let running = true;
-  let timeoutIds = [];
+  const timeoutIds = new Set();
+
+  function schedule(fn, delay) {
+    let id;
+    id = _st(() => { timeoutIds.delete(id); fn(); }, delay);
+    if (id !== null) timeoutIds.add(id);
+  }
 
   function playPattern() {
     if (!running) return;
@@ -854,20 +967,16 @@ export function startBgm(name, loop = true) {
       const dur = durations[i] || 0.2;
       if (freq) {
         const d = delay;
-        const tid = _st(() => {
-          if (running) beep(freq, dur * 0.9, type, volume);
+        schedule(() => {
+          if (running) beep(freq, dur * 0.9, type, volume, 'bgm');
         }, d);
-        timeoutIds.push(tid);
       }
       delay += dur * 1000;
     }
 
     // 패턴이 끝나면 루프
     if (loop) {
-      const tid = _st(() => {
-        if (running) playPattern();
-      }, delay);
-      timeoutIds.push(tid);
+      schedule(() => { if (running) playPattern(); }, delay);
     }
   }
 
@@ -875,8 +984,10 @@ export function startBgm(name, loop = true) {
     name,
     stop: () => {
       running = false;
-      timeoutIds.forEach(id => clearTimeout(id));
-      timeoutIds = [];
+      timeoutIds.forEach(id => { clearTimeout(id); activeTimeouts.delete(id); });
+      timeoutIds.clear();
+      for (const voice of activeVoices.values()) if (voice.group === 'bgm') retireVoice(voice);
+      notifyAudioState();
     },
   };
 
@@ -914,7 +1025,7 @@ export function getCurrentBgm() {
 export function processSoundCommand(cmd) {
   switch (cmd.method) {
     case 'beep':
-      beep(cmd.frequency || 440, cmd.duration || 0.3, cmd.type || 'sine', cmd.volume || 0.3);
+      beep(cmd.frequency || 440, cmd.duration || 0.3, cmd.type || 'sine', cmd.volume ?? 0.3);
       break;
 
     case 'play':
@@ -922,11 +1033,11 @@ export function processSoundCommand(cmd) {
       break;
 
     case 'note':
-      playNote(cmd.name, cmd.duration || 0.5, cmd.type || 'sine', cmd.volume || 0.4);
+      playNote(cmd.name, cmd.duration || 0.5, cmd.type || 'sine', cmd.volume ?? 0.4);
       break;
 
     case 'chord':
-      playChord(cmd.frequencies || [], cmd.duration || 1.0, cmd.type || 'sine', cmd.volume || 0.25);
+      playChord(cmd.frequencies || [], cmd.duration || 1.0, cmd.type || 'sine', cmd.volume ?? 0.25);
       break;
 
     case 'sequence':

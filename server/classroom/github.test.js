@@ -58,7 +58,7 @@ function githubMock({ remoteSha = BASE, remoteCode = 'print("GitHub 최신")', p
       branches.set(branch, body.sha); return reply({ object: { sha: body.sha } }, 201);
     }
     if (method === 'POST' && path === `${root}/pulls`) {
-      const pull = { number: pulls.length + 1, html_url: 'https://github.com/classroom/team-one/pull/1', state: 'open', head: { sha: COMMIT } }; pulls.push(pull);
+      const pull = { id: 10001, number: pulls.length + 1, user: { id: 80001, login: 'vpylab[bot]' }, html_url: 'https://github.com/classroom/team-one/pull/1', state: 'open', head: { sha: COMMIT } }; pulls.push(pull);
       if (losePullResponse) { losePullResponse = false; throw new Error('모의 응답 유실'); }
       return reply(pull, 201);
     }
@@ -157,6 +157,9 @@ test('실제 어댑터는 새 브랜치와 PR만 생성하고 main ref를 PATCH�
   assert.equal(f.mock.calls.some(call => ['PATCH', 'PUT', 'DELETE'].includes(call.method)), false);
   assert.equal(f.mock.calls.find(call => call.method === 'POST' && call.path.endsWith('/git/trees')).body.base_tree, 'e'.repeat(40));
   assert.deepEqual(f.mock.calls.find(call => call.method === 'POST' && call.path.endsWith('/git/commits')).body.parents, [BASE]);
+  const evidence = f.service.listLearningEvents(f.project.id, teacher).events[0];
+  assert.equal(evidence.source, 'app'); assert.equal(evidence.githubAuthorId, 80001);
+  assert.equal(evidence.metadata.requestedByUserId, student.id); assert.equal(evidence.metadata.requestedByRole, 'requester');
 });
 
 test('원격 기준 SHA가 바뀌면 Git 데이터 쓰기 전에 실제 어댑터가 중지한다', async t => {
@@ -288,7 +291,7 @@ test('설치의 저장소 접근 회수는 GitHub 작업만 멈추고 로컬 저
   const saved = await f.service.runOnce(); assert.equal(saved.result.localOnly, true); assert.equal(saved.state, 'succeeded');
 });
 
-test('worker 종료는 실행중인 원격 요청과 outbox 결과 기록이 끝날 때까지 기다린다', async t => {
+test('worker 종료는 실행중인 원격 요청의 중단 상태를 outbox에 보존할 때까지 기다린다', async t => {
   const f = await setupLive(); t.after(() => f.store.close());
   f.service.enqueueProposal(f.project.id, student, proposalInput(f.service.status(f.project.id, teacher).remote));
   let release;
@@ -298,7 +301,7 @@ test('worker 종료는 실행중인 원격 요청과 outbox 결과 기록이 끝
   await Promise.resolve(); assert.equal(stopped, false);
   release(reply({ id: 456, name: 'team-one', owner: { login: 'classroom' }, private: true }));
   const job = await running; await stop;
-  assert.equal(job.state, 'succeeded'); assert.equal(stopped, true);
+  assert.equal(job.state, 'pending'); assert.match(job.lastError, /^service_stopping:/); assert.equal(stopped, true);
 });
 
 test('운영 offline 모드의 GitHub 작업은 사유를 표시하고 로컬 저장은 성공한다', async t => {

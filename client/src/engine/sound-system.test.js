@@ -86,7 +86,7 @@ describe('sound-system', () => {
       const { beep } = await import('./sound-system.js');
       beep();
       expect(mockCtx.createOscillator).toHaveBeenCalledTimes(1);
-      expect(mockCtx.createGain).toHaveBeenCalledTimes(1);
+      expect(mockCtx.createGain).toHaveBeenCalledTimes(2);
     });
 
     it('커스텀 주파수, 길이, 파형, 볼륨을 적용한다', async () => {
@@ -101,17 +101,21 @@ describe('sound-system', () => {
       const { beep } = await import('./sound-system.js');
       beep();
       const osc = mockCtx.createOscillator.mock.results[0].value;
-      const gain = mockCtx.createGain.mock.results[0].value;
+      const master = mockCtx.createGain.mock.results[0].value;
+      const gain = mockCtx.createGain.mock.results[1].value;
       expect(osc.connect).toHaveBeenCalledWith(gain);
-      expect(gain.connect).toHaveBeenCalledWith(mockCtx.destination);
+      expect(gain.connect).toHaveBeenCalledWith(master);
+      expect(master.connect).toHaveBeenCalledWith(mockCtx.destination);
     });
 
     it('페이드 아웃이 설정된다 (클릭 방지)', async () => {
       const { beep } = await import('./sound-system.js');
       beep(440, 0.3, 'sine', 0.5);
-      const gain = mockCtx.createGain.mock.results[0].value;
-      expect(gain.gain.setValueAtTime).toHaveBeenCalledWith(0.5, 0);
-      expect(gain.gain.exponentialRampToValueAtTime).toHaveBeenCalledWith(0.001, 0.3);
+      const gain = mockCtx.createGain.mock.results[1].value;
+      expect(gain.gain.setValueAtTime).toHaveBeenCalledWith(0, 0);
+      expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0.5, 0.008);
+      expect(gain.gain.exponentialRampToValueAtTime).toHaveBeenCalledWith(0.0001, 0.288);
+      expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0, 0.3);
     });
 
     it('오실레이터가 시작/정지된다', async () => {

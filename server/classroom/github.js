@@ -1,6 +1,7 @@
 import { createHash, createHmac, sign, timingSafeEqual } from 'node:crypto';
 import express from 'express';
 import { HttpError } from './store.js';
+import { backfillGitHubLearning, initGitHubLearningSchema, learningEventFromRow, LOCAL_GITHUB_IDENTITIES, normalizeGitHubLearningEvent } from './github-learning.js';
 
 const MAX_CODE_BYTES = 50 * 1024;
 const encodePath = value => value.split('/').map(encodeURIComponent).join('/');
@@ -61,21 +62,24 @@ export function createGitHubAppClient({ config, fetchImpl = fetch, now = Date.no
   const tokenCache = new Map();
   let lastMutation = -Infinity;
   let requestChain = Promise.resolve();
+  const shutdown = new AbortController();
   function request(path, options = {}) {
     const result = requestChain.then(() => performRequest(path, options));
     requestChain = result.catch(() => {});
     return result;
   }
-  async function performRequest(path, { method = 'GET', body, token, allow404 = false, guard } = {}) {
+  async function performRequest(path, { method = 'GET', body, token, allow404 = false, guard, includeHeaders = false } = {}) {
+    if (shutdown.signal.aborted) throw new GitHubError('service_stopping', '서버를 종료하고 있습니다. 다시 시작한 뒤 확인해주세요.', { status: 503 });
     if (method !== 'GET') { const delay = 1000 - (now() - lastMutation); if (delay > 0) await pause(delay); lastMutation = now(); }
     guard?.();
     let response;
     try {
-      response = await fetchImpl(`https://api.github.com${path}`, { method, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2026-03-10', 'User-Agent': 'VPyLab-Classroom', ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20_000), redirect: 'error' });
+      response = await fetchImpl(`https://api.github.com${path}`, { method, headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2026-03-10', 'User-Agent': 'VPyLab-Classroom', ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.any([AbortSignal.timeout(20_000), shutdown.signal]), redirect: 'error' });
     } catch { throw new GitHubError('github_network', 'GitHub 연결이 끊겼습니다. 저장한 작업은 보존됩니다.', { uncertain: method !== 'GET' }); }
     if (allow404 && response.status === 404) return null;
     if (!response.ok) { let errorBody; try { errorBody = await response.json(); } catch {} throw classifyGitHubResponse(response, now(), errorBody); }
-    return response.status === 204 ? null : response.json();
+    const data = response.status === 204 ? null : await response.json();
+    return includeHeaders ? { data, link: response.headers.get('link') } : data;
   }
   async function tokenFor(binding) {
     if (!config.appId || !config.privateKey) throw new GitHubError('github_offline', 'GitHub App 설정이 없습니다. 로컬 저장은 계속 사용할 수 있습니다.', { permanent: true, status: 503 });
@@ -114,13 +118,14 @@ export function createGitHubAppClient({ config, fetchImpl = fetch, now = Date.no
     const sha = await head(binding);
     return { sha, ...await readFile(binding, sha), fetchedAt: iso(now()), available: true };
   }
+  const sourceRecord = item => ({ id: item.id || item.number, number: item.number, title: item.title, body: item.body, html_url: item.html_url, user: item.user ? { id: item.user.id, login: item.user.login } : null, created_at: item.created_at, updated_at: item.updated_at, head: item.head ? { sha: item.head.sha, ref: item.head.ref } : null, base: item.base ? { sha: item.base.sha, ref: item.base.ref } : null });
   async function publishProposal(binding, job, progress, saveProgress, guard) {
     await validateRepository(binding);
     const { code, baseSha, title, message } = job.payload;
     const branch = `vpylab/proposal-${job.id}-${sha256(code).slice(0, 10)}`;
     // 고유 브랜치의 기존 PR 조회로 응답 유실 후 재시도에도 중복 PR을 만들지 않습니다.
     const pulls = await api(binding, `/pulls?state=all&head=${encodeURIComponent(`${binding.owner}:${branch}`)}&base=${encodeURIComponent(binding.branch)}&per_page=100`);
-    if (pulls.length) return { number: pulls[0].number, url: pulls[0].html_url, branch, sha: pulls[0].head.sha, state: pulls[0].state };
+    if (pulls.length) return { number: pulls[0].number, url: pulls[0].html_url, branch, sha: pulls[0].head.sha, state: pulls[0].state, sourceRecord: sourceRecord(pulls[0]) };
     const currentSha = await head(binding);
     if (currentSha !== baseSha) throw new GitHubError('github_base_conflict', 'GitHub 기본 브랜치가 변경되었습니다. 최신 코드를 가져와 비교한 후 새 제안을 만들어주세요.', { permanent: true, status: 409 });
     let ref = await api(binding, `/git/ref/heads/${encodePath(branch)}`, { allow404: true });
@@ -141,7 +146,7 @@ export function createGitHubAppClient({ config, fetchImpl = fetch, now = Date.no
     if (await head(binding) !== baseSha) throw new GitHubError('github_base_conflict', 'GitHub 기본 브랜치가 변경되었습니다. 최신 코드와 비교해주세요.', { permanent: true, status: 409 });
     const provenance = job.payload.checkpointId ? `\n팀 저장본: ${job.payload.checkpointId} (v${job.payload.checkpointVersion})` : '';
     const pull = await api(binding, '/pulls', { method: 'POST', guard, body: { title, head: branch, base: binding.branch, body: `${message || ''}\n\nVPyLab 학습 제안 · 작업 ${job.id}\n기준 커밋: ${baseSha}${provenance}` } });
-    return { number: pull.number, url: pull.html_url, branch, sha: ref.object.sha, state: pull.state };
+    return { number: pull.number, url: pull.html_url, branch, sha: ref.object.sha, state: pull.state, sourceRecord: sourceRecord(pull) };
   }
   async function createIssue(binding, job, progress, saveProgress, guard) {
     if (progress.issue) return progress.issue;
@@ -152,15 +157,19 @@ export function createGitHubAppClient({ config, fetchImpl = fetch, now = Date.no
     let issue;
     try { issue = await api(binding, '/issues', { method: 'POST', guard, body: { title: job.payload.title, body: `${job.payload.body || ''}\n\n<!-- vpylab-job:${job.id} -->` } }); }
     catch (error) { if (error.code === 'github_unavailable') error.uncertain = true; if (!error.uncertain) { progress.issueSending = false; saveProgress(progress); } throw error; }
-    progress.issue = { number: issue.number, url: issue.html_url }; saveProgress(progress); return progress.issue;
+    progress.issue = { number: issue.number, url: issue.html_url, sourceRecord: sourceRecord(issue) }; saveProgress(progress); return progress.issue;
   }
   async function reconcileIssue(binding, job, number) {
     await validateRepository(binding);
     const issue = await api(binding, `/issues/${number}`);
     if (issue.pull_request || !issue.body?.includes(`<!-- vpylab-job:${job.id} -->`)) throw new GitHubError('github_issue_mismatch', '이 작업으로 생성한 GitHub Issue가 아닙니다.', { permanent: true, status: 409 });
-    return { number: issue.number, url: issue.html_url };
+    return { number: issue.number, url: issue.html_url, sourceRecord: sourceRecord(issue) };
   }
-  return { fetchRemote, publishProposal, createIssue, reconcileIssue };
+  async function collectLearning(binding, options) {
+    await validateRepository(binding);
+    return backfillGitHubLearning({ binding, ...options, requestPage: path => api(binding, path, { includeHeaders: true }) });
+  }
+  return { fetchRemote, publishProposal, createIssue, reconcileIssue, collectLearning, stop: () => shutdown.abort() };
 }
 
 export function createGitHubService({ store, localMode = false, config = githubConfigFromEnv(), fetchImpl, now = Date.now, pause } = {}) {
@@ -169,10 +178,13 @@ export function createGitHubService({ store, localMode = false, config = githubC
   const repositories = (config.repositories || []).map(validBinding);
   const client = createGitHubAppClient({ config, fetchImpl, now, pause });
   const db = store.db;
+  initGitHubLearningSchema(db);
   db.exec(`CREATE TABLE IF NOT EXISTS github_job_progress(job_id TEXT PRIMARY KEY REFERENCES github_jobs(id),data TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS github_webhook_deliveries(id TEXT PRIMARY KEY,digest TEXT NOT NULL,event TEXT NOT NULL,received_at TEXT NOT NULL);`);
-  let timer, busy = false;
+  let timer, busy = false, stopping = false;
   const idleWaiters = [];
+  const syncing = new Set();
+  const activeSyncs = new Set();
   function publicBinding(binding) { if (!binding) return null; const { key, owner, repo, branch, path, repositoryId } = binding; return { key, owner, repo, branch, path, repositoryId }; }
   function ensureState(projectId) {
     const existing = store.getGithub(projectId);
@@ -191,8 +203,82 @@ export function createGitHubService({ store, localMode = false, config = githubC
     return binding;
   }
   function assertOnline() { if (mode === 'offline') throw new GitHubError('github_offline', 'GitHub 연결을 기다리고 있습니다. 초안과 팀 저장본은 로컬 서버에 보존됩니다.', { permanent: true, status: 503 }); }
+  function recordLearning(projectId, binding, event, payload, { source = mode === 'simulator' ? 'simulator' : 'app', receivedAt = iso(now()), ...options } = {}) {
+    return normalizeGitHubLearningEvent(db, { projectId, binding, event, payload, source, receivedAt, ...options });
+  }
+  function recordJobLearning(job, result, binding) {
+    if (!['proposal', 'issue'].includes(job.kind)) return;
+    if (!binding || job.payload.bindingKey !== binding.key || job.payload.repositoryId !== (binding.repositoryId || null)) return;
+    const source = result.sourceRecord || {};
+    const author = mode === 'simulator' ? LOCAL_GITHUB_IDENTITIES[job.payload.authorId] : source.user;
+    const item = { ...source, id: source.id || result.number, number: result.number, title: source.title || job.payload.title, body: source.body ?? job.payload.message ?? job.payload.body ?? '', html_url: source.html_url || result.url, user: author, created_at: source.created_at || job.createdAt, updated_at: source.updated_at || job.createdAt, head: { ...source.head, sha: result.sha || job.payload.baseSha }, state: result.state || 'open' };
+    recordLearning(job.projectId, binding, job.kind === 'proposal' ? 'pull_request' : 'issues', { action: 'created', [job.kind === 'proposal' ? 'pull_request' : 'issue']: item }, { context: { jobId: job.id, checkpointId: job.payload.checkpointId || null, serviceGenerated: true, requestedByUserId: job.payload.authorId, requestedByRole: 'requester' } });
+  }
+  function syncState(projectId, data) { db.prepare('INSERT INTO github_learning_sync VALUES(?,?) ON CONFLICT(project_id) DO UPDATE SET data=excluded.data').run(projectId, JSON.stringify(data)); return data; }
+  function importGeneratedHistory(projectId) {
+    const state = ensureState(projectId);
+    if (!state.binding) return;
+    for (const job of store.getJobs(projectId).filter(candidate => ['proposal', 'issue'].includes(candidate.kind) && candidate.state === 'succeeded')) {
+      const result = parse(db.prepare('SELECT data FROM github_job_progress WHERE job_id=?').get(job.id)?.data).result;
+      const binding = mode === 'simulator' ? state.binding : repositories.find(candidate => candidate.key === job.payload.bindingKey && candidate.repositoryId === job.payload.repositoryId && (!candidate.projectId || candidate.projectId === projectId));
+      if (result) recordJobLearning(job, result, binding);
+    }
+  }
   const service = {
     mode,
+    listLearningEvents(projectId, actor, { limit = 200 } = {}) {
+      store.accessProject(projectId, actor);
+      importGeneratedHistory(projectId);
+      const boundedLimit = Number.isSafeInteger(limit) ? Math.min(500, Math.max(1, limit)) : 200;
+      const rows = db.prepare('SELECT * FROM github_learning_events WHERE project_id=? ORDER BY occurred_at DESC,id DESC LIMIT ?').all(projectId, boundedLimit + 1);
+      let sync = parse(db.prepare('SELECT data FROM github_learning_sync WHERE project_id=?').get(projectId)?.data);
+      if (!sync.state) sync = { state: 'never', requests: 0, imported: 0, coverage: [] };
+      if (sync.state === 'running' && !syncing.has(projectId)) sync = { ...sync, state: 'partial', errorCode: 'sync_interrupted' };
+      return { events: rows.slice(0, boundedLimit).map(learningEventFromRow), hasMore: rows.length > boundedLimit, sync, coverageNotice: '기존 기록 가져오기는 기본 브랜치 커밋, 최근 PR·Issue·대화·코드 의견과 최대 10개 PR의 리뷰를 제한된 페이지에서 확인합니다. 수신하지 못한 다른 브랜치 push·과거 수정·삭제를 모두 복구하지는 못합니다. 수집 건수만으로 능력이나 성적을 판단하지 않습니다.' };
+    },
+    async syncLearningEvents(projectId, actor) {
+      store.accessProject(projectId, actor, { write: true });
+      if (stopping) throw new GitHubError('service_stopping', '서버를 종료하고 있습니다. 다시 시작한 뒤 수집해주세요.', { permanent: true, status: 503 });
+      if (syncing.has(projectId)) return service.listLearningEvents(projectId, actor);
+      const startedAt = iso(now());
+      let resolveFinished;
+      const finished = new Promise(resolve => { resolveFinished = resolve; });
+      activeSyncs.add(finished);
+      syncing.add(projectId);
+      try {
+        syncState(projectId, { state: 'running', startedAt, requests: 0, imported: 0, coverage: [] });
+        assertOnline(); const binding = trustedBinding(projectId);
+        importGeneratedHistory(projectId);
+        if (mode === 'simulator') syncState(projectId, { state: 'complete', startedAt, completedAt: iso(now()), requests: 0, imported: 0, coverage: ['보존된 로컬 모의 PR·Issue'], simulated: true });
+        else {
+          const guard = () => { if (stopping) throw new GitHubError('service_stopping', '서버 종료로 수집을 멈췄습니다.', { permanent: true, status: 503 }); const current = trustedBinding(projectId); if (current.key !== binding.key || current.repositoryId !== binding.repositoryId) throw new GitHubError('repository_binding_changed', '수집 도중 저장소 연결이 변경되었습니다.', { permanent: true, status: 409 }); };
+          const record = (event, payload) => { guard(); return recordLearning(projectId, binding, event, payload, { source: 'backfill' }); };
+          const stats = await client.collectLearning(binding, { record, onProgress: progress => syncState(projectId, { ...progress, state: 'running', startedAt }) });
+          syncState(projectId, { ...stats, state: stats.errorCode ? stats.imported || stats.coverage.length ? 'partial' : 'failed' : stats.partial ? 'partial' : 'complete', startedAt, completedAt: iso(now()) });
+        }
+      } catch (error) { syncState(projectId, { state: 'failed', startedAt, completedAt: iso(now()), requests: 0, imported: 0, coverage: [], errorCode: error instanceof GitHubError ? error.code : 'github_sync_failed' }); }
+      finally { syncing.delete(projectId); activeSyncs.delete(finished); resolveFinished(); }
+      return service.listLearningEvents(projectId, actor);
+    },
+    simulateLearningEvents(projectId, actor) {
+      store.accessProject(projectId, actor, { manage: true });
+      if (mode !== 'simulator' || !localMode) throw fail(404, 'simulator_only', '모의 수업 공간에서만 예시 기록을 만들 수 있습니다.');
+      if (actor.role !== 'teacher') throw fail(403, 'teacher_required', '모의 협력 기록은 교사만 추가할 수 있습니다.');
+      const binding = trustedBinding(projectId), receivedAt = iso(now()), at = '2026-10-28T00:00:00.000Z';
+      const a = LOCAL_GITHUB_IDENTITIES['student-a'], b = LOCAL_GITHUB_IDENTITIES['student-b'];
+      const sha = sha256(`learning-simulator:${projectId}`).slice(0, 40);
+      const pull = { id: 920000001, number: 101, title: '충돌 조건을 비교하는 실험 제안', body: '속도와 질량을 각각 바꾸어 비교했습니다. 에너지 설명이 관찰과 맞는지 확인해주세요.', user: a, head: { sha }, base: { ref: 'main' }, created_at: at, updated_at: at, state: 'open' };
+      const fixtures = [
+        ['push', { ref: 'refs/heads/experiment', before: '0'.repeat(40), after: sha, sender: a, commits: [{ id: sha, message: '조건을 한 번에 하나씩 바꾸는 실험 추가', timestamp: at, author: { username: a.login } }], head_commit: { timestamp: at, message: '조건을 한 번에 하나씩 바꾸는 실험 추가' } }],
+        ['pull_request', { action: 'opened', pull_request: pull, sender: a }],
+        ['pull_request_review', { action: 'submitted', pull_request: pull, review: { id: 920000002, body: '질량이 같은 경우만 확인되어 있습니다. 다른 질량에서도 결과가 유지되는지 비교하면 설명을 검증할 수 있겠습니다.', state: 'CHANGES_REQUESTED', user: b, commit_id: sha, submitted_at: at }, sender: b }],
+        ['issues', { action: 'opened', issue: { id: 920000003, number: 102, title: '마찰이 있으면 결과가 어떻게 바뀔까?', body: '현재 모델은 마찰을 생략했습니다. 그 가정이 결과에 미치는 영향을 다음 실험에서 확인하겠습니다.', user: b, created_at: at, updated_at: at, state: 'open' }, sender: b }],
+        ['issue_comment', { action: 'created', issue: { number: 102 }, comment: { id: 920000004, body: '좋은 반례입니다. 마찰이 없는 조건과 있는 조건을 같은 시간 동안 비교해보겠습니다.', user: a, created_at: at, updated_at: at }, sender: a }],
+        ['pull_request_review_comment', { action: 'created', pull_request: pull, comment: { id: 920000005, body: '이 반복문의 간격을 줄이면 관찰 결과가 달라지는지 확인해주세요.', user: b, path: 'main.py', line: 12, commit_id: sha, created_at: at, updated_at: at }, sender: b }],
+      ];
+      store.transaction(() => { for (const [event, payload] of fixtures) recordLearning(projectId, binding, event, payload, { source: 'simulator', receivedAt, context: { fixture: 'collaboration-v1' } }); });
+      return service.listLearningEvents(projectId, actor);
+    },
     status(projectId, actor) {
       store.accessProject(projectId, actor);
       const state = ensureState(projectId);
@@ -249,7 +335,9 @@ export function createGitHubService({ store, localMode = false, config = githubC
       const state = ensureState(projectId);
       if (input.baseSha !== state.remote.sha) throw fail(409, 'github_base_conflict', '모의 저장소의 최신 커밋이 변경되었습니다.');
       if (typeof input.code !== 'string' || Buffer.byteLength(input.code) > MAX_CODE_BYTES) throw fail(400, 'invalid_code', '50KB 이하 코드를 입력해주세요.');
-      store.setGithub(projectId, { ...state, remote: { ...state.remote, sha: sha256(`${state.remote.sha}:${input.code}`).slice(0, 40), code: input.code, fetchedAt: iso(now()) } });
+      const nextSha = sha256(`${state.remote.sha}:${input.code}`).slice(0, 40);
+      store.setGithub(projectId, { ...state, remote: { ...state.remote, sha: nextSha, code: input.code, fetchedAt: iso(now()) } });
+      recordLearning(projectId, state.binding, 'push', { ref: `refs/heads/${state.binding.branch}`, before: state.remote.sha, after: nextSha, sender: LOCAL_GITHUB_IDENTITIES[actor.id], head_commit: { message: '교사가 모의 외부 커밋을 추가했습니다.', timestamp: iso(now()) }, commits: [] }, { source: 'simulator' });
       return service.status(projectId, actor);
     },
     retry(projectId, jobId, actor) {
@@ -309,6 +397,10 @@ export function createGitHubService({ store, localMode = false, config = githubC
             else if (job.kind === 'issue') result = await client.createIssue(binding, job, progress, saveProgress, guard);
             else throw new GitHubError('unknown_job', '지원되지 않는 GitHub 작업입니다.', { permanent: true });
           }
+          if (['proposal', 'issue'].includes(job.kind)) {
+            const binding = mode === 'simulator' ? ensureState(job.projectId).binding : repositories.find(candidate => candidate.key === job.payload.bindingKey && candidate.repositoryId === job.payload.repositoryId && (!candidate.projectId || candidate.projectId === job.projectId));
+            recordJobLearning(job, result, binding);
+          }
           saveProgress({ ...progress, result });
           db.prepare("UPDATE github_jobs SET state='succeeded',last_error=NULL,updated_at=? WHERE id=?").run(iso(now()), job.id);
         } catch (error) {
@@ -322,7 +414,7 @@ export function createGitHubService({ store, localMode = false, config = githubC
       } finally { busy = false; for (const resolve of idleWaiters.splice(0)) resolve(); }
     },
     startWorker({ intervalMs = 1000 } = {}) { if (!timer) { timer = setInterval(() => { service.runOnce().catch(() => {}); }, intervalMs); timer.unref?.(); } return service; },
-    stopWorker() { clearInterval(timer); timer = null; return busy ? new Promise(resolve => idleWaiters.push(resolve)) : Promise.resolve(); },
+    stopWorker() { stopping = true; clearInterval(timer); timer = null; client.stop(); const pending = [...activeSyncs]; if (busy) pending.push(new Promise(resolve => idleWaiters.push(resolve))); return Promise.all(pending); },
     webhook(rawBody, headers) {
       if (!verifyGitHubSignature(rawBody, headers['x-hub-signature-256'], config.webhookSecret)) throw fail(401, 'invalid_webhook_signature', 'GitHub Webhook 서명을 확인할 수 없습니다.');
       const deliveryId = headers['x-github-delivery'], event = headers['x-github-event'];
@@ -332,20 +424,22 @@ export function createGitHubService({ store, localMode = false, config = githubC
         const digest = sha256(rawBody), existing = db.prepare('SELECT digest FROM github_webhook_deliveries WHERE id=?').get(deliveryId);
         if (existing) { if (existing.digest !== digest) throw fail(409, 'webhook_delivery_conflict', '같은 전송 ID의 본문이 변경되었습니다.'); return { accepted: true, duplicate: true }; }
         db.prepare('INSERT INTO github_webhook_deliveries VALUES(?,?,?,?)').run(deliveryId, digest, event, iso(now()));
-        let matched = 0;
-        if (['push', 'pull_request', 'installation', 'installation_repositories'].includes(event)) {
-          if (['push', 'pull_request'].includes(event) && !Number.isSafeInteger(payload.repository?.id)) return { accepted: true, duplicate: false, matched: 0 };
+        let matched = 0, recorded = 0;
+        const learningEvents = ['push', 'pull_request', 'pull_request_review', 'issues', 'issue_comment', 'pull_request_review_comment'];
+        if ([...learningEvents, 'installation', 'installation_repositories'].includes(event)) {
+          if (learningEvents.includes(event) && !Number.isSafeInteger(payload.repository?.id)) return { accepted: true, duplicate: false, matched: 0, recorded: 0 };
           for (const row of db.prepare('SELECT project_id,data FROM github_bindings').all()) {
             const state = parse(row.data), binding = repositories.find(candidate => candidate.key === state.binding?.key && (!candidate.projectId || candidate.projectId === row.project_id));
-            if (!binding || binding.installationId !== payload.installation?.id || payload.repository && binding.repositoryId !== payload.repository.id) continue;
-            if (event === 'push' && payload.ref !== `refs/heads/${binding.branch}`) continue;
+            if (!binding || state.binding?.repositoryId !== binding.repositoryId || binding.installationId !== payload.installation?.id || payload.repository && binding.repositoryId !== payload.repository.id) continue;
             matched++;
+            if (learningEvents.includes(event)) recorded += recordLearning(row.project_id, binding, event, payload, { source: 'webhook', deliveryId }).filter(result => result.inserted).length;
             const revoked = (event === 'installation' && ['deleted', 'suspend'].includes(payload.action)) || (event === 'installation_repositories' && payload.repositories_removed?.some(repository => repository.id === binding.repositoryId));
-            store.setGithub(row.project_id, { ...state, remote: state.remote ? { ...state.remote, available: !revoked, stale: true } : null, lastEvent: { event, action: payload.action || null, receivedAt: iso(now()), revoked } });
+            const mainMayChange = event !== 'push' || payload.ref === `refs/heads/${binding.branch}`;
+            store.setGithub(row.project_id, { ...state, remote: state.remote ? { ...state.remote, available: !revoked, stale: state.remote.stale || mainMayChange } : null, lastEvent: { event, action: payload.action || null, receivedAt: iso(now()), revoked } });
             if (revoked) db.prepare("UPDATE github_jobs SET state='blocked',last_error=?,updated_at=? WHERE project_id=? AND kind!='checkpoint' AND state IN ('pending','running')").run('github_auth_required: GitHub App 설치가 중지되거나 저장소 권한이 회수되었습니다.', iso(now()), row.project_id);
           }
         }
-        return { accepted: true, duplicate: false, matched };
+        return { accepted: true, duplicate: false, matched, recorded };
       });
     },
   };
@@ -356,6 +450,9 @@ export function createGitHubRouter({ store, requireActor, localMode = false, ser
   const router = express.Router();
   router.use('/projects/:id/github', requireActor);
   router.get('/projects/:id/github', (req, res) => res.json(service.status(req.params.id, req.actor)));
+  router.get('/projects/:id/github/learning', (req, res) => res.json(service.listLearningEvents(req.params.id, req.actor)));
+  router.post('/projects/:id/github/learning/sync', async (req, res) => res.json(await service.syncLearningEvents(req.params.id, req.actor)));
+  router.post('/projects/:id/github/learning/simulate', (req, res) => res.json(service.simulateLearningEvents(req.params.id, req.actor)));
   router.put('/projects/:id/github', (req, res) => res.json(service.bind(req.params.id, req.actor, req.body?.repositoryKey)));
   router.post('/projects/:id/github/fetch', async (req, res) => res.json(await service.fetchRemote(req.params.id, req.actor)));
   router.post('/projects/:id/github/proposals', (req, res) => res.status(202).json({ job: service.enqueueProposal(req.params.id, req.actor, req.body || {}) }));
