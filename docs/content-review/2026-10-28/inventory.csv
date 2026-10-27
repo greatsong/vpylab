@@ -1,0 +1,229 @@
+﻿kind,id,title,parent,declared_level,source,source_line,hints,assertions,code_checks,grade_type,starter_equals_solution,code_lines,syntax,control_depth,loops,functions,comprehensions,lambdas,classes,globals,while_true,position_component_writes,math_calls,solution_code_lines,solution_syntax
+lesson,beg-shapes-1,첫 공 띄우기,beg-shapes,1,client/src/data/courses.js,40,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+lesson,beg-shapes-2,"좌표의 비밀: x, y, z",beg-shapes,1,client/src/data/courses.js,52,0,0,0,,,8,ok,0,0,0,0,0,0,0,0,0,0,,
+lesson,beg-shapes-3,색깔과 크기 바꾸기,beg-shapes,1,client/src/data/courses.js,70,0,0,0,,,6,ok,0,0,0,0,0,0,0,0,0,0,,
+lesson,beg-shapes-4,신호등 만들기,beg-shapes,1,client/src/data/courses.js,86,0,0,0,,,6,ok,0,0,0,0,0,0,0,0,0,0,,
+lesson,beg-shapes-5,내 캐릭터 만들기,beg-shapes,1,client/src/data/courses.js,103,0,0,0,,,8,ok,0,0,0,0,0,0,0,0,0,0,,
+lesson,beg-patterns-1,for 5번 반복,beg-patterns,1,client/src/data/courses.js,142,0,0,0,,,4,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,beg-patterns-2,range와 인덱스,beg-patterns,1,client/src/data/courses.js,154,0,0,0,,,6,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,beg-patterns-3,리스트에 담기,beg-patterns,1,client/src/data/courses.js,168,0,0,0,,,8,ok,1,2,0,0,0,0,0,0,0,0,,
+lesson,beg-patterns-4,체스판 만들기 (2중 for),beg-patterns,1,client/src/data/courses.js,186,0,0,0,,,11,ok,3,2,0,0,0,0,0,0,0,0,,
+lesson,beg-patterns-5,나선 계단,beg-patterns,1,client/src/data/courses.js,206,0,0,0,,,11,ok,1,1,0,0,0,0,0,0,0,2,,
+lesson,beg-patterns-6,자유 패턴 작품,beg-patterns,1,client/src/data/courses.js,225,0,0,0,,,13,ok,2,3,1,0,0,0,0,0,0,2,,
+lesson,beg-melody-1,첫 음표 울리기,beg-melody,1,client/src/data/courses.js,268,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+lesson,beg-melody-2,옥타브와 #샤프,beg-melody,1,client/src/data/courses.js,281,0,0,0,,,8,ok,0,0,0,0,0,0,0,0,0,0,,
+lesson,beg-melody-3,리스트로 멜로디,beg-melody,1,client/src/data/courses.js,300,0,0,0,,,5,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,beg-melody-4,박자와 쉼표,beg-melody,1,client/src/data/courses.js,314,0,0,0,,,6,ok,2,2,0,0,0,0,0,0,0,0,,
+lesson,beg-melody-5,소리에 그림 입히기,beg-melody,1,client/src/data/courses.js,329,0,0,0,,,9,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,fus-math-1,직선 그리기,fus-math-functions,2,client/src/data/courses.js,367,0,0,0,,,7,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,fus-math-2,기울기 슬라이더,fus-math-functions,2,client/src/data/courses.js,382,0,0,0,,,22,ok,1,1,3,0,0,0,2,0,0,0,,
+lesson,fus-math-3,이차함수와 꼭짓점,fus-math-functions,2,client/src/data/courses.js,416,0,0,0,,,23,ok,1,1,4,0,0,0,3,0,0,0,,
+lesson,fus-math-4,사인 파동,fus-math-functions,2,client/src/data/courses.js,450,0,0,0,,,7,ok,1,1,0,0,0,0,0,0,0,1,,
+lesson,fus-math-5,진폭·주기·위상,fus-math-functions,2,client/src/data/courses.js,465,0,0,0,,,21,ok,1,1,4,0,0,0,3,0,0,1,,
+lesson,fus-math-6,3D로 확장: 헬릭스,fus-math-functions,2,client/src/data/courses.js,497,0,0,0,,,10,ok,1,1,0,0,0,0,0,0,0,2,,
+lesson,fus-sci-1,시간을 잘게 — 등속운동,fus-sci-newton,2,client/src/data/courses.js,535,0,0,0,,,10,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,fus-sci-2,자유낙하,fus-sci-newton,2,client/src/data/courses.js,554,0,0,0,,,11,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,fus-sci-3,포물선 운동,fus-sci-newton,2,client/src/data/courses.js,574,0,0,0,,,15,ok,1,1,0,0,0,0,0,0,0,3,,
+lesson,fus-sci-4,탄성 충돌,fus-sci-newton,2,client/src/data/courses.js,599,0,0,0,,,14,ok,2,1,0,0,0,0,0,0,0,0,,
+lesson,fus-sci-5,단진자,fus-sci-newton,2,client/src/data/courses.js,622,0,0,0,,,22,ok,1,1,0,0,0,0,0,0,0,4,,
+lesson,fus-sci-6,행성 궤도,fus-sci-newton,2,client/src/data/courses.js,654,0,0,0,,,16,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,fus-sci-7,v-t 그래프,fus-sci-newton,2,client/src/data/courses.js,680,0,0,0,,,12,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,fus-art-1,색의 좌표 — 무지개,fus-art-generative,2,client/src/data/courses.js,720,0,0,0,,,6,ok,1,2,0,0,0,0,0,0,0,0,,
+lesson,fus-art-2,점·선·면,fus-art-generative,2,client/src/data/courses.js,737,0,0,0,,,12,ok,1,2,0,0,0,0,0,0,0,4,,
+lesson,fus-art-3,절차적 패턴,fus-art-generative,2,client/src/data/courses.js,760,0,0,0,,,10,ok,1,1,0,0,0,0,0,0,0,4,,
+lesson,fus-art-4,파티클 — 별·눈·불꽃,fus-art-generative,2,client/src/data/courses.js,779,0,0,0,,,17,ok,1,2,0,0,0,0,0,0,0,0,,
+lesson,fus-art-5,무작위와 규칙의 균형,fus-art-generative,2,client/src/data/courses.js,807,0,0,0,,,9,ok,2,2,0,0,0,0,0,0,0,0,,
+lesson,fus-art-6,음악 반응형 비주얼,fus-art-generative,2,client/src/data/courses.js,824,0,0,0,,,15,ok,1,2,0,0,0,0,0,0,0,0,,
+lesson,pro-toolkit-1,빈 캔버스와 rate 루프,pro-toolkit,3,client/src/data/courses.js,869,0,0,0,,,8,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,pro-toolkit-2,첫 3D 객체 3종,pro-toolkit,3,client/src/data/courses.js,885,0,0,0,,,6,ok,0,0,0,0,0,0,0,0,0,0,,
+lesson,pro-toolkit-3,색과 조명,pro-toolkit,3,client/src/data/courses.js,899,0,0,0,,,6,ok,0,0,0,0,0,0,0,0,0,0,,
+lesson,pro-toolkit-4,벡터로 위치 계산,pro-toolkit,3,client/src/data/courses.js,913,0,0,0,,,13,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,pro-toolkit-5,회전과 궤적,pro-toolkit,3,client/src/data/courses.js,935,0,0,0,,,12,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,pro-toolkit-6,곡선과 점,pro-toolkit,3,client/src/data/courses.js,955,0,0,0,,,11,ok,2,1,0,0,0,0,0,0,0,1,,
+lesson,pro-toolkit-7,라벨과 compound,pro-toolkit,3,client/src/data/courses.js,975,0,0,0,,,8,ok,0,0,0,0,0,0,0,0,0,0,,
+lesson,pro-toolkit-8,2D 그래프 (gcurve),pro-toolkit,3,client/src/data/courses.js,993,0,0,0,,,10,ok,1,1,0,0,0,0,0,0,0,1,,
+lesson,pro-toolkit-9,3D 차트로 데이터 시각화,pro-toolkit,3,client/src/data/courses.js,1011,0,0,0,,,7,ok,0,0,0,3,0,0,0,0,0,0,,
+lesson,pro-toolkit-10,사운드 한 줄로,pro-toolkit,3,client/src/data/courses.js,1027,0,0,0,,,6,ok,1,1,0,0,0,0,0,0,0,0,,
+lesson,pro-toolkit-11,입력과 UI 위젯,pro-toolkit,3,client/src/data/courses.js,1043,0,0,0,,,17,ok,4,0,2,0,0,0,0,0,0,0,,
+mission,CT-1,첫 3D 객체: 빛나는 행성,CT,1,client/src/data/missions.js,27,4,3,0,A,False,2,ok,0,0,0,0,0,0,0,0,0,0,8,ok
+mission,CT-2,상태 바꾸기: 신호등,CT,1,client/src/data/missions.js,73,3,3,0,A,False,11,ok,0,0,0,0,0,0,0,0,0,0,18,ok
+mission,CT-3,함수로 스탬프 찍기,CT,2,client/src/data/missions.js,142,2,3,2,A,False,5,ok,0,0,1,0,0,0,0,0,0,0,7,ok
+mission,CT-4,조건문으로 색 고르기,CT,2,client/src/data/missions.js,187,2,3,2,A,False,11,ok,2,1,1,0,0,0,0,0,0,0,12,ok
+mission,CT-5,리스트로 움직임 업데이트,CT,3,client/src/data/missions.js,241,2,2,2,A,False,13,ok,2,3,0,0,0,0,0,0,0,0,13,ok
+mission,CT-6,변수로 행성 조절하기,CT,1,client/src/data/missions.js,301,3,3,0,A,False,6,ok,0,0,0,0,0,0,0,0,0,0,6,ok
+mission,CT-7,반복문으로 조명 줄 세우기,CT,1,client/src/data/missions.js,345,3,2,1,A,False,5,ok,1,1,0,0,0,0,0,0,0,0,5,ok
+mission,CT-8,매개변수로 버튼 찍기,CT,2,client/src/data/missions.js,386,3,4,2,A,False,6,ok,0,0,1,0,0,0,0,0,0,0,6,ok
+mission,CT-9,조건문으로 온도 색 정하기,CT,2,client/src/data/missions.js,431,3,4,2,A,False,11,ok,2,1,1,0,0,0,0,0,0,0,11,ok
+mission,CT-10,두 리스트 연결하기,CT,2,client/src/data/missions.js,488,3,3,2,A,False,8,ok,1,2,0,0,0,0,0,0,0,0,8,ok
+mission,CT-11,for와 리스트로 색 꺼내기,CT,2,client/src/data/missions.js,538,3,3,1,A,False,5,ok,1,1,0,0,0,0,0,0,0,0,5,ok
+mission,CT-12,if 두 개: 조건을 각각 적용하기,CT,2,client/src/data/missions.js,579,2,2,1,A,False,8,ok,1,0,0,0,0,0,0,0,0,0,8,ok
+mission,CT-13,if else: 둘 중 하나 고르기,CT,2,client/src/data/missions.js,629,2,2,1,A,False,7,ok,1,0,0,0,0,0,0,0,0,0,7,ok
+mission,CT-14,if elif else: 세 단계 속도 배지,CT,2,client/src/data/missions.js,672,2,3,2,A,False,9,ok,2,0,0,0,0,0,0,0,0,0,9,ok
+mission,CT-15,if elif elif else: 네 단계 레벨,CT,2,client/src/data/missions.js,721,2,3,2,A,False,11,ok,3,0,0,0,0,0,0,0,0,0,11,ok
+mission,CT-16,list append: 만든 객체 모으기,CT,2,client/src/data/missions.js,774,2,2,1,A,False,7,ok,1,2,0,0,0,0,0,0,0,0,7,ok
+mission,CT-17,random으로 별 흩뿌리기,CT,2,client/src/data/missions.js,819,3,2,2,A,False,8,ok,1,1,0,0,0,0,0,0,0,0,8,ok
+mission,CR-1,갤러리 씨앗: 나만의 캐릭터,CR,1,client/src/data/missions.js,870,2,0,0,run,True,9,ok,0,0,0,0,0,0,0,0,0,0,9,ok
+mission,CR-2,블록으로 만드는 작은 방,CR,1,client/src/data/missions.js,899,2,0,0,run,True,8,ok,0,0,0,0,0,0,0,0,0,0,8,ok
+mission,CR-3,복합 객체 리믹스,CR,2,client/src/data/missions.js,929,2,0,0,run,True,9,ok,1,1,0,0,0,0,0,0,0,0,9,ok
+mission,CR-4,빛으로 분위기 만들기,CR,2,client/src/data/missions.js,958,2,0,0,run,True,7,ok,0,0,0,0,0,0,0,0,0,0,7,ok
+mission,CR-5,오픈소스 리믹스 카드,CR,2,client/src/data/missions.js,985,2,0,0,run,True,14,ok,2,3,0,0,0,0,0,0,0,1,14,ok
+mission,MA-1,좌표 산책,MA,1,client/src/data/missions.js,1024,2,0,0,run,True,9,ok,1,1,0,0,0,0,0,0,0,0,9,ok
+mission,MA-2,정다각형 생성기,MA,1,client/src/data/missions.js,1054,2,0,0,run,True,10,ok,1,1,0,0,0,0,0,0,0,2,10,ok
+mission,MA-3,사인파 리본,MA,2,client/src/data/missions.js,1083,2,0,0,run,True,9,ok,1,1,0,0,0,0,0,0,0,1,9,ok
+mission,MA-4,함수 지형 만들기,MA,2,client/src/data/missions.js,1111,2,0,0,run,True,10,ok,2,2,0,0,0,0,0,0,0,2,10,ok
+mission,MA-5,피보나치 꽃밭,MA,2,client/src/data/missions.js,1139,2,0,0,run,True,10,ok,1,1,0,0,0,0,0,0,0,4,10,ok
+mission,SC-1,속도 실험실,SC,1,client/src/data/missions.js,1172,2,0,0,run,True,8,ok,1,1,0,0,0,0,0,0,0,0,8,ok
+mission,SC-2,다른 행성의 중력,SC,1,client/src/data/missions.js,1199,2,0,0,run,True,20,ok,3,3,0,0,0,0,0,0,0,0,20,ok
+mission,SC-3,튕기는 공 실험,SC,2,client/src/data/missions.js,1239,2,0,0,run,True,16,ok,2,1,0,0,0,0,0,0,0,0,16,ok
+mission,SC-4,용수철 느낌 실험,SC,2,client/src/data/missions.js,1275,2,0,0,run,True,16,ok,1,1,0,0,0,0,0,0,0,0,16,ok
+mission,SC-5,궤도 실험실,SC,2,client/src/data/missions.js,1311,2,0,0,run,True,15,ok,1,1,0,0,0,0,0,0,0,0,15,ok
+mission,AR-1,파스텔 숨쉬는 구름,AR,1,client/src/data/missions.js,1351,2,0,0,run,True,16,ok,2,3,0,0,0,0,0,0,0,1,16,ok
+mission,AR-2,무지개 파동 바닥,AR,1,client/src/data/missions.js,1387,2,0,0,run,True,17,ok,2,4,0,0,0,0,0,0,0,1,17,ok
+mission,AR-3,별자리 생성기,AR,2,client/src/data/missions.js,1424,2,0,0,run,True,13,ok,1,2,0,0,0,0,0,0,0,0,13,ok
+mission,AR-4,음악 조명 무대,AR,2,client/src/data/missions.js,1457,2,0,0,run,True,14,ok,1,1,0,0,0,0,0,0,0,0,14,ok
+mission,AR-5,나만의 VJ 루프,AR,3,client/src/data/missions.js,1492,2,0,0,run,True,20,ok,2,3,0,0,0,0,0,0,0,5,20,ok
+mission,SN-1,세 음으로 알림음 만들기,SN,1,client/src/data/missions.js,1536,2,0,0,run,True,12,ok,1,2,0,0,0,0,0,0,0,0,12,ok
+mission,SN-2,리듬 패턴 메이커,SN,1,client/src/data/missions.js,1568,2,0,0,run,True,7,ok,1,1,0,0,0,0,0,0,0,0,7,ok
+mission,SN-3,화음 분위기 바꾸기,SN,2,client/src/data/missions.js,1594,2,0,0,run,True,8,ok,1,1,0,0,0,0,0,0,0,0,8,ok
+mission,SN-4,게임 효과음 스토리보드,SN,2,client/src/data/missions.js,1625,2,0,0,run,True,19,ok,1,2,0,0,0,0,0,0,0,1,19,ok
+mission,SN-5,BGM 위에 멜로디 얹기,SN,3,client/src/data/missions.js,1666,2,0,0,run,True,17,ok,1,2,0,0,0,0,0,0,0,0,17,ok
+mission,AR-6,빛나는 타이포 패턴,AR,1,client/src/data/missions.js,1705,2,0,0,run,True,19,ok,3,2,0,0,0,0,0,0,0,0,19,ok
+mission,AR-7,오디오 리액티브처럼 보이는 막대,AR,2,client/src/data/missions.js,1744,2,0,0,run,True,16,ok,2,3,0,0,0,0,0,0,0,0,16,ok
+mission,AR-8,입자 붓질,AR,2,client/src/data/missions.js,1782,2,0,0,run,True,10,ok,1,1,0,0,0,0,0,0,0,3,10,ok
+mission,AR-9,장면 전환 루프,AR,3,client/src/data/missions.js,1811,2,0,0,run,True,12,ok,1,1,0,0,0,0,0,0,0,0,12,ok
+mission,MA-6,데이터 조각 공원,MA,2,client/src/data/missions.js,1844,2,0,0,run,True,6,ok,1,1,0,0,0,0,0,0,0,0,6,ok
+mission,MA-7,확률 구름,MA,2,client/src/data/missions.js,1869,2,0,0,run,True,9,ok,1,1,0,0,0,0,0,0,0,0,9,ok
+mission,SC-6,감염 확산 미니 모델,SC,2,client/src/data/missions.js,1897,2,0,0,run,True,17,ok,2,2,0,0,0,0,0,0,0,0,17,ok
+mission,SN-6,악기 바꿔 듣기,SN,1,client/src/data/missions.js,1933,2,0,0,run,True,9,ok,2,2,0,0,0,0,0,0,0,0,9,ok
+mission,SN-7,콜 앤 리스폰스,SN,2,client/src/data/missions.js,1961,2,0,0,run,True,13,ok,1,3,0,0,0,0,0,0,0,0,13,ok
+mission,SN-8,드럼머신 흉내내기,SN,2,client/src/data/missions.js,1994,2,0,0,run,True,7,ok,1,1,0,0,0,0,0,0,0,0,7,ok
+mission,SN-9,멜로디를 색으로 번역하기,SN,3,client/src/data/missions.js,2020,2,0,0,run,True,15,ok,1,1,0,0,0,0,0,0,0,0,15,ok
+mission,SN-10,나만의 짧은 사운드 로고,SN,3,client/src/data/missions.js,2054,2,0,0,run,True,11,ok,0,0,0,0,0,0,0,0,0,0,11,ok
+example,solar-system,태양계,space,2,client/src/data/examples.js,11,0,0,0,,,29,ok,2,3,0,0,0,0,0,1,0,2,,
+example,shooting-stars,별똥별,space,1,client/src/data/examples.js,57,0,0,0,,,28,ok,4,3,0,0,0,0,0,1,2,0,,
+example,dna-helix,DNA 이중나선,space,2,client/src/data/examples.js,104,0,0,0,,,26,ok,2,1,0,0,0,0,0,0,0,4,,
+example,galaxy,은하수,space,2,client/src/data/examples.js,151,0,0,0,,,30,ok,2,4,0,0,0,0,0,1,0,5,,
+example,rain,비 내리는 날,space,1,client/src/data/examples.js,200,0,0,0,,,28,ok,4,3,0,0,0,0,0,1,0,0,,
+example,music-box,3D 오르골,sound,2,client/src/data/examples.js,251,0,0,0,,,25,ok,1,2,0,0,0,0,0,1,0,1,,
+example,rainbow-xylophone,무지개 실로폰,sound,1,client/src/data/examples.js,300,0,0,0,,,28,ok,2,4,0,0,0,0,0,1,4,0,,
+example,fireflies,반딧불 합주,sound,2,client/src/data/examples.js,347,0,0,0,,,36,ok,4,3,0,0,0,0,0,1,0,5,,
+example,rhythm-viz,리듬 시각화,sound,1,client/src/data/examples.js,407,0,0,0,,,32,ok,3,4,0,0,0,0,0,1,0,0,,
+example,space-bgm,우주 유영,sound,1,client/src/data/examples.js,461,0,0,0,,,30,ok,1,2,0,0,0,0,0,1,0,6,,
+example,cannon,포물선 대포,science,2,client/src/data/examples.js,516,0,0,0,,,35,ok,2,1,0,0,0,0,0,1,2,8,,
+example,wave-sim,파동 시뮬레이션,science,2,client/src/data/examples.js,575,0,0,0,,,32,ok,6,5,0,0,0,0,0,1,0,2,,
+example,surface-plot,3D 함수 그래프,science,1,client/src/data/examples.js,628,0,0,0,,,15,ok,2,2,0,0,0,0,0,0,0,2,,
+example,pendulum,진자 운동,science,2,client/src/data/examples.js,659,0,0,0,,,27,ok,2,1,0,0,0,0,0,1,0,4,,
+example,fireworks,불꽃놀이,art,2,client/src/data/examples.js,718,0,0,0,,,39,ok,2,5,0,0,0,0,0,1,0,5,,
+example,christmas-tree,크리스마스 트리,art,1,client/src/data/examples.js,778,0,0,0,,,33,ok,3,3,0,0,0,0,0,1,0,2,,
+example,kaleidoscope,3D 만화경,art,2,client/src/data/examples.js,834,0,0,0,,,31,ok,2,4,0,0,0,0,0,1,0,6,,
+example,neon-city,네온 도시,art,1,client/src/data/examples.js,889,0,0,0,,,34,ok,4,2,0,0,0,0,0,0,0,0,,
+example,bounce-ball,바운스 볼,game,1,client/src/data/examples.js,951,0,0,0,,,38,ok,2,1,0,0,0,0,0,1,3,0,,
+example,planet-collision,행성 충돌,game,2,client/src/data/examples.js,1010,0,0,0,,,44,ok,3,4,0,0,0,0,0,1,0,5,,
+example,showcase-shapes,새 도형 모음 (피라미드/타원체/나선/라벨),creative,1,client/src/data/examples.js,1088,0,0,0,,,17,ok,0,0,0,0,0,0,0,0,0,0,,
+example,showcase-curve,동적 곡선 (curve로 사인파 그리기),math,2,client/src/data/examples.js,1127,0,0,0,,,13,ok,1,1,0,0,0,0,0,0,0,2,,
+example,showcase-clone-rotate,clone + rotate로 12지 시계,creative,2,client/src/data/examples.js,1162,0,0,0,,,21,ok,1,1,0,0,0,0,0,0,0,0,,
+example,showcase-event-click,클릭으로 공 만들기 (이벤트),interactive,3,client/src/data/examples.js,1210,0,0,0,,,18,ok,1,1,1,0,0,0,0,1,0,0,,
+example,showcase-keyboard-bouncing,키보드로 공 조종하기,interactive,3,client/src/data/examples.js,1256,0,0,0,,,31,ok,5,2,1,0,0,0,0,1,2,0,,
+example,showcase-slider-control,슬라이더로 공 크기 조절,interactive,2,client/src/data/examples.js,1315,0,0,0,,,19,ok,1,1,2,0,0,0,0,1,0,0,,
+example,showcase-vertex-rainbow,정점 색상으로 만드는 무지개 부채,creative,2,client/src/data/examples.js,1363,0,0,0,,,27,ok,2,1,0,0,0,0,0,0,0,2,,
+example,showcase-platonic-solids,triangle/quad로 만드는 다면체,math,3,client/src/data/examples.js,1412,0,0,0,,,46,ok,1,2,0,0,0,0,0,0,0,4,,
+example,showcase-extrusion-tube,extrusion으로 만드는 휘어진 튜브,creative,3,client/src/data/examples.js,1482,0,0,0,,,24,ok,1,2,1,2,0,0,0,0,0,6,,
+example,showcase-keysdown-spaceship,keysdown으로 우주선 조종하기,game,3,client/src/data/examples.js,1530,0,0,0,,,32,ok,3,2,0,0,0,0,0,1,0,0,,
+example,showcase-mouse-follow,scene.mouse로 마우스 따라다니기,interactive,2,client/src/data/examples.js,1587,0,0,0,,,19,ok,1,1,0,0,0,0,0,1,0,0,,
+example,showcase-graph-functions,슬라이더로 함수 그래프 조절,math,3,client/src/data/examples.js,1632,0,0,0,,,32,ok,1,2,4,0,0,0,0,1,0,1,,
+example,showcase-scatter-regression,산점도와 회귀선 (gdots + gcurve),math,3,client/src/data/examples.js,1690,0,0,0,,,27,ok,1,4,0,4,0,0,0,0,0,0,,
+example,showcase-pendulum-trail,진자 운동과 attach_trail,science,2,client/src/data/examples.js,1745,0,0,0,,,29,ok,1,1,0,0,0,0,0,1,0,6,,
+example,music-frequency-tower,주파수 탑 — 음높이의 비밀,sound,2,client/src/data/examples.js,1808,0,0,0,,,24,ok,1,1,0,0,0,0,0,0,0,0,,
+example,music-sine-wave,사인파 멜로디 — 슬라이더로 그리고 듣기,sound,3,client/src/data/examples.js,1855,0,0,0,,,32,ok,1,2,3,0,0,0,0,1,0,1,,
+example,music-fibonacci-rhythm,피보나치 리듬 — 황금비 박자,sound,2,client/src/data/examples.js,1917,0,0,0,,,30,ok,3,4,0,0,0,0,0,1,0,0,,
+example,music-doppler,도플러 효과 — 지나가는 자동차의 음,sound,3,client/src/data/examples.js,1972,0,0,0,,,33,ok,4,2,0,0,0,0,0,0,0,0,,
+example,music-wave-interference,파동 간섭 — 두 사인파의 합,sound,3,client/src/data/examples.js,2035,0,0,0,,,27,ok,1,1,0,0,0,0,0,0,0,2,,
+example,music-planet-orchestra,행성 합주단 — 우주의 음악,sound,3,client/src/data/examples.js,2088,0,0,0,,,37,ok,3,3,0,0,0,0,0,1,0,2,,
+example,music-rainbow-piano,무지개 피아노 — 클릭으로 연주,sound,2,client/src/data/examples.js,2153,0,0,0,,,39,ok,4,3,1,0,0,0,0,1,0,0,,
+example,music-note-fireworks,음표 폭죽 — 클릭한 곳에 폭발과 음,sound,3,client/src/data/examples.js,2218,0,0,0,,,49,ok,3,3,1,0,0,0,0,1,0,2,,
+example,music-mario-dance,슈퍼마리오 테마 — 도형 댄스,sound,2,client/src/data/examples.js,2297,0,0,0,,,67,ok,6,3,0,0,0,0,0,1,0,0,,
+example,music-childrens-songs,"동요 모음 — 학교종, 산토끼, Twinkle, 생일축하",sound,1,client/src/data/examples.js,2403,0,0,0,,,68,ok,3,2,1,0,4,0,0,1,0,0,,
+example,music-game-themes,"게임 음악 모음 — Mario, Tetris, Pac-Man",sound,2,client/src/data/examples.js,2520,0,0,0,,,101,ok,4,4,2,0,3,0,0,1,0,0,,
+example,music-piano-recorder,🎹 피아노 레코더 — 연주하고 다른 악기로 재생,sound,3,client/src/data/examples.js,2668,0,0,0,,,115,ok,7,6,5,0,0,0,0,1,0,0,,
+example,music-endless-cosmos,끝없는 우주 멜로디 — 자동 생성 음악-아트,sound,3,client/src/data/examples.js,2838,0,0,0,,,36,ok,2,1,0,0,0,0,0,1,0,2,,
+example,lightshow-aurora-symphony,오로라 심포니 - 하늘에서 춤추는 빛의 교향곡,art,2,client/src/data/examples.js,2912,0,0,0,,,67,ok,4,6,0,0,0,0,0,1,0,4,,
+example,lightshow-piano-fountain,피아노 분수 - 음표가 솟구치는 빛의 분수,art,2,client/src/data/examples.js,3007,0,0,0,,,83,ok,5,6,0,0,0,0,0,1,0,8,,
+example,lightshow-galaxy-disco,갤럭시 디스코 - 우주 한복판 댄스 클럽,art,3,client/src/data/examples.js,3112,0,0,0,,,110,ok,6,9,0,0,0,0,0,1,0,11,,
+example,synesthesia-color-piano,색채 피아노 - 클릭으로 빛과 음을 동시에,creative,2,client/src/data/examples.js,3247,0,0,0,,,63,ok,6,5,3,0,0,0,0,1,0,0,,
+example,synesthesia-pitch-painter,"마우스 페인팅 - 높이가 음, 색이 음색",creative,3,client/src/data/examples.js,3335,0,0,0,,,64,ok,4,3,5,0,0,0,0,1,0,0,,
+example,synesthesia-aurora-orchestra,오로라 오케스트라 - 슬라이더로 빛과 음을 지휘,creative,3,client/src/data/examples.js,3426,0,0,0,,,83,ok,3,3,5,0,0,0,0,1,0,4,,
+example,cosmic-aurora-veil,오로라 베일 - 흐르는 빛의 커튼,art,2,client/src/data/examples.js,3536,0,0,0,,,60,ok,3,6,0,0,0,0,0,1,0,5,,
+example,cosmic-firefly-choir,반딧불이 합창단 - 점멸하는 빛의 노래,art,3,client/src/data/examples.js,3621,0,0,0,,,65,ok,4,4,0,0,0,0,0,1,0,4,,
+example,cosmic-galaxy-grow,은하 자라기 - 별이 태어나는 우주,art,3,client/src/data/examples.js,3709,0,0,0,,,81,ok,3,3,0,0,0,0,0,1,0,8,,
+example,texture-showcase,텍스처 쇼케이스 (20종),art,1,client/src/data/examples.js,3820,0,0,0,,,33,ok,1,1,0,0,0,0,0,0,0,0,,
+reference,sphere,구 (sphere),objects,,client/src/data/docs.js,23,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,box,상자 (box),objects,,client/src/data/docs.js,48,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,cylinder,원기둥 (cylinder),objects,,client/src/data/docs.js,71,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,arrow,화살표 (arrow),objects,,client/src/data/docs.js,94,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,cone,원뿔 (cone),objects,,client/src/data/docs.js,117,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,ring,링 (ring),objects,,client/src/data/docs.js,140,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,compound,복합 객체 (compound),objects,,client/src/data/docs.js,163,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,pyramid,사각뿔 (pyramid),objects,,client/src/data/docs.js,187,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,ellipsoid,타원체 (ellipsoid),objects,,client/src/data/docs.js,207,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,helix,나선 (helix),objects,,client/src/data/docs.js,226,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,label,라벨 (label / text),objects,,client/src/data/docs.js,249,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,curve,곡선 (curve),objects,,client/src/data/docs.js,272,0,0,0,,,6,ok,1,1,0,0,0,0,0,0,0,1,,
+reference,points,점 집합 (points),objects,,client/src/data/docs.js,294,0,0,0,,,4,ok,1,1,0,0,0,0,0,0,0,0,,
+reference,frame,frame (= compound),objects,,client/src/data/docs.js,314,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,object-clone,객체 복제 (.clone()),objects,,client/src/data/docs.js,334,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,object-rotate,객체 회전 (.rotate()),objects,,client/src/data/docs.js,352,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,object-attach-trail,궤적 부착 (.attach_trail()),objects,,client/src/data/docs.js,372,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,object-clear-trail,궤적 지우기 (.clear_trail()),objects,,client/src/data/docs.js,391,0,0,0,,,3,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,vertex,정점 (vertex),meshes,,client/src/data/docs.js,409,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,triangle,삼각형 (triangle),meshes,,client/src/data/docs.js,431,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,quad,사각형 (quad),meshes,,client/src/data/docs.js,450,0,0,0,,,8,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,extrusion,압출 (extrusion),meshes,,client/src/data/docs.js,472,0,0,0,,,9,ok,1,1,0,1,0,0,0,0,0,2,,
+reference,vector,벡터 (vector),vectors,,client/src/data/docs.js,497,0,0,0,,,7,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,mag,크기 (mag),vectors,,client/src/data/docs.js,522,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,hat,단위벡터 (hat),vectors,,client/src/data/docs.js,541,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,dot,내적 (dot),vectors,,client/src/data/docs.js,560,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,cross,외적 (cross),vectors,,client/src/data/docs.js,580,0,0,0,,,6,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,norm,정규화 (norm),vectors,,client/src/data/docs.js,601,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,vector-clone,벡터 복제 (.clone()),vectors,,client/src/data/docs.js,619,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,vector-proj,투영 (.proj() / .comp()),vectors,,client/src/data/docs.js,636,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,vector-diff-angle,벡터 사이 각 (.diff_angle()),vectors,,client/src/data/docs.js,655,0,0,0,,,6,ok,0,0,0,0,0,0,0,0,0,1,,
+reference,vector-rotate,벡터 회전 (.rotate()),vectors,,client/src/data/docs.js,675,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,rate,프레임 속도 (rate),scene,,client/src/data/docs.js,697,0,0,0,,,6,ok,1,1,0,0,0,0,0,0,0,0,,
+reference,sleep,대기 (sleep),scene,,client/src/data/docs.js,717,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,scene_background,배경색 (scene_background),scene,,client/src/data/docs.js,735,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,local_light,점 조명 (local_light),scene,,client/src/data/docs.js,753,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,distant_light,방향 조명 (distant_light),scene,,client/src/data/docs.js,773,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,scene-object,scene 객체 — 카메라/배경,scene,,client/src/data/docs.js,793,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,scene-bind,scene.bind() — 이벤트 핸들러,events,,client/src/data/docs.js,819,0,0,0,,,6,ok,1,1,1,0,0,0,0,1,0,0,,
+reference,scene-mouse,scene.mouse — 마우스 폴링,events,,client/src/data/docs.js,844,0,0,0,,,6,ok,1,1,0,0,0,0,0,1,0,0,,
+reference,keysdown,keysdown() — 다중 키 폴링,events,,client/src/data/docs.js,862,0,0,0,,,9,ok,2,1,0,0,0,0,0,1,4,0,,
+reference,slider,슬라이더 (slider),widgets,,client/src/data/docs.js,885,0,0,0,,,7,ok,1,1,1,0,0,0,0,1,0,0,,
+reference,button,버튼 (button),widgets,,client/src/data/docs.js,913,0,0,0,,,8,ok,1,1,1,0,0,0,0,1,0,0,,
+reference,checkbox,체크박스 (checkbox),widgets,,client/src/data/docs.js,938,0,0,0,,,7,ok,1,1,1,0,0,0,0,1,0,0,,
+reference,radio,라디오 버튼 (radio),widgets,,client/src/data/docs.js,963,0,0,0,,,9,ok,1,1,1,0,0,0,0,1,0,0,,
+reference,menu,메뉴 / 드롭다운 (menu),widgets,,client/src/data/docs.js,992,0,0,0,,,11,ok,2,1,1,0,0,0,0,1,2,0,,
+reference,winput,입력창 (winput),widgets,,client/src/data/docs.js,1022,0,0,0,,,6,ok,1,1,1,0,0,0,0,1,0,0,,
+reference,graph,그래프 캔버스 (graph),graphs,,client/src/data/docs.js,1048,0,0,0,,,8,ok,1,1,0,0,0,0,0,0,0,1,,
+reference,gcurve,선 그래프 (gcurve),graphs,,client/src/data/docs.js,1073,0,0,0,,,6,ok,1,1,0,0,0,0,0,0,0,1,,
+reference,gdots,점 그래프 (gdots),graphs,,client/src/data/docs.js,1096,0,0,0,,,7,ok,1,1,0,0,0,0,0,0,0,0,,
+reference,gvbars,세로 막대 (gvbars),graphs,,client/src/data/docs.js,1119,0,0,0,,,6,ok,1,1,0,0,0,0,0,0,0,0,,
+reference,ghbars,가로 막대 (ghbars),graphs,,client/src/data/docs.js,1141,0,0,0,,,5,ok,1,1,0,0,0,0,0,0,0,0,,
+reference,color-palette,색상 팔레트,colors,,client/src/data/docs.js,1164,0,0,0,,,4,ok,1,1,0,0,0,0,0,0,0,0,,
+reference,korean-colors,한글 색상 (색상),colors,,client/src/data/docs.js,1211,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,custom-rgb,사용자 정의 색상 (RGB),colors,,client/src/data/docs.js,1243,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,color-lists,색상 리스트 (무지개),colors,,client/src/data/docs.js,1263,0,0,0,,,10,ok,1,1,0,0,0,0,0,0,0,0,,
+reference,korean-sound-quickstart,한글 사운드 빠른 시작,sound,,client/src/data/docs.js,1295,0,0,0,,,8,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,play_sound,소리 재생 (소리 / sound),sound,,client/src/data/docs.js,1325,0,0,0,,,6,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,play_note,음표 재생 (음표),sound,,client/src/data/docs.js,1348,0,0,0,,,4,ok,1,1,0,0,0,0,0,0,0,0,,
+reference,play_chord,화음 재생 (화음),sound,,client/src/data/docs.js,1370,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,play_sequence,멜로디 재생 (play_sequence),sound,,client/src/data/docs.js,1394,0,0,0,,,9,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,play_sfx,효과음 재생 (효과음),sound,,client/src/data/docs.js,1417,0,0,0,,,6,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,bgm,배경음악 (배경음악 / 배경음악정지),sound,,client/src/data/docs.js,1440,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,note-constants,음계와 노트 상수,sound,,client/src/data/docs.js,1462,0,0,0,,,5,ok,1,1,0,0,0,0,0,0,0,0,,
+reference,instrument,악기 음색 (악기),sound,,client/src/data/docs.js,1494,0,0,0,,,5,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,scatter3d,3D 산점도 (scatter3d),charts,,client/src/data/docs.js,1519,0,0,0,,,4,ok,0,0,0,1,0,0,0,0,0,0,,
+reference,surface3d,3D 표면 그래프 (surface3d),charts,,client/src/data/docs.js,1542,0,0,0,,,10,ok,2,2,0,0,0,0,0,0,0,2,,
+reference,line3d,3D 선 그래프 (line3d),charts,,client/src/data/docs.js,1571,0,0,0,,,4,ok,0,0,0,1,0,0,0,0,0,2,,
+reference,bar3d,3D 막대 그래프 (bar3d),charts,,client/src/data/docs.js,1592,0,0,0,,,4,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,texture-attribute,텍스처 속성 (texture),materials,,client/src/data/docs.js,1617,0,0,0,,,7,ok,0,0,0,0,0,0,0,0,0,0,,
+reference,textures-presets,텍스처 프리셋 (textures),materials,,client/src/data/docs.js,1645,0,0,0,,,11,ok,1,1,0,0,0,0,0,0,0,0,,

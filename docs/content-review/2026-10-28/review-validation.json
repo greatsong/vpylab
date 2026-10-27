@@ -1,0 +1,61 @@
+{
+  "scope": "문서 전수 ID·분류 합계·링크 경로/행 범위·표 형식·인벤토리 중복 검사. 교육 효과 검증이 아님.",
+  "coverage": {
+    "lesson": {
+      "expected": 46,
+      "reviewed_rows": 46,
+      "missing": [],
+      "duplicates": [],
+      "decisions": {
+        "적합": 10,
+        "보완후적합": 24,
+        "선택심화": 10,
+        "입문경로분리": 2
+      }
+    },
+    "mission": {
+      "expected": 54,
+      "reviewed_rows": 54,
+      "missing": [],
+      "duplicates": [],
+      "decisions": {
+        "보완후적합": 23,
+        "선택심화": 9,
+        "적합": 17,
+        "입문경로분리": 5
+      }
+    },
+    "example": {
+      "expected": 57,
+      "reviewed_rows": 57,
+      "missing": [],
+      "duplicates": [],
+      "decisions": {
+        "보완후적합": 16,
+        "입문경로분리": 13,
+        "선택심화": 27,
+        "적합": 1
+      }
+    },
+    "reference": {
+      "expected": 71,
+      "reviewed_rows": 71,
+      "missing": [],
+      "duplicates": [],
+      "decisions": {
+        "입문필수": 9,
+        "필요시참고": 46,
+        "교사제공·선택심화": 16
+      }
+    }
+  },
+  "activity_decisions": {
+    "적합": 28,
+    "보완후적합": 63,
+    "선택심화": 46,
+    "입문경로분리": 20
+  },
+  "inventory_rows": 228,
+  "valid_local_links": 278,
+  "errors": []
+}

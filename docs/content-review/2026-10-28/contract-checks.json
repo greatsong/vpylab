@@ -1,0 +1,84 @@
+{
+  "scope": "경량 Python API 계약 재현. Three.js·WebAudio·Pyodide 브라우저 실행 또는 학습자 실험이 아님. 발견 재현이며 정상 통과 테스트 수가 아님.",
+  "checks": [
+    {
+      "case": "beg-patterns-2",
+      "method": "원문 차시 코드 + 실제 Python API, js.postMessage만 대체",
+      "result": {
+        "type": "IndexError",
+        "message": "list index out of range"
+      }
+    },
+    {
+      "case": "pro-toolkit-9",
+      "method": "원문 차시 코드 + 실제 Python API, js.postMessage만 대체",
+      "result": {
+        "type": "TypeError",
+        "message": "scatter3d() got an unexpected keyword argument 'color'"
+      }
+    },
+    {
+      "case": "position_component_update",
+      "method": "실제 API 객체의 명령 버퍼 확인",
+      "component_x": 1,
+      "component_commands": [],
+      "whole_vector_commands": [
+        {
+          "action": "update",
+          "id": "obj_8",
+          "pos": [
+            2.0,
+            0.0,
+            0.0
+          ]
+        }
+      ]
+    },
+    {
+      "case": "korean_accidental_notes",
+      "method": "실제 _resolve_note_name 직접 호출",
+      "result": {
+        "도4": "C4",
+        "도#4": "C4#4",
+        "솔#4": "G4#4",
+        "레b4": "D4b4",
+        "C#4": "C#4"
+      }
+    },
+    {
+      "case": "korean_chord_strings",
+      "method": "실제 화음 호출의 명령 버퍼 확인(브라우저 청취 아님)",
+      "result": {
+        "pending": [],
+        "posted": [
+          {
+            "type": "batch",
+            "runId": 0,
+            "commands": [
+              {
+                "action": "sound",
+                "method": "chord",
+                "frequencies": [
+                  "도4",
+                  "미4",
+                  "솔4"
+                ],
+                "duration": 0.01,
+                "type": "sine",
+                "volume": 0.25
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case": "radio_vector_value",
+      "method": "문서와 같은 vector value를 실제 radio API에 전달한 뒤 전송",
+      "result": {
+        "type": "TypeError",
+        "message": "Object of type vector is not JSON serializable"
+      }
+    }
+  ]
+}

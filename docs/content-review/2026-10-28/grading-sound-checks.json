@@ -1,0 +1,109 @@
+{
+  "scope": "기존 JS 함수와 실제 채점 엔진의 격리 재현. Python 실행·브라우저·학습자 실험 아님.",
+  "checks": [
+    {
+      "case": "CT-3-without-function",
+      "method": "함수를 쓰지 않는 직접 생성 결과로 동일 객체 레지스트리 구성",
+      "code": "sphere(pos=vector(0,0,0), emissive=True)\nsphere(pos=vector(-2,0,1.5))\nsphere(pos=vector(2,0,-1.5))",
+      "objectCriteria": {
+        "grade": "A",
+        "passed": true,
+        "score": 100,
+        "results": [
+          {
+            "assertion": {
+              "type": "sphere",
+              "property": "emissive",
+              "operator": "==",
+              "value": true,
+              "index": 0
+            },
+            "passed": true,
+            "actual": true,
+            "expected": true,
+            "message": "✅ emissive == true"
+          },
+          {
+            "assertion": {
+              "type": "sphere",
+              "property": "pos.x",
+              "operator": "<",
+              "value": 0,
+              "index": 1
+            },
+            "passed": true,
+            "actual": -2,
+            "expected": 0,
+            "message": "✅ pos.x < 0"
+          },
+          {
+            "assertion": {
+              "type": "sphere",
+              "property": "pos.x",
+              "operator": ">",
+              "value": 0,
+              "index": 2
+            },
+            "passed": true,
+            "actual": 2,
+            "expected": 0,
+            "message": "✅ pos.x > 0"
+          }
+        ]
+      },
+      "functionCriteria": {
+        "grade": "code",
+        "passed": false,
+        "score": 0,
+        "results": [
+          {
+            "passed": false,
+            "message": "❌ 스탬프() 함수를 정의하세요 (현재 0개)"
+          },
+          {
+            "passed": false,
+            "message": "❌ 스탬프()를 세 번 호출하세요 (현재 0개)"
+          }
+        ],
+        "message": "코드를 더 작성해 보세요."
+      },
+      "v2Branch": "A 타입은 gradeA만 호출하므로 객체 기준만 통과할 수 있음 (Workspace.jsx:109)"
+    },
+    {
+      "case": "tutorial-run-with-unrelated-sphere",
+      "result": {
+        "grade": "run",
+        "passed": true,
+        "score": 100,
+        "message": "✅ 실행 완료!"
+      }
+    },
+    {
+      "case": "note-frequency-normalization",
+      "result": {
+        "C4": 261.6255653005986,
+        "C4#4": 261.6255653005986,
+        "C#4": 277.1826309768721,
+        "G4": 391.99543598174927,
+        "G4#4": 391.99543598174927
+      }
+    },
+    {
+      "case": "chord-string-numeric-input",
+      "result": [
+        {
+          "name": "도4",
+          "finite": false
+        },
+        {
+          "name": "미4",
+          "finite": false
+        },
+        {
+          "name": "솔4",
+          "finite": false
+        }
+      ]
+    }
+  ]
+}

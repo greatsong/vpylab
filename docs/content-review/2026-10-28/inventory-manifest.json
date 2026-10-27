@@ -1,0 +1,21 @@
+{
+  "baseline_commit": "9a21ac2",
+  "scope": {
+    "lesson": 46,
+    "mission": 54,
+    "example": 57,
+    "reference": 71
+  },
+  "courses": 7,
+  "rows": 228,
+  "code_variants": 282,
+  "syntax_errors": [],
+  "files_sha256": {
+    "client/src/data/courses.js": "7279471b09e68fb2cdb10971ba45b9ef088f7934d47a94f4fb224043f46d2e72",
+    "client/src/data/missions.js": "801608d29da20bdab4c0ef6894c25000b3ef8f72dd73580a3e4876e7e96626f3",
+    "client/src/data/examples.js": "2d8cddf16343a2a9340ab642948614fac3c13f2b39da4f8dba0f95488feee4fc",
+    "client/src/data/docs.js": "702cbb93833cde5a85e4ebbbfabe5908c932c17e8b3e8cebb8ba4570a149a235",
+    "docs/VPYTHON_API.md": "ddaec0688d00ca82959979f14030e38bca8a5d8afeb2365483dc4e78fb9ca7be"
+  },
+  "method": "Node ESM으로 실제 export를 읽고 Python ast.parse로 각 코드/시작 코드와 미션 풀이를 검사. 줄 수·문법 수는 검토 신호이며 교육 판정이나 실제 실행 성공 점수가 아님."
+}
