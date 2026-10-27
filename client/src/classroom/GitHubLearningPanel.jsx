@@ -79,7 +79,7 @@ export default function GitHubLearningPanel({ projectId, user, onRefresh }) {
 
   return <section className="cr-learning-process" aria-label="GitHub 협력 과정과 학생 피드백">
     <div className="cr-panel cr-process-intro">
-      <div className="cr-section-heading"><div><span className="cr-section-kicker">FROM COLLABORATION TO REFLECTION</span><h2>GitHub의 협력을, 다음 배움의 근거로</h2></div><span className="cr-small-badge">{data?.mode === 'simulator' ? '로컬 모의 기록' : data?.mode === 'live' ? 'GitHub 연결' : '연결 확인 중'}</span></div>
+      <div className="cr-section-heading"><div><span className="cr-section-kicker">협력에서 성찰까지</span><h2>GitHub의 협력을, 다음 배움의 근거로</h2></div><span className="cr-small-badge">{data?.mode === 'simulator' ? '로컬 모의 기록' : data?.mode === 'live' ? 'GitHub 연결' : '연결 확인 중'}</span></div>
       <p>문제를 이슈로 정의하고 → PR로 해결안을 제안하고 → 동료 의견을 검토하고 → 커밋과 다음 실험으로 이어갑니다.</p>
       <p className="cr-hint">기록이 없는 활동도 있습니다. 커밋 수로 기여도나 사고력을 평가하지 않으며, AI 사용 여부와 관계없이 학생의 설명과 함께 살펴봅니다.</p>
       <div className="cr-inline-actions"><button className="cr-button" disabled={busy} onClick={async () => { const result = await action('/github/learning/sync', {}); if (result) setNotice('GitHub 기록을 가져왔습니다. 수집 범위와 빠진 기록 안내도 함께 확인해주세요.'); }}>{busy ? '처리 중…' : 'GitHub 과정 기록 가져오기'}</button>{isTeacher && data?.mode === 'simulator' && <button className="cr-button" disabled={busy} onClick={async () => { const result = await action('/github/learning/simulate', {}); if (result) setNotice('모의 협력 기록을 추가했습니다. 실제 GitHub에는 기록하지 않았습니다.'); }}>모의 협력 기록으로 살펴보기</button>}<button className="cr-link-button" disabled={busy} onClick={() => load().catch((failure) => setError(failure.message))}>화면 새로고침</button></div>
@@ -99,7 +99,7 @@ export default function GitHubLearningPanel({ projectId, user, onRefresh }) {
           {isTeacher && <label className="cr-checkbox"><input type="checkbox" checked={selectedIds.includes(event.id)} disabled={busy || (!selectedIds.includes(event.id) && selectedIds.length >= 20)} onChange={() => toggleEvidence(event.id)} />피드백 근거로 선택: {event.title || kindLabels[event.kind] || 'GitHub 기록'}</label>}
         </article>)}</div>
       </section>
-      <section className="cr-panel cr-student-evidence"><span className="cr-section-kicker">FEEDBACK WITH EVIDENCE</span><h2>{isTeacher ? '학생별 관찰과 개별 기록' : '나의 과정과 다음 질문'}</h2>
+      <section className="cr-panel cr-student-evidence"><span className="cr-section-kicker">근거를 바탕으로 피드백</span><h2>{isTeacher ? '학생별 관찰과 개별 기록' : '나의 과정과 다음 질문'}</h2>
         {isTeacher && <label className="cr-field"><span>관찰할 학생</span><select disabled={busy} value={student?.userId || ''} onChange={(event) => { setSelectedStudent(event.target.value); setSelectedIds([]); }}><option value="" disabled>참여 학생을 선택하세요</option>{(data.students || []).map((item) => <option key={item.userId} value={item.userId}>{item.name}</option>)}</select></label>}
         {student ? <><p className="cr-hint">{student.identity ? `GitHub @${student.identity.login || student.identity.githubId} · ${student.identity.source === 'local_demo' ? '로컬 테스트용 연결' : '검증된 계정 연결'}` : 'GitHub 계정이 아직 연결되지 않았습니다. 이름만으로 활동을 추측하여 귀속하지 않습니다.'}</p>
           <details className="cr-learning-detail"><summary>영역별 GitHub 근거 살펴보기</summary><div className="cr-evidence-signals">{student.summary?.signals?.map((signal) => <div key={signal.criterion || signal.label}><strong>{signal.label}</strong><p>{signal.observation}</p>{signal.evidenceIds?.map((id) => <EvidenceReference key={id} id={id} event={events.find((event) => event.id === id)} />)}</div>)}</div></details>

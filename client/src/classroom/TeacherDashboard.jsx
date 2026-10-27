@@ -8,7 +8,7 @@ export default function TeacherDashboard({ user, onOpen }) {
     request('/teacher', { userId: user.id, signal: abort.signal }).then(setData).catch((e) => { if (e.name !== 'AbortError') setError(e.message); });
     return () => abort.abort();
   }, [user.id]);
-  return <section><div className="cr-page-heading"><div><span className="cr-eyebrow">OBSERVE THE THINKING</span><h1>교사 관찰실</h1><p>누가 더 많이 저장했는지보다, 어떻게 생각이 바뀌었는지 살펴봅니다.</p></div></div>
+  return <section><div className="cr-page-heading"><div><span className="cr-eyebrow">학생의 과정 살펴보기</span><h1>교사 관찰실</h1><p>누가 더 많이 저장했는지보다, 어떻게 생각이 바뀌었는지 살펴봅니다.</p></div></div>
     {error && <div className="cr-banner error" role="alert">{error}</div>}
     <p className="cr-banner">GitHub의 이슈·PR·리뷰·커밋을 학생별 근거로 연결합니다. 교사 개인 메모는 작성 교사만 보며, 학생에게 전달할 피드백의 공개 범위는 직접 선택합니다.</p>
     {!data && !error ? <div className="cr-loading">학습 기록을 모으는 중입니다…</div> : data && <>

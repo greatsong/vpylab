@@ -23,12 +23,13 @@
 
 ## Color
 - **Approach:** Expressive — "빛의 분산" 컨셉, 다색 스펙트럼
-- **Background:** #FAFBFC (cool gray)
+- **Background:** #F8FAFC (기존 creative-light 테마)
 - **Surface:** #FFFFFF
-- **Primary text:** #1A1A2E (deep navy-black)
-- **Secondary text:** #5A5B6A
-- **Muted text:** #9394A5
-- **Border:** #E5E6EE
+- **Primary text:** #111827
+- **Secondary text:** #6B7280
+- **Muted text:** #9CA3AF
+- **Border:** #E5E7EB
+- **기본 강조색:** #2563EB. 화면은 `index.css`의 `--color-*` 테마 변수를 공유합니다.
 - **Category colors (스펙트럼):**
   - CT (컴퓨팅): #6C5CE7 (Purple)
   - CR (창작): #FF6B6B (Coral)
@@ -38,7 +39,7 @@
   - SN (사운드): #E84393 (Pink)
   - AI (인공지능): #4A6CF7 (Blue)
 - **Semantic:** success #00B894, warning #FDCB6E, error #FF6B6B, info #4A6CF7
-- **Dark mode:** 배경 #16161A, 표면 #1E1E24, 텍스트 #FFFFFE, 테두리 #2E2E38
+- **Dark mode:** 배경 #0F172A, 표면 #1E293B, 텍스트 #F8FAFC, 테두리 #334155
 
 ## Spacing
 - **Base unit:** 8px
@@ -48,8 +49,10 @@
 ## Layout
 - **Approach:** Grid-disciplined
 - **Grid:** 1 col (mobile) → 2 col (tablet) → 3 col (desktop)
-- **Max content width:** 1200px
-- **Border radius:** sm:6px, md:12px, lg:16px, xl:20px, full:9999px
+- **Max content width:** 일반 페이지 1280px. 에디터·3D 작업 화면은 더 넓게 사용합니다.
+- **Border radius:** 작업 카드·버튼·입력·탭·패널은 0. 아바타·상태 점처럼 원형 의미가 있는 요소만 full:9999px.
+- **헤더:** 기존 앱과 같은 56px 기본 높이, 1px 하단 테두리와 작은 사각형 활성 메뉴.
+- **새 교실:** 기능 구조는 유지하며 기존 화면의 색·글꼴·작업 밀도를 따릅니다. 새 로고 제작은 보류하고 `VPyLab` 텍스트만 표시합니다.
 
 ## Motion
 - **Approach:** Intentional
@@ -63,3 +66,4 @@
 | 2026-04-14 | 디자인 시스템 생성 | /design-consultation 기반, p5.js 참고, Playful-Scientific 방향 |
 | 2026-04-14 | Satoshi + DM Sans 선택 | Inter 대비 독자적 얼굴, 기하학적이면서 따뜻함 |
 | 2026-04-14 | 다색 스펙트럼 컬러 | "빛의 분산" 컨셉, 카테고리별 고유색 |
+| 2026-10-28 | 새 교실도 기존 테마·사각형 UI를 공유, 로고 제작 보류 | 사용자 디자인 선호 반영, 기존 `index.css`의 실제 기준과 문서 일치 |
