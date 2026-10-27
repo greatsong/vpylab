@@ -28,6 +28,35 @@ let isDispatchingEvents = false;
 let currentRunId = 0;
 let queuedRun = null;
 
+// Python의 print()가 무한 반복되어도 Worker 메모리와 메시지 큐를 제한합니다.
+const OUTPUT_BUFFER_LIMIT = 16_384;
+const outputStreams = {
+  stdout: { text: '', dropped: 0 },
+  stderr: { text: '', dropped: 0 },
+};
+let outputFlushTimer = null;
+
+self._queueOutput = (kind, value) => {
+  const stream = outputStreams[kind];
+  if (!stream) return;
+  const text = String(value);
+  const available = Math.max(0, OUTPUT_BUFFER_LIMIT - stream.text.length);
+  stream.text += text.slice(0, available);
+  stream.dropped += Math.max(0, text.length - available);
+  if (outputFlushTimer === null) {
+    outputFlushTimer = setTimeout(() => { void flushOutputStreams(); }, 75);
+  }
+};
+
+function resetOutputStreams() {
+  clearTimeout(outputFlushTimer);
+  outputFlushTimer = null;
+  for (const stream of Object.values(outputStreams)) {
+    stream.text = '';
+    stream.dropped = 0;
+  }
+}
+
 // === 이벤트 큐 (메인 스레드 → Python) ===
 const _eventQueue = [];
 const _widgetValues = {};   // { widgetId: latestValue }
@@ -57,39 +86,37 @@ function clearInputQueues() {
 }
 
 async function flushOutputStreams(runId = currentRunId) {
-  if (!pyodide) return;
-  const stdout = await pyodide.runPythonAsync('sys.stdout.getvalue()');
-  const stderr = await pyodide.runPythonAsync('sys.stderr.getvalue()');
-
-  await pyodide.runPythonAsync(`
-sys.stdout.seek(0); sys.stdout.truncate(0)
-sys.stderr.seek(0); sys.stderr.truncate(0)
-`);
-
-  if (stdout) {
-    const lines = stdout.split('\n');
-    if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
-    for (const line of lines) sendRunMessage(runId, 'stdout', { text: line });
-  }
-  if (stderr) {
-    const lines = stderr.split('\n');
-    if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
-    for (const line of lines) sendRunMessage(runId, 'stderr', { text: line });
+  clearTimeout(outputFlushTimer);
+  outputFlushTimer = null;
+  for (const [kind, stream] of Object.entries(outputStreams)) {
+    if (stream.text) sendRunMessage(runId, kind, { text: stream.text.replace(/\n$/, '') });
+    if (stream.dropped) sendRunMessage(runId, kind, { text: '출력이 너무 많아 일부를 생략했습니다.' });
+    stream.text = '';
+    stream.dropped = 0;
   }
 }
 
 async function dispatchQueuedEvents() {
   if (!pyodide || isRunningCode || isDispatchingEvents || _eventQueue.length === 0) return;
   isDispatchingEvents = true;
+  shouldStop = false;
+  sendRunMessage(currentRunId, 'event_start');
   try {
     await pyodide.runPythonAsync(`
 _process_pending_events()
 _send_commands()
 `);
     await flushOutputStreams();
+    sendRunMessage(currentRunId, 'event_done');
   } catch (err) {
+    await flushOutputStreams();
     const msg = err.message || String(err);
-    sendRunMessage(currentRunId, 'error', { error: formatPythonError(msg), raw: msg });
+    if (shouldStop || msg.includes('_StopExecution') || msg.includes('실행이 중지되었습니다')) {
+      sendRunMessage(currentRunId, 'event_done', { stopped: true });
+      clearInputQueues();
+    } else {
+      sendRunMessage(currentRunId, 'error', { error: formatPythonError(msg), raw: msg });
+    }
   } finally {
     isDispatchingEvents = false;
     if (_eventQueue.length > 0) {
@@ -192,11 +219,10 @@ if 'pyodide' in sys.modules:
 `);
 
     // 5. === 보안: 위험 API 삭제 (Pyodide 로딩 완료 후!) ===
-    delete self.fetch;
-    delete self.XMLHttpRequest;
-    delete self.WebSocket;
-    delete self.indexedDB;
-    delete self.importScripts;
+    // 상속된 API도 가리도록 값을 고정합니다. delete만 하면 프로토타입의 API가 남습니다.
+    for (const name of ['fetch', 'XMLHttpRequest', 'WebSocket', 'indexedDB', 'importScripts', 'Worker', 'SharedWorker', 'EventSource']) {
+      Object.defineProperty(self, name, { value: undefined, configurable: false, writable: false });
+    }
     if (self.navigator) {
       delete self.navigator.sendBeacon;
     }
@@ -292,6 +318,7 @@ async function runCode(code, runId = currentRunId + 1) {
   try {
     currentRunId = runId;
     isRunningCode = true;
+    resetOutputStreams();
     // 중단 플래그 리셋
     shouldStop = false;
     clearInputQueues();
@@ -319,12 +346,23 @@ await micropip.install(${JSON.stringify(packages)})
       sendRunMessage(runId, 'stdout', { text: `✅ ${packages.join(', ')} 설치 완료!` });
     }
 
-    // stdout/stderr 리디렉션
+    // Python 문자열 버퍼에 무제한 축적하지 않고 제한된 JS 버퍼로 보냅니다.
     await pyodide.runPythonAsync(`
 import sys
-from io import StringIO
-sys.stdout = StringIO()
-sys.stderr = StringIO()
+class _VPLBoundedOutput:
+    encoding = 'utf-8'
+    def __init__(self, kind):
+        self.kind = kind
+    def write(self, text):
+        text = str(text)
+        js._queueOutput(self.kind, text)
+        return len(text)
+    def flush(self):
+        pass
+    def isatty(self):
+        return False
+sys.stdout = _VPLBoundedOutput('stdout')
+sys.stderr = _VPLBoundedOutput('stderr')
 `);
 
     // 이전 실행에서 남은 Python 측 객체/핸들러를 정리
@@ -339,12 +377,13 @@ sys.stderr = StringIO()
     // 실행 후 남은 커맨드 버퍼 플러시
     await pyodide.runPythonAsync('_send_commands()');
 
-    // 출력 캡처 — 줄 단위로 분리하여 전송 후 버퍼를 비움
+    // 남은 출력을 묶어서 전송한 뒤 버퍼를 비웁니다.
     await flushOutputStreams(runId);
 
     isRunningCode = false;
     sendRunMessage(runId, 'done');
   } catch (err) {
+    await flushOutputStreams(runId);
     const msg = err.message || String(err);
     // 사용자 중지로 인한 예외는 에러가 아닌 정상 종료로 처리
     // shouldStop 플래그 또는 예외 메시지로 판별

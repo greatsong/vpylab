@@ -7,6 +7,26 @@ on:
     branches: [main]
 
 jobs:
+  classroom-v2:
+    name: "새 교실 저장·권한·GitHub 회귀 검증"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+      - run: npm --prefix client ci
+      - run: npm --prefix server ci
+      - run: node --test server/classroom/*.test.js scripts/classroom/backup.test.mjs
+      - run: npm --prefix client run build:classroom
+      - run: node scripts/classroom/check-curriculum.mjs
+
   # ──────────────────────────────────────────────
   # 1. 미션 데이터 무결성 검사
   # ──────────────────────────────────────────────
@@ -28,7 +48,7 @@ jobs:
 
       - name: Run mission tests
         working-directory: client
-        run: npx vitest run src/data/missions.test.js
+        run: npm run test:run
 
   # ──────────────────────────────────────────────
   # 2. i18n 번역 완전성 검사

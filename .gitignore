@@ -3,6 +3,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.classroom.example
 !client/.env.production
 .DS_Store
 *.log
@@ -10,3 +11,5 @@ dist/
 .env*.local
 __pycache__/
 *.pyc
+.local/
+client/dist-classroom/

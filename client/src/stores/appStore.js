@@ -1,5 +1,9 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+
+function readLocalProgress() {
+  try { return JSON.parse(localStorage.getItem('vpylab-progress') || '{}') || {}; }
+  catch { return {}; }
+}
 
 const THEMES = [
   'creative-light', 'deep-dark',
@@ -38,7 +42,7 @@ const useAppStore = create((set) => ({
   },
 
   // 미션 진행 상태 { [missionId]: { score, passed, completedAt } }
-  missionProgress: JSON.parse(localStorage.getItem('vpylab-progress') || '{}'),
+  missionProgress: readLocalProgress(),
   completeMission: (missionId, score) => set((state) => {
     const prev = state.missionProgress[missionId];
     // 기존 최고 점수보다 높을 때만 업데이트
@@ -63,6 +67,8 @@ const useAppStore = create((set) => ({
 
   // 로그인 시 localStorage 진행률을 Supabase에 동기화
   syncProgressToServer: async () => {
+    // 화면·테마만 재사용하는 새 교실은 이전 인증 클라이언트를 초기화하지 않습니다.
+    const { supabase } = await import('../lib/supabase');
     const state = useAppStore.getState();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || Object.keys(state.missionProgress).length === 0) return;

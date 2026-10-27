@@ -2,216 +2,158 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { preprocessCode } from '../engine/code-preprocessor';
 import * as singleton from '../engine/pyodide-singleton';
 
-/**
- * 타임아웃 메시지를 코드 내용에 맞게 생성
- */
+const ACTIVITY_TIMEOUT = 10_000;
+const STOP_TIMEOUT = 750;
+
 function getTimeoutMessage(code) {
-  const hasWhileLoop = /while\s/.test(code);
-  const hasRate = /rate\s*\(/.test(code);
-  if (hasWhileLoop && !hasRate) {
+  if (/while\s/.test(code) && !/rate\s*\(/.test(code)) {
     return '실행 시간 초과 (10초 무응답). while 루프 안에 rate()를 넣어주세요.';
   }
-  if (hasWhileLoop && hasRate) {
-    return '실행 시간 초과 (10초 무응답). rate() 값을 확인하거나 무한 루프를 점검하세요.';
-  }
-  return '실행 시간 초과 (10초 무응답). 코드가 너무 오래 걸리거나 응답이 없습니다.';
+  return '실행 시간 초과 (10초 무응답). 반복문과 rate() 값을 확인하세요.';
 }
 
-/**
- * Pyodide Worker 관리 훅 (싱글톤 기반)
- *
- * - 전역 Worker 1개를 공유하여 페이지 이동 시 재로딩 없음
- * - 소프트 스톱(rate 기반 중단) 우선, 실패 시 하드 스톱(terminate)
- * - micropip은 필요할 때만 지연 로딩
- */
-export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone }) {
-  const [status, setStatus] = useState(() => {
-    const s = singleton.getStatus();
-    return s === 'running' ? 'ready' : s; // 이전 세션의 running은 ready로 취급
-  });
+/** 실행 화면이 Worker를 소유하며 정지 확인 전에는 재실행을 허용하지 않습니다. */
+export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone } = {}) {
+  const [status, setStatus] = useState(singleton.getStatus);
   const [progress, setProgress] = useState(singleton.getStatus() === 'ready' ? 100 : 0);
   const [progressMessage, setProgressMessage] = useState('');
-  const hardStopTimerRef = useRef(null);
-  const activityTimerRef = useRef(null);
-  const unsubRef = useRef(null);
+  const callbacksRef = useRef({ onOutput, onError, onBatch, onReady, onDone });
+  const timersRef = useRef({ activity: null, stop: null });
+  const activeRunRef = useRef(0);
+  const stoppingRef = useRef(false);
+  const lastCodeRef = useRef('');
+  const stopRef = useRef(null);
+  const mountedRef = useRef(false);
 
-  const ACTIVITY_TIMEOUT = 10_000;
-  const lastCodeRef = useRef('');   // 마지막 실행 코드 (타임아웃 메시지 분기용)
-  const stopRef = useRef(null);     // doStopExecution ref (선언 순서 문제 해결)
-  const activeRunIdRef = useRef(0); // 이전 실행의 늦은 메시지를 무시하기 위한 실행 번호
+  useEffect(() => { callbacksRef.current = { onOutput, onError, onBatch, onReady, onDone }; });
 
-  // 콜백 refs (최신 값 유지)
-  const cbRef = useRef({ onOutput, onError, onBatch, onReady, onDone });
-  useEffect(() => {
-    cbRef.current = { onOutput, onError, onBatch, onReady, onDone };
-  });
+  const clearTimers = useCallback(() => {
+    clearTimeout(timersRef.current.activity);
+    clearTimeout(timersRef.current.stop);
+    timersRef.current = { activity: null, stop: null };
+  }, []);
 
-  /**
-   * Worker 메시지 핸들러
-   */
-  const handleMessage = useCallback((msg) => {
-    const { type, ...data } = msg;
-    const cb = cbRef.current;
-    const hasRunId = data.runId !== undefined && data.runId !== null;
-    const isStaleRunMessage = hasRunId && data.runId !== activeRunIdRef.current;
+  const armActivityTimer = useCallback(() => {
+    clearTimeout(timersRef.current.activity);
+    timersRef.current.activity = setTimeout(() => {
+      stopRef.current?.();
+      callbacksRef.current.onError?.(getTimeoutMessage(lastCodeRef.current));
+    }, ACTIVITY_TIMEOUT);
+  }, []);
 
-    if (isStaleRunMessage && ['batch', 'stdout', 'stderr', 'error', 'done'].includes(type)) {
-      return;
-    }
-
-    // 활동 감지: batch/stdout/stderr 시 타임아웃 리셋
-    if (type === 'batch' || type === 'stdout' || type === 'stderr') {
-      if (activityTimerRef.current) {
-        clearTimeout(activityTimerRef.current);
-        activityTimerRef.current = setTimeout(() => {
-          stopRef.current?.();
-          cb.onError?.(getTimeoutMessage(lastCodeRef.current));
-        }, ACTIVITY_TIMEOUT);
-      }
-    }
+  const handleMessage = useCallback((message) => {
+    const { type, ...data } = message;
+    if (data.runId != null && data.runId !== activeRunRef.current) return;
+    const callbacks = callbacksRef.current;
+    if (['batch', 'stdout', 'stderr'].includes(type) && singleton.getStatus() === 'running') armActivityTimer();
 
     switch (type) {
+      case 'status':
+        setStatus(data.status);
+        break;
       case 'progress':
         setProgress(data.percent);
         setProgressMessage(data.message);
         break;
-
       case 'ready':
-        setStatus('ready');
         setProgress(100);
-        cb.onReady?.();
+        callbacks.onReady?.();
         break;
-
       case 'stdout':
-        cb.onOutput?.(data.text);
+        callbacks.onOutput?.(data.text);
         break;
-
       case 'stderr':
-        cb.onOutput?.(data.text, 'error');
+        callbacks.onOutput?.(data.text, 'error');
         break;
-
       case 'batch':
-        if (data.commands?.length) {
-          cb.onBatch?.(data.commands);
-        }
-        // 빈 batch도 활동 타이머는 이미 위에서 리셋됨 (하트비트)
+        if (data.commands?.length) callbacks.onBatch?.(data.commands);
         break;
-
+      case 'event_start':
+        armActivityTimer();
+        break;
+      case 'event_done': {
+        clearTimers();
+        const stopped = stoppingRef.current || data.stopped;
+        stoppingRef.current = false;
+        if (stopped) callbacks.onDone?.({ stopped: true });
+        break;
+      }
       case 'error':
-        clearTimeout(activityTimerRef.current);
-        clearTimeout(hardStopTimerRef.current);
-        setStatus((prev) => prev === 'loading' ? 'error' : 'ready');
-        cb.onError?.(data.error);
+        clearTimers();
+        stoppingRef.current = false;
+        callbacks.onError?.(data.error);
         break;
-
-      case 'done':
-        clearTimeout(activityTimerRef.current);
-        clearTimeout(hardStopTimerRef.current);
-        setStatus('ready');
-        cb.onDone?.();
+      case 'done': {
+        clearTimers();
+        const stopped = stoppingRef.current;
+        stoppingRef.current = false;
+        callbacks.onDone?.({ stopped });
         break;
+      }
     }
-  }, []);
+  }, [armActivityTimer, clearTimers]);
 
-  // 소프트 + 하드 스톱 로직
-  const doStopExecution = useCallback(() => {
-    clearTimeout(activityTimerRef.current);
-    clearTimeout(hardStopTimerRef.current);
-
-    // 1단계: 소프트 스톱 시도
-    singleton.softStop();
-    setStatus('ready'); // 즉시 ready로 전환 (로딩 화면 안 보이게)
-
-    // 2단계: 3초 내에 done이 안 오면 하드 스톱
-    hardStopTimerRef.current = setTimeout(() => {
-      singleton.hardStop();
-      // Worker 재생성 + 재구독 (status는 ready 유지 — 로딩 화면 방지)
-      unsubRef.current?.();
-      const listener = { onMessage: handleMessage };
-      unsubRef.current = singleton.subscribe(listener);
-      // 백그라운드에서 Worker 재초기화 (로딩 화면 없이)
-      singleton.initIfNeeded();
-    }, 3000);
-  }, [handleMessage]);
-
-  // ref에 최신 stop 함수 등록 (handleMessage에서 안전하게 접근)
   useEffect(() => {
-    stopRef.current = doStopExecution;
-  }, [doStopExecution]);
-
-  /**
-   * 구독 등록 (마운트 시)
-   */
-  useEffect(() => {
-    const listener = { onMessage: handleMessage };
-    unsubRef.current = singleton.subscribe(listener);
+    mountedRef.current = true;
+    const unsubscribe = singleton.subscribe({ onMessage: handleMessage });
     return () => {
-      unsubRef.current?.();
-      clearTimeout(activityTimerRef.current);
-      clearTimeout(hardStopTimerRef.current);
+      mountedRef.current = false;
+      clearTimers();
+      unsubscribe();
     };
-  }, [handleMessage]);
+  }, [handleMessage, clearTimers]);
 
-  /**
-   * Worker 초기화 (이미 ready면 즉시)
-   */
   const initWorker = useCallback(() => {
-    const currentStatus = singleton.getStatus();
-    if (currentStatus === 'ready') {
+    if (singleton.getStatus() === 'ready') {
       setStatus('ready');
       setProgress(100);
-      cbRef.current.onReady?.();
-      return;
+      callbacksRef.current.onReady?.();
+      return Promise.resolve();
     }
-    setStatus('loading');
-    singleton.initIfNeeded();
+    setProgress(0);
+    setProgressMessage('Python 실행 환경을 준비합니다.');
+    // 실패는 Worker 메시지로 한 번만 전달합니다. 취소는 화면 이탈일 수 있습니다.
+    return singleton.initIfNeeded().catch(() => {});
   }, []);
 
-  /**
-   * 코드 실행
-   */
-  const runCode = useCallback((rawCode) => {
-    const singletonStatus = singleton.getStatus();
-    if (singletonStatus !== 'ready' && singletonStatus !== 'running') return;
-
-    // 직전 stopExecution()이 예약한 3초 hardStop 타이머가 새 코드를 죽이지 않도록 취소
-    clearTimeout(hardStopTimerRef.current);
-    clearTimeout(activityTimerRef.current);
-
-    const { code, warnings } = preprocessCode(rawCode);
-    if (warnings.length > 0) {
-      warnings.forEach(w => cbRef.current.onOutput?.(`⚠️ ${w}`, 'warning'));
-    }
-
-    setStatus('running');
-
-    // 활동 타임아웃 설정
-    lastCodeRef.current = rawCode;
-    activityTimerRef.current = setTimeout(() => {
-      doStopExecution();
-      cbRef.current.onError?.(getTimeoutMessage(rawCode));
-    }, ACTIVITY_TIMEOUT);
-
-    const runId = singleton.runCode(code);
-    if (runId) activeRunIdRef.current = runId;
-  }, [doStopExecution]);
-
-  /**
-   * 실행 중지 (외부 API)
-   */
   const stopExecution = useCallback(() => {
-    doStopExecution();
-  }, [doStopExecution]);
+    if (!singleton.softStop()) return;
+    clearTimers();
+    stoppingRef.current = true;
+    timersRef.current.stop = setTimeout(() => {
+      activeRunRef.current = 0;
+      stoppingRef.current = false;
+      singleton.hardStop();
+      if (!mountedRef.current) return;
+      callbacksRef.current.onDone?.({ stopped: true });
+      setProgress(0);
+      setProgressMessage('실행을 종료했습니다. Python 엔진을 다시 준비합니다.');
+      void singleton.initIfNeeded().catch(() => {});
+    }, STOP_TIMEOUT);
+  }, [clearTimers]);
+
+  useEffect(() => { stopRef.current = stopExecution; }, [stopExecution]);
+
+  const runCode = useCallback((rawCode) => {
+    if (singleton.getStatus() !== 'ready') return null;
+    const { code, warnings } = preprocessCode(rawCode);
+    warnings.forEach((warning) => callbacksRef.current.onOutput?.(`⚠️ ${warning}`, 'warning'));
+    clearTimers();
+    stoppingRef.current = false;
+    lastCodeRef.current = rawCode;
+    const runId = singleton.runCode(code);
+    if (runId) {
+      activeRunRef.current = runId;
+      armActivityTimer();
+    }
+    return runId;
+  }, [armActivityTimer, clearTimers]);
 
   return {
-    status,
-    progress,
-    progressMessage,
-    initWorker,
-    runCode,
-    stopExecution,
+    status, progress, progressMessage, initWorker, runCode, stopExecution,
     isLoading: status === 'loading',
     isReady: status === 'ready',
     isRunning: status === 'running',
+    isStopping: status === 'stopping',
   };
 }

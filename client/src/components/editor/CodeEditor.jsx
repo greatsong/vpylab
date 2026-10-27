@@ -41,7 +41,7 @@ while True:
         ball.velocity.x = -ball.velocity.x
 `;
 
-export default function CodeEditor({ code, onChange, fontSize = 14 }) {
+export default function CodeEditor({ code, onChange, fontSize = 14, readOnly = false }) {
   const editorRef = useRef(null);
   const theme = useAppStore((s) => s.theme);
 
@@ -62,6 +62,7 @@ export default function CodeEditor({ code, onChange, fontSize = 14 }) {
         onChange={onChange}
         onMount={handleMount}
         options={{
+          readOnly,
           fontSize,
           fontFamily: "'JetBrains Mono', 'Fira Code', ui-monospace, Consolas, monospace",
           fontLigatures: false,  // 학생이 != 를 ≠ 로 오인하지 않도록 합자 OFF

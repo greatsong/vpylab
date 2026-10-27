@@ -1,183 +1,166 @@
 /**
- * Pyodide Worker 싱글톤
- *
- * Worker를 앱 전역에서 1개만 유지하여 페이지 이동 시 재사용.
- * 코드 중지 시 rate() 기반 소프트 스톱을 먼저 시도하고,
- * 실패 시에만 Worker를 terminate + 재생성한다.
+ * 실행 화면이 공유하는 Python Worker입니다.
+ * 마지막 화면이 떠나면 종료하고, 종료된 Worker의 늦은 메시지는 무시합니다.
  */
 import vpythonApiRaw from './vpython-api.py?raw';
 
+const INIT_TIMEOUT = 45_000;
 let worker = null;
-let status = 'idle'; // idle | loading | ready | running
-let readyPromiseResolve = null;
-let listeners = new Set(); // { onMessage: fn } 구독자 세트
+let status = 'idle';
+let initialization = null;
+let initializationTimer = null;
+const listeners = new Set();
 let runSeq = 0;
 let activeRunId = 0;
 
-function createWorker() {
-  const w = new Worker(
-    new URL('./pyodide-worker.js', import.meta.url),
-    { type: 'classic' }
-  );
-
-  w.onmessage = (e) => {
-    let msg = e.data;
-    if (typeof msg === 'string') {
-      try { msg = JSON.parse(msg); } catch { return; }
-    }
-
-    if (msg.type === 'ready') {
-      status = 'ready';
-      if (readyPromiseResolve) {
-        readyPromiseResolve();
-        readyPromiseResolve = null;
-      }
-    }
-
-    if (msg.type === 'done' || msg.type === 'error') {
-      const isCurrentRun = !msg.runId || msg.runId === activeRunId;
-      if (status === 'running' && isCurrentRun) status = 'ready';
-    }
-
-    // 모든 구독자에게 메시지 전달
-    for (const listener of listeners) {
-      listener.onMessage(msg);
-    }
-  };
-
-  w.onerror = (err) => {
-    status = 'idle';
-    const message = err?.message || err?.reason || (typeof err === 'string' ? err : '알 수 없는 오류');
-    for (const listener of listeners) {
-      listener.onMessage({ type: 'error', error: `Worker 오류: ${message}` });
-    }
-  };
-
-  return w;
+function broadcast(message) {
+  for (const listener of listeners) listener.onMessage(message);
 }
 
-/**
- * Worker 초기화 (이미 ready면 즉시 반환)
- */
-export function initIfNeeded() {
-  if (status === 'ready') return Promise.resolve();
-  if (status === 'loading') {
-    // 이미 로딩 중이면 ready 될 때까지 대기
-    return new Promise((resolve) => {
-      const prev = readyPromiseResolve;
-      readyPromiseResolve = () => {
-        prev?.();
-        resolve();
-      };
-    });
+function updateStatus(nextStatus) {
+  status = nextStatus;
+  broadcast({ type: 'status', status });
+}
+
+function settleInitialization(error) {
+  clearTimeout(initializationTimer);
+  initializationTimer = null;
+  const pending = initialization;
+  initialization = null;
+  if (error) pending?.reject(error);
+  else pending?.resolve();
+}
+
+function terminateWorker() {
+  const previous = worker;
+  worker = null;
+  if (previous) {
+    previous.onmessage = null;
+    previous.onerror = null;
+    previous.onmessageerror = null;
+    previous.terminate();
   }
-
-  status = 'loading';
-  worker = createWorker();
-
-  worker.postMessage({
-    type: 'init',
-    vpythonApi: vpythonApiRaw,
-  });
-
-  return new Promise((resolve) => {
-    readyPromiseResolve = resolve;
-  });
 }
 
-/**
- * 코드 실행
- */
+function failWorker(message, phase) {
+  terminateWorker();
+  updateStatus('error');
+  settleInitialization(new Error(message));
+  broadcast({ type: 'error', error: message, phase, fatal: true, ...(phase === 'runtime' ? { runId: activeRunId } : {}) });
+}
+
+function createWorker() {
+  const instance = new Worker(new URL('./pyodide-worker.js', import.meta.url), { type: 'classic' });
+  instance.onmessage = (event) => {
+    if (instance !== worker) return;
+    let message = event.data;
+    if (typeof message === 'string') {
+      try { message = JSON.parse(message); } catch { return; }
+    }
+    if (!message || typeof message !== 'object') return;
+    if (message.runId != null && message.runId !== activeRunId) return;
+
+    if (message.type === 'ready') {
+      updateStatus('ready');
+      settleInitialization();
+    } else if (message.type === 'error' && status === 'loading') {
+      failWorker(message.error || 'Python 엔진을 준비하지 못했습니다.', 'init');
+      return;
+    } else if (message.type === 'event_start') {
+      updateStatus('running');
+    } else if (['done', 'error', 'event_done'].includes(message.type)) {
+      updateStatus('ready');
+    }
+    broadcast(message);
+  };
+  instance.onerror = (event) => {
+    if (instance !== worker) return;
+    failWorker(`Worker 오류: ${event?.message || 'Python 엔진의 응답이 끊겼습니다.'}`, status === 'loading' ? 'init' : 'runtime');
+  };
+  instance.onmessageerror = () => {
+    if (instance !== worker) return;
+    failWorker('Python 엔진의 응답을 읽지 못했습니다. 다시 준비해 주세요.', status === 'loading' ? 'init' : 'runtime');
+  };
+  return instance;
+}
+
+/** 한 번만 시도하며, 실패하면 사용자가 직접 재시도합니다. */
+export function initIfNeeded() {
+  if (['ready', 'running', 'stopping'].includes(status)) return Promise.resolve();
+  if (initialization) return initialization.promise;
+
+  let resolve;
+  let reject;
+  const promise = new Promise((accept, decline) => { resolve = accept; reject = decline; });
+  initialization = { promise, resolve, reject };
+  updateStatus('loading');
+  initializationTimer = setTimeout(() => {
+    failWorker('Python 엔진 준비 시간이 초과되었습니다. 네트워크를 확인한 뒤 다시 준비해 주세요.', 'init');
+  }, INIT_TIMEOUT);
+  try {
+    worker = createWorker();
+    worker.postMessage({ type: 'init', vpythonApi: vpythonApiRaw });
+  } catch (error) {
+    failWorker(`Python 엔진 초기화 실패: ${error.message}`, 'init');
+  }
+  return promise;
+}
+
+/** 실행 중이거나 정지 확인 중인 Worker에 다음 코드를 넣지 않습니다. */
 export function runCode(code) {
-  if (!worker || (status !== 'ready' && status !== 'running')) return null;
-  runSeq += 1;
-  activeRunId = runSeq;
-  status = 'running';
+  if (!worker || status !== 'ready') return null;
+  activeRunId = ++runSeq;
+  updateStatus('running');
   worker.postMessage({ type: 'run', code, runId: activeRunId });
   return activeRunId;
 }
 
-/**
- * 소프트 스톱 — rate() 내부에서 중단 신호를 감지
- * Worker를 유지하므로 재로딩 없음
- */
 export function softStop() {
-  if (!worker) return;
+  if (!worker || status !== 'running') return false;
+  updateStatus('stopping');
   worker.postMessage({ type: 'stop' });
+  return true;
 }
 
-/**
- * 메인 스레드 이벤트(클릭/마우스/키/위젯)를 Worker로 전달
- * payload는 {name, pos?, pick?, key?, widget?, value?} 형식
- */
 export function postEvent(payload) {
-  if (!worker) return;
-  worker.postMessage({ type: 'event', payload });
+  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'event', payload });
 }
 
-/**
- * 위젯 값 동기화 (slider drag 등)
- */
 export function postWidgetValue(id, value) {
-  if (!worker) return;
-  worker.postMessage({ type: 'widget_value', id, value });
+  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'widget_value', id, value });
 }
 
-/**
- * 마우스 위치 동기화 — scene.mouse.pos 폴링용
- */
 export function postMouseState(pos, pick) {
-  if (!worker) return;
-  worker.postMessage({ type: 'mouse', pos, pick });
+  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'mouse', pos, pick });
 }
 
-/**
- * 현재 눌려있는 키 목록 동기화 — keysdown() 폴링용
- */
 export function postPressedKeys(keys) {
-  if (!worker) return;
-  worker.postMessage({ type: 'keys', keys });
+  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'keys', keys });
 }
 
-/**
- * 하드 스톱 — Worker terminate + 재생성
- * 소프트 스톱이 실패했을 때의 fallback
- */
+/** 구독은 유지하므로 종료 후 다시 준비해도 메시지가 유실되지 않습니다. */
 export function hardStop() {
-  if (worker) {
-    worker.terminate();
-    worker = null;
-  }
-  status = 'idle';
+  terminateWorker();
+  const error = new Error('Python 엔진 준비가 취소되었습니다.');
+  error.name = 'AbortError';
+  settleInitialization(error);
   activeRunId = 0;
-  listeners.clear();
+  updateStatus('idle');
 }
 
-/**
- * 구독자 등록/해제
- */
 export function subscribe(listener) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) hardStop();
+  };
 }
 
-/**
- * Prewarm — Worker를 미리 생성하고 초기화 시작
- * 아직 Worker가 없을 때만 동작 (idle 상태일 때)
- */
 export function prewarm() {
-  if (status === 'idle') {
-    initIfNeeded();
-  }
+  if (status === 'idle') void initIfNeeded().catch(() => {});
 }
 
-/**
- * 현재 상태 조회
- */
-export function getStatus() {
-  return status;
-}
+export function getStatus() { return status; }
 
-export function setStatus(s) {
-  status = s;
-}
+/** 이전 호출부와의 호환성을 위한 상태 전달 함수입니다. */
+export function setStatus(nextStatus) { updateStatus(nextStatus); }

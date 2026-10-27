@@ -8,7 +8,10 @@
     "dev:client": "cd client && npm run dev",
     "dev:server": "cd server && PORT=4034 node --watch index.js",
     "build": "cd client && npm run build",
-    "start": "cd server && node index.js"
+    "start": "cd server && node index.js",
+    "dev:classroom": "node scripts/classroom/dev.mjs",
+    "build:classroom": "npm --prefix client run build:classroom",
+    "test:classroom": "node --test server/classroom/*.test.js scripts/classroom/backup.test.mjs && npm --prefix client run test:run && node scripts/classroom/check-curriculum.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

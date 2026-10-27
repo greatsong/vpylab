@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "if ls routes/*.test.js >/dev/null 2>&1; then node --test routes/*.test.js; else echo 'No server tests yet — add tests under server/routes/*.test.js'; fi"
+    "test": "node --test classroom/*.test.js"
   },
   "keywords": [],
   "author": "",

@@ -2,6 +2,8 @@
 
 > Python으로 3D 세상을 만드는 교육 플랫폼. Pyodide + Three.js + Web Audio.
 
+> **새 교실 로컬 검토 (`codex/classroom-v2`)**: `npm run dev:classroom`으로 별도 포트에서 실행합니다. [직접 테스트하는 방법](docs/CLASSROOM_V2_LOCAL_TEST.md) · [새 시스템 설계와 승인 후 교체 기준](docs/CLASSROOM_V2_ARCHITECTURE.md). 기존 운영 진입점과 수업 자료는 유지합니다.
+
 ---
 
 ## 이 문서는 누구를 위한 건가요?
