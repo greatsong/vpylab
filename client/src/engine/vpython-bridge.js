@@ -219,20 +219,42 @@ function updateMaterialColor(material, color) {
 }
 
 /**
- * 라벨 스프라이트 생성 — Canvas 텍스처를 Sprite에 적용해 항상 카메라를 향함
+ * height는 화면의 글자 픽셀 크기이다. 카메라 거리·줌·기기 DPR에 따라
+ * 글자가 작아지지 않도록, 현재 투영 행렬과 CSS 뷰포트 높이로 환산한다.
+ */
+function sizeLabelForRenderer(renderer, _scene, camera) {
+  const data = this.userData;
+  const viewport = renderer.getSize(data.labelViewport);
+  const projectionY = Math.abs(camera.projectionMatrix.elements[5]);
+  if (!(viewport.y > 0) || !(projectionY > 0)) return;
+  const pixelsToWorld = 2 / (viewport.y * projectionY);
+  this.scale.set(data.labelPixelWidth * pixelsToWorld, data.labelPixelHeight * pixelsToWorld, 1);
+  // onBeforeRender는 씬의 행렬 갱신 뒤 호출되므로 변경한 scale을 즉시 반영한다.
+  this.updateMatrixWorld();
+}
+
+/**
+ * 라벨 스프라이트 생성 — 각 줄을 따로 측정·그려 줄바꿈과 빈 줄을 보존한다.
  */
 function createLabelSprite(cmd) {
   const text = String(cmd.text ?? '');
-  const fontPx = cmd.height || 16;
-  const padding = 6;
+  const lines = text.split(/\r\n|\r|\n/);
+  const fontPx = Math.max(12, asNumber(cmd.height, 16));
+  const resolution = 2;
+  const padding = 4 * resolution;
+  const lineHeight = Math.ceil(fontPx * 1.3) * resolution;
+  const font = `${fontPx * resolution}px "DM Sans", "Noto Sans KR", sans-serif`;
 
   // 측정용 캔버스
   const measureCanvas = document.createElement('canvas');
   const measureCtx = measureCanvas.getContext('2d');
-  measureCtx.font = `${fontPx * 2}px "DM Sans", "Noto Sans KR", sans-serif`;
-  const metrics = measureCtx.measureText(text || ' ');
-  const textWidth = Math.ceil(metrics.width) + padding * 2;
-  const textHeight = Math.ceil(fontPx * 2 * 1.4) + padding * 2;
+  measureCtx.font = font;
+  let widestLine = 0;
+  for (const line of lines) {
+    widestLine = Math.max(widestLine, measureCtx.measureText(line || ' ').width);
+  }
+  const textWidth = Math.ceil(widestLine) + padding * 2;
+  const textHeight = lineHeight * lines.length + padding * 2;
 
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(textWidth, 32);
@@ -256,14 +278,17 @@ function createLabelSprite(cmd) {
   // 텍스트
   const [r, g, b] = cmd.color || [1, 1, 1];
   ctx.fillStyle = `rgb(${Math.round(r*255)}, ${Math.round(g*255)}, ${Math.round(b*255)})`;
-  ctx.font = `${fontPx * 2}px "DM Sans", "Noto Sans KR", sans-serif`;
+  ctx.font = font;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
-  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+  lines.forEach((line, index) => {
+    ctx.fillText(line, canvas.width / 2, padding + lineHeight * (index + 0.5));
+  });
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
+  texture.colorSpace = THREE.SRGBColorSpace;
 
   const material = new THREE.SpriteMaterial({
     map: texture,
@@ -271,12 +296,18 @@ function createLabelSprite(cmd) {
     opacity: cmd.opacity ?? 1,
     depthTest: false,
     depthWrite: false,
+    sizeAttenuation: false,
   });
   const sprite = new THREE.Sprite(material);
-  // 월드 단위 크기 — fontPx 기준 비례 (1 단위 = 약 32px)
-  const worldScale = fontPx / 32;
-  sprite.scale.set((canvas.width / canvas.height) * worldScale, worldScale, 1);
-  sprite.userData = { isLabel: true, text, fontPx, color: cmd.color, background: cmd.background, border: cmd.border };
+  sprite.userData = {
+    isLabel: true, text, fontPx, color: cmd.color || [1, 1, 1],
+    background: cmd.background, border: cmd.border,
+    labelPixelWidth: canvas.width / resolution,
+    labelPixelHeight: canvas.height / resolution,
+    labelViewport: new THREE.Vector2(),
+  };
+  sprite.onBeforeRender = sizeLabelForRenderer;
+  sprite.frustumCulled = false;
   return sprite;
 }
 
@@ -286,12 +317,17 @@ function createLabelSprite(cmd) {
 function updateLabelSprite(sprite, cmd) {
   const merged = {
     text: cmd.text ?? sprite.userData.text,
-    height: sprite.userData.fontPx,
+    height: Math.max(12, asNumber(cmd.height, sprite.userData.fontPx)),
     color: cmd.color || sprite.userData.color,
-    background: sprite.userData.background,
-    border: sprite.userData.border,
+    background: cmd.background ?? sprite.userData.background,
+    border: cmd.border ?? sprite.userData.border,
     opacity: cmd.opacity ?? (sprite.material?.opacity ?? 1),
   };
+  const sameColor = merged.color.every((value, index) => value === sprite.userData.color[index]);
+  if (
+    String(merged.text) === sprite.userData.text && merged.height === sprite.userData.fontPx
+    && sameColor && merged.background === sprite.userData.background && merged.border === sprite.userData.border
+  ) return;
   // 새 sprite를 만들어 texture/scale을 옮겨붙임
   const fresh = createLabelSprite(merged);
   // 기존 텍스처/재질 정리
@@ -299,7 +335,7 @@ function updateLabelSprite(sprite, cmd) {
   if (sprite.material) sprite.material.dispose();
   sprite.material = fresh.material;
   sprite.scale.copy(fresh.scale);
-  sprite.userData = fresh.userData;
+  sprite.userData = { ...sprite.userData, ...fresh.userData };
 }
 
 /**
@@ -476,6 +512,7 @@ function createObject(cmd, scene) {
 
     case 'label': {
       // 항상 카메라를 향하는 텍스트 스프라이트 (Canvas 텍스처)
+      material.dispose();
       const sprite = createLabelSprite(cmd);
       mesh = sprite;
       break;
@@ -708,7 +745,7 @@ function updateMesh(cmd) {
       mesh.traverse((child) => {
         if (child.material) updateMaterialColor(child.material, toThreeColor(cmd.color));
       });
-    } else if (mesh.material) {
+    } else if (mesh.material && !mesh.isSprite) {
       updateMaterialColor(mesh.material, toThreeColor(cmd.color));
     }
     registryUpdates.color = cmd.color;
@@ -817,7 +854,10 @@ function updateMesh(cmd) {
   }
 
   // 라벨 텍스트/색상 갱신 — Sprite를 새 캔버스 텍스처로 교체
-  if (mesh.isSprite && (cmd.text !== undefined || cmd.color !== undefined)) {
+  if (mesh.isSprite && (
+    cmd.text !== undefined || cmd.color !== undefined || cmd.height !== undefined
+    || cmd.background !== undefined || cmd.border !== undefined
+  )) {
     if (cmd.text !== undefined) registryUpdates.text = cmd.text;
     updateLabelSprite(mesh, cmd);
   }

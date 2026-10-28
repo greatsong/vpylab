@@ -3,6 +3,7 @@ import test from 'node:test';
 import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { AUTHOR, TEST_REPOSITORY, cliEnvironment, createRequester, ensureReview, findMarkedReview, guardedServiceFetch, parseArguments, preflight, runTrial } from './two-account-github.mjs';
 
 // GitHub 응답은 메모리 안의 모의 자료입니다. 전체 흐름 한 건만 임시 DB·localhost 임시 포트를 사용합니다.
@@ -114,7 +115,7 @@ test('모의 GitHub+임시 SQLite 전체 흐름과 재개: PR 1개·리뷰 2개�
   const directory = mkdtempSync(join(tmpdir(), 'vpylab-two-account-mock-'));
   const baseSha = 'a'.repeat(40), headSha = 'b'.repeat(40), time = '2026-10-28T02:00:00Z';
   const originalCode = 'from vpython import *\nball = sphere(radius=0.5)\n';
-  const records = { pulls: [], reviews: [], writes: [], code: originalCode, branch: null };
+  const records = { pulls: [], reviews: [], writes: [], reads: [], commits: [], code: originalCode, branch: null };
   const author = { login: AUTHOR.login, id: AUTHOR.id }, reviewer = { login: 'greatsong-danggok', id: 270214046 };
   const fetchImpl = async (url, options = {}) => {
     const parsed = new URL(url), method = options.method || 'GET', path = parsed.pathname.slice(root.length);
@@ -122,6 +123,7 @@ test('모의 GitHub+임시 SQLite 전체 흐름과 재개: PR 1개·리뷰 2개�
     const body = JSON.parse(options.body || '{}');
     const token = new Headers(options.headers).get('authorization');
     const actor = token === 'Bearer mock-author' ? author : reviewer;
+    if (method === 'GET') records.reads.push({ path, query: parsed.search });
     if (method !== 'GET') records.writes.push({ method, path, actorId: actor.id });
     if (method === 'GET' && path === '') return Response.json({ id: TEST_REPOSITORY.repositoryId, private: true, name: TEST_REPOSITORY.repo, owner: { login: TEST_REPOSITORY.owner } });
     if (method === 'GET' && path === '/git/ref/heads/main') return Response.json({ object: { sha: baseSha } });
@@ -132,7 +134,17 @@ test('모의 GitHub+임시 SQLite 전체 흐름과 재개: PR 1개·리뷰 2개�
     }
     if (method === 'GET' && path.startsWith('/git/commits/')) return Response.json({ sha: path.endsWith(baseSha) ? baseSha : headSha, tree: { sha: 'c'.repeat(40) }, parents: [{ sha: baseSha }] });
     if (method === 'POST' && path === '/git/trees') { records.code = body.tree[0].content; return Response.json({ sha: 'd'.repeat(40) }); }
-    if (method === 'POST' && path === '/git/commits') return Response.json({ sha: headSha });
+    if (method === 'POST' && path === '/git/commits') {
+      records.commits.push({
+        sha: headSha,
+        html_url: `https://github.com/${TEST_REPOSITORY.owner}/${TEST_REPOSITORY.repo}/commit/${headSha}`,
+        author: actor,
+        committer: actor,
+        commit: { message: body.message, author: { name: actor.login, date: time }, committer: { name: actor.login, date: time }, tree: { sha: body.tree } },
+        parents: body.parents.map(sha => ({ sha })),
+      });
+      return Response.json({ sha: headSha });
+    }
     if (method === 'POST' && path === '/git/refs') { records.branch = body.ref.slice('refs/heads/'.length); return Response.json({ object: { sha: headSha } }); }
     if (method === 'POST' && path === '/pulls') {
       const pull = { id: 5678, number: 3, title: body.title, body: body.body, user: actor, html_url: `https://github.com/${TEST_REPOSITORY.owner}/${TEST_REPOSITORY.repo}/pull/3`, head: { sha: headSha, ref: body.head }, base: { sha: baseSha, ref: 'main', repo: { id: TEST_REPOSITORY.repositoryId } }, state: 'open', merged: false, created_at: time, updated_at: time };
@@ -140,6 +152,7 @@ test('모의 GitHub+임시 SQLite 전체 흐름과 재개: PR 1개·리뷰 2개�
     }
     if (method === 'GET' && path === '/pulls') return Response.json(records.pulls);
     if (method === 'GET' && path === '/pulls/3') return Response.json(records.pulls[0]);
+    if (method === 'GET' && path === '/pulls/3/commits') return Response.json(records.commits);
     if (path === '/pulls/3/reviews') {
       if (method === 'GET') return Response.json(records.reviews);
       const item = { id: 1234 + records.reviews.length, user: actor, body: body.body, commit_id: body.commit_id, state: body.event === 'APPROVE' ? 'APPROVED' : 'COMMENTED', submitted_at: time, html_url: `https://github.com/${TEST_REPOSITORY.owner}/${TEST_REPOSITORY.repo}/pull/3#pullrequestreview-${1234 + records.reviews.length}` };
@@ -158,10 +171,25 @@ test('모의 GitHub+임시 SQLite 전체 흐름과 재개: PR 1개·리뷰 2개�
     assert.ok(state.completedAt); assert.equal(records.pulls.length, 1); assert.equal(records.reviews.length, 2);
     assert.equal(state.outputs.evidenceAndFeedback.feedback.length, 6);
     assert.ok(state.outputs.evidenceAndFeedback.studentAEvents > 0); assert.equal(state.outputs.evidenceAndFeedback.studentBEvents, 2);
+    assert.equal(records.commits.length, 1);
+    assert.equal(records.commits[0].sha, headSha); assert.equal(records.commits[0].author.id, author.id);
+    const commitReads = records.reads.filter(read => read.path === '/pulls/3/commits');
+    assert.equal(commitReads.length, 2);
+    assert.ok(commitReads.every(read => new URLSearchParams(read.query).get('page') === '1' && new URLSearchParams(read.query).get('per_page') === '50'));
+    function learningSnapshot() {
+      const database = new DatabaseSync(join(directory, 'classroom.sqlite'), { readOnly: true });
+      try { return database.prepare('SELECT id,kind,sha,github_author_id FROM github_learning_events WHERE project_id=? ORDER BY id').all(state.projectId); }
+      finally { database.close(); }
+    }
+    const evidence = learningSnapshot();
+    const headEvidence = evidence.filter(item => item.kind === 'commit' && item.sha === headSha);
+    assert.equal(headEvidence.length, 1); assert.equal(headEvidence[0].github_author_id, author.id);
     assert.equal(statSync(directory).mode & 0o777, 0o700); assert.equal(statSync(join(directory, 'state.json')).mode & 0o777, 0o600);
     const writes = records.writes.length;
     await runTrial(accounts, options);
     assert.equal(records.writes.length, writes); assert.equal(records.pulls[0].state, 'open'); assert.equal(records.pulls[0].merged, false);
+    assert.equal(records.reads.filter(read => read.path === '/pulls/3/commits').length, commitReads.length);
+    assert.deepEqual(learningSnapshot(), evidence);
     assert.ok(records.writes.every(write => write.method === 'POST' && !write.path.includes('merge') && !write.path.endsWith('main')));
     assert.deepEqual(records.reviews.map(item => item.user.id), [reviewer.id, reviewer.id]);
   } finally { rmSync(directory, { recursive: true, force: true }); }

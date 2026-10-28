@@ -18,7 +18,7 @@ const THEME_BG = {
   'cyber-neon': 0x0a0a0f,
 };
 
-export default function Viewport3D({ sceneRef, onSceneReady }) {
+export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPosition }) {
   const containerRef = useRef(null);
   const rendererRef = useRef(null);
   const cameraRef = useRef(null);
@@ -30,6 +30,7 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
   const [showAxes, setShowAxes] = useState(false);
   const [cameraMode, setCameraMode] = useState('auto-fit');
   const [lockFollowZoom, setLockFollowZoom] = useState(false);
+  const startingCamera = useRef(initialCameraPosition);
   const theme = useAppStore((s) => s.theme);
 
   useEffect(() => {
@@ -45,7 +46,9 @@ export default function Viewport3D({ sceneRef, onSceneReady }) {
 
     // 카메라 — 기본 거리를 8로 줄여 가까이에서 시작
     const camera = new THREE.PerspectiveCamera(45, (width / height) || 1, 0.1, 1000);
-    camera.position.set(0, 0, 8);
+    const initial = startingCamera.current;
+    if (Array.isArray(initial) && initial.length === 3 && initial.every(Number.isFinite)) camera.position.set(...initial);
+    else camera.position.set(0, 0, 8);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 

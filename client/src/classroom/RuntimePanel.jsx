@@ -24,7 +24,7 @@ class ViewportBoundary extends Component {
 }
 
 /** 수업의 AI 사용 정책과 관계없이 같은 Python·3D 실행 환경을 제공합니다. */
-export default function RuntimePanel({ code, onRunResult }) {
+export default function RuntimePanel({ code, onRunResult, initialCameraPosition }) {
   const sceneRef = useRef(null);
   const mountedRef = useRef(false);
   const activeRunRef = useRef(null);
@@ -182,7 +182,7 @@ export default function RuntimePanel({ code, onRunResult }) {
       {isStopping && <p className="runtime-progress">반복문이 응답하지 않으면 실행 환경을 새로 준비합니다.</p>}
       {lastError && <p className="runtime-error" role="alert">{lastError}</p>}
       <div className="runtime-viewport" style={{ minHeight: 320 }}>
-        <ViewportBoundary><Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} /></ViewportBoundary>
+        <ViewportBoundary><Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} initialCameraPosition={initialCameraPosition} /></ViewportBoundary>
       </div>
       <div className="runtime-console">
         <div className="runtime-console-header"><strong>실행 기록</strong><span>최근 200줄</span><button type="button" onClick={() => { outputRef.current = []; setOutputs([]); }}>기록 비우기</button></div>

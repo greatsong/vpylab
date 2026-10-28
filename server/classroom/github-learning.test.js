@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHmac, generateKeyPairSync, randomUUID } from 'node:crypto';
+import { createHash, createHmac, generateKeyPairSync, randomUUID } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -14,11 +14,11 @@ const a = { id: 910000002, login: 'student-a' }, b = { id: 910000003, login: 'st
 const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const response = (data, status = 200, headers = {}) => new Response(JSON.stringify(data), { status, headers });
 
-function fixture({ mode = 'live', filename = ':memory:', fetchImpl } = {}) {
+function fixture({ mode = 'live', filename = ':memory:', fetchImpl, repositories = [repository] } = {}) {
   const store = createStore({ localMode: true, filename });
   const teacher = store.user('teacher'), student = store.user('student-a'), project = store.listProjects(teacher)[0];
-  const service = createGitHubService({ store, localMode: true, config: { mode, repositories: [repository], webhookSecret: 'evidence-secret', appId: 'Iv1.test', privateKey }, fetchImpl, pause: async () => {} });
-  if (mode === 'live') service.bind(project.id, teacher, repository.key);
+  const service = createGitHubService({ store, localMode: true, config: { mode, repositories, webhookSecret: 'evidence-secret', appId: 'Iv1.test', privateKey }, fetchImpl, pause: async () => {} });
+  if (mode === 'live') service.bind(project.id, teacher, repositories[0].key);
   return { store, service, teacher, student, project };
 }
 
@@ -99,6 +99,7 @@ test('backfill은 commit·PR·review·Issue·대화·코드 의견을 읽고 재
     const path = new URL(url).pathname; calls.push({ path, method: options.method });
     if (path === '/app/installations/100/access_tokens') return response({ token: 'server-only', expires_at: new Date(Date.now() + 3_600_000).toISOString() }, 201);
     if (path === '/repos/school/team') return response({ id: 200, name: 'team', owner: { login: 'school' }, private: true });
+    if (path.endsWith('/pulls/1/commits')) return response([{ sha: NEXT, html_url: `https://github.com/school/team/commit/${NEXT}`, author: b, commit: { message: '아직 병합하지 않은 동료의 수정', author: { date: AT } } }]);
     if (path.endsWith('/commits')) return response([{ sha: SHA, html_url: `https://github.com/school/team/commit/${SHA}`, author: a, commit: { message: '조건별 실험', author: { date: AT } } }]);
     if (path.endsWith('/pulls')) return response([pull]);
     if (path.endsWith('/issues')) return response([issue, { ...pull, pull_request: {} }]);
@@ -108,11 +109,13 @@ test('backfill은 commit·PR·review·Issue·대화·코드 의견을 읽고 재
     throw new Error('예상하지 않은 API');
   } }); t.after(() => f.store.close());
   const first = await f.service.syncLearningEvents(f.project.id, f.student);
-  assert.equal(first.sync.state, 'complete'); assert.equal(first.events.length, 6);
+  assert.equal(first.sync.state, 'complete'); assert.equal(first.events.length, 7);
+  assert.equal(first.events.find(event => event.kind === 'commit' && event.sha === NEXT)?.githubAuthorId, b.id);
+  assert.ok(calls.some(call => call.path === '/repos/school/team/pulls/1/commits'));
   assert.ok(first.events.every(event => event.source === 'backfill'));
   assert.equal(first.events.some(event => event.body.includes('아직 제출하지 않은')), false);
   const second = await f.service.syncLearningEvents(f.project.id, f.student);
-  assert.equal(second.events.length, 6); assert.equal(second.sync.imported, 0);
+  assert.equal(second.events.length, 7); assert.equal(second.sync.imported, 0);
   assert.ok(calls.every(call => call.method === 'GET' || call.path.endsWith('/access_tokens')));
   assert.equal(JSON.stringify(first).includes('server-only'), false);
 });
@@ -196,4 +199,150 @@ test('기존 모의 PR은 job 출처와 실제 요청자를 별도로 연결하�
   f.store.db.prepare('DELETE FROM github_learning_events WHERE project_id=?').run(f.project.id);
   const recovered = await f.service.syncLearningEvents(f.project.id, f.teacher);
   assert.equal(recovered.events[0].id, first.id); assert.equal(recovered.events.length, 1);
+});
+
+
+function seedTrackedJob(f, { projectId = f.project.id, kind = 'proposal', number = 1, state = 'succeeded', bindingKey = repository.key, repositoryId = repository.repositoryId, code = 'print("팀 실험")' } = {}) {
+  const job = f.store.enqueueJob({ projectId, kind, payload: { bindingKey, repositoryId, authorId: f.student.id, code, title: '팀의 실험', message: '팀이 만든 근거', body: '팀의 질문', baseSha: SHA }, dedupeKey: `scope-${randomUUID()}` });
+  const branch = `vpylab/proposal-${job.id}-${createHash('sha256').update(code).digest('hex').slice(0, 10)}`;
+  f.store.db.prepare('UPDATE github_jobs SET state=? WHERE id=?').run(state, job.id);
+  f.store.db.prepare('INSERT INTO github_job_progress VALUES(?,?)').run(job.id, JSON.stringify({ result: { number, branch, sha: NEXT, url: `https://github.com/school/team/${kind === 'proposal' ? 'pull' : 'issues'}/${number}` } }));
+  return { ...job, branch };
+}
+
+test('project 범위 backfill은 성공한 이 교실 Issue·PR과 미병합 커밋만 읽고 다른 팀·실패 작업을 수집하지 않는다', async t => {
+  const calls = [];
+  const f = fixture({ repositories: [{ ...repository, learningScope: 'project' }], fetchImpl: async url => {
+    const path = new URL(url).pathname; calls.push(path);
+    if (path.endsWith('/access_tokens')) return response({ token: 'server-only', expires_at: new Date(Date.now() + 3_600_000).toISOString() }, 201);
+    if (path === '/repos/school/team') return response({ id: 200, name: 'team', owner: { login: 'school' }, private: true });
+    if (path.endsWith('/issues/2')) return response(issue);
+    if (path.endsWith('/pulls/1')) return response(pull);
+    if (path.endsWith('/pulls/1/commits')) return response([{ sha: NEXT, author: b, commit: { message: '미병합 PR의 학생 B 수정', author: { date: AT } }, html_url: `https://github.com/school/team/commit/${NEXT}` }]);
+    if (path.endsWith('/pulls/1/reviews')) return response([{ id: 801, user: b, state: 'APPROVED', commit_id: NEXT, submitted_at: AT, html_url: 'https://github.com/school/team/pull/1#pullrequestreview-801' }]);
+    if (path.endsWith('/pulls/1/comments')) return response([{ id: 802, user: b, body: '반례를 확인했습니다.', commit_id: NEXT, created_at: AT, html_url: 'https://github.com/school/team/pull/1#discussion_r802' }]);
+    if (path.endsWith('/issues/1/comments') || path.endsWith('/issues/2/comments')) return response([]);
+    throw new Error(`다른 팀 기록에 요청함: ${path}`);
+  } }); t.after(() => f.store.close());
+  seedTrackedJob(f, { kind: 'issue', number: 2 });
+  seedTrackedJob(f);
+  seedTrackedJob(f, { number: 11, state: 'pending' });
+  seedTrackedJob(f, { number: 12, state: 'blocked' });
+  seedTrackedJob(f, { number: 13, state: 'failed' });
+  seedTrackedJob(f, { number: 14, bindingKey: 'other-binding' });
+  seedTrackedJob(f, { number: 15, repositoryId: 999 });
+  const another = f.store.createProject(f.teacher, { title: '같은 저장소를 사용하는 다른 팀', code: '' });
+  f.service.bind(another.id, f.teacher, repository.key);
+  seedTrackedJob(f, { projectId: another.id, number: 21 });
+  const first = await f.service.syncLearningEvents(f.project.id, f.teacher);
+  assert.equal(first.sync.state, 'complete'); assert.equal(first.sync.requests, 7);
+  const backfill = first.events.filter(event => event.source === 'backfill');
+  assert.deepEqual(new Set(backfill.map(event => event.kind)), new Set(['issue', 'pull_request', 'commit', 'review', 'review_comment']));
+  assert.equal(backfill.find(event => event.sha === NEXT && event.kind === 'commit').githubAuthorId, b.id);
+  assert.equal(backfill.find(event => event.kind === 'pull_request').metadata.number, 1);
+  assert.equal(first.events.some(event => [11, 12, 13, 14, 15, 21].includes(event.metadata.number)), false);
+  assert.ok(first.coverageNotice.includes('이 교실이 만든'));
+  assert.equal(calls.some(path => ['/repos/school/team/commits', '/repos/school/team/pulls', '/repos/school/team/issues', '/repos/school/team/issues/comments', '/repos/school/team/pulls/comments'].includes(path)), false);
+  const repeated = await f.service.syncLearningEvents(f.project.id, f.teacher);
+  assert.equal(repeated.sync.imported, 0); assert.deepEqual(repeated.events.map(event => event.id).sort(), first.events.map(event => event.id).sort());
+});
+
+test('project 범위의 빈 작업 이력은 repository 전체 수집으로 되돌아가지 않는다', async t => {
+  const calls = [];
+  const f = fixture({ repositories: [{ ...repository, learningScope: 'project' }], fetchImpl: async url => {
+    const path = new URL(url).pathname; calls.push(path);
+    if (path.endsWith('/access_tokens')) return response({ token: 'server-only', expires_at: new Date(Date.now() + 3_600_000).toISOString() }, 201);
+    if (path === '/repos/school/team') return response({ id: 200, name: 'team', owner: { login: 'school' }, private: true });
+    throw new Error('빈 이력에서 전체 저장소를 요청하면 안 됩니다.');
+  } }); t.after(() => f.store.close());
+  const result = await f.service.syncLearningEvents(f.project.id, f.teacher);
+  assert.equal(result.events.length, 0); assert.equal(result.sync.state, 'complete'); assert.equal(result.sync.requests, 0);
+  assert.deepEqual(calls, ['/app/installations/100/access_tokens', '/repos/school/team']);
+});
+
+test('project 범위 Webhook은 같은 저장소의 다른 팀 Issue·PR·리뷰·대화·push를 학습 근거에 섞지 않는다', t => {
+  const f = fixture({ repositories: [{ ...repository, learningScope: 'project' }] }); t.after(() => f.store.close());
+  const mine = seedTrackedJob(f);
+  seedTrackedJob(f, { kind: 'issue', number: 2 });
+  const other = f.store.createProject(f.teacher, { title: '다른 팀', code: '' });
+  f.service.bind(other.id, f.teacher, repository.key);
+  const theirs = seedTrackedJob(f, { projectId: other.id, number: 11 });
+  seedTrackedJob(f, { projectId: other.id, kind: 'issue', number: 12 });
+  const kinds = ['pull_request', 'pull_request_review', 'pull_request_review_comment', 'issues', 'issue_comment'];
+  function payloadFor(event, pullNumber, issueNumber, marker) {
+    const targetPull = { ...pull, id: 1000 + pullNumber, number: pullNumber };
+    const targetIssue = { ...issue, id: 1000 + issueNumber, number: issueNumber };
+    if (event === 'pull_request') return { action: 'opened', pull_request: targetPull };
+    if (event === 'pull_request_review') return { action: 'submitted', pull_request: targetPull, review: { id: marker, state: 'APPROVED', body: '팀별 검토', user: b, commit_id: NEXT, submitted_at: AT } };
+    if (event === 'pull_request_review_comment') return { action: 'created', pull_request: targetPull, comment: { id: marker, body: '팀별 코드 의견', user: b, commit_id: NEXT, created_at: AT } };
+    if (event === 'issues') return { action: 'opened', issue: targetIssue };
+    return { action: 'created', issue: targetIssue, comment: { id: marker, body: '팀별 대화', user: a, created_at: AT } };
+  }
+  for (const [index, event] of kinds.entries()) {
+    assert.equal(deliver(f, event, payloadFor(event, 1, 2, 900 + index)).recorded, 1);
+    assert.equal(deliver(f, event, payloadFor(event, 11, 12, 950 + index)).recorded, 1);
+  }
+  // PR 일반 대화는 issues 이벤트 구조로 전달되어도 PR 번호로 소속을 확인합니다.
+  assert.equal(deliver(f, 'issue_comment', { action: 'created', issue: { number: 1, pull_request: {} }, comment: { id: 980, body: '우리 PR 대화', user: b, created_at: AT } }).recorded, 1);
+  const push = branch => ({ ref: `refs/heads/${branch}`, before: SHA, after: NEXT, sender: a, head_commit: { timestamp: AT }, commits: [{ id: NEXT, author: { id: a.id, login: a.login }, message: '팀 브랜치 변경', timestamp: AT }] });
+  assert.equal(deliver(f, 'push', push(mine.branch)).recorded, 2);
+  assert.equal(deliver(f, 'push', push(theirs.branch)).recorded, 2);
+  assert.equal(deliver(f, 'push', push('vpylab/proposal-unknown')).recorded, 0);
+  assert.equal(deliver(f, 'push', push('main')).recorded, 0);
+  assert.equal(deliver(f, 'issues', { action: 'opened', issue: { ...issue, id: 2000, number: 2000 } }).recorded, 0);
+  const mineEvents = f.service.listLearningEvents(f.project.id, f.teacher).events.filter(event => event.source === 'webhook');
+  const theirEvents = f.service.listLearningEvents(other.id, f.teacher).events.filter(event => event.source === 'webhook');
+  assert.equal(mineEvents.length, 8); assert.equal(theirEvents.length, 7);
+  assert.equal(mineEvents.some(event => [11, 12].includes(event.metadata.number)), false);
+  assert.equal(theirEvents.some(event => [1, 2].includes(event.metadata.number)), false);
+  assert.deepEqual(mineEvents.filter(event => event.kind === 'push').map(event => event.metadata.ref), [`refs/heads/${mine.branch}`]);
+  assert.deepEqual(theirEvents.filter(event => event.kind === 'push').map(event => event.metadata.ref), [`refs/heads/${theirs.branch}`]);
+});
+
+test('project 범위는 성공하지 않은 PR 번호를 믿지 않으며 알려진 실행 중 제안 브랜치 push만 허용한다', t => {
+  const f = fixture({ repositories: [{ ...repository, learningScope: 'project' }] }); t.after(() => f.store.close());
+  const pending = seedTrackedJob(f, { number: 31, state: 'running' });
+  const blocked = seedTrackedJob(f, { number: 32, state: 'blocked' });
+  assert.equal(deliver(f, 'pull_request', { action: 'opened', pull_request: { ...pull, number: 31 } }).recorded, 0);
+  assert.equal(deliver(f, 'pull_request_review', { pull_request: { number: 32 }, review: { id: 990, state: 'APPROVED', user: b } }).recorded, 0);
+  const push = branch => ({ ref: `refs/heads/${branch}`, after: NEXT, sender: a, commits: [], head_commit: { timestamp: AT } });
+  assert.equal(deliver(f, 'push', push(pending.branch)).recorded, 1);
+  assert.equal(deliver(f, 'push', push(blocked.branch)).recorded, 0);
+});
+
+test('project 범위의 페이지·전체 요청·PR 수 제한은 partial로 남기고 허용 번호 밖의 엔드포인트를 요청하지 않는다', async () => {
+  const paths = [], recorded = [];
+  const bounded = await backfillGitHubLearning({ binding: repository, trackedEntities: { issues: [2, 2, -1, '3'], pulls: [1, 11] }, maxRequests: 3, record: (event, payload) => { recorded.push({ event, payload }); return [{ inserted: true }]; }, requestPage: async path => {
+    paths.push(path);
+    if (path === '/issues/2') return { data: issue };
+    if (path === '/pulls/1') return { data: pull };
+    return { data: [] };
+  } });
+  assert.equal(bounded.requests, 3); assert.equal(bounded.partial, true); assert.equal(bounded.errorCode, null);
+  assert.deepEqual(paths.map(path => path.split('?')[0]), ['/issues/2', '/issues/2/comments', '/pulls/1']);
+  assert.equal(recorded.length, 2);
+  const pagedPaths = [];
+  const paged = await backfillGitHubLearning({ binding: repository, trackedEntities: { issues: [], pulls: [1, 11] }, maxPagesPerEndpoint: 2, maxPullReviews: 1, record: () => [], requestPage: async path => {
+    pagedPaths.push(path);
+    if (path === '/pulls/1') return { data: pull };
+    if (path.startsWith('/pulls/1/commits?')) {
+      const page = Number(new URL(`https://api.github.com${path}`).searchParams.get('page'));
+      return { data: [], link: `<https://api.github.com/repositories/200/pulls/1/commits?page=${page + 1}&per_page=50>; rel="next"` };
+    }
+    return { data: [] };
+  } });
+  assert.equal(paged.partial, true); assert.equal(paged.errorCode, null); assert.equal(paged.requests, 6);
+  assert.equal(pagedPaths.filter(path => path.startsWith('/pulls/1/commits?')).length, 2);
+  assert.equal(paged.coverage.includes('/pulls/1/commits'), false);
+  assert.equal(pagedPaths.some(path => path.includes('/11')), false);
+  const malformed = await backfillGitHubLearning({ binding: repository, trackedEntities: { issues: [], pulls: [1] }, record: () => [], requestPage: async () => ({ data: [] }) });
+  assert.equal(malformed.partial, true); assert.equal(malformed.errorCode, 'invalid_github_response');
+});
+
+test('project 수집 범위는 서버 설정만 허용하고 기존 repository 기본 범위는 유지한다', t => {
+  assert.throws(() => fixture({ repositories: [{ ...repository, learningScope: 'browser-selected' }] }), { code: 'invalid_repository_config' });
+  const f = fixture(); t.after(() => f.store.close());
+  deliver(f, 'issues', { action: 'opened', issue: { ...issue, number: 99 } });
+  assert.equal(f.service.listLearningEvents(f.project.id, f.teacher).events[0].metadata.number, 99);
+  assert.ok(f.service.listLearningEvents(f.project.id, f.teacher).coverageNotice.includes('기본 브랜치'));
 });

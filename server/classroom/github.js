@@ -40,7 +40,8 @@ function validBinding(input) {
   if (!input || !/^[\w.-]+$/.test(input.owner || '') || !/^[\w.-]+$/.test(input.repo || '') || !Number.isSafeInteger(Number(input.installationId)) || Number(input.installationId) <= 0 || !Number.isSafeInteger(Number(input.repositoryId)) || Number(input.repositoryId) <= 0) throw fail(400, 'invalid_repository_config', '서버의 GitHub 저장소 설정을 확인해주세요.');
   const branch = input.branch || 'main', path = input.path || 'main.py';
   if (!/^[\w./-]+$/.test(branch) || branch.includes('..') || branch.startsWith('/') || branch.endsWith('/') || branch.endsWith('.') || branch.includes('//') || !/^[\w./-]+\.py$/.test(path) || path.split('/').some(part => !part || part === '..' || part.startsWith('.'))) throw fail(400, 'invalid_repository_config', '기본 브랜치와 Python 파일 경로를 확인해주세요.');
-  return { key: String(input.key || `${input.owner}/${input.repo}`), owner: input.owner, repo: input.repo, branch, path, installationId: Number(input.installationId), repositoryId: Number(input.repositoryId), projectId: input.projectId || null, allowPublic: input.allowPublic === true };
+  if (input.learningScope !== undefined && !['repository', 'project'].includes(input.learningScope)) throw fail(400, 'invalid_repository_config', '학습 기록의 수집 범위를 확인해주세요.');
+  return { key: String(input.key || `${input.owner}/${input.repo}`), owner: input.owner, repo: input.repo, branch, path, installationId: Number(input.installationId), repositoryId: Number(input.repositoryId), projectId: input.projectId || null, allowPublic: input.allowPublic === true, learningScope: input.learningScope || 'repository' };
 }
 
 export function classifyGitHubResponse(response, now = Date.now(), body = null) {
@@ -234,6 +235,33 @@ export function createGitHubService({ store, localMode = false, config = githubC
     const item = { ...source, id: source.id || result.number, number: result.number, title: source.title || job.payload.title, body: source.body ?? job.payload.message ?? job.payload.body ?? '', html_url: source.html_url || result.url, user: author, created_at: source.created_at || job.createdAt, updated_at: source.updated_at || job.createdAt, head: { ...source.head, sha: result.sha || job.payload.baseSha }, state: result.state || 'open' };
     recordLearning(job.projectId, binding, job.kind === 'proposal' ? 'pull_request' : 'issues', { action: 'created', [job.kind === 'proposal' ? 'pull_request' : 'issue']: item }, { context: { jobId: job.id, checkpointId: job.payload.checkpointId || null, serviceGenerated: true, requestedByUserId: job.payload.authorId, requestedByRole: 'requester' } });
   }
+  // 서버가 확정한 전송 이력으로만 같은 저장소 안의 팀별 수집 범위를 정합니다.
+  // 브라우저의 번호·브랜치 입력이나 GitHub 작성자 이름은 소속 판단에 사용하지 않습니다.
+  function trackedProjectLearning(projectId, binding) {
+    const issues = new Set(), pulls = new Set(), branches = new Set();
+    for (const job of store.getJobs(projectId)) {
+      if (!['proposal', 'issue'].includes(job.kind) || job.payload.bindingKey !== binding.key || job.payload.repositoryId !== binding.repositoryId) continue;
+      const result = parse(db.prepare('SELECT data FROM github_job_progress WHERE job_id=?').get(job.id)?.data).result;
+      if (job.state === 'succeeded' && Number.isSafeInteger(result?.number) && result.number > 0) {
+        (job.kind === 'proposal' ? pulls : issues).add(result.number);
+        if (job.kind === 'proposal' && typeof result.branch === 'string') branches.add(`refs/heads/${result.branch}`);
+      }
+      // PR 생성보다 먼저 도착하는 push도 해당 제안의 고유 브랜치에서만 허용합니다.
+      if (job.kind === 'proposal' && ['pending', 'running', 'succeeded'].includes(job.state) && typeof job.payload.code === 'string') {
+        branches.add(`refs/heads/vpylab/proposal-${job.id}-${sha256(job.payload.code).slice(0, 10)}`);
+      }
+    }
+    return { issues: [...issues], pulls: [...pulls], branches };
+  }
+  function matchesProjectLearning(projectId, binding, event, payload) {
+    if (binding.learningScope !== 'project') return true;
+    const tracked = trackedProjectLearning(projectId, binding);
+    if (event === 'push') return tracked.branches.has(payload.ref);
+    if (['pull_request', 'pull_request_review', 'pull_request_review_comment'].includes(event)) return tracked.pulls.includes(payload.pull_request?.number);
+    if (event === 'issues') return tracked.issues.includes(payload.issue?.number);
+    if (event === 'issue_comment') return tracked.issues.includes(payload.issue?.number) || tracked.pulls.includes(payload.issue?.number);
+    return false;
+  }
   function syncState(projectId, data) { db.prepare('INSERT INTO github_learning_sync VALUES(?,?) ON CONFLICT(project_id) DO UPDATE SET data=excluded.data').run(projectId, JSON.stringify(data)); return data; }
   function importGeneratedHistory(projectId) {
     const state = ensureState(projectId);
@@ -254,7 +282,11 @@ export function createGitHubService({ store, localMode = false, config = githubC
       let sync = parse(db.prepare('SELECT data FROM github_learning_sync WHERE project_id=?').get(projectId)?.data);
       if (!sync.state) sync = { state: 'never', requests: 0, imported: 0, coverage: [] };
       if (sync.state === 'running' && !syncing.has(projectId)) sync = { ...sync, state: 'partial', errorCode: 'sync_interrupted' };
-      return { events: rows.slice(0, boundedLimit).map(learningEventFromRow), hasMore: rows.length > boundedLimit, sync, coverageNotice: '기존 기록 가져오기는 기본 브랜치 커밋, 최근 PR·Issue·대화·코드 의견과 최대 10개 PR의 리뷰를 제한된 페이지에서 확인합니다. 수신하지 못한 다른 브랜치 push·과거 수정·삭제를 모두 복구하지는 못합니다. 수집 건수만으로 능력이나 성적을 판단하지 않습니다.' };
+      const binding = repositories.find(candidate => candidate.key === store.getGithub(projectId)?.binding?.key);
+      const coverageNotice = binding?.learningScope === 'project'
+        ? '공유 저장소에서 이 교실이 만든 Issue·PR과 그 커밋·리뷰·대화만 확인합니다. GitHub에서 별도로 만든 다른 Issue·PR은 포함하지 않습니다. 페이지 제한과 수신하지 못한 push·수정·삭제가 있을 수 있습니다. 수집 건수만으로 능력이나 성적을 판단하지 않습니다.'
+        : '기존 기록 가져오기는 기본 브랜치 커밋, 최근 PR·Issue·대화·코드 의견과 최대 10개 PR의 커밋·리뷰를 제한된 페이지에서 확인합니다. 수신하지 못한 다른 브랜치 push·과거 수정·삭제를 모두 복구하지는 못합니다. 수집 건수만으로 능력이나 성적을 판단하지 않습니다.';
+      return { events: rows.slice(0, boundedLimit).map(learningEventFromRow), hasMore: rows.length > boundedLimit, sync, coverageNotice };
     },
     async syncLearningEvents(projectId, actor) {
       store.accessProject(projectId, actor, { write: true });
@@ -273,7 +305,12 @@ export function createGitHubService({ store, localMode = false, config = githubC
         else {
           const guard = () => { if (stopping) throw new GitHubError('service_stopping', '서버 종료로 수집을 멈췄습니다.', { permanent: true, status: 503 }); const current = trustedBinding(projectId); if (current.key !== binding.key || current.repositoryId !== binding.repositoryId) throw new GitHubError('repository_binding_changed', '수집 도중 저장소 연결이 변경되었습니다.', { permanent: true, status: 409 }); };
           const record = (event, payload) => { guard(); return recordLearning(projectId, binding, event, payload, { source: 'backfill' }); };
-          const stats = await client.collectLearning(binding, { record, onProgress: progress => syncState(projectId, { ...progress, state: 'running', startedAt }) });
+          let trackedEntities = null;
+          if (binding.learningScope === 'project') {
+            const tracked = trackedProjectLearning(projectId, binding);
+            trackedEntities = { issues: tracked.issues, pulls: tracked.pulls };
+          }
+          const stats = await client.collectLearning(binding, { record, trackedEntities, onProgress: progress => syncState(projectId, { ...progress, state: 'running', startedAt }) });
           syncState(projectId, { ...stats, state: stats.errorCode ? stats.imported || stats.coverage.length ? 'partial' : 'failed' : stats.partial ? 'partial' : 'complete', startedAt, completedAt: iso(now()) });
         }
       } catch (error) { syncState(projectId, { state: 'failed', startedAt, completedAt: iso(now()), requests: 0, imported: 0, coverage: [], errorCode: error instanceof GitHubError ? error.code : 'github_sync_failed' }); }
@@ -469,7 +506,7 @@ export function createGitHubService({ store, localMode = false, config = githubC
             const state = parse(row.data), binding = repositories.find(candidate => candidate.key === state.binding?.key && (!candidate.projectId || candidate.projectId === row.project_id));
             if (!binding || state.binding?.repositoryId !== binding.repositoryId || binding.installationId !== payload.installation?.id || payload.repository && binding.repositoryId !== payload.repository.id) continue;
             matched++;
-            if (learningEvents.includes(event)) recorded += recordLearning(row.project_id, binding, event, payload, { source: 'webhook', deliveryId }).filter(result => result.inserted).length;
+            if (learningEvents.includes(event) && matchesProjectLearning(row.project_id, binding, event, payload)) recorded += recordLearning(row.project_id, binding, event, payload, { source: 'webhook', deliveryId }).filter(result => result.inserted).length;
             const revoked = (event === 'installation' && ['deleted', 'suspend'].includes(payload.action)) || (event === 'installation_repositories' && payload.repositories_removed?.some(repository => repository.id === binding.repositoryId));
             const mainMayChange = event !== 'push' || payload.ref === `refs/heads/${binding.branch}`;
             store.setGithub(row.project_id, { ...state, remote: state.remote ? { ...state.remote, available: !revoked, stale: state.remote.stale || mainMayChange } : null, lastEvent: { event, action: payload.action || null, receivedAt: iso(now()), revoked } });

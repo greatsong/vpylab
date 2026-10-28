@@ -90,7 +90,7 @@ export function nextGitHubPage(link, binding, expectedPath) {
   return `${expectedPath}${parsed.search}`;
 }
 
-export async function backfillGitHubLearning({ binding, requestPage, record, maxRequests = 24, maxPagesPerEndpoint = 2, maxPullReviews = 10, onProgress = () => {} }) {
+export async function backfillGitHubLearning({ binding, requestPage, record, trackedEntities = null, maxRequests = 36, maxPagesPerEndpoint = 2, maxPullReviews = 10, onProgress = () => {} }) {
   const stats = { requests: 0, imported: 0, partial: false, coverage: [], errorCode: null };
   const pulls = new Map();
   async function collect(endpoint, query, event, convert = item => ({ [event]: item })) {
@@ -108,7 +108,37 @@ export async function backfillGitHubLearning({ binding, requestPage, record, max
     }
     stats.coverage.push(endpoint);
   }
+  async function single(endpoint, event, convert) {
+    if (stats.requests >= maxRequests) { stats.partial = true; return null; }
+    stats.requests++;
+    const response = await requestPage(endpoint);
+    if (!response.data || Array.isArray(response.data) || typeof response.data !== 'object') throw Object.assign(new Error('invalid_github_response'), { code: 'invalid_github_response' });
+    stats.imported += record(event, convert(response.data)).filter(result => result.inserted).length;
+    stats.coverage.push(endpoint); onProgress(stats);
+    return response.data;
+  }
   try {
+    // 같은 저장소를 쓰는 팀은 이 교실에서 만든 Issue·PR과 그 하위 기록만 가져옵니다.
+    // 번호는 서버의 확정된 전송 이력에서만 전달하며 브라우저 입력을 사용하지 않습니다.
+    if (trackedEntities) {
+      const numbers = values => [...new Set(values || [])].filter(value => Number.isSafeInteger(value) && value > 0);
+      for (const number of numbers(trackedEntities.issues)) {
+        const issue = await single(`/issues/${number}`, 'issues', item => ({ issue: item, action: 'snapshot' }));
+        if (!issue) break;
+        await collect(`/issues/${number}/comments`, {}, 'issue_comment', item => ({ comment: item, issue: { number }, action: 'snapshot' }));
+      }
+      const selected = numbers(trackedEntities.pulls).slice(0, maxPullReviews);
+      if (selected.length < numbers(trackedEntities.pulls).length) stats.partial = true;
+      for (const number of selected) {
+        const pull = await single(`/pulls/${number}`, 'pull_request', item => ({ pull_request: item, action: 'snapshot' }));
+        if (!pull) break;
+        await collect(`/pulls/${number}/commits`, {}, 'commit');
+        await collect(`/pulls/${number}/reviews`, {}, 'pull_request_review', item => ({ review: item, pull_request: pull, action: 'snapshot' }));
+        await collect(`/pulls/${number}/comments`, {}, 'pull_request_review_comment', item => ({ comment: item, pull_request: pull, action: 'snapshot' }));
+        await collect(`/issues/${number}/comments`, {}, 'issue_comment', item => ({ comment: item, issue: { number }, action: 'snapshot' }));
+      }
+      return stats;
+    }
     await collect('/commits', { sha: binding.branch }, 'commit');
     await collect('/pulls', { state: 'all', sort: 'updated', direction: 'desc' }, 'pull_request', item => ({ pull_request: item, action: 'snapshot' }));
     await collect('/issues', { state: 'all', sort: 'updated', direction: 'desc' }, 'issues', item => ({ issue: item, action: 'snapshot' }));
@@ -116,7 +146,10 @@ export async function backfillGitHubLearning({ binding, requestPage, record, max
     await collect('/pulls/comments', { sort: 'updated', direction: 'desc' }, 'pull_request_review_comment', item => ({ comment: item, action: 'snapshot', pull_request: { number: Number(/\/(\d+)$/.exec(item.pull_request_url || '')?.[1]) || null } }));
     const selected = [...pulls.values()].slice(0, maxPullReviews);
     if (selected.length < pulls.size) stats.partial = true;
-    for (const pull of selected) await collect(`/pulls/${pull.number}/reviews`, {}, 'pull_request_review', item => ({ review: item, pull_request: pull, action: 'snapshot' }));
+    for (const pull of selected) {
+      await collect(`/pulls/${pull.number}/commits`, {}, 'commit');
+      await collect(`/pulls/${pull.number}/reviews`, {}, 'pull_request_review', item => ({ review: item, pull_request: pull, action: 'snapshot' }));
+    }
   } catch (error) { stats.errorCode = typeof error.code === 'string' ? error.code : 'github_sync_failed'; stats.partial = true; }
   return stats;
 }
