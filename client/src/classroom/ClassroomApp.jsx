@@ -4,6 +4,7 @@ import { request, setTokenProvider } from './api';
 import CurriculumLibrary from './CurriculumLibrary';
 import { curriculumCounts } from './curriculum';
 import TeacherDashboard from './TeacherDashboard';
+import BrandLogo from '../components/shared/BrandLogo';
 
 const Workspace = lazy(() => import('./Workspace.jsx'));
 const DEFAULT_CODE = 'from vpython import *\n\n# 무엇을 바꾸고, 무엇을 관찰할까요?\nball = sphere(radius=0.6, color=color.cyan)\n';
@@ -130,7 +131,7 @@ export default function ClassroomApp() {
 
   const projectId = route.startsWith('/projects/') ? route.split('/')[2] : null;
   return <div className="classroom-shell">
-    <header className="cr-header"><a className="cr-brand" href="#/" aria-label="VPyLab 교실 홈"><div>VPyLab</div></a>
+    <header className="cr-header"><a className="cr-brand" href="#/" aria-label="VPyLab 교실 홈"><BrandLogo size={28} inverse={theme === 'deep-dark'} /></a>
       <nav className="cr-main-nav" aria-label="주 메뉴"><a href="#/" className={route === '/' || projectId ? 'active' : ''}>프로젝트</a><a href="#/materials" className={route === '/materials' ? 'active' : ''}>수업 자료</a>{user?.role === 'teacher' && <a href="#/teacher" className={route === '/teacher' ? 'active' : ''}>교사 관찰실</a>}</nav>
       <div className="cr-header-actions"><span className="cr-preview-badge">새 교실 · 검토 중</span><button className="cr-icon-button" title="화면 테마 전환" aria-label="화면 테마 전환" onClick={() => useAppStore.getState().setTheme(theme === 'deep-dark' ? 'creative-light' : 'deep-dark')}>{theme === 'deep-dark' ? '☀' : '☾'}</button>
         {user && <><div className="cr-account"><span className="cr-avatar">{user.name?.slice(0, 1)}</span><span>{user.name}<small>{roleName(user.role)}</small></span></div><button className="cr-link-button" onClick={signOut} disabled={busy}>나가기</button></>}

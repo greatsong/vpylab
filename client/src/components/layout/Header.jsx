@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n/useI18n';
 import useAppStore from '../../stores/appStore';
 import useAuthStore from '../../stores/authStore';
 import { prewarm } from '../../engine/pyodide-singleton';
+import BrandLogo from '../shared/BrandLogo';
 
 export default function Header() {
   const { theme, setTheme, locale, setLocale, THEMES, THEME_META } = useAppStore();
@@ -65,16 +66,8 @@ export default function Header() {
       }}
     >
       {/* 로고 */}
-      <Link to="/" className="flex items-center gap-2 no-underline">
-        <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-          <line x1="14" y1="14" x2="24" y2="20" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round"/>
-          <line x1="14" y1="14" x2="14" y2="4" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round"/>
-          <line x1="14" y1="14" x2="6" y2="20" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round"/>
-          <circle cx="14" cy="14" r="2.5" fill="#2563EB"/>
-        </svg>
-        <span className="font-display text-base font-bold" style={{ color: 'var(--color-text-primary)' }}>
-          VPyLab
-        </span>
+      <Link to="/" className="text-base no-underline" aria-label="VPyLab 홈">
+        <BrandLogo size={28} inverse={theme === 'deep-dark'} />
       </Link>
 
       {/* 네비게이션 (데스크톱) */}
@@ -137,17 +130,7 @@ export default function Header() {
           >
             {/* 메뉴 헤더 */}
             <div className="flex items-center justify-between mb-6 px-1">
-              <div className="flex items-center gap-2">
-                <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
-                  <line x1="14" y1="14" x2="24" y2="20" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round"/>
-                  <line x1="14" y1="14" x2="14" y2="4" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round"/>
-                  <line x1="14" y1="14" x2="6" y2="20" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round"/>
-                  <circle cx="14" cy="14" r="2.5" fill="#2563EB"/>
-                </svg>
-                <span className="font-display text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
-                  VPyLab
-                </span>
-              </div>
+              <Link to="/" className="text-sm no-underline" aria-label="VPyLab 홈" onClick={() => setMobileMenuOpen(false)}><BrandLogo size={24} inverse={theme === 'deep-dark'} /></Link>
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer"

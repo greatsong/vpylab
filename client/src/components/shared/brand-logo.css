@@ -1,0 +1,4 @@
+.vpylab-brand { display:inline-flex; align-items:center; gap:8px; color:var(--color-text-primary,#111827); white-space:nowrap; line-height:1; vertical-align:middle; }
+.vpylab-brand-mark { display:block; flex:none; object-fit:contain; }
+.vpylab-brand-wordmark { display:block; width:3.73em; height:1.1em; flex:none; overflow:visible; }
+.vpylab-brand-inverse { color:#fff; }

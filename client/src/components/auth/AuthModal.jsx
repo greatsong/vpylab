@@ -1,7 +1,10 @@
 import { useI18n } from '../../i18n/useI18n';
 import useAuthStore from '../../stores/authStore';
+import useAppStore from '../../stores/appStore';
+import { BrandMark } from '../shared/BrandLogo';
 
 export default function AuthModal() {
+  const theme = useAppStore((state) => state.theme);
   const { authModalOpen, setAuthModalOpen, signInWithGoogle, signInWithGitHub } = useAuthStore();
   const { t } = useI18n();
 
@@ -19,12 +22,7 @@ export default function AuthModal() {
 
         {/* 로고 + 타이틀 */}
         <div className="auth-logo">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <line x1="14" y1="14" x2="24" y2="20" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round"/>
-            <line x1="14" y1="14" x2="14" y2="4" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round"/>
-            <line x1="14" y1="14" x2="6" y2="20" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round"/>
-            <circle cx="14" cy="14" r="2.5" fill="#2563EB"/>
-          </svg>
+          <BrandMark size={44} inverse={theme === 'deep-dark'} />
         </div>
 
         <h2 className="auth-title">VPyLab {t('auth.login')}</h2>

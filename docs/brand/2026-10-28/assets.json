@@ -1,0 +1,139 @@
+{
+  "concept": "입체 V · 서로 다른 경로가 만나는 창작과 협력",
+  "assets": [
+    {
+      "path": "client/public/apple-touch-icon.png",
+      "bytes": 2427,
+      "sha256": "52eb02a32ad9d14c6e99eaa7ec1c16c4d8c1c0c73e1c3abe0a7a49fcd285282b",
+      "size": [
+        180,
+        180
+      ]
+    },
+    {
+      "path": "client/public/brand/vpylab-logo-inverse.png",
+      "bytes": 13680,
+      "sha256": "74b1d0bd0e3ff9e7929bce9c612a315e84fef2ba6d256a6d005fd4089dc46bd4",
+      "size": [
+        712,
+        192
+      ]
+    },
+    {
+      "path": "client/public/brand/vpylab-logo-inverse.svg",
+      "bytes": 1838,
+      "sha256": "61f0bb79b0293863f251d73a855a25cdf4fbba0ddf8f3608a3d4242690e49bfd",
+      "viewBox": "0 0 178 48"
+    },
+    {
+      "path": "client/public/brand/vpylab-logo-mono.svg",
+      "bytes": 1871,
+      "sha256": "e1e87ab20a43ff6be76f7e73bc78ec9207dfd9290838dbb32efabe71871c67c3",
+      "viewBox": "0 0 178 48"
+    },
+    {
+      "path": "client/public/brand/vpylab-logo.png",
+      "bytes": 16515,
+      "sha256": "2b891ad1a12854081ba4f24f59b8f2da03634349abba05c3fed74c9933325149",
+      "size": [
+        712,
+        192
+      ]
+    },
+    {
+      "path": "client/public/brand/vpylab-logo.svg",
+      "bytes": 1841,
+      "sha256": "ec37d1c82e5f6aeba225eac45e56d9b546a6867a98cb6a3f2c1d0531b4233b5c",
+      "viewBox": "0 0 178 48"
+    },
+    {
+      "path": "client/public/brand/vpylab-mark-inverse.svg",
+      "bytes": 336,
+      "sha256": "5790c1b04f429b3ef91373ee3ebf47e847e7bb8271a12bd6738d57360da0c10e",
+      "viewBox": "0 0 48 48"
+    },
+    {
+      "path": "client/public/brand/vpylab-mark-mono.svg",
+      "bytes": 364,
+      "sha256": "0e49055eee5a8e3f8d88444874ad806f4251831cda5593a55c0697d82ef49bcc",
+      "viewBox": "0 0 48 48"
+    },
+    {
+      "path": "client/public/brand/vpylab-mark.png",
+      "bytes": 18015,
+      "sha256": "b50a11361d1f7bac607a19609a76628f2c4e505039bb16664ada4364a6e5c495",
+      "size": [
+        512,
+        512
+      ]
+    },
+    {
+      "path": "client/public/brand/vpylab-mark.svg",
+      "bytes": 339,
+      "sha256": "5997eea357a836d76051092025b715060204b74dc54b324dc76fe4d869decc82",
+      "viewBox": "0 0 48 48"
+    },
+    {
+      "path": "client/public/brand/vpylab-wordmark.svg",
+      "bytes": 1524,
+      "sha256": "a3e3b8c216d229fe4c659d0ba11c76fca1e887fae255355521d5c730bdd221d7",
+      "viewBox": "0 0 3590 1060"
+    },
+    {
+      "path": "client/public/favicon-32.png",
+      "bytes": 910,
+      "sha256": "7532a0b3853a612d293378003ed42715b5a8752ca0a47f2914251f00c8f873ea",
+      "size": [
+        32,
+        32
+      ]
+    },
+    {
+      "path": "client/public/favicon.ico",
+      "bytes": 4249,
+      "sha256": "bf6fb90d773a45d36b4b565969eb3555d46b9cd8e80e3f3c67f25bf9f0b3c23f",
+      "size": [
+        48,
+        48
+      ],
+      "embeddedSizes": [
+        [
+          16,
+          16
+        ],
+        [
+          32,
+          32
+        ],
+        [
+          48,
+          48
+        ]
+      ]
+    },
+    {
+      "path": "client/public/favicon.svg",
+      "bytes": 344,
+      "sha256": "1490dcc1668186b98c20397c4018c1c71673c4551a508fa3363b386b1609dcd7",
+      "viewBox": "0 0 64 64"
+    },
+    {
+      "path": "client/public/icon-192.png",
+      "bytes": 4245,
+      "sha256": "2ba4e770b3730dc59ee9d930e7ca57b7bdbc44a55dbc79622091938a79ebb07c",
+      "size": [
+        192,
+        192
+      ]
+    },
+    {
+      "path": "client/public/icon-512.png",
+      "bytes": 11419,
+      "sha256": "bdabba24a6d616787ccea87d309d10ac634ee99cf53297ee06575c7841c595ba",
+      "size": [
+        512,
+        512
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "status": "local_design_draft_01",
+  "frontEndRegressionTests": {
+    "passed": 252,
+    "failed": 0
+  },
+  "builds": {
+    "classroom": "passed",
+    "legacy": "passed"
+  },
+  "lint": {
+    "errors": 0,
+    "existingWarnings": 6
+  },
+  "visualChecks": [
+    "전체 시안 페이지",
+    "파비콘16·24·32·48px",
+    "실제 교실 헤더의 밝은/어두운 테마",
+    "어두운 테마에서 역상 로고",
+    "워드마크 하강부 여백 보정"
+  ],
+  "svgAssets": 8,
+  "svgFontOrScriptDependencies": 0,
+  "icoSizes": [
+    16,
+    32,
+    48
+  ],
+  "touchIcon": {
+    "pixels": 180,
+    "opaque": true
+  },
+  "productionDeployed": false,
+  "curriculumModified": false,
+  "previewUrl": "http://127.0.0.1:4053/brand-preview.html"
+}
