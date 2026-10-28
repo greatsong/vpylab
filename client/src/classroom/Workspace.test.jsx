@@ -3,12 +3,14 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import Workspace from './Workspace';
 import { request } from './api';
 import { recoveryDrafts } from './draft-journal';
+import missions from '../data/missions';
+import { clearRegistry, registerObject } from '../engine/object-registry';
 
 vi.mock('./api', () => ({ request: vi.fn(), downloadFile: vi.fn() }));
 vi.mock('../components/editor/CodeEditor', () => ({
   default: ({ code, onChange, readOnly }) => <textarea aria-label="Python 코드" value={code} readOnly={readOnly} onChange={(event) => onChange(event.target.value)} />,
 }));
-vi.mock('./RuntimePanel', () => ({ default: ({ code }) => <div aria-label="3D 실행 코드">{code}</div> }));
+vi.mock('./RuntimePanel', () => ({ default: ({ code, onRunResult }) => <div aria-label="3D 실행 코드">{code}<button onClick={() => onRunResult({ code, status: 'completed', output: [] })}>테스트 실행 완료</button></div> }));
 
 const actor = { id: 'student-a', name: '학생 가', role: 'student' };
 const checkpoint = { id: 'checkpoint-0', code: '팀 시작 코드', version: 0, authorId: actor.id, message: '프로젝트 시작', evidence: {}, createdAt: '2026-10-28T00:00:00.000Z' };
@@ -49,7 +51,23 @@ describe('교실 작업 화면의 사용자 흐름', () => {
       throw new Error(`예상하지 못한 요청: ${path}`);
     });
   });
-  afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+  afterEach(() => { cleanup(); clearRegistry(); vi.unstubAllGlobals(); });
+
+  it('함수 미션은 같은 장면을 직접 만드는 코드 대신 함수 사용 조건도 확인한다', async () => {
+    const mission = missions.find(item => item.id === 'CT-3');
+    data.project.source = { kind: 'mission', id: mission.id };
+    await openWorkspace();
+    for (const x of [0, -2, 2]) registerObject('sphere', { pos: [x, 0, 0], emissive: true });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Python 코드' }), { target: { value: 'sphere()\nsphere(pos=vector(-2,0,0))\nsphere(pos=vector(2,0,0))' } });
+    fireEvent.click(screen.getByRole('button', { name: '테스트 실행 완료' }));
+    fireEvent.click(screen.getByRole('button', { name: '학습 조건 확인' }));
+    expect(screen.getByText('코드를 더 완성해 보세요.')).toBeInTheDocument();
+    expect(screen.getByText(/스탬프\(\) 함수를 정의하세요/)).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Python 코드' }), { target: { value: mission.solutionCode } });
+    fireEvent.click(screen.getByRole('button', { name: '테스트 실행 완료' }));
+    fireEvent.click(screen.getByRole('button', { name: '학습 조건 확인' }));
+    expect(screen.getByText(/100점 · 조건을 만족했습니다/)).toBeInTheDocument();
+  });
 
   it.each(['disabled', 'optional'])('AI 정책 %s에서도 가설·관찰·판단을 포함한 변경 제안을 제출한다', async (aiPolicy) => {
     data = responseFixture({ aiPolicy }); await openWorkspace();

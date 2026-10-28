@@ -185,6 +185,8 @@ test('긴 동기화의 재요청은 running 상태를 반환하고 종료 시 �
 test('기존 모의 PR은 job 출처와 실제 요청자를 별도로 연결하고 재수집해도 같은 근거를 유지한다', async t => {
   const f = fixture({ mode: 'simulator' }); t.after(() => f.store.close());
   const state = f.service.status(f.project.id, f.teacher), input = { code: 'print("추가 실험")', title: '다른 조건으로 실험', message: '관찰한 차이를 검토해주세요.', baseSha: state.remote.sha };
+  input.checkpointId = f.store.saveCheckpoint(f.project.id, f.student, { code: input.code, message: input.message, baseVersion: f.project.version }).id;
+  assert.equal((await f.service.runOnce()).kind, 'checkpoint');
   const job = f.service.enqueueProposal(f.project.id, f.student, input);
   assert.equal((await f.service.runOnce()).state, 'succeeded');
   const first = f.service.listLearningEvents(f.project.id, f.teacher).events[0];

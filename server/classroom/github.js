@@ -318,13 +318,10 @@ export function createGitHubService({ store, localMode = false, config = githubC
     enqueueProposal(projectId, actor, input) {
       store.accessProject(projectId, actor, { write: true });
       const state = ensureState(projectId);
-      let checkpoint = null;
-      if (input.checkpointId !== undefined) {
-        checkpoint = store.checkpoints(projectId).find(candidate => candidate.id === input.checkpointId);
-        if (!checkpoint || checkpoint.code !== input.code) throw fail(409, 'checkpoint_binding_mismatch', '이 프로젝트에 확정된 동일 저장본만 GitHub 제안으로 보낼 수 있습니다.');
-      }
+      const checkpoint = store.checkpoints(projectId).find(candidate => candidate.id === input.checkpointId);
       input = { ...input, message: input.message ?? checkpoint?.message ?? '' };
       if (typeof input.code !== 'string' || Buffer.byteLength(input.code) > MAX_CODE_BYTES || typeof input.title !== 'string' || !input.title.trim() || input.title.length > 200 || typeof input.message !== 'string' || input.message.length > 10_000 || !/^[a-f\d]{40}$/i.test(input.baseSha || '')) throw fail(400, 'invalid_github_proposal', '제목, 설명, 기준 커밋과 50KB 이하 코드를 확인해주세요.');
+      if (!checkpoint || checkpoint.code !== input.code) throw fail(409, 'checkpoint_binding_mismatch', '이 프로젝트에 확정된 동일 저장본만 GitHub 제안으로 보낼 수 있습니다.');
       if (state.remote?.sha !== input.baseSha) throw fail(409, 'github_base_conflict', '먼저 GitHub 최신 코드를 가져와 비교해주세요.');
       if (state.remote.code === input.code) throw fail(409, 'nothing_to_publish', 'GitHub 코드와 이미 같습니다. 변경한 팀 저장본을 확정한 뒤 제안해주세요.');
       const binding = trustedBinding(projectId);
@@ -390,6 +387,11 @@ export function createGitHubService({ store, localMode = false, config = githubC
           else {
             assertOnline(); const binding = trustedBinding(job.projectId);
             const guard = () => {
+              // 이전 버전에서 저장된 출처 없는 대기 작업도 외부 전송 전에 막습니다.
+              if (job.kind === 'proposal') {
+                const checkpoint = store.checkpoints(job.projectId).find(candidate => candidate.id === job.payload.checkpointId);
+                if (!checkpoint || checkpoint.code !== job.payload.code || checkpoint.version !== job.payload.checkpointVersion) throw new GitHubError('checkpoint_binding_mismatch', '확정 저장본을 확인할 수 없어 전송을 중지했습니다. 팀 저장본에서 다시 제안해주세요.', { permanent: true, status: 409 });
+              }
               const currentBinding = trustedBinding(job.projectId);
               const currentJob = db.prepare('SELECT state FROM github_jobs WHERE id=?').get(job.id);
               if (job.payload.bindingKey !== currentBinding.key || job.payload.repositoryId !== (currentBinding.repositoryId || null) || currentJob?.state !== 'running') throw new GitHubError('repository_binding_changed', '저장소 연결이 변경되어 기존 요청을 중지했습니다.', { permanent: true, status: 409 });

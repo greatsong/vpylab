@@ -271,7 +271,7 @@ async function gapProbes() {
   await request(teacherOverride, teacher, `/proposals/${teacherProposal.id}/merge`, { method: 'POST', body: {}, classification: 'gap', name: '교사는 동료 승인 없이 미승인 학생 제안을 반영할 수 있음(설계된 예외)' });
   const privateCode = await createProbe('체크포인트 없는 외부 제안');
   const fetched = (await request(privateCode, 'creative-a', '/github/fetch', { method: 'POST', body: {} })).data;
-  await request(privateCode, 'creative-a', '/github/proposals', { method: 'POST', expected: 202, body: { code: 'print("확정되지 않은 합성 개인 코드")', title: 'checkpointId 없이 임의 코드 전송 시도', baseSha: fetched.remote.sha }, classification: 'gap', name: 'GitHub PR API는 checkpointId 생략과 임의 코드 요청도 수락함(모의 큐에만 보존)' });
+  await request(privateCode, 'creative-a', '/github/proposals', { method: 'POST', expected: 409, body: { code: 'print("확정되지 않은 합성 개인 코드")', title: 'checkpointId 없이 임의 코드 전송 시도', baseSha: fetched.remote.sha }, name: 'GitHub PR API는 checkpointId 없는 개인 코드 전송을 거부함' });
 }
 
 async function restartAndBackup() {

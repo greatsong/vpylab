@@ -1,0 +1,42 @@
+{
+  "scope": "로컬 안정화 회귀 및 외부 AI 검토 준비. 실제 외부 모델 리뷰는 미실행.",
+  "backendGithubBackupPythonTests": {
+    "passed": 82,
+    "failed": 0
+  },
+  "frontendTests": {
+    "passed": 251,
+    "failed": 0
+  },
+  "totalAutomatedTests": 333,
+  "curriculumOriginalHashes": {
+    "files": 5,
+    "baseline": "605d7c8",
+    "unchanged": true
+  },
+  "builds": {
+    "classroom": "passed",
+    "legacy": "passed"
+  },
+  "lint": {
+    "errors": 0,
+    "existingWarnings": 6
+  },
+  "threeTeamRehearsal": {
+    "runId": "7f6df9ee-3a1a-4c4a-9233-b48d1b20b3dd",
+    "apiCalls": 264,
+    "checks": 378,
+    "passed": 368,
+    "observedGaps": 10,
+    "gapTypes": 6,
+    "failed": 0,
+    "externalAttempts": 0
+  },
+  "externalAIReview": {
+    "argon": "blocked_by_approval_review_before_execution",
+    "claude": "blocked_by_approval_review_before_execution",
+    "sourceTransferApproval": "pending",
+    "responsesReceived": 0
+  },
+  "productionReplaced": false
+}

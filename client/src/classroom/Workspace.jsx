@@ -106,7 +106,11 @@ function WorkingSession({ initial, user, projectId, localMode, users, onRefresh,
 
   const checkMission = () => {
     if (!material || !runResult || runResult.code !== draft?.code || runResult.status === 'error') return;
-    const result = material.gradeType === 'code' ? gradeCodeChecks(draft.code, material.codeChecks) : material.gradeType === 'notes' ? gradeNotes(material.expectedNotes) : material.gradeType === 'run' ? gradeRun(material.assertions) : gradeA(material.assertions);
+    let result = material.gradeType === 'code' ? gradeCodeChecks(draft.code, material.codeChecks) : material.gradeType === 'notes' ? gradeNotes(material.expectedNotes) : material.gradeType === 'run' ? gradeRun(material.assertions) : gradeA(material.assertions);
+    if (material.gradeType !== 'code' && material.codeChecks?.length && result.passed) {
+      const codeResult = gradeCodeChecks(draft.code, material.codeChecks);
+      if (!codeResult.passed) result = { ...result, passed: false, score: Math.round((result.score + codeResult.score) / 2), results: [...(result.results || []), ...codeResult.results], message: '코드를 더 완성해 보세요.' };
+    }
     setGrade(result);
   };
 

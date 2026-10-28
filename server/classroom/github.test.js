@@ -80,7 +80,16 @@ async function setupLive(mock = githubMock()) {
   return { ...f, mock };
 }
 
-function proposalInput(remote, overrides = {}) { return { code: 'print("제안")', title: '가설을 검증하는 변경', message: '속도 조건을 바꾸고 관찰했습니다.', baseSha: remote.sha, ...overrides }; }
+async function proposalInput(f, remote, overrides = {}) {
+  const input = { code: 'print("제안")', title: '가설을 검증하는 변경', message: '속도 조건을 바꾸고 관찰했습니다.', baseSha: remote.sha, ...overrides };
+  if (Buffer.byteLength(input.code) > 50 * 1024) return input;
+  let checkpoint = f.store.checkpoint(f.project.id);
+  if (checkpoint.code !== input.code) {
+    checkpoint = f.store.saveCheckpoint(f.project.id, teacher, { code: input.code, message: input.message, baseVersion: checkpoint.version });
+    const saved = await f.service.runOnce(); assert.equal(saved.kind, 'checkpoint'); assert.equal(saved.state, 'succeeded');
+  }
+  return { ...input, checkpointId: checkpoint.id };
+}
 
 test('GitHub App JWT는 RS256으로 서명하고 짧은 만료와 시계 오차를 반영한다', () => {
   const now = Date.now(), jwt = createAppJwt({ appId: 'Iv1.classroom', privateKey, now });
@@ -105,7 +114,7 @@ test('로컬 저장·GitHub 제안은 분리되며 모의 PR은 기본 브랜치
   const original = service.status(project.id, teacher).remote;
   store.saveCheckpoint(project.id, student, { baseVersion: project.version, code: '새 팀 저장본', message: '관찰 결과' });
   const saved = await service.runOnce(); assert.equal(saved.state, 'succeeded'); assert.equal(saved.result.localOnly, true);
-  const input = proposalInput(original), first = service.enqueueProposal(project.id, student, input);
+  const input = await proposalInput({ store, service, project }, original, { code: "새 팀 저장본" }), first = service.enqueueProposal(project.id, student, input);
   assert.equal(service.enqueueProposal(project.id, student, input).id, first.id);
   const result = await service.runOnce(); assert.equal(result.state, 'succeeded'); assert.equal(result.result.simulated, true);
   assert.equal(service.status(project.id, teacher).remote.sha, original.sha);
@@ -117,7 +126,7 @@ test('로컬 저장·GitHub 제안은 분리되며 모의 PR은 기본 브랜치
 test('제안 대기 중 외부 커밋이 생기면 덮어쓰지 않고 충돌로 중지한다', async t => {
   const { store, service, project } = fixture(); t.after(() => store.close());
   const remote = service.status(project.id, teacher).remote;
-  service.enqueueProposal(project.id, student, proposalInput(remote));
+  service.enqueueProposal(project.id, student, await proposalInput({ store, service, project }, remote));
   service.simulatePush(project.id, teacher, { baseSha: remote.sha, code: '팀원의 외부 변경' });
   const result = await service.runOnce(); assert.equal(result.state, 'blocked'); assert.match(result.lastError, /^github_base_conflict:/);
   assert.equal(service.status(project.id, teacher).remote.code, '팀원의 외부 변경');
@@ -128,10 +137,11 @@ test('서버 allowlist·역할·저장소 식별자로 repository binding을 제
   const f = await setupLive(); t.after(() => f.store.close());
   assert.throws(() => f.service.bind(f.project.id, teacher, 'attacker/private'), { code: 'repository_not_allowed' });
   assert.throws(() => f.service.bind(f.project.id, student, repository.key), { code: 'access_denied' });
+  const prepared = await proposalInput(f, f.service.status(f.project.id, teacher).remote);
   f.store.addMember(f.project.id, teacher, student.id, 'viewer');
-  assert.throws(() => f.service.enqueueProposal(f.project.id, student, proposalInput(f.service.status(f.project.id, teacher).remote)), { code: 'access_denied' });
+  assert.throws(() => f.service.enqueueProposal(f.project.id, student, prepared), { code: 'access_denied' });
   const state = f.store.getGithub(f.project.id); f.store.setGithub(f.project.id, { ...state, binding: { ...state.binding, repositoryId: 999 } });
-  assert.throws(() => f.service.enqueueProposal(f.project.id, teacher, proposalInput(state.remote)), { code: 'repository_binding_required' });
+  assert.throws(() => f.service.enqueueProposal(f.project.id, teacher, prepared), { code: 'repository_binding_required' });
 });
 
 test('외부 GitHub 코드는 비교본으로 가져오고 팀 저장본을 보존한다', async t => {
@@ -160,7 +170,7 @@ test('명시적인 로컬 테스트 인증 공급자는 App 토큰 발급 없이
   assert.ok(received.every(binding => Object.isFrozen(binding) && binding.repositoryId === repository.repositoryId));
   assert.equal(mock.calls.some(call => call.path.startsWith('/app/')), false);
   assert.ok(mock.calls.every(call => call.headers.Authorization === `Bearer ${token}`));
-  f.service.enqueueProposal(f.project.id, student, proposalInput(status.remote));
+  f.service.enqueueProposal(f.project.id, student, await proposalInput(f, status.remote));
   const job = await f.service.runOnce();
   assert.equal(job.state, 'succeeded');
   const event = f.service.listLearningEvents(f.project.id, teacher).events[0];
@@ -209,7 +219,7 @@ test('테스트 인증 실패와 잘못된 토큰을 일반 오류로 바꾸고 
 
 test('실제 어댑터는 새 브랜치와 PR만 생성하고 main ref를 PATCH하지 않는다', async t => {
   const f = await setupLive(); t.after(() => f.store.close());
-  f.service.enqueueProposal(f.project.id, student, proposalInput(f.service.status(f.project.id, teacher).remote));
+  f.service.enqueueProposal(f.project.id, student, await proposalInput(f, f.service.status(f.project.id, teacher).remote));
   const result = await f.service.runOnce();
   assert.equal(result.state, 'succeeded'); assert.equal(result.result.number, 1);
   assert.equal(f.mock.pulls.length, 1); assert.equal(f.mock.remoteSha, BASE);
@@ -224,7 +234,7 @@ test('실제 어댑터는 새 브랜치와 PR만 생성하고 main ref를 PATCH�
 
 test('원격 기준 SHA가 바뀌면 Git 데이터 쓰기 전에 실제 어댑터가 중지한다', async t => {
   const f = await setupLive(); t.after(() => f.store.close());
-  f.service.enqueueProposal(f.project.id, student, proposalInput(f.service.status(f.project.id, teacher).remote));
+  f.service.enqueueProposal(f.project.id, student, await proposalInput(f, f.service.status(f.project.id, teacher).remote));
   f.mock.remoteSha = NEXT;
   const result = await f.service.runOnce(); assert.equal(result.state, 'blocked'); assert.match(result.lastError, /^github_base_conflict:/);
   assert.equal(f.mock.calls.some(call => call.method === 'POST' && /\/(git|pulls)\//.test(call.path)), false);
@@ -232,7 +242,7 @@ test('원격 기준 SHA가 바뀌면 Git 데이터 쓰기 전에 실제 어댑�
 
 test('PR 생성 응답 유실 후 재시도는 기존 PR을 찾아 중복 없이 복구한다', async t => {
   const mock = githubMock({ losePullResponse: true }), f = await setupLive(mock); t.after(() => f.store.close());
-  f.service.enqueueProposal(f.project.id, student, proposalInput(f.service.status(f.project.id, teacher).remote));
+  f.service.enqueueProposal(f.project.id, student, await proposalInput(f, f.service.status(f.project.id, teacher).remote));
   const first = await f.service.runOnce(); assert.equal(first.state, 'pending'); assert.equal(mock.pulls.length, 1);
   f.advance(61_000); const second = await f.service.runOnce();
   assert.equal(second.state, 'succeeded'); assert.equal(second.result.number, 1);
@@ -251,7 +261,7 @@ test('rate limit는 Retry-After·reset·secondary-limit에 맞춰 인증 실패�
 
 test('outbox는 제한 해제 전 재호출하지 않고 대기 후 복구한다', async t => {
   const f = await setupLive(); t.after(() => f.store.close());
-  f.service.enqueueProposal(f.project.id, student, proposalInput(f.service.status(f.project.id, teacher).remote));
+  f.service.enqueueProposal(f.project.id, student, await proposalInput(f, f.service.status(f.project.id, teacher).remote));
   f.mock.failNext(call => call.path === '/repos/classroom/team-one', reply({}, 429, { 'retry-after': '120' }));
   const failedAt = f.now(), first = await f.service.runOnce();
   assert.equal(first.state, 'pending'); assert.match(first.lastError, /^rate_limited:/); assert.equal(Date.parse(first.availableAt), failedAt + 120_000);
@@ -261,10 +271,10 @@ test('outbox는 제한 해제 전 재호출하지 않고 대기 후 복구한다
 
 test('GitHub 인증 장애는 교사 조치 대기로 멈추고 학생 저장은 계속된다', async t => {
   const f = await setupLive(); t.after(() => f.store.close());
-  f.service.enqueueProposal(f.project.id, student, proposalInput(f.service.status(f.project.id, teacher).remote));
+  f.service.enqueueProposal(f.project.id, student, await proposalInput(f, f.service.status(f.project.id, teacher).remote));
   f.mock.failNext(call => call.path === '/repos/classroom/team-one', reply({}, 401));
   const result = await f.service.runOnce(); assert.equal(result.state, 'blocked'); assert.match(result.lastError, /^github_auth_required:/);
-  f.store.saveCheckpoint(f.project.id, student, { baseVersion: 0, code: '장애 중에도 보존', message: '가설 기록' });
+  f.store.saveCheckpoint(f.project.id, student, { baseVersion: f.store.getProject(f.project.id).version, code: '장애 중에도 보존', message: '가설 기록' });
   const checkpoint = await f.service.runOnce(); assert.equal(checkpoint.state, 'succeeded'); assert.equal(f.store.getProject(f.project.id).code, '장애 중에도 보존');
 });
 
@@ -272,7 +282,7 @@ test('서버 재시작 후에도 pending outbox와 모의 저장소가 복구된
   const directory = mkdtempSync(join(tmpdir(), 'vpylab-github-')); t.after(() => rmSync(directory, { recursive: true, force: true }));
   const filename = join(directory, 'classroom.sqlite'), first = fixture({ filename });
   const remote = first.service.status(first.project.id, teacher).remote;
-  const job = first.service.enqueueProposal(first.project.id, student, proposalInput(remote)); first.store.close();
+  const job = first.service.enqueueProposal(first.project.id, student, await proposalInput(first, remote)); first.store.close();
   const second = fixture({ filename }); t.after(() => second.store.close());
   const result = await second.service.runOnce(); assert.equal(result.id, job.id); assert.equal(result.state, 'succeeded');
   assert.equal(second.service.status(first.project.id, teacher).simulatedPulls.length, 1);
@@ -304,7 +314,8 @@ test('비공개 기본 정책과 50KB 한도를 적용한다', async t => {
   f.service.bind(f.project.id, teacher, repository.key);
   await assert.rejects(f.service.fetchRemote(f.project.id, teacher), { code: 'private_repository_required' });
   const sim = fixture(); t.after(() => sim.store.close());
-  assert.throws(() => sim.service.enqueueProposal(sim.project.id, student, proposalInput(sim.service.status(sim.project.id, teacher).remote, { code: 'x'.repeat(51 * 1024) })), { code: 'invalid_github_proposal' });
+  const oversized = await proposalInput(sim, sim.service.status(sim.project.id, teacher).remote, { code: 'x'.repeat(51 * 1024) });
+  assert.throws(() => sim.service.enqueueProposal(sim.project.id, student, oversized), { code: 'invalid_github_proposal' });
 });
 
 test('HTTP 경로는 세션 권한을 검사하고 원본 Webhook 본문을 CSRF 전에 검증한다', async t => {
@@ -319,7 +330,10 @@ test('HTTP 경로는 세션 권한을 검사하고 원본 Webhook 본문을 CSRF
   const cookie = login.headers.get('set-cookie').split(';')[0];
   const statusResponse = await fetch(`${base}/projects/${f.project.id}/github`, { headers: { cookie } });
   const status = await statusResponse.json(); assert.equal(status.mode, 'simulator');
-  const queued = await fetch(`${base}/projects/${f.project.id}/github/proposals`, { method: 'POST', headers: { origin, cookie, 'content-type': 'application/json' }, body: JSON.stringify(proposalInput(status.remote)) });
+  const input = await proposalInput(f, status.remote);
+  const unbound = await fetch(`${base}/projects/${f.project.id}/github/proposals`, { method: 'POST', headers: { origin, cookie, 'content-type': 'application/json' }, body: JSON.stringify({ ...input, checkpointId: null }) });
+  assert.equal(unbound.status, 409); assert.equal((await unbound.json()).code, 'checkpoint_binding_mismatch');
+  const queued = await fetch(`${base}/projects/${f.project.id}/github/proposals`, { method: 'POST', headers: { origin, cookie, 'content-type': 'application/json' }, body: JSON.stringify(input) });
   assert.equal(queued.status, 202); assert.equal((await queued.json()).job.state, 'pending');
   const raw = Buffer.from('{"zen":"학생의 새 가설"}');
   const delivered = await fetch(`${base}/github/webhook`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-github-delivery': 'http-test', 'x-github-event': 'ping', 'x-hub-signature-256': signature(raw) }, body: raw });
@@ -342,18 +356,18 @@ test('Issue 응답 유실은 중복 생성 없이 중지하고 교사가 실제 
 
 test('설치의 저장소 접근 회수는 GitHub 작업만 멈추고 로컬 저장을 보존한다', async t => {
   const f = await setupLive(); t.after(() => f.store.close());
-  const job = f.service.enqueueProposal(f.project.id, student, proposalInput(f.service.status(f.project.id, teacher).remote));
+  const job = f.service.enqueueProposal(f.project.id, student, await proposalInput(f, f.service.status(f.project.id, teacher).remote));
   const raw = Buffer.from(JSON.stringify({ action: 'removed', installation: { id: 123 }, repositories_removed: [{ id: 456 }] }));
   const result = f.service.webhook(raw, { 'x-github-event': 'installation_repositories', 'x-github-delivery': 'installation-removed', 'x-hub-signature-256': signature(raw) });
   assert.equal(result.matched, 1); assert.equal(f.service.jobs(f.project.id).find(candidate => candidate.id === job.id).state, 'blocked');
   assert.equal(f.service.status(f.project.id, teacher).remote.available, false);
-  f.store.saveCheckpoint(f.project.id, student, { baseVersion: 0, code: '권한 회수 중 보존', message: '실험 기록' });
+  f.store.saveCheckpoint(f.project.id, student, { baseVersion: f.store.getProject(f.project.id).version, code: '권한 회수 중 보존', message: '실험 기록' });
   const saved = await f.service.runOnce(); assert.equal(saved.result.localOnly, true); assert.equal(saved.state, 'succeeded');
 });
 
 test('worker 종료는 실행중인 원격 요청의 중단 상태를 outbox에 보존할 때까지 기다린다', async t => {
   const f = await setupLive(); t.after(() => f.store.close());
-  f.service.enqueueProposal(f.project.id, student, proposalInput(f.service.status(f.project.id, teacher).remote));
+  f.service.enqueueProposal(f.project.id, student, await proposalInput(f, f.service.status(f.project.id, teacher).remote));
   let release;
   f.mock.failNext(call => call.path === '/repos/classroom/team-one', new Promise(resolve => { release = resolve; }));
   const running = f.service.runOnce();
@@ -367,9 +381,9 @@ test('worker 종료는 실행중인 원격 요청의 중단 상태를 outbox에 
 test('운영 offline 모드의 GitHub 작업은 사유를 표시하고 로컬 저장은 성공한다', async t => {
   const f = await setupLive(); t.after(() => f.store.close());
   const offline = createGitHubService({ store: f.store, localMode: false, config: { mode: 'offline', repositories: [repository] } });
-  offline.enqueueProposal(f.project.id, student, proposalInput(offline.status(f.project.id, teacher).remote));
+  offline.enqueueProposal(f.project.id, student, await proposalInput(f, offline.status(f.project.id, teacher).remote));
   const blocked = await offline.runOnce(); assert.equal(blocked.state, 'blocked'); assert.match(blocked.lastError, /^github_offline:/);
-  f.store.saveCheckpoint(f.project.id, student, { baseVersion: 0, code: '오프라인 보존', message: '실험 기록' });
+  f.store.saveCheckpoint(f.project.id, student, { baseVersion: f.store.getProject(f.project.id).version, code: '오프라인 보존', message: '실험 기록' });
   const saved = await offline.runOnce(); assert.equal(saved.state, 'succeeded'); assert.equal(saved.result.localOnly, true);
 });
 
@@ -378,6 +392,7 @@ test('checkpoint 출처를 지정한 GitHub 제안은 같은 프로젝트의 같
   const remote = service.status(project.id, teacher).remote;
   const checkpoint = store.saveCheckpoint(project.id, student, { baseVersion: 0, code: 'print("새로 확정한 실험")', message: '확정 저장본 설명' });
   const input = { code: checkpoint.code, title: '확정 저장본 제안', baseSha: remote.sha, checkpointId: checkpoint.id };
+  for (const checkpointId of [undefined, null, '', '없는-저장본']) assert.throws(() => service.enqueueProposal(project.id, student, { ...input, checkpointId }), { code: 'checkpoint_binding_mismatch' });
   const job = service.enqueueProposal(project.id, student, input);
   assert.equal(job.payload.checkpointId, checkpoint.id); assert.equal(job.payload.checkpointVersion, checkpoint.version); assert.equal(job.payload.message, checkpoint.message);
   assert.throws(() => service.enqueueProposal(project.id, student, { ...input, code: '저장하지 않은 코드' }), { code: 'checkpoint_binding_mismatch' });
@@ -385,10 +400,36 @@ test('checkpoint 출처를 지정한 GitHub 제안은 같은 프로젝트의 같
   assert.throws(() => service.enqueueProposal(another.id, teacher, input), { code: 'checkpoint_binding_mismatch' });
 });
 
-test('GitHub 비교본과 동일한 코드는 빈 PR 작업을 만들지 않고 명시적으로 거부한다', t => {
+test('이전 출처 없는 대기 작업과 코드·버전이 변조된 작업은 외부 쓰기 전에 차단한다', async t => {
+  const f = await setupLive(); t.after(() => f.store.close());
+  const input = await proposalInput(f, f.service.status(f.project.id, teacher).remote);
+  const binding = f.store.getGithub(f.project.id).binding;
+  const writesBefore = f.mock.calls.filter(call => call.method === 'POST').length;
+  for (const patch of [{ checkpointId: null }, { code: '다른 개인 코드' }, { checkpointVersion: -1 }]) {
+    const payload = { ...input, checkpointVersion: f.store.checkpoint(f.project.id).version, bindingKey: binding.key, repositoryId: binding.repositoryId, authorId: student.id, ...patch };
+    f.store.enqueueJob({ projectId: f.project.id, kind: 'proposal', payload, dedupeKey: `legacy:${JSON.stringify(patch)}` });
+    const job = await f.service.runOnce();
+    assert.equal(job.state, 'blocked'); assert.match(job.lastError, /^checkpoint_binding_mismatch:/);
+  }
+  assert.equal(f.mock.calls.filter(call => call.method === 'POST').length, writesBefore);
+  assert.equal(f.mock.pulls.length, 0);
+});
+
+test('최신 팀 버전이 바뀌어도 출처가 일치하는 과거 확정 저장본은 전송한다', async t => {
+  const f = await setupLive(); t.after(() => f.store.close());
+  const input = await proposalInput(f, f.service.status(f.project.id, teacher).remote);
+  f.store.saveCheckpoint(f.project.id, teacher, { code: '다음 실험 코드', message: '다음 버전', baseVersion: f.store.checkpoint(f.project.id).version });
+  await f.service.runOnce();
+  f.service.enqueueProposal(f.project.id, student, input);
+  const job = await f.service.runOnce(); assert.equal(job.state, 'succeeded');
+  assert.equal(f.mock.calls.find(call => call.method === 'POST' && call.path.endsWith('/git/trees')).body.tree[0].content, input.code);
+});
+
+test('GitHub 비교본과 동일한 코드는 빈 PR 작업을 만들지 않고 명시적으로 거부한다', async t => {
   const { store, service, project } = fixture(); t.after(() => store.close());
   const remote = service.status(project.id, teacher).remote;
-  assert.throws(() => service.enqueueProposal(project.id, student, proposalInput(remote, { code: remote.code })), { status: 409, code: 'nothing_to_publish' });
+  const unchanged = await proposalInput({ store, service, project }, remote, { code: remote.code });
+  assert.throws(() => service.enqueueProposal(project.id, student, unchanged), { status: 409, code: 'nothing_to_publish' });
   const checkpoint = store.checkpoint(project.id);
   assert.throws(() => service.enqueueProposal(project.id, student, { code: checkpoint.code, title: '이미 같은 저장본', baseSha: remote.sha, checkpointId: checkpoint.id }), { status: 409, code: 'nothing_to_publish' });
   assert.equal(service.jobs(project.id).length, 0);

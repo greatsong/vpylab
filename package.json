@@ -13,7 +13,7 @@
     "dev:classroom:github:live": "node scripts/classroom/live-github.mjs --serve",
     "test:classroom:github:live": "node scripts/classroom/live-github.mjs --run",
     "build:classroom": "npm --prefix client run build:classroom",
-    "test:classroom": "node --test server/classroom/*.test.js scripts/classroom/backup.test.mjs && npm --prefix client run test:run && node scripts/classroom/check-curriculum.mjs"
+    "test:classroom": "node --test server/classroom/*.test.js scripts/classroom/*.test.mjs && npm --prefix client run test:run && node scripts/classroom/check-curriculum.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

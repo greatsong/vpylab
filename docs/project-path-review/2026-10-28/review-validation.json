@@ -5,9 +5,11 @@
   "synthetic_students": 6,
   "api_calls": 264,
   "checks": 378,
-  "passed": 367,
-  "observed_gaps": 11,
-  "gap_types": 7,
+  "passed": 368,
+  "observed_gaps": 10,
+  "gap_types": 6,
   "external_attempts": 0,
-  "errors": []
+  "errors": [],
+  "latest_run": "7f6df9ee-3a1a-4c4a-9233-b48d1b20b3dd",
+  "validation_note": "최신 HTTP 집계로 갱신. valid_local_links145는 최초 문서 검증값이며 이번 갱신에서 재집계하지 않음."
 }

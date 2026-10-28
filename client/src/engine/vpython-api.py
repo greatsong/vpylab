@@ -8,6 +8,7 @@ Three.js 메인 스레드로 JSON 커맨드를 전송하는 방식.
 
 import js
 import json
+import re
 import asyncio
 from typing import Optional
 
@@ -1974,7 +1975,8 @@ def _resolve_note_name(name):
         return name
 
     # 한글 → 영어 변환
-    for kr, en in _KOREAN_NOTE_MAP.items():
+    for kr in sorted(_KOREAN_NOTE_MAP, key=len, reverse=True):
+        en = _KOREAN_NOTE_MAP[kr]
         if name.startswith(kr):
             rest = name[len(kr):]
             # 옥타브 번호가 없으면 기본 4
@@ -2028,15 +2030,26 @@ def play_note(name, duration=0.5, type='sine', volume=0.4):
     })
 
 
+def _note_frequency(name):
+    """음 이름을 숫자 주파수로 바꾸어 실행 화면과 HTML 내보내기에서 함께 사용합니다."""
+    match = re.fullmatch(r'([A-G])([#b]?)(-?\d+)', _resolve_note_name(name))
+    if not match:
+        raise ValueError(f'음 이름을 확인해주세요: {name}')
+    letter, accidental, octave = match.groups()
+    pitch = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}[letter]
+    pitch += 1 if accidental == '#' else -1 if accidental == 'b' else 0
+    return 440 * 2 ** (((int(octave) - 4) * 12 + pitch - 9) / 12)
+
+
 def play_chord(frequencies, duration=1.0, type='sine', volume=0.25):
     """
     여러 주파수를 동시에 재생 (화음)
-    frequencies: 주파수 리스트 [261.63, 329.63, 392]
+    frequencies: 주파수 또는 음 이름 리스트 [261.63, '미4', 'G4']
     """
     _add_command({
         "action": "sound",
         "method": "chord",
-        "frequencies": list(frequencies),
+        "frequencies": [_note_frequency(value) if isinstance(value, str) else value for value in frequencies],
         "duration": duration,
         "type": type,
         "volume": volume,
