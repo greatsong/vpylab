@@ -1,0 +1,63 @@
+{
+  "completedAt": "2026-10-28T03:18:04.572Z",
+  "screenshots": 15,
+  "pageErrors": [],
+  "localMutations": [
+    {
+      "method": "POST",
+      "path": "/api/v2/session/local"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v2/projects/587fcb4c-efda-446f-9082-0dbb59bbe610/drafts",
+      "purpose": "안내 복사본의 학생 개인 초안 준비"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v2/projects/587fcb4c-efda-446f-9082-0dbb59bbe610/drafts"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/session/local"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v2/projects/587fcb4c-efda-446f-9082-0dbb59bbe610/drafts"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/session/local"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v2/projects/587fcb4c-efda-446f-9082-0dbb59bbe610/drafts"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/session/local"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v2/projects/587fcb4c-efda-446f-9082-0dbb59bbe610/drafts"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/session/local"
+    }
+  ],
+  "externalGitHubWrites": 0,
+  "runtimeActuallyExecuted": true,
+  "studentPrivateNotesAbsent": true,
+  "originalDatabaseFingerprintPreserved": true,
+  "originalDatabaseFingerprint": "e6c8089047a92b5f639b83b576ca7ff37664092052cef75d14b388b0c15f1d6f",
+  "visualReview": {
+    "overviewChecked": true,
+    "detailScenes": [
+      "05-python-3d-sound.png",
+      "10-teacher-private-note.png",
+      "11-student-a-feedback.png",
+      "12-student-b-review-feedback.png"
+    ],
+    "studentFeedbackFramingAdjusted": true
+  }
+}
