@@ -69,6 +69,16 @@ describe('교실 작업 화면의 사용자 흐름', () => {
     expect(screen.getByText(/100점 · 조건을 만족했습니다/)).toBeInTheDocument();
   });
 
+  it('공개 작업 요약의 질문 참조로 이미 전송한 Issue를 구분한다', async () => {
+    data.issues = [{ id: 'issue-a', title: '비교 조건', body: '같은 거리에서 비교해요.', authorId: actor.id }];
+    data.jobs = [{ id: 'job-a', kind: 'issue', state: 'pending', issueId: 'issue-a' }];
+    await openWorkspace();
+    fireEvent.click(screen.getByRole('tab', { name: /문제와 질문/ }));
+    expect(screen.getByRole('button', { name: 'GitHub Issue 작업 보존됨' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /이 질문을 GitHub Issue로 보내기/ })).toBeNull();
+    expect(posts()).toHaveLength(0);
+  });
+
   it.each(['disabled', 'optional'])('AI 정책 %s에서도 가설·관찰·판단을 포함한 변경 제안을 제출한다', async (aiPolicy) => {
     data = responseFixture({ aiPolicy }); await openWorkspace();
     fireEvent.change(screen.getByRole('textbox', { name: 'Python 코드' }), { target: { value: 'sphere(radius=2)' } });

@@ -121,7 +121,7 @@ export default function useDraft(userId, projectId, checkpoint, { readOnly = fal
     const storageError = preserve(session, next, stored && !sameDraft(stored, previous) ? [stored] : []);
     session.draft = next;
     session.edited = true;
-    publish(session, { draft: next, loaded: session.loaded, status: 'local', error: '', storageError, recoveries: session.recoveries });
+    publish(session, { draft: next, loaded: session.loaded, status: session.blocked ? 'offline' : 'local', error: '', storageError, recoveries: session.recoveries });
   }, [clientId, scopeKey, readOnly, preserve, publish]);
 
   const replace = useCallback((code, baseVersion) => {

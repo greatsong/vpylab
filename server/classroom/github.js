@@ -133,7 +133,17 @@ export function createGitHubAppClient({ config, fetchImpl = fetch, now = Date.no
     const branch = `vpylab/proposal-${job.id}-${sha256(code).slice(0, 10)}`;
     // 고유 브랜치의 기존 PR 조회로 응답 유실 후 재시도에도 중복 PR을 만들지 않습니다.
     const pulls = await api(binding, `/pulls?state=all&head=${encodeURIComponent(`${binding.owner}:${branch}`)}&base=${encodeURIComponent(binding.branch)}&per_page=100`);
-    if (pulls.length) return { number: pulls[0].number, url: pulls[0].html_url, branch, sha: pulls[0].head.sha, state: pulls[0].state, sourceRecord: sourceRecord(pulls[0]) };
+    if (pulls.length) {
+      const pull = pulls[0];
+      if (progress.commitSha) {
+        if (pull.head?.sha !== progress.commitSha) throw new GitHubError('proposal_branch_conflict', '기존 제안 브랜치가 변경되었습니다. 새 제안으로 다시 제출해주세요.', { permanent: true, status: 409 });
+      } else {
+        const commit = await api(binding, `/git/commits/${pull.head?.sha}`);
+        const file = await readFile(binding, pull.head?.sha);
+        if (commit.parents?.[0]?.sha !== baseSha || file.code !== code) throw new GitHubError('proposal_branch_conflict', '기존 제안 코드가 확정 저장본과 다릅니다. 새 제안으로 다시 제출해주세요.', { permanent: true, status: 409 });
+      }
+      return { number: pull.number, url: pull.html_url, branch, sha: pull.head.sha, state: pull.state, sourceRecord: sourceRecord(pull) };
+    }
     const currentSha = await head(binding);
     if (currentSha !== baseSha) throw new GitHubError('github_base_conflict', 'GitHub 기본 브랜치가 변경되었습니다. 최신 코드를 가져와 비교한 후 새 제안을 만들어주세요.', { permanent: true, status: 409 });
     let ref = await api(binding, `/git/ref/heads/${encodePath(branch)}`, { allow404: true });
@@ -294,7 +304,7 @@ export function createGitHubService({ store, localMode = false, config = githubC
       const state = ensureState(projectId);
       return { mode, authMethod, binding: publicBinding(state.binding), remote: state.remote, lastEvent: state.lastEvent || null, simulatedPulls: state.simulatedPulls || [], simulatedIssues: state.simulatedIssues || [], jobs: service.jobs(projectId), repositories: repositories.filter(binding => !binding.projectId || binding.projectId === projectId).map(publicBinding) };
     },
-    jobs(projectId) { return store.getJobs(projectId).map(({ payload, ...job }) => ({ ...job, result: parse(db.prepare('SELECT data FROM github_job_progress WHERE job_id=?').get(job.id)?.data).result || null })); },
+    jobs(projectId) { return store.jobSummaries(projectId).map(job => ({ ...job, result: parse(db.prepare('SELECT data FROM github_job_progress WHERE job_id=?').get(job.id)?.data).result || null })); },
     bind(projectId, actor, key) {
       store.accessProject(projectId, actor, { manage: true });
       if (actor.role !== 'teacher') throw fail(403, 'teacher_required', '팀 GitHub 저장소는 교사만 연결할 수 있습니다.');
@@ -326,6 +336,8 @@ export function createGitHubService({ store, localMode = false, config = githubC
       if (state.remote.code === input.code) throw fail(409, 'nothing_to_publish', 'GitHub 코드와 이미 같습니다. 변경한 팀 저장본을 확정한 뒤 제안해주세요.');
       const binding = trustedBinding(projectId);
       const dedupeKey = `github-proposal:${projectId}:${sha256(JSON.stringify([binding.key, input.baseSha, input.code, input.title, input.message]))}`;
+      const existing = store.getJobs(projectId).find(job => job.dedupeKey === dedupeKey);
+      if (existing && (existing.payload.authorId !== actor.id || existing.payload.checkpointId !== checkpoint.id || existing.payload.repositoryId !== (binding.repositoryId || null))) throw fail(409, 'github_proposal_already_submitted', '같은 내용의 GitHub 제안이 이미 있습니다. 기존 작업과 제출자를 확인해주세요.', { existingJobId: existing.id });
       return store.enqueueJob({ projectId, kind: 'proposal', payload: { code: input.code, title: input.title.trim(), message: input.message, baseSha: input.baseSha, authorId: actor.id, checkpointId: checkpoint?.id || null, checkpointVersion: checkpoint?.version ?? null, bindingKey: binding.key, repositoryId: binding.repositoryId || null }, dedupeKey });
     },
     enqueueIssue(projectId, actor, input) {
@@ -351,7 +363,8 @@ export function createGitHubService({ store, localMode = false, config = githubC
       store.accessProject(projectId, actor, { manage: true });
       const job = store.getJobs(projectId).find(candidate => candidate.id === jobId);
       if (!job || !['blocked', 'failed'].includes(job.state)) throw fail(409, 'job_not_retryable', '교사의 확인이 필요한 작업만 다시 시도할 수 있습니다.');
-      if (job.lastError?.startsWith('github_issue_uncertain') || job.lastError?.startsWith('github_network') && job.kind === 'issue') throw fail(409, 'manual_issue_check_required', '중복 생성을 막기 위해 GitHub에서 Issue 생성 여부를 먼저 확인해주세요.');
+      const progress = parse(db.prepare('SELECT data FROM github_job_progress WHERE job_id=?').get(job.id)?.data);
+      if (job.lastError?.startsWith('github_issue_uncertain') || job.kind === 'issue' && (job.lastError?.startsWith('github_network') || progress.issueSending && !progress.issue)) throw fail(409, 'manual_issue_check_required', '중복 생성을 막기 위해 GitHub에서 Issue 생성 여부를 먼저 확인해주세요.');
       db.prepare("UPDATE github_jobs SET state='pending',attempts=0,available_at=?,updated_at=? WHERE id=?").run(iso(now()), iso(now()), job.id);
       return service.jobs(projectId).find(candidate => candidate.id === job.id);
     },
@@ -359,13 +372,25 @@ export function createGitHubService({ store, localMode = false, config = githubC
       store.accessProject(projectId, actor, { manage: true });
       if (actor.role !== 'teacher') throw fail(403, 'teacher_required', 'GitHub 응답 유실 확인은 교사만 할 수 있습니다.');
       const job = store.getJobs(projectId).find(candidate => candidate.id === jobId);
-      if (!job || job.kind !== 'issue' || job.state !== 'blocked' || !Number.isSafeInteger(number) || number < 1 || mode !== 'live') throw fail(409, 'issue_reconciliation_unavailable', '확인이 필요한 GitHub Issue 작업과 번호를 선택해주세요.');
+      if (!job || job.kind !== 'issue' || !Number.isSafeInteger(number) || number < 1 || mode !== 'live') throw fail(409, 'issue_reconciliation_unavailable', '확인이 필요한 GitHub Issue 작업과 번호를 선택해주세요.');
       const binding = trustedBinding(projectId);
       if (job.payload.bindingKey !== binding.key || job.payload.repositoryId !== binding.repositoryId) throw fail(409, 'repository_binding_changed', '이 작업의 저장소 연결이 변경되었습니다.');
+      const confirmed = parse(db.prepare('SELECT data FROM github_job_progress WHERE job_id=?').get(job.id)?.data);
+      if (job.state === 'succeeded' && confirmed.issue?.number === number) return service.jobs(projectId).find(candidate => candidate.id === job.id);
+      if (job.state !== 'blocked') throw fail(409, 'issue_reconciliation_unavailable', '확인이 필요한 GitHub Issue 작업과 번호를 선택해주세요.');
       const result = await client.reconcileIssue(binding, job, number);
-      const progress = parse(db.prepare('SELECT data FROM github_job_progress WHERE job_id=?').get(job.id)?.data);
-      db.prepare('INSERT INTO github_job_progress VALUES(?,?) ON CONFLICT(job_id) DO UPDATE SET data=excluded.data').run(job.id, JSON.stringify({ ...progress, issue: result, result }));
-      db.prepare("UPDATE github_jobs SET state='succeeded',last_error=NULL,updated_at=? WHERE id=? AND state='blocked'").run(iso(now()), job.id);
+      store.transaction(() => {
+        store.accessProject(projectId, actor, { manage: true });
+        const currentBinding = trustedBinding(projectId);
+        if (currentBinding.key !== binding.key || currentBinding.repositoryId !== binding.repositoryId) throw fail(409, 'repository_binding_changed', '확인하는 동안 저장소 연결이 변경되었습니다.');
+        const progress = parse(db.prepare('SELECT data FROM github_job_progress WHERE job_id=?').get(job.id)?.data);
+        const current = db.prepare('SELECT state FROM github_jobs WHERE id=?').get(job.id);
+        if (current?.state === 'succeeded' && progress.issue?.number === number) return;
+        const changed = db.prepare("UPDATE github_jobs SET state='succeeded',last_error=NULL,updated_at=? WHERE id=? AND state='blocked'").run(iso(now()), job.id);
+        if (changed.changes !== 1) throw fail(409, 'job_not_reconcilable', '확인하는 동안 작업 상태가 변경되었습니다. 최신 상태를 확인해주세요.');
+        db.prepare('INSERT INTO github_job_progress VALUES(?,?) ON CONFLICT(job_id) DO UPDATE SET data=excluded.data').run(job.id, JSON.stringify({ ...progress, issue: result, result }));
+        recordJobLearning(job, result, binding);
+      });
       return service.jobs(projectId).find(candidate => candidate.id === job.id);
     },
     async runOnce() {

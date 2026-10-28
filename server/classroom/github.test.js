@@ -29,7 +29,7 @@ function fixture({ mode = 'simulator', filename = ':memory:', mock, installation
 function githubMock({ remoteSha = BASE, remoteCode = 'print("GitHub 최신")', privateRepository = true, losePullResponse = false, loseIssueResponse = false } = {}) {
   const calls = [], branches = new Map(), pulls = [], issues = [], files = new Map([[remoteSha, remoteCode]]);
   let failure = null;
-  const state = { remoteSha, remoteCode, privateRepository, calls, branches, pulls, issues, failNext(predicate, response) { failure = { predicate, response }; } };
+  const state = { remoteSha, remoteCode, privateRepository, calls, branches, pulls, issues, files, failNext(predicate, response) { failure = { predicate, response }; } };
   state.fetch = async (url, options) => {
     const parsedUrl = new URL(url), path = parsedUrl.pathname, method = options.method, body = options.body ? JSON.parse(options.body) : null;
     const call = { path, method, body, query: parsedUrl.searchParams, headers: options.headers }; calls.push(call);
@@ -63,7 +63,7 @@ function githubMock({ remoteSha = BASE, remoteCode = 'print("GitHub 최신")', p
       return reply(pull, 201);
     }
     if (method === 'POST' && path === `${root}/issues`) {
-      const issue = { number: 3, html_url: 'https://github.com/classroom/team-one/issues/3', body: body.body }; issues.push(issue);
+      const issue = { id: 20001, number: 3, title: body.title, user: { id: 80001, login: 'vpylab[bot]' }, html_url: 'https://github.com/classroom/team-one/issues/3', body: body.body }; issues.push(issue);
       if (loseIssueResponse) { loseIssueResponse = false; throw new Error('모의 Issue 응답 유실'); }
       return reply(issue, 201);
     }
@@ -131,6 +131,25 @@ test('제안 대기 중 외부 커밋이 생기면 덮어쓰지 않고 충돌로
   const result = await service.runOnce(); assert.equal(result.state, 'blocked'); assert.match(result.lastError, /^github_base_conflict:/);
   assert.equal(service.status(project.id, teacher).remote.code, '팀원의 외부 변경');
   assert.equal(service.status(project.id, teacher).simulatedPulls.length, 0);
+});
+
+test('동일 GitHub 요청 재시도는 보존하되 다른 학생·저장본의 제출로 조용히 재사용하지 않는다', async t => {
+  const f = fixture(); t.after(() => f.store.close());
+  const other = { id: 'student-b', role: 'student' };
+  f.store.addMember(f.project.id, teacher, other.id, 'editor');
+  const input = await proposalInput(f, f.service.status(f.project.id, teacher).remote);
+  const first = f.service.enqueueProposal(f.project.id, student, input);
+  assert.equal(f.service.enqueueProposal(f.project.id, student, input).id, first.id);
+  const rejected = () => assert.throws(() => f.service.enqueueProposal(f.project.id, other, input), error => error.code === 'github_proposal_already_submitted' && error.extra.existingJobId === first.id);
+  rejected();
+  assert.equal((await f.service.runOnce()).state, 'succeeded');
+  rejected();
+  assert.equal(f.service.enqueueProposal(f.project.id, student, input).id, first.id);
+  const next = f.store.saveCheckpoint(f.project.id, teacher, { code: input.code, message: '같은 코드의 다른 실험 기록', baseVersion: f.store.checkpoint(f.project.id).version });
+  assert.throws(() => f.service.enqueueProposal(f.project.id, student, { ...input, checkpointId: next.id }), { code: 'github_proposal_already_submitted' });
+  assert.equal(f.service.status(f.project.id, teacher).simulatedPulls.length, 1);
+  assert.equal(f.store.getJobs(f.project.id).filter(job => job.kind === 'proposal').length, 1);
+  assert.equal(f.store.getJobs(f.project.id).find(job => job.id === first.id).payload.authorId, student.id);
 });
 
 test('서버 allowlist·역할·저장소 식별자로 repository binding을 제한한다', async t => {
@@ -249,6 +268,28 @@ test('PR 생성 응답 유실 후 재시도는 기존 PR을 찾아 중복 없이
   assert.equal(mock.calls.filter(call => call.method === 'POST' && call.path.endsWith('/pulls')).length, 1);
 });
 
+test('PR 응답 유실 뒤 바뀐 브랜치를 학생의 원래 제안으로 귀속하지 않는다', async t => {
+  for (const legacy of [false,true]) {
+    const mock=githubMock({losePullResponse:true}),f=await setupLive(mock);t.after(()=>f.store.close());
+    f.service.enqueueProposal(f.project.id,student,await proposalInput(f,f.service.status(f.project.id,teacher).remote));
+    const first=await f.service.runOnce();assert.equal(first.state,'pending');
+    mock.pulls[0].head.sha=NEXT;mock.files.set(NEXT,'외부에서 바뀐 제안 코드');
+    if(legacy)f.store.db.prepare('DELETE FROM github_job_progress WHERE job_id=?').run(first.id);
+    f.advance(61_000);const retry=await f.service.runOnce();
+    assert.equal(retry.state,'blocked');assert.match(retry.lastError,/^proposal_branch_conflict:/);
+    assert.equal(f.service.listLearningEvents(f.project.id,teacher).events.length,0);
+    assert.equal(mock.pulls.length,1);
+  }
+});
+
+test('진행 SHA가 없는 과거 PR도 부모와 코드가 정확하면 기존 제안으로 복구한다', async t => {
+  const mock=githubMock({losePullResponse:true}),f=await setupLive(mock);t.after(()=>f.store.close());
+  f.service.enqueueProposal(f.project.id,student,await proposalInput(f,f.service.status(f.project.id,teacher).remote));
+  const first=await f.service.runOnce();f.store.db.prepare('DELETE FROM github_job_progress WHERE job_id=?').run(first.id);
+  f.advance(61_000);const retry=await f.service.runOnce();assert.equal(retry.state,'succeeded');
+  assert.equal(mock.pulls.length,1);assert.equal(f.service.listLearningEvents(f.project.id,teacher).events.length,1);
+});
+
 test('rate limit는 Retry-After·reset·secondary-limit에 맞춰 인증 실패와 구분한다', () => {
   const now = Date.now();
   assert.equal(classifyGitHubResponse(reply({}, 429, { 'retry-after': '120' }), now).retryAt, now + 120_000);
@@ -351,7 +392,49 @@ test('Issue 응답 유실은 중복 생성 없이 중지하고 교사가 실제 
   assert.throws(() => f.service.retry(f.project.id, job.id, teacher), { code: 'manual_issue_check_required' });
   const reconciled = await f.service.reconcileIssue(f.project.id, job.id, teacher, 3);
   assert.equal(reconciled.state, 'succeeded'); assert.equal(reconciled.result.number, 3);
+  const ledger=f.store.db.prepare('SELECT * FROM github_learning_events WHERE project_id=?').all(f.project.id);
+  assert.equal(ledger.length,1);assert.equal(JSON.parse(ledger[0].metadata).requestedByUserId,student.id);assert.equal(ledger[0].github_author_id,80001);
+  assert.equal((await f.service.reconcileIssue(f.project.id,job.id,teacher,3)).state,'succeeded');
+  await assert.rejects(f.service.reconcileIssue(f.project.id,job.id,teacher,4),{code:'issue_reconciliation_unavailable'});
+  assert.equal(f.store.db.prepare('SELECT COUNT(*) AS n FROM github_learning_events WHERE project_id=?').get(f.project.id).n,1);
   assert.equal(mock.calls.filter(call => call.method === 'POST' && call.path.endsWith('/issues')).length, 1);
+});
+
+test('5xx로 전송 여부가 불확실한 Issue는 오류 문자열 대신 전송 진행 기록으로 재시도를 막는다', async t => {
+  const f=await setupLive();t.after(()=>f.store.close());
+  const issue=f.store.addIssue(f.project.id,student,{title:'다음 비교 조건',body:'질문 본문'});
+  const job=f.service.enqueueIssue(f.project.id,student,{issueId:issue.id,title:issue.title,body:issue.body});
+  f.mock.failNext(call=>call.method==='POST'&&call.path.endsWith('/issues'),reply({},503));
+  const failed=await f.service.runOnce();assert.equal(failed.state,'blocked');assert.match(failed.lastError,/^github_unavailable:/);
+  assert.throws(()=>f.service.retry(f.project.id,job.id,teacher),{code:'manual_issue_check_required'});
+  assert.equal(f.mock.calls.filter(call=>call.method==='POST'&&call.path.endsWith('/issues')).length,1);
+});
+
+test('Issue 수동 복구의 근거 저장 실패는 완료 상태와 진행 결과를 함께 롤백한다', async t => {
+  const mock=githubMock({loseIssueResponse:true}),f=await setupLive(mock);t.after(()=>f.store.close());
+  const issue=f.store.addIssue(f.project.id,student,{title:'다음 실험',body:'검증할 질문'});
+  const job=f.service.enqueueIssue(f.project.id,student,{issueId:issue.id,title:issue.title,body:issue.body});await f.service.runOnce();
+  f.store.db.exec("CREATE TRIGGER fail_reconciled_evidence BEFORE INSERT ON github_learning_events BEGIN SELECT RAISE(ABORT,'근거 기록 실패'); END;");
+  await assert.rejects(f.service.reconcileIssue(f.project.id,job.id,teacher,3),/근거 기록 실패/);
+  assert.equal(f.service.jobs(f.project.id).find(item=>item.id===job.id).state,'blocked');
+  const progress=JSON.parse(f.store.db.prepare('SELECT data FROM github_job_progress WHERE job_id=?').get(job.id).data);
+  assert.equal(progress.issue,undefined);assert.equal(progress.result,undefined);assert.equal(progress.issueSending,true);
+  f.store.db.exec('DROP TRIGGER fail_reconciled_evidence');
+  assert.equal((await f.service.reconcileIssue(f.project.id,job.id,teacher,3)).state,'succeeded');
+});
+
+test('Issue 수동 확인 중 재시도와 저장소 변경이 뒤섞여도 이전 결과를 완료로 확정하지 않는다', async t => {
+  const mock=githubMock({loseIssueResponse:true}),f=await setupLive(mock);t.after(()=>f.store.close());
+  const issue=f.store.addIssue(f.project.id,student,{title:'비교 질문',body:'비교할 조건'});
+  const job=f.service.enqueueIssue(f.project.id,student,{issueId:issue.id,title:issue.title,body:issue.body});await f.service.runOnce();
+  let release,entered;const started=new Promise(resolve=>{entered=resolve;});
+  mock.failNext(call=>{if(call.method==='GET'&&call.path.endsWith('/issues/3')){entered();return true;}return false;},new Promise(resolve=>{release=resolve;}));
+  const pending=f.service.reconcileIssue(f.project.id,job.id,teacher,3);await started;
+  assert.throws(()=>f.service.retry(f.project.id,job.id,teacher),{code:'manual_issue_check_required'});
+  const state=f.store.getGithub(f.project.id);f.store.setGithub(f.project.id,{...state,binding:{...state.binding,repositoryId:999}});
+  const rejected=assert.rejects(pending,{code:'repository_binding_required'});release(reply(mock.issues[0]));await rejected;
+  const current=f.service.jobs(f.project.id).find(item=>item.id===job.id);assert.equal(current.state,'blocked');assert.equal(current.result,null);
+  assert.equal(f.store.db.prepare('SELECT COUNT(*) AS n FROM github_learning_events WHERE project_id=?').get(f.project.id).n,0);
 });
 
 test('설치의 저장소 접근 회수는 GitHub 작업만 멈추고 로컬 저장을 보존한다', async t => {

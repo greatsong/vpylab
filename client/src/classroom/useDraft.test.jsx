@@ -151,6 +151,10 @@ describe('실제 개인 초안 hook의 보존과 요청 수명', () => {
     expect(hook.result.current.draft.code).toBe('내 보존 코드');
     expect(hook.result.current.storageError).toContain('파일로 내려받아');
     await save(); expect(puts()).toHaveLength(0);
+    act(() => { hook.result.current.update('차단 상태에서 계속 입력한 코드'); });
+    expect(hook.result.current.status).toBe('offline');
+    await save(); expect(puts()).toHaveLength(0);
+    expect(hook.result.current.recoveries.some((entry) => entry.code === '서버의 다른 코드')).toBe(true);
     expect(readDraft(localStorage, scope).code).toBe('내 보존 코드');
     write.mockRestore();
     act(() => { hook.result.current.retry(); });

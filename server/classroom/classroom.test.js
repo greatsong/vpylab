@@ -33,6 +33,24 @@ test('아웃박스 저장 실패 시 코드와 이력을 함께 롤백한다',()
   const {store,id}=fixture();try {const before=store.getProject(id);store.enqueueJob=()=>{throw new Error('저장 장치 오류');};assert.throws(()=>store.saveCheckpoint(id,studentA,input('새 코드')),/저장 장치 오류/);assert.equal(store.getProject(id).version,0);assert.equal(store.getProject(id).code,before.code);assert.equal(store.checkpoints(id).length,1);}finally{store.close();}
 });
 
+test('과거 개인 코드 대기 작업은 팀 조회·내보내기에 공개하지 않고 질문의 전송 참조는 유지한다', async t => {
+  const {runtime,client}=await httpFixture(t),store=runtime.store,id=store.listProjects(teacher)[0].id;
+  const sentinel='확정한 적 없는 이전 개인 코드';
+  const legacy=store.enqueueJob({projectId:id,kind:'proposal',payload:{code:sentinel,authorId:studentA.id,checkpointId:null},dedupeKey:'legacy-private-code'});
+  const issue=store.addIssue(id,studentA,{title:'팀 질문',body:'공유 질문 본문'});
+  store.enqueueJob({projectId:id,kind:'issue',payload:{issueId:issue.id,body:issue.body,authorId:studentA.id},dedupeKey:'team-question'});
+  for(const actor of [studentA,studentB,teacher]){
+    const c=client();await c.login(actor.id);
+    for(const suffix of ['', '/export']){
+      const response=await c.api(`/projects/${id}${suffix}`);assert.equal(response.status,200);
+      assert.equal(JSON.stringify(response.data).includes(sentinel),false);
+      assert.equal(response.data.jobs.some(job=>job.issueId===issue.id),true);
+      assert.ok(response.data.jobs.every(job=>!Object.hasOwn(job,'payload')&&!Object.hasOwn(job,'dedupeKey')));
+    }
+  }
+  assert.equal(store.getJobs(id).find(job=>job.id===legacy.id).payload.code,sentinel);
+});
+
 test('재시작 후 코드, 개인 초안, 세션, 미처리 작업이 보존된다',()=>{
   const dir=mkdtempSync(join(tmpdir(),'vpylab-v2-')),filename=join(dir,'state.sqlite');let store;
   try {store=createStore({filename,localMode:true});const id=store.listProjects(teacher)[0].id;const sid=store.createSession(studentA.id);store.saveDraft(id,studentA,{code:'나의 초안',baseVersion:0,clientSequence:1},'tab-a');store.saveCheckpoint(id,studentA,input('확정 코드'));store.close();store=createStore({filename,localMode:true});assert.equal(store.getProject(id).code,'확정 코드');assert.equal(store.draft(id,studentA,'tab-a').code,'나의 초안');assert.equal(store.session(sid).id,studentA.id);assert.equal(store.getJobs(id)[0].state,'pending');assert.equal(store.checkpoints(id).length,2);}finally{store?.close();rmSync(dir,{recursive:true,force:true});}

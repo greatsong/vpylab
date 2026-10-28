@@ -346,8 +346,8 @@
     "studentRecords": 0,
     "knownSecretPatterns": 0
   },
-  "reviewBaseline": "d1a8ed4 + 로컬 안정화 변경(파일별 SHA-256 참조)",
-  "externalReviewStatus": "blocked_before_execution_pending_explicit_source_transfer_approval",
+  "reviewBaseline": "2b26756 + 제출자 중복 충돌 가드. 첫 사본 파일 해시는 최초 전달 기준이며 추가 발췌 해시는 focused-manifest.json 참조",
+  "externalReviewStatus": "completed_via_explicitly_approved_focused_retry",
   "briefs": {
     "REVIEW_BRIEF.md": "ea8c8dfb2234c7db13373f55492bc3294cf4998a377a9fc553b365eac33b8486"
   },
