@@ -28,4 +28,17 @@ describe('AI 도움의 근거 기록', () => {
     expect(screen.getByLabelText('채택·거절한 이유').value).toBe('직접 실행함');
     expect(screen.getByText(/응답이 바뀌어 판단을 보류/)).toBeTruthy();
   });
+  it('채택 후 질문만 바꾸어도 이전 응답의 판단을 재확인하고 기록을 보존한다', () => {
+    function PracticeWithQuestion() {
+      const [value, setValue] = useState({ aiPrompt: '반지름만 바꾸면?', aiResponse: '위치는 유지됩니다.', aiDecision: 'adopted', aiVerification: '0.9에서 위치 0,0,0', aiReason: '원본과 비교함' });
+      return <AiPracticeSupport activity={activity} session={session} value={value} onChange={patch => setValue(previous => ({ ...previous, ...patch }))} />;
+    }
+    render(<PracticeWithQuestion />);
+    fireEvent.change(screen.getByLabelText('AI에게 할 질문'), { target: { value: '색만 바꾸면?' } });
+    expect(screen.getByLabelText('AI 도움에 대한 판단').value).toBe('pending');
+    expect(screen.getByLabelText('받은 AI 응답·검토 예시').value).toBe('위치는 유지됩니다.');
+    expect(screen.getByLabelText('AI 답을 확인한 실행·수치').value).toBe('0.9에서 위치 0,0,0');
+    expect(screen.getByLabelText('채택·거절한 이유').value).toBe('원본과 비교함');
+    expect(screen.getByText(/질문이나 응답이 바뀌어 판단을 보류/)).toBeTruthy();
+  });
 });

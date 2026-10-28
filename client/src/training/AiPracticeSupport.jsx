@@ -4,8 +4,9 @@ import { useState } from 'react';
 export default function AiPracticeSupport({ activity, session, value, previousValue, onChange }) {
   const [copyMessage, setCopyMessage] = useState('');
   const prompt = value.aiPrompt ?? `${session.aiPrompt || activity.aiOptional}\n\n이번 과제: ${activity.editTask}\n나의 예상: ${value.prediction || '(먼저 작성)'}\n완성 코드 대신 확인할 질문과 한 단계 힌트를 주세요.`;
+  const updatePrompt = next => onChange({ aiPrompt: next, ...(next !== prompt ? { aiDecision: 'pending', aiVerificationNeedsReview: true } : {}) });
   const copyPrompt = async () => {
-    onChange({ aiPrompt: prompt });
+    updatePrompt(prompt);
     try { await navigator.clipboard.writeText(prompt); setCopyMessage('질문을 복사했습니다. 본인이 사용하는 AI 도구에 붙여 넣으세요.'); }
     catch { setCopyMessage('복사 권한이 없습니다. 아래 질문을 선택해 직접 복사하세요.'); }
   };
@@ -17,7 +18,7 @@ export default function AiPracticeSupport({ activity, session, value, previousVa
     <div className="tr-record-grid">
       <label className="tr-field">AI 사용 상태<select aria-label="AI 사용 상태" value={value.aiUseStatus || 'not-yet'} onChange={event => onChange({ aiUseStatus: event.target.value })}><option value="not-yet">아직 사용 전</option><option value="used">내 AI 도구에서 실제 응답을 받음</option><option value="example-only">강사 작성 검토 예시로 연습함</option><option value="unavailable">도구 연결이 어려워 도움말로 진행함</option></select></label>
       <label className="tr-field">사용한 AI 도구·도움 출처<input aria-label="사용한 AI 도구·도움 출처" value={value.aiTool || ''} onChange={event => onChange({ aiTool: event.target.value })} placeholder="도구 이름 또는 강사 작성 연습 예시" /></label>
-      <label className="tr-field">AI에게 할 질문<textarea aria-label="AI에게 할 질문" rows={4} value={prompt} onChange={event => onChange({ aiPrompt: event.target.value })} /></label>
+      <label className="tr-field">AI에게 할 질문<textarea aria-label="AI에게 할 질문" rows={4} value={prompt} onChange={event => updatePrompt(event.target.value)} /></label>
     </div>
     <button className="cr-button small" disabled={!value.prediction?.trim()} onClick={copyPrompt}>AI 질문 복사</button>
     {!value.prediction?.trim() && <p className="tr-note">먼저 위의 ‘실행 전 예상’을 한 문장 적습니다.</p>}
@@ -29,7 +30,7 @@ export default function AiPracticeSupport({ activity, session, value, previousVa
         <label className="tr-field">AI 도움에 대한 판단<select aria-label="AI 도움에 대한 판단" value={value.aiDecision || 'pending'} onChange={event => onChange({ aiDecision: event.target.value, aiVerificationNeedsReview: event.target.value === 'pending' })}><option value="pending">검증 전 · 판단 보류</option><option value="partly-adopted">일부 채택</option><option value="adopted">실행 근거를 확인하고 채택</option><option value="rejected">채택하지 않음</option></select></label>
         <label className="tr-field">채택·거절한 이유<textarea aria-label="채택·거절한 이유" value={value.aiReason || ''} rows={3} onChange={event => onChange({ aiReason: event.target.value })} placeholder="내가 확인한 근거와 아직 확인하지 못한 것을 구별합니다." /></label>
       </div>
-      {value.aiVerificationNeedsReview && <p className="tr-note" role="status">응답이 바뀌어 판단을 보류했습니다. 남겨 둔 실행 근거를 새 응답과 다시 대조한 뒤 판단하세요.</p>}
+      {value.aiVerificationNeedsReview && <p className="tr-note" role="status">질문이나 응답이 바뀌어 판단을 보류했습니다. 남겨 둔 실행 근거를 현재 질문·응답과 다시 대조한 뒤 판단하세요.</p>}
     </details>
     <details className="tr-details"><summary>AI 연결이 어려울 때의 검토 연습</summary><p>{session.aiFallback || '강사가 작성한 연습 예시를 읽고 같은 코드로 확인합니다. 실제 AI 응답을 받은 것으로 기록하지 않습니다.'}</p><p><b>강사가 작성한 연습 예시 · 실제 AI 응답 아님:</b> {session.aiResponseExample?.text || '교과 질문과 직접 확인할 값을 짝과 정하고 도움말로 진행합니다.'}</p></details>
   </section>;

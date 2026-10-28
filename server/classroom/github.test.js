@@ -86,6 +86,8 @@ async function proposalInput(f, remote, overrides = {}) {
   let checkpoint = f.store.checkpoint(f.project.id);
   if (checkpoint.code !== input.code) {
     checkpoint = f.store.saveCheckpoint(f.project.id, teacher, { code: input.code, message: input.message, baseVersion: checkpoint.version });
+    // Store timestamps use wall time; slow parallel work may pass the fixture clock.
+    if (typeof f.advance === 'function') f.advance(Math.max(0, Date.now() - f.now()) + 1);
     const saved = await f.service.runOnce(); assert.equal(saved.kind, 'checkpoint'); assert.equal(saved.state, 'succeeded');
   }
   return { ...input, checkpointId: checkpoint.id };

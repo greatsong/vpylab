@@ -163,7 +163,7 @@ try {
     await field('받은 AI 응답·검토 예시').fill('[합성 폼 시험 · 변경 응답] 모든 막대 높이가 같아진다.');
     assert.equal(await field('AI 도움에 대한 판단').inputValue(), 'pending');
     assert.equal(await field('AI 답을 확인한 실행·수치').inputValue(), previousVerification);
-    assert.equal(await page.getByText('응답이 바뀌어 판단을 보류했습니다. 남겨 둔 실행 근거를 새 응답과 다시 대조한 뒤 판단하세요.', { exact: true }).isVisible(), true);
+    assert.equal(await page.getByText('질문이나 응답이 바뀌어 판단을 보류했습니다. 남겨 둔 실행 근거를 현재 질문·응답과 다시 대조한 뒤 판단하세요.', { exact: true }).isVisible(), true);
     const changedResponse = JSON.parse(await download('내 연수 기록 받기 ↓', 'vpylab-my-training.json')).activities['3:sound-steps'];
     assert.equal(changedResponse.aiDecision, 'pending'); assert.equal(changedResponse.aiVerificationNeedsReview, true); assert.equal(changedResponse.aiVerification, previousVerification);
     await page.reload(); await openSession(3, 'sound-steps'); await expandAiRecords();
@@ -291,13 +291,14 @@ try {
     await page.getByRole('button', { name: '수업안 작성으로 →', exact: true }).click();
     await page.getByRole('heading', { name: '내 교과의 한 차시로 바꾸기', exact: true }).waitFor();
     const subject = `${program.id} · 합성 수업안: 주파수와 표현`;
+    await page.getByText('연수 뒤 보완할 항목·기존 세부 기록', { exact: true }).click();
     await field('교과').fill(subject);
-    await field('학생이 이해할 교과 개념').fill('한 변인 비교·주파수 수치와 막대 표현의 관계');
+    await field('대상·교과 개념·예측 질문').fill('한 변인 비교·주파수 수치와 막대 표현의 관계');
     await field('교사가 제공할 코드와 도움').fill('실행 골격과 단계별 힌트, 막대·라벨·재생은 제공');
-    await field('학생이 수정할 1~3줄').fill('frequencies 가운데 440을 330으로 변경');
-    await field('바꿀 조건과 유지할 조건').fill('가운데 주파수 변경, 처음·끝 주파수와 음 길이는 고정');
-    await field('처음 줄 발판과 거둘 시점').fill('먼저 값 후보 제공, 짝 재현과 수치 설명 후 후보 철회');
-    if (ai) await field('AI에게 맡긴 일과 직접 판단한 일').fill('합성 폼 시험이며 실제 AI 호출 없음. 강사 예시의 주장을 직접 실행한330Hz·막대1.5로 검증함.');
+    await field('제공 코드·학생이 수정할 1~3줄').fill('frequencies 가운데 440을 330으로 변경');
+    await field('비교 조건 A·B·고정 조건').fill('가운데 주파수 변경, 처음·끝 주파수와 음 길이는 고정');
+    await field('처음 줄 발판·거둘 기준').fill('먼저 값 후보 제공, 짝 재현과 수치 설명 후 후보 철회');
+    if (ai) { await page.getByText('AI 도움 범위의 추가 기록', { exact: true }).click(); await field('AI에게 맡긴 일과 직접 판단한 일').fill('합성 폼 시험이며 실제 AI 호출 없음. 강사 예시의 주장을 직접 실행한330Hz·막대1.5로 검증함.'); }
     await page.getByRole('button', { name: '시연·짝 피드백 확인하기', exact: true }).click();
     await shot(`${prefix}-04-plan.png`, `${program.shortTitle} · 학생 수정 한 줄·발판·교과 수업안`);
     const markdown = await download('나의 수업안 받기 ↓', 'vpylab-my-lesson-plan.md');
