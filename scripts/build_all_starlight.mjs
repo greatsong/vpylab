@@ -4,10 +4,14 @@ import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { cp, mkdir, readFile, rm, writeFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { generateStarlightProject } from '/Users/greatsong/greatsong-project/eduflow-deploy/server/services/starlightGenerator.js';
+import { pathToFileURL } from 'node:url';
+import { projectDir } from './project-paths.mjs';
 
-const PROJECTS_ROOT = '/Users/greatsong/greatsong-project/eduflow-deploy/projects';
-const CACHE_NM = '/Users/greatsong/greatsong-project/eduflow-deploy/server/services/starlight-cache/node_modules';
+const EDUFLOW_DEPLOY = projectDir('eduflow-deploy');
+const { generateStarlightProject } = await import(pathToFileURL(join(EDUFLOW_DEPLOY, 'server/services/starlightGenerator.js')).href);
+
+const PROJECTS_ROOT = join(EDUFLOW_DEPLOY, 'projects');
+const CACHE_NM = join(EDUFLOW_DEPLOY, 'server/services/starlight-cache/node_modules');
 
 function run(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {

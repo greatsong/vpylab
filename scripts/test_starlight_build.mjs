@@ -13,10 +13,14 @@ function run(cmd, args, opts = {}) {
 }
 import { cp, mkdir, readFile, rm, writeFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { generateStarlightProject } from '/Users/greatsong/greatsong-project/eduflow-deploy/server/services/starlightGenerator.js';
+import { pathToFileURL } from 'node:url';
+import { projectDir } from './project-paths.mjs';
 
-const PROJECT_PATH = '/Users/greatsong/greatsong-project/eduflow-deploy/projects/vpylab-beg-shapes';
-const CACHE_NM = '/Users/greatsong/greatsong-project/eduflow-deploy/server/services/starlight-cache/node_modules';
+const EDUFLOW_DEPLOY = projectDir('eduflow-deploy');
+const { generateStarlightProject } = await import(pathToFileURL(join(EDUFLOW_DEPLOY, 'server/services/starlightGenerator.js')).href);
+
+const PROJECT_PATH = join(EDUFLOW_DEPLOY, 'projects/vpylab-beg-shapes');
+const CACHE_NM = join(EDUFLOW_DEPLOY, 'server/services/starlight-cache/node_modules');
 
 const t0 = Date.now();
 console.log('[1/4] generateStarlightProject 호출…');
