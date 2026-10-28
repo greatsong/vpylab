@@ -1,0 +1,13 @@
+{
+  "scope": "로컬 링크/행범위·표형식·리허설 집계·합성팀 명단·고정원작/라이선스SHA·결과의 세션문자열 미포함 확인. 교육효과 검증이 아님.",
+  "valid_local_links": 145,
+  "teams": 3,
+  "synthetic_students": 6,
+  "api_calls": 264,
+  "checks": 378,
+  "passed": 367,
+  "observed_gaps": 11,
+  "gap_types": 7,
+  "external_attempts": 0,
+  "errors": []
+}
