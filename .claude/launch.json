@@ -7,6 +7,12 @@
       "runtimeArgs": ["run", "dev"],
       "port": 4033,
       "cwd": "client"
+    },
+    {
+      "name": "vpylab-classroom",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:classroom"],
+      "port": 4043
     }
   ]
 }

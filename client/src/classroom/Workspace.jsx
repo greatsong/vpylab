@@ -9,6 +9,7 @@ import GitHubJobStatus from './GitHubJobStatus';
 import useDraft from './useDraft';
 import { downloadFile, request } from './api';
 import missions from '../data/missions';
+import { projectAppearance } from './curriculum';
 import { gradeA, gradeCodeChecks, gradeNotes, gradeRun } from '../engine/grading-engine';
 
 const dateText = (value) => value ? new Date(value).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
@@ -117,8 +118,11 @@ function WorkingSession({ initial, user, projectId, localMode, users, onRefresh,
 
   if (!draft) return <div className="cr-loading">개인 초안을 복구하고 있습니다…</div>;
   const behind = draft.baseVersion < project.version;
-  return <div className="cr-workspace">
-    <div className="cr-workspace-heading"><div><a className="cr-back" href="#/">← 프로젝트</a><h1>{project.title}<span className="cr-small-badge">v{project.version}</span></h1><div className="cr-project-meta"><span>{data.members.length}명의 참여자</span><b>·</b><span>{project.aiPolicy === 'disabled' ? 'AI 없이 탐구하는 수업' : 'AI 사용은 선택'}</span>{project.source && <><b>·</b><span>수업 자료: {project.source.title}</span></>}</div></div><div className="cr-workspace-actions"><button className="cr-button" onClick={() => downloadFile('main.py', canEdit ? draft.code : project.code)}>코드 내려받기 ↓</button>{canEdit && <button className="cr-button primary" onClick={() => openSave('proposal')} disabled={busy}>변경 제안 ↗</button>}</div></div>
+  const look = projectAppearance(project);
+  return <div className={`cr-workspace ${tab === 'lab' ? 'lab-mode' : ''}`}>
+    <div className="cr-workspace-heading"><a className="cr-back" href="#/">← 프로젝트</a><h1><span>{project.title}</span><span className="cr-small-badge">v{project.version}</span></h1>
+      <div className="cr-project-meta">{project.source && <span className="cr-source-chip" style={{ '--chip-accent': look.accent }} title={`수업 자료: ${project.source.title}`}><i aria-hidden="true">{look.icon}</i><span>{project.source.title}</span></span>}<span>{data.members.length}명의 참여자</span><b>·</b><span>{project.aiPolicy === 'disabled' ? 'AI 없이 탐구하는 수업' : 'AI 사용은 선택'}</span></div>
+      <div className="cr-workspace-actions"><button className="cr-button" onClick={() => downloadFile('main.py', canEdit ? draft.code : project.code)}>코드 내려받기 ↓</button>{canEdit && <button className="cr-button primary" onClick={() => openSave('proposal')} disabled={busy}>변경 제안 ↗</button>}</div></div>
     <div className="cr-workspace-nav"><div className="cr-tabs" role="tablist" aria-label="프로젝트 활동">{[['problem', '01', '문제와 질문'], ['lab', '02', '제작과 실험'], ['review', '03', '함께 검토'], ['process', '04', 'GitHub 과정'], ['journal', '05', '기록과 성찰'], ['team', '', '팀·연결']].map(([key, number, label]) => <button key={key} role="tab" aria-selected={tab === key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}><small>{number}</small>{label}{key === 'review' && <span>{data.proposals.filter((item) => item.state === 'open').length}</span>}</button>)}</div><div className={`cr-save-state state-${draftState.status}`} role="status"><i />{canEdit ? statusText[draftState.status] : '관찰자 · 읽기 전용'}</div></div>
     {(error || notice) && <div className={`cr-banner ${error ? 'error' : 'success'}`} role={error ? 'alert' : 'status'}>{error || notice}<button className="cr-link-button" onClick={() => { setError(''); setNotice(''); }}>닫기</button></div>}
     {draftState.storageError && <div className="cr-banner error" role="alert">{draftState.storageError}</div>}

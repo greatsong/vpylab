@@ -123,6 +123,8 @@ describe('교실 Python 실행 화면', () => {
   it('음색을 골라도 자동 재생하지 않고 클릭으로 미리 듣기·음량·음소거를 제어한다', async () => {
     const view = render(<RuntimePanel code="print(1)" />); await ready();
     expect(previewInstrument).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('미리 듣기 음색')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /소리$/ }));
     fireEvent.change(screen.getByLabelText('미리 듣기 음색'), { target: { value: 'piano' } });
     fireEvent.change(screen.getByLabelText('소리 음량'), { target: { value: '35' } });
     expect(setMasterVolume).toHaveBeenCalledWith(0.35);

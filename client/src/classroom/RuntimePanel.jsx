@@ -39,6 +39,18 @@ export default function RuntimePanel({ code, onRunResult, initialCameraPosition,
   const [timbre, setTimbre] = useState('musicbox');
   const [audioMessage, setAudioMessage] = useState('');
   const [isStarting, setIsStarting] = useState(false);
+  const [audioOpen, setAudioOpen] = useState(false);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (!audioOpen) return undefined;
+    const close = (event) => {
+      if (event.type === 'keydown' ? event.key === 'Escape' : !audioRef.current?.contains(event.target)) setAudioOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', close); };
+  }, [audioOpen]);
 
   useEffect(() => subscribeAudioState(setAudio), []);
 
@@ -164,6 +176,7 @@ export default function RuntimePanel({ code, onRunResult, initialCameraPosition,
     setMasterVolume(volume);
   };
 
+  const audioLabel = audio.muted ? '음소거 중' : audio.playing ? '소리 재생 중' : `음량 ${Math.round(audio.volume * 100)}%`;
   return (
     <section className="classroom-runtime" aria-label="Python 실행과 3D 실험">
       <div className="runtime-toolbar">
@@ -172,16 +185,24 @@ export default function RuntimePanel({ code, onRunResult, initialCameraPosition,
           <button type="button" className="primary" onClick={handleRun} disabled={!isReady || !sceneReady || isStarting}>▶ 실행</button>
           <button type="button" onClick={handleStop} disabled={!isRunning && !audio.playing && !isStarting}>■ 정지</button>
           {(status === 'error' || status === 'idle') && <button type="button" onClick={() => { setLastError(''); void initWorker(); }}>엔진 다시 준비</button>}
+          <div className="runtime-audio" ref={audioRef}>
+            <button type="button" aria-expanded={audioOpen} aria-controls="runtime-audio-popover" title={audioLabel} onClick={() => setAudioOpen((open) => !open)}>{audio.muted ? '🔇' : '♪'} 소리</button>
+            {audioOpen && <div className="runtime-audio-popover" id="runtime-audio-popover" role="group" aria-label="소리 설정">
+              <strong>소리 설정 <span>{audioLabel}</span></strong>
+              <div className="runtime-audio-controls">
+                <label><span>음량</span><input aria-label="소리 음량" type="range" min="0" max="100" step="1" value={Math.round(audio.volume * 100)} onChange={handleVolume} /><output>{Math.round(audio.volume * 100)}%</output></label>
+                <label><span>음색</span><select aria-label="미리 듣기 음색" value={timbre} onChange={(event) => setTimbre(event.target.value)}><option value="musicbox">맑은 뮤직박스</option><option value="piano">따뜻한 피아노</option></select></label>
+                <div className="runtime-audio-buttons">
+                  <button type="button" onClick={handlePreview} disabled={isRunning || isStopping || isStarting || audio.muted || audio.volume === 0}>♫ 소리 미리 듣기</button>
+                  <button type="button" aria-pressed={audio.muted} onClick={() => { previewRequestRef.current += 1; if (!audio.muted) { startCancelRef.current?.(); setIsStarting(false); } setMasterMuted(!audio.muted); setAudioMessage(audio.muted ? '음소거를 해제했습니다.' : '음소거했습니다. 예약된 연주도 정지했습니다.'); }}>{audio.muted ? '소리 켜기' : '음소거'}</button>
+                </div>
+              </div>
+              {audioMessage && <p className="runtime-audio-message" aria-live="polite">{audioMessage}</p>}
+              <details className="runtime-audio-example"><summary>내 코드에서 이 음색 연주하기</summary><pre>{`from vpython import *\nplay_note("C5", 0.5, "${timbre}")\nsleep(0.5)\nplay_note("E5", 0.5, "${timbre}")`}</pre><p>음표 사이에 <code>sleep()</code>을 넣으면 순서대로 들을 수 있습니다.</p></details>
+            </div>}
+          </div>
         </div>
       </div>
-      <div className="runtime-audio-controls" aria-label="소리 설정">
-        <label>음량 <input aria-label="소리 음량" type="range" min="0" max="100" step="1" value={Math.round(audio.volume * 100)} onChange={handleVolume} /><span>{Math.round(audio.volume * 100)}%</span></label>
-        <button type="button" aria-pressed={audio.muted} onClick={() => { previewRequestRef.current += 1; if (!audio.muted) { startCancelRef.current?.(); setIsStarting(false); } setMasterMuted(!audio.muted); setAudioMessage(audio.muted ? '음소거를 해제했습니다.' : '음소거했습니다. 예약된 연주도 정지했습니다.'); }}>{audio.muted ? '소리 켜기' : '음소거'}</button>
-        <div className="runtime-audio-preview"><label>미리 듣기 음색 <select aria-label="미리 듣기 음색" value={timbre} onChange={(event) => setTimbre(event.target.value)}><option value="musicbox">맑은 뮤직박스</option><option value="piano">따뜻한 피아노</option></select></label><button type="button" onClick={handlePreview} disabled={isRunning || isStopping || isStarting || audio.muted || audio.volume === 0}>♫ 소리 미리 듣기</button></div>
-        <span>{audio.muted ? '음소거 중' : audio.playing ? '소리 재생 중' : '소리 재생 대기'}</span>
-      </div>
-      {audioMessage && <p className="runtime-audio-message" aria-live="polite">{audioMessage}</p>}
-      <details className="runtime-audio-example"><summary>내 코드에서 이 음색 연주하기</summary><pre>{`from vpython import *\nplay_note("C5", 0.5, "${timbre}")\nsleep(0.5)\nplay_note("E5", 0.5, "${timbre}")`}</pre><p>음표 사이에 <code>sleep()</code>을 넣으면 순서대로 들을 수 있습니다.</p></details>
       {status === 'loading' && <div className="runtime-progress"><progress value={progress} max="100" aria-label="Python 준비 진행률" /><span>{progressMessage}</span></div>}
       {isStopping && <p className="runtime-progress">반복문이 응답하지 않으면 실행 환경을 새로 준비합니다.</p>}
       {lastError && <p className="runtime-error" role="alert">{lastError}</p>}
