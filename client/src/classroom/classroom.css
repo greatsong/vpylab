@@ -49,18 +49,9 @@
 .cr-header-actions { display:flex; align-items:center; gap:17px; flex-shrink:0; }
 .cr-preview-badge { font-size:12px; color:var(--cr-primary); background:var(--cr-primary-soft); border-radius:var(--radius-md); padding:4px 8px; font-weight:650; }
 .cr-icon-button { border:1px solid var(--cr-border); background:var(--cr-panel); border-radius:var(--radius-md); width:32px; height:32px; color:var(--cr-muted); display:inline-grid; place-items:center; font-size:20px!important; }
-.cr-account { display:flex; align-items:center; gap:9px; font-size:13px; font-weight:650; }
-.cr-account small { display:block; color:var(--cr-muted); font-size:12px; font-weight:400; }
 .cr-avatar { width:34px; height:34px; border-radius:50%; background:var(--cr-primary-soft); color:var(--cr-primary); display:inline-grid; place-items:center; font-size:12px; font-weight:750; flex-shrink:0; }
 .cr-avatar.teacher { background:var(--cr-mint-soft); color:var(--cr-mint); }
 .cr-link-button { color:var(--cr-primary); background:none; border:0; padding:4px 0; font-size:12px!important; font-weight:600!important; white-space:nowrap; }
-.cr-local-strip { display:flex; align-items:center; justify-content:space-between; padding:7px clamp(18px,3vw,32px); background:var(--color-bg-secondary); border-bottom:1px solid var(--cr-border); color:var(--cr-muted); font-size:12px; gap:16px; }
-.cr-local-strip>span { display:flex; gap:8px; align-items:center; }
-.cr-local-strip small { opacity:.75; font-size:12px; margin-left:4px; }
-.cr-local-strip i { width:6px; height:6px; background:var(--cr-primary); border-radius:50%; }
-.cr-local-strip>div { display:flex; gap:7px; align-items:center; }
-.cr-local-strip button { background:var(--cr-panel); color:var(--cr-primary); border:1px solid transparent; border-radius:var(--radius-md); padding:2px 8px; font-size:12px; }
-.cr-local-strip button:disabled { border-color:var(--cr-primary); opacity:.65; }
 .cr-main { max-width:1280px; width:100%; margin:auto; padding:var(--page-gutter-y) var(--page-gutter-x); }
 .cr-page-heading { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:28px; }
 .cr-eyebrow { font-size:12px; letter-spacing:0; color:var(--cr-muted); font-weight:600; display:block; margin-bottom:8px; }
@@ -74,9 +65,6 @@
 .cr-section-heading { display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:20px; }
 .cr-section-heading>h2 { font-size:17px; display:flex; gap:9px; align-items:center; }
 .cr-section-heading>h2>span { color:var(--cr-primary); background:var(--cr-primary-soft); border-radius:var(--radius-md); padding:1px 6px; font-size:12px; }
-.cr-section-heading>span:not(.cr-section-kicker) { color:var(--cr-muted); font-size:12px; }
-.cr-home-grid { display:grid; grid-template-columns:minmax(0,1fr) 285px; gap:30px; }
-.cr-project-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
 .cr-project-card { position:relative; text-align:left; padding:20px; background:var(--cr-panel); border:1px solid var(--cr-border); border-left:3px solid var(--cr-primary); border-radius:var(--radius-md); box-shadow:var(--cr-shadow); color:var(--cr-text); transition:transform .18s,border-color .18s; min-height:196px; }
 .cr-project-card:hover { transform:translateY(-2px); border-color:var(--cr-primary); }
 .cr-project-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:8px; }
@@ -91,18 +79,7 @@
 .cr-panel>h2 { margin-bottom:14px; }
 .cr-panel>h3 { margin:24px 0 12px; }
 .cr-panel>p { color:var(--cr-muted); }
-.cr-home-aside { display:flex; flex-direction:column; gap:20px; padding-top:47px; }
 .cr-section-kicker { display:block; font-size:12px; letter-spacing:0; color:var(--cr-muted); font-weight:600; margin-bottom:9px; }
-.cr-join-panel { background:var(--cr-panel); border-color:var(--cr-border); }
-.cr-join-panel h2 { font-size:19px; margin-bottom:9px; }
-.cr-join-panel p { font-size:13px; margin-bottom:18px; }
-.cr-join-panel form { display:flex; flex-direction:column; gap:9px; }
-.cr-learning-panel h2 { font-size:17px; }
-.cr-learning-panel ol { list-style:none; margin:24px 0; padding:0; display:flex; flex-direction:column; gap:23px; }
-.cr-learning-panel li { display:flex; gap:12px; }
-.cr-learning-panel li>span { color:var(--cr-primary); font:12px var(--font-mono); padding-top:4px; }
-.cr-learning-panel li strong { font-size:13px; }
-.cr-learning-panel li p { font-size:12px; color:var(--cr-muted); margin-top:4px; }
 .cr-materials-banner { margin-top:32px; padding:23px 26px; display:flex; gap:18px; align-items:center; border:1px solid var(--cr-border); border-radius:var(--radius-md); width:100%; background:var(--cr-panel); color:var(--cr-text); text-align:left; }
 .cr-materials-banner strong { display:block; font-size:14px; }
 .cr-materials-banner small { color:var(--cr-muted); display:block; font-size:12px; margin-top:4px; }
@@ -245,8 +222,6 @@
 .cr-main-nav { margin-left:10px; gap:20px; }
 .cr-preview-badge { display:none; }
 .cr-main { padding:35px 25px; }
-.cr-home-grid { grid-template-columns:minmax(0,1fr) 255px; gap:20px; }
-.cr-project-grid { grid-template-columns:1fr; }
 .cr-project-card { min-height:180px; }
 .cr-workspace-two-col { gap:16px; }
 .cr-review-layout { grid-template-columns:220px minmax(0,1fr); }
@@ -262,20 +237,12 @@
 .cr-main-nav { order:3; flex-basis:100%; margin:0; height:40px; gap:4px; overflow:auto; }
 .cr-main-nav>a { font-size:12px; }
 .cr-header-actions { margin-left:auto; gap:10px; }
-.cr-account>span:last-child { display:none; }
-.cr-local-strip { flex-wrap:wrap; gap:5px; padding:8px 20px; }
-.cr-local-strip small { display:none; }
-.cr-local-strip>div { font-size:12px; }
 .cr-main { padding:30px 20px; }
 .classroom-shell h1 { font-size:27px; }
 .cr-page-heading { align-items:start; gap:15px; margin-bottom:27px; }
 .cr-page-heading p { font-size:12px; }
 .cr-page-heading>.cr-button.large { padding:10px 12px; font-size:12px!important; }
 .cr-eyebrow { font-size:12px; }
-.cr-home-grid { grid-template-columns:1fr; }
-.cr-home-aside { padding-top:0; display:grid; grid-template-columns:1fr 1fr; gap:15px; }
-.cr-section-heading>span:not(.cr-section-kicker) { display:none; }
-.cr-project-grid { grid-template-columns:1fr; }
 .cr-materials-banner { padding:18px; gap:12px; }
 .cr-materials-banner>span:last-child { font-size:0; }
 .cr-materials-banner>span:last-child:after { content:"↗"; font-size:18px; }
@@ -351,7 +318,6 @@
    화면 전체 높이를 사용합니다. (2026-10-29 디자인 정리)
    ──────────────────────────────────────────────────────────── */
 .classroom-shell { --cr-chrome:56px; }
-.classroom-shell.local-mode { --cr-chrome:92px; }
 .cr-main.workspace-main { max-width:none; padding:14px clamp(16px,2vw,28px) 24px; }
 .cr-workspace { display:flex; flex-direction:column; }
 .cr-workspace.lab-mode { height:calc(100dvh - var(--cr-chrome) - 38px); min-height:560px; }
@@ -480,4 +446,59 @@
   .cr-material-list { max-height:260px; border-bottom:1px solid var(--cr-border); }
   .cr-material-item { padding:10px 12px; }
   .cr-material-item>span:last-child { display:none; }
+}
+
+/* 헤더 우측: 배지와 계정 메뉴 하나로 정리. 역할 전환·테마·나가기는 메뉴 안에 둡니다. */
+.cr-header-actions { gap:12px; }
+.cr-account { position:relative; }
+.cr-account-button { display:flex; align-items:center; gap:9px; background:none; border:1px solid transparent; border-radius:var(--radius-md); padding:3px 8px 3px 3px; color:var(--cr-text); font-size:13px; font-weight:650; text-align:left; line-height:1.25; }
+.cr-account-button:hover,.cr-account-button[aria-expanded="true"] { border-color:var(--cr-border); background:var(--color-bg-secondary); }
+.cr-account-name small { display:block; color:var(--cr-muted); font-size:12px; font-weight:400; }
+.cr-caret { color:var(--cr-muted); font-size:12px; }
+.cr-avatar.small { width:26px; height:26px; font-size:12px; }
+.cr-account-menu { position:absolute; right:0; top:calc(100% + 8px); width:260px; background:var(--cr-panel); border:1px solid var(--cr-border); box-shadow:var(--shadow-lg); z-index:60; padding:6px; display:flex; flex-direction:column; text-align:left; }
+.cr-account-menu-head { padding:10px 10px 12px; border-bottom:1px solid var(--cr-border); }
+.cr-account-menu-head strong { font-size:14px; display:block; }
+.cr-account-menu-head small { display:block; color:var(--cr-muted); font-size:12px; margin-top:2px; }
+.cr-account-menu-section { display:flex; flex-direction:column; gap:2px; padding:6px 0; }
+.cr-account-menu-section+.cr-account-menu-section { border-top:1px solid var(--cr-border); }
+.cr-account-menu-section>span { font-size:12px; font-weight:600; color:var(--cr-muted); padding:6px 10px 4px; }
+.cr-account-menu-section>button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:8px 10px; background:none; border:0; border-radius:var(--radius-md); font-size:13px; font-weight:600; color:var(--cr-text); }
+.cr-account-menu-section>button:hover:not(:disabled) { background:var(--color-bg-secondary); }
+.cr-account-menu-section>button:disabled { opacity:1; color:var(--cr-muted); cursor:default; }
+.cr-account-menu-section>button small { margin-left:auto; color:var(--cr-muted); font-size:12px; font-weight:400; }
+.cr-account-menu-section>button.danger { color:var(--cr-danger); }
+.cr-account-menu .cr-hint { padding:4px 10px 6px; line-height:1.5; }
+
+/* 홈: 보조 패널을 없애고 작업실 격자에 만들기·합류 카드를 넣어 빈 공간을 줄입니다. */
+.cr-section-heading>div>p { margin-top:4px; color:var(--cr-muted); font-size:13px; }
+.cr-project-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.cr-project-card.action { border:1px dashed var(--cr-border); border-left:1px dashed var(--cr-border); background:transparent; box-shadow:none; min-height:0; display:flex; flex-direction:column; gap:6px; justify-content:flex-start; color:var(--cr-text); }
+.cr-project-card.action:hover { border-color:var(--cr-primary); transform:none; }
+.cr-project-card.action .cr-project-symbol { margin-bottom:8px; background:var(--cr-primary-soft); color:var(--cr-primary); font:22px var(--font-body); }
+.cr-project-card.action h3 { margin:0; }
+.cr-project-card.action>p { min-height:0; color:var(--cr-muted); font-size:13px; }
+form.cr-project-card.action { cursor:default; text-align:left; }
+.cr-join-row { display:flex; gap:8px; margin-top:auto; padding-top:12px; }
+.cr-join-row>input { padding:9px 12px; font-size:13px; min-width:0; }
+.cr-learning-strip { margin-top:32px; padding:22px 26px; border:1px solid var(--cr-border); background:var(--cr-panel); border-radius:var(--radius-md); display:grid; grid-template-columns:240px minmax(0,1fr); gap:28px; align-items:start; }
+.cr-learning-strip h2 { font-size:17px; }
+.cr-learning-strip .cr-hint { margin-top:10px; line-height:1.5; }
+.cr-learning-strip ol { list-style:none; margin:4px 0 0; padding:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
+.cr-learning-strip li { display:flex; gap:10px; }
+.cr-learning-strip li>span { color:var(--cr-primary); font:12px var(--font-mono); padding-top:3px; }
+.cr-learning-strip li strong { font-size:13px; }
+.cr-learning-strip li p { font-size:12px; color:var(--cr-muted); margin-top:4px; }
+.cr-materials-banner { margin-top:16px; }
+@media(max-width:1100px) {
+  .cr-project-grid { grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); }
+  .cr-learning-strip { grid-template-columns:1fr; gap:16px; }
+}
+@media(max-width:760px) {
+  .cr-account-name,.cr-caret { display:none; }
+  .cr-account-button { padding:2px; }
+  .cr-account-menu { width:min(260px,calc(100vw - 32px)); }
+  .cr-project-grid { grid-template-columns:1fr; }
+  .cr-learning-strip { padding:18px; }
+  .cr-learning-strip ol { grid-template-columns:1fr; gap:14px; }
 }

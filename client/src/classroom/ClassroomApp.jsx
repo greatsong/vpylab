@@ -28,10 +28,22 @@ export default function ClassroomApp() {
   const [busy, setBusy] = useState(false);
   const [create, setCreate] = useState(null);
   const [joinCode, setJoinCode] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
   const [route, navigate] = useRoute();
   const generation = useRef(0);
   const theme = useAppStore((state) => state.theme);
   const user = session?.user;
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const close = (event) => {
+      if (event.type === 'keydown' ? event.key === 'Escape' : !menuRef.current?.contains(event.target)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', close); };
+  }, [menuOpen]);
 
   const refresh = useCallback(async (actorId) => {
     const expected = generation.current;
@@ -129,15 +141,23 @@ export default function ClassroomApp() {
     source: { kind: item.kind, id: item.id, title: item.title, ...(item.courseId ? { courseId: item.courseId } : {}) },
   });
 
+  const toggleTheme = () => useAppStore.getState().setTheme(theme === 'deep-dark' ? 'creative-light' : 'deep-dark');
   const projectId = route.startsWith('/projects/') ? route.split('/')[2] : null;
-  return <div className={`classroom-shell ${session?.localMode ? 'local-mode' : ''}`}>
+  return <div className="classroom-shell">
     <header className="cr-header"><a className="cr-brand" href="#/" aria-label="VPyLab 교실 홈"><BrandLogo size={28} inverse={theme === 'deep-dark'} /></a>
       <nav className="cr-main-nav" aria-label="주 메뉴"><a href="#/" className={route === '/' || projectId ? 'active' : ''}>프로젝트</a><a href="#/materials" className={route === '/materials' ? 'active' : ''}>수업 자료</a>{user?.role === 'teacher' && <a href="#/teacher" className={route === '/teacher' ? 'active' : ''}>교사 관찰실</a>}</nav>
-      <div className="cr-header-actions"><span className="cr-preview-badge">새 교실 · 검토 중</span><button className="cr-icon-button" title="화면 테마 전환" aria-label="화면 테마 전환" onClick={() => useAppStore.getState().setTheme(theme === 'deep-dark' ? 'creative-light' : 'deep-dark')}>{theme === 'deep-dark' ? '☀' : '☾'}</button>
-        {user && <><div className="cr-account"><span className="cr-avatar">{user.name?.slice(0, 1)}</span><span>{user.name}<small>{roleName(user.role)}</small></span></div><button className="cr-link-button" onClick={signOut} disabled={busy}>나가기</button></>}
+      <div className="cr-header-actions"><span className="cr-preview-badge">새 교실 · 검토 중</span>
+        {!user && <button className="cr-icon-button" title="화면 테마 전환" aria-label="화면 테마 전환" onClick={toggleTheme}>{theme === 'deep-dark' ? '☀' : '☾'}</button>}
+        {user && <div className="cr-account" ref={menuRef}>
+          <button type="button" className="cr-account-button" aria-haspopup="true" aria-expanded={menuOpen} aria-label={`${user.name} · 계정 메뉴`} onClick={() => setMenuOpen((open) => !open)}><span className={`cr-avatar ${user.role}`} aria-hidden="true">{user.name?.slice(0, 1)}</span><span className="cr-account-name" aria-hidden="true">{user.name}<small>{roleName(user.role)}</small></span><span className="cr-caret" aria-hidden="true">▾</span></button>
+          {menuOpen && <div className="cr-account-menu" role="group" aria-label="계정 메뉴">
+            <div className="cr-account-menu-head"><strong>{user.name}</strong><small>{roleName(user.role)}{session.localMode ? ' · 로컬 테스트 교실' : ''}</small></div>
+            {session.localMode && <div className="cr-account-menu-section"><span>역할 바꾸기</span>{(session.users || []).map((account) => <button type="button" key={account.id} disabled={busy || user.id === account.id} onClick={() => { setMenuOpen(false); switchUser(account.id); }}><span className={`cr-avatar small ${account.role}`} aria-hidden="true">{account.name.slice(0, 1)}</span>{account.name}<small aria-hidden="true">{user.id === account.id ? '현재' : roleName(account.role)}</small></button>)}<p className="cr-hint">운영 서비스와 분리된 로컬 테스트 계정입니다.</p></div>}
+            <div className="cr-account-menu-section"><button type="button" onClick={toggleTheme}>{theme === 'deep-dark' ? '☀ 밝은 화면으로' : '☾ 어두운 화면으로'}</button><button type="button" className="danger" onClick={() => { setMenuOpen(false); signOut(); }} disabled={busy}>나가기</button></div>
+          </div>}
+        </div>}
       </div>
     </header>
-    {session?.localMode && <div className="cr-local-strip"><span><i />로컬 테스트 교실 <small>운영 서비스와 분리되어 있습니다.</small></span><div>역할 바꾸기{(session.users || []).map((account) => <button key={account.id} disabled={busy || user?.id === account.id} onClick={() => switchUser(account.id)}>{account.name}</button>)}</div></div>}
     {error && <div className="cr-banner error" role="alert">{error}<button className="cr-link-button" onClick={() => setError('')}>닫기</button></div>}
     {!session && !error && <main className="cr-loading">교실을 준비하고 있습니다…</main>}
     {session && !user && <main className="cr-welcome hero-bg"><div className="cr-welcome-copy"><h1>코드로 만드는 3D 세계</h1><p>Python으로 3D 시뮬레이션을 만들고, 소리를 입히고,<br />GitHub에서 함께 검토하며 배움의 과정을 남깁니다.</p><div className="cr-value-pills"><span>Python × 3D</span><span>팀의 변경과 리뷰</span><span>AI 사용은 선택</span></div>
@@ -148,11 +168,13 @@ export default function ClassroomApp() {
     {user && <main className={`cr-main ${projectId ? 'workspace-main' : ''}`}>
       {route === '/materials' ? <CurriculumLibrary onStart={startMaterial} /> : route === '/teacher' && user.role === 'teacher' ? <TeacherDashboard user={user} onOpen={(id, tab) => navigate(`/projects/${id}${tab === 'process' ? '/process' : ''}`)} /> : projectId ? <Suspense fallback={<div className="cr-loading">실험실을 여는 중입니다…</div>}><Workspace key={`${user.id}:${projectId}`} initialTab={route.split('/')[3] === 'process' ? 'process' : 'lab'} user={user} projectId={projectId} localMode={session.localMode} users={session.users || []} onRefresh={() => refresh(user.id)} /></Suspense> : <>
         <div className="cr-page-heading"><div><span className="cr-eyebrow">우리의 프로젝트</span><h1>{user.role === 'teacher' ? '함께 자라는 프로젝트' : '오늘, 어떤 생각을 실험할까요?'}</h1><p>나의 초안은 안전하게. 팀의 변화는 함께 살펴보며.</p></div><button className="cr-button primary large" onClick={() => setCreate({})}><span>＋</span> 새 프로젝트</button></div>
-        <div className="cr-home-grid"><section className="cr-project-section"><div className="cr-section-heading"><h2>우리의 작업실 <span>{projects.length}</span></h2><span>팀 확정 버전과 개인 초안을 분리합니다</span></div>
-          <div className="cr-project-grid">{projects.map((project, index) => { const look = projectAppearance(project, index); return <button className="cr-project-card" key={project.id} style={{ '--card-accent': look.accent }} onClick={() => navigate(`/projects/${project.id}`)}><div className="cr-project-card-top"><span className={`cr-project-symbol ${look.kind ? '' : 'plain'}`} aria-hidden="true">{look.kind ? look.icon : String(index + 1).padStart(2, '0')}</span><span className="cr-small-badge">{project.aiPolicy === 'disabled' ? 'AI 없이 탐구' : 'AI 선택 사용'}</span></div><h3>{project.title}</h3><p>{project.problem || '문제를 정의하고 첫 실험을 시작해보세요.'}</p><div className="cr-project-card-bottom"><span>{project.myRole === 'teacher' ? '교사' : project.myRole === 'owner' ? '프로젝트 리더' : project.myRole === 'viewer' ? '관찰자' : '팀원'} <b>·</b> v{project.version}{look.kind && <> <b>·</b> {look.kind.label}</>}</span><span>실험실 열기 ↗</span></div></button>; })}</div>
-          {!projects.length && <div className="cr-empty"><h3>첫 프로젝트를 시작해보세요.</h3><p>새로 만들거나 팀의 초대 코드로 참여할 수 있습니다.</p><button className="cr-button" onClick={() => setCreate({})}>프로젝트 만들기</button></div>}
-        </section><aside className="cr-home-aside"><section className="cr-panel cr-join-panel"><span className="cr-section-kicker">팀으로 함께하기</span><h2>팀에 합류하기</h2><p>팀장이 공유한 초대 코드를 입력하세요.</p><form onSubmit={join}><input aria-label="프로젝트 초대 코드" placeholder="초대 코드" value={joinCode} onChange={(event) => setJoinCode(event.target.value)} maxLength={100} /><button className="cr-button primary" disabled={busy || !joinCode.trim()}>참여하기 →</button></form></section>
-          <section className="cr-panel cr-learning-panel"><span className="cr-section-kicker">생각과 실험의 기록</span><h2>완성보다 중요한 과정</h2><ol><li><span>01</span><div><strong>무엇을 해결할까?</strong><p>문제와 성공 기준을 정합니다.</p></div></li><li><span>02</span><div><strong>왜 그렇게 생각했을까?</strong><p>예상과 실험 결과를 비교합니다.</p></div></li><li><span>03</span><div><strong>다르게 보면 어떨까?</strong><p>동료의 관점으로 검증합니다.</p></div></li></ol><p className="cr-hint">AI를 사용하지 않는 수업도 같은 흐름으로 진행합니다.</p></section></aside></div>
+        <section className="cr-project-section"><div className="cr-section-heading"><div><h2>우리의 작업실 <span>{projects.length}</span></h2><p>팀 확정 버전과 개인 초안을 분리합니다.</p></div></div>
+          <div className="cr-project-grid">{projects.map((project, index) => { const look = projectAppearance(project, index); return <button className="cr-project-card" key={project.id} style={{ '--card-accent': look.accent }} onClick={() => navigate(`/projects/${project.id}`)}><div className="cr-project-card-top"><span className={`cr-project-symbol ${look.kind ? '' : 'plain'}`} aria-hidden="true">{look.kind ? look.icon : String(index + 1).padStart(2, '0')}</span><span className="cr-small-badge">{project.aiPolicy === 'disabled' ? 'AI 없이 탐구' : 'AI 선택 사용'}</span></div><h3>{project.title}</h3><p>{project.problem || '문제를 정의하고 첫 실험을 시작해보세요.'}</p><div className="cr-project-card-bottom"><span>{project.myRole === 'teacher' ? '교사' : project.myRole === 'owner' ? '프로젝트 리더' : project.myRole === 'viewer' ? '관찰자' : '팀원'} <b>·</b> v{project.version}{look.kind && <> <b>·</b> {look.kind.label}</>}</span><span>실험실 열기 ↗</span></div></button>; })}
+            <button className="cr-project-card action" onClick={() => setCreate({})}><span className="cr-project-symbol plain" aria-hidden="true">＋</span><h3>프로젝트 만들기</h3><p>{projects.length ? '좋은 질문 하나에서 새 실험이 시작됩니다.' : '첫 프로젝트를 시작해보세요. 새로 만들거나 초대 코드로 참여할 수 있습니다.'}</p></button>
+            <form className="cr-project-card action join" onSubmit={join}><span className="cr-project-symbol plain" aria-hidden="true">🤝</span><h3>팀에 합류하기</h3><p>팀장이 공유한 초대 코드를 입력합니다.</p><div className="cr-join-row"><input aria-label="프로젝트 초대 코드" placeholder="초대 코드" value={joinCode} onChange={(event) => setJoinCode(event.target.value)} maxLength={100} /><button className="cr-button primary" disabled={busy || !joinCode.trim()}>참여</button></div></form>
+          </div>
+        </section>
+        <section className="cr-learning-strip"><div><span className="cr-section-kicker">생각과 실험의 기록</span><h2>완성보다 중요한 과정</h2><p className="cr-hint">AI를 사용하지 않는 수업도 같은 흐름으로 진행합니다.</p></div><ol><li><span>01</span><div><strong>무엇을 해결할까?</strong><p>문제와 성공 기준을 정합니다.</p></div></li><li><span>02</span><div><strong>왜 그렇게 생각했을까?</strong><p>예상과 실험 결과를 비교합니다.</p></div></li><li><span>03</span><div><strong>다르게 보면 어떨까?</strong><p>동료의 관점으로 검증합니다.</p></div></li></ol></section>
         <button className="cr-materials-banner" onClick={() => navigate('/materials')}><span className="cr-materials-icon" aria-hidden="true">📚</span><span><strong>배움의 재료가 필요하다면</strong><small>{curriculumCounts.courses}개 코스 · {curriculumCounts.lessons}개 차시 · {curriculumCounts.missions}개 미션 · {curriculumCounts.examples}개 예제</small></span><span>수업 자료 둘러보기 ↗</span></button>
       </>}
     </main>}

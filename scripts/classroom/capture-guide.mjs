@@ -38,6 +38,8 @@ async function shot(file, title, role, purpose, { top = true } = {}) {
   process.stdout.write(`캡처 ${shots.length}: ${file} · ${title}\n`);
 }
 async function switchRole(name) {
+  const menu = page.getByRole('button', { name: /계정 메뉴/ });
+  if (await menu.count()) await menu.click();
   await page.getByRole('button', { name, exact: true }).click();
   await page.getByRole('heading', { name: name === '선생님' ? '함께 자라는 프로젝트' : '오늘, 어떤 생각을 실험할까요?' }).waitFor();
 }

@@ -33,6 +33,7 @@ describe('교실 계정 전환', () => {
     });
     render(<ClassroomApp />);
     expect(await screen.findByRole('textbox', { name: 'Python 코드' })).toHaveValue('학생 가의 비공개 개인 코드');
+    fireEvent.click(screen.getByRole('button', { name: /계정 메뉴/ }));
     fireEvent.click(screen.getByRole('button', { name: '학생 나', exact: true }));
     expect(screen.queryByRole('textbox', { name: 'Python 코드' })).toBeNull();
     expect(screen.queryByText('학생 가의 비공개 개인 코드')).toBeNull();
