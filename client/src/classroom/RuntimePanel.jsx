@@ -24,7 +24,7 @@ class ViewportBoundary extends Component {
 }
 
 /** 수업의 AI 사용 정책과 관계없이 같은 Python·3D 실행 환경을 제공합니다. */
-export default function RuntimePanel({ code, onRunResult, initialCameraPosition }) {
+export default function RuntimePanel({ code, onRunResult, initialCameraPosition, preserveDirectionOnCenter = false }) {
   const sceneRef = useRef(null);
   const mountedRef = useRef(false);
   const activeRunRef = useRef(null);
@@ -102,6 +102,10 @@ export default function RuntimePanel({ code, onRunResult, initialCameraPosition 
   }, [initWorker]);
 
   const handleSceneReady = useCallback(() => { setSceneReady(true); }, []);
+
+  useEffect(() => {
+    if (sceneReady) sceneRef.current?._cameraSystem?.setPreserveDirectionOnCenter?.(preserveDirectionOnCenter);
+  }, [sceneReady, preserveDirectionOnCenter]);
 
   const handleRun = () => {
     if (!isReady || !sceneReady || isStarting || activeRunRef.current) return;

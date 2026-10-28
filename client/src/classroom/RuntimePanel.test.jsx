@@ -6,11 +6,13 @@ import * as singleton from '../engine/pyodide-singleton';
 import { previewInstrument, setMasterMuted, setMasterVolume, stopAllSounds } from '../engine/sound-system';
 
 const sound = vi.hoisted(() => ({ state: { volume: 0.6, muted: false, playing: false }, listeners: new Set() }));
+const cameraSystems = vi.hoisted(() => []);
 
 vi.mock('../components/viewport/Viewport3D', () => ({
   default: function MockViewport({ sceneRef, onSceneReady }) {
     useEffect(() => {
-      const scene = { _cameraSystem: { onCodeStart: vi.fn() } };
+      const scene = { _cameraSystem: { onCodeStart: vi.fn(), setPreserveDirectionOnCenter: vi.fn() } };
+      cameraSystems.push(scene._cameraSystem);
       sceneRef.current = scene;
       onSceneReady(scene);
     }, [sceneRef, onSceneReady]);
@@ -43,8 +45,23 @@ async function ready() { await act(async () => { workers.at(-1).emit({ type: 're
 function currentRun() { return workers.at(-1).postMessage.mock.calls.map(([message]) => message).findLast((message) => message.type === 'run').runId; }
 
 describe('교실 Python 실행 화면', () => {
-  beforeEach(() => { workers = []; vi.clearAllMocks(); sound.state = { volume: 0.6, muted: false, playing: false }; sound.listeners.clear(); vi.useFakeTimers(); vi.stubGlobal('Worker', FakeWorker); singleton.hardStop(); });
+  beforeEach(() => { workers = []; cameraSystems.length = 0; vi.clearAllMocks(); sound.state = { volume: 0.6, muted: false, playing: false }; sound.listeners.clear(); vi.useFakeTimers(); vi.stubGlobal('Worker', FakeWorker); singleton.hardStop(); });
   afterEach(() => { cleanup(); singleton.hardStop(); vi.unstubAllGlobals(); vi.useRealTimers(); });
+
+  it('연수의 시선 방향 보존은 선택한 실행기에만 적용하고 실행기를 재생성하지 않고 전환한다', async () => {
+    const view = render(<RuntimePanel code="print(1)" />);
+    await ready();
+    const system = cameraSystems.at(-1);
+    expect(system.setPreserveDirectionOnCenter).toHaveBeenLastCalledWith(false);
+
+    view.rerender(<RuntimePanel code="print(1)" preserveDirectionOnCenter />);
+    expect(system.setPreserveDirectionOnCenter).toHaveBeenLastCalledWith(true);
+
+    view.rerender(<RuntimePanel code="print(1)" preserveDirectionOnCenter={false} />);
+    expect(system.setPreserveDirectionOnCenter).toHaveBeenLastCalledWith(false);
+    expect(cameraSystems).toHaveLength(1);
+    expect(workers).toHaveLength(1);
+  });
 
   it('콘솔은 최근 200줄과 32KB를 유지하고 HTML을 텍스트로 표시한다', async () => {
     render(<RuntimePanel code="print(1)" />);

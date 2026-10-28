@@ -132,6 +132,48 @@ test('로그아웃하면 복사한 이전 쿠키도 다시 사용할 수 없다'
   const {client,origin}=await httpFixture(t),c=client();await c.login('student-a');const previousCookie=c.cookie;assert.equal((await c.api('/session',{method:'DELETE'})).status,200);const response=await fetch(origin+'/api/v2/projects',{headers:{cookie:previousCookie}});assert.equal(response.status,401);
 });
 
+function sharedLocalBrowser() {
+  const jar=new Map();
+  return {jar,async api(origin,path,{method='GET',body}={}) {
+    const response=await fetch(origin+'/api/v2'+path,{method,headers:{origin,cookie:[...jar].map(([name,value])=>`${name}=${value}`).join('; '),...(body===undefined?{}:{'content-type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)})});
+    const setCookie=response.headers.get('set-cookie');
+    if(setCookie) { const pair=setCookie.split(';')[0],index=pair.indexOf('='),name=pair.slice(0,index),value=pair.slice(index+1);if(value)jar.set(name,value);else jar.delete(name); }
+    return {status:response.status,data:await response.json(),setCookie};
+  }};
+}
+
+test('같은 브라우저의 기본 교실과 연수 교실은 서로 다른 세션 쿠키로 역할을 유지한다',async t=>{
+  const normal=await httpFixture(t),training=await httpFixture(t,{sessionCookieName:'vpylab_teacher_training_session'}),browser=sharedLocalBrowser();
+  const first=await browser.api(normal.origin,'/session/local',{method:'POST',body:{userId:'student-a'}});assert.equal(first.status,200);assert.match(first.setCookie,/^vpylab_v2_session=/);
+  assert.equal((await browser.api(training.origin,'/session')).data.user,null);
+  const second=await browser.api(training.origin,'/session/local',{method:'POST',body:{userId:'student-b'}});assert.equal(second.status,200);assert.match(second.setCookie,/^vpylab_teacher_training_session=/);
+  assert.equal(browser.jar.size,2);
+  assert.equal((await browser.api(normal.origin,'/session')).data.user.id,'student-a');
+  assert.equal((await browser.api(training.origin,'/session')).data.user.id,'student-b');
+  const previousTrainingCookie=`vpylab_teacher_training_session=${browser.jar.get('vpylab_teacher_training_session')}`;
+  assert.equal((await browser.api(training.origin,'/session/local',{method:'POST',body:{userId:'teacher'}})).status,200);
+  assert.equal((await browser.api(training.origin,'/session')).data.user.id,'teacher');
+  assert.equal((await browser.api(normal.origin,'/session')).data.user.id,'student-a');
+  const expired=await fetch(training.origin+'/api/v2/projects',{headers:{cookie:previousTrainingCookie}});assert.equal(expired.status,401);
+});
+
+test('각 교실의 로그아웃은 해당 쿠키와 세션만 지우고 다른 교실의 로그인을 유지한다',async t=>{
+  const normal=await httpFixture(t),training=await httpFixture(t,{sessionCookieName:'vpylab_teacher_training_session'}),browser=sharedLocalBrowser();
+  await browser.api(normal.origin,'/session/local',{method:'POST',body:{userId:'student-a'}});
+  await browser.api(training.origin,'/session/local',{method:'POST',body:{userId:'student-b'}});
+  const previousTrainingCookie=`vpylab_teacher_training_session=${browser.jar.get('vpylab_teacher_training_session')}`;
+  const logoutTraining=await browser.api(training.origin,'/session',{method:'DELETE'});assert.equal(logoutTraining.status,200);assert.match(logoutTraining.setCookie,/^vpylab_teacher_training_session=;/);assert.equal(browser.jar.has('vpylab_teacher_training_session'),false);assert.equal(browser.jar.has('vpylab_v2_session'),true);
+  assert.equal((await browser.api(training.origin,'/session')).data.user,null);assert.equal((await browser.api(normal.origin,'/session')).data.user.id,'student-a');
+  const expired=await fetch(training.origin+'/api/v2/projects',{headers:{cookie:previousTrainingCookie}});assert.equal(expired.status,401);
+  await browser.api(training.origin,'/session/local',{method:'POST',body:{userId:'student-b'}});
+  const logoutNormal=await browser.api(normal.origin,'/session',{method:'DELETE'});assert.equal(logoutNormal.status,200);assert.match(logoutNormal.setCookie,/^vpylab_v2_session=;/);assert.equal(browser.jar.has('vpylab_v2_session'),false);assert.equal(browser.jar.has('vpylab_teacher_training_session'),true);
+  assert.equal((await browser.api(normal.origin,'/session')).data.user,null);assert.equal((await browser.api(training.origin,'/session')).data.user.id,'student-b');
+});
+
+test('잘못된 세션 쿠키 이름은 서버를 만들기 전에 거부한다',()=>{
+  for(const name of ['',null,42,'bad cookie','bad;cookie','bad=cookie','이름','a'.repeat(101)])assert.throws(()=>createClassroomApp({localMode:true,sessionCookieName:name}),/세션 쿠키 이름/);
+});
+
 test('수업 자료 출처와 교사 피드백을 보존하고 학생의 피드백 위조를 거부한다',async(t)=>{
   const {client}=await httpFixture(t),owner=client(),teacherClient=client();await owner.login('student-a');await teacherClient.login('teacher');
   const source={kind:'mission',id:'motion-1',title:'움직임 관찰',courseId:'physics'},created=await owner.api('/projects',{method:'POST',body:{title:'자료에서 시작한 실험',source,aiPolicy:'disabled'}}),id=created.data.project.id;

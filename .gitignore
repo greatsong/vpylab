@@ -14,3 +14,4 @@ __pycache__/
 .local/
 client/dist-classroom/
 client/dist-month-projects/
+client/dist-teacher-training/

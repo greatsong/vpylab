@@ -10,6 +10,8 @@
     "build": "cd client && npm run build",
     "start": "cd server && node index.js",
     "dev:classroom": "node scripts/classroom/dev.mjs",
+    "dev:teacher-training": "node scripts/classroom/serve-training.mjs",
+    "build:teacher-training": "npm --prefix client run build:teacher-training",
     "dev:classroom:github:live": "node scripts/classroom/live-github.mjs --serve",
     "test:classroom:github:live": "node scripts/classroom/live-github.mjs --run",
     "build:classroom": "npm --prefix client run build:classroom",

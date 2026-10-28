@@ -7,9 +7,9 @@ import { createClient } from '@supabase/supabase-js';
 import { createStore, HttpError, DEMO_USERS, publicUser } from './store.js';
 import { createGitHubService, createGitHubRouter, createGitHubWebhookRouter } from './github.js';
 
-const COOKIE = 'vpylab_v2_session';
+const DEFAULT_SESSION_COOKIE = 'vpylab_v2_session';
 const loopback = (value) => ['127.0.0.1','::1','::ffff:127.0.0.1'].includes(value);
-function cookieValue(req) { const match=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith(`${COOKIE}=`)); return match?.slice(COOKIE.length+1); }
+function cookieValue(req, name) { const match=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith(`${name}=`)); return match?.slice(name.length+1); }
 function field(value, name, {required=false,max=5000}={}) { if(typeof value!=='string' || value.length>max || (required && !value.trim())) throw new HttpError(422,'invalid_input',`${name} 항목을 확인해주세요. 최대 ${max}자까지 입력할 수 있습니다.`); return value; }
 function optionalField(value,name,options) { return value===undefined ? undefined : field(value,name,options); }
 function code(value) { field(value,'코드',{max:50*1024}); if(Buffer.byteLength(value,'utf8')>50*1024) throw new HttpError(422,'code_too_large','코드는 50KB까지 저장할 수 있습니다.'); return value; }
@@ -20,7 +20,8 @@ function source(value) { if(value===undefined||value===null)return null; if(!val
 function canonical(value) { if(Array.isArray(value))return '['+value.map(canonical).join(',')+']'; if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+canonical(value[key])).join(',')+'}'; return JSON.stringify(value); }
 function clientId(req) { return field(req.body?.clientId??req.query.clientId??req.headers['x-client-id']??'default','편집 창 식별자',{required:true,max:200}); }
 
-export function createClassroomApp({store:providedStore,filename,localMode=false,allowedOrigins=['http://127.0.0.1:4043','http://localhost:4043'],verifyToken,githubConfig,fetchImpl,githubService:providedGithubService}={}) {
+export function createClassroomApp({store:providedStore,filename,localMode=false,allowedOrigins=['http://127.0.0.1:4043','http://localhost:4043'],verifyToken,githubConfig,fetchImpl,githubService:providedGithubService,sessionCookieName=DEFAULT_SESSION_COOKIE}={}) {
+  if(typeof sessionCookieName!=='string'||! /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(sessionCookieName))throw new TypeError('세션 쿠키 이름은 영문·숫자로 시작하는 1~100자의 영문·숫자·밑줄·하이픈이어야 합니다.');
   const store=providedStore||createStore({filename,localMode});
   const app=express();
   const githubService=providedGithubService||createGitHubService({store,localMode,config:githubConfig,fetchImpl});
@@ -50,7 +51,7 @@ export function createClassroomApp({store:providedStore,filename,localMode=false
   };
   app.use(async(req,res,next)=>{
     try {
-      if(localMode) req.actor=store.session(cookieValue(req));
+      if(localMode) req.actor=store.session(cookieValue(req,sessionCookieName));
       else { const token=/^Bearer (.+)$/i.exec(req.headers.authorization||'')?.[1]; if(token) { const verified=await tokenVerifier(token); if(!verified?.id) throw new HttpError(401,'invalid_session','로그인 정보를 확인해주세요.'); req.actor=store.transaction(()=>{const actor=store.ensureUser({id:verified.id,name:typeof verified.name==='string'?verified.name.slice(0,120):'학습자',role:verified.role==='teacher'?'teacher':'student'});if(verified.authUser){if(verified.authUser.id!==verified.id)throw new HttpError(401,'invalid_identity','인증된 GitHub 연결 정보를 확인해주세요.');if(Array.isArray(verified.authUser.identities))store.syncGitHubIdentity(actor.id,verified.authUser.identities);}return actor;}); } }
       if(req.headers['x-classroom-user']!==undefined) { if(!req.actor)throw new HttpError(401,'session_changed','로그인이 만료되었거나 계정이 변경되었습니다. 현재 화면을 새로 열어주세요.'); if(req.headers['x-classroom-user']!==req.actor.id)throw new HttpError(409,'session_changed','로그인 계정이 변경되었습니다. 현재 화면을 새로 열어주세요.'); }
       next();
@@ -102,11 +103,11 @@ export function createClassroomApp({store:providedStore,filename,localMode=false
     if(!localMode) throw new HttpError(404,'local_session_disabled','이 서버에서는 데모 로그인을 사용할 수 없습니다.');
     const user=DEMO_USERS.find(x=>x.id===req.body.userId);
     if(!user) throw new HttpError(422,'invalid_user','제공된 데모 계정을 선택해주세요.');
-    store.deleteSession(cookieValue(req));
-    res.cookie(COOKIE,store.createSession(user.id),{httpOnly:true,sameSite:'strict',secure:false,path:'/api/v2',maxAge:12*60*60*1000});
+    store.deleteSession(cookieValue(req,sessionCookieName));
+    res.cookie(sessionCookieName,store.createSession(user.id),{httpOnly:true,sameSite:'strict',secure:false,path:'/api/v2',maxAge:12*60*60*1000});
     res.json({user:publicUser(user),localMode});
   });
-  api.delete('/session',(req,res)=>{store.deleteSession(cookieValue(req));res.clearCookie(COOKIE,{httpOnly:true,sameSite:'strict',path:'/api/v2'});res.json({user:null,localMode});});
+  api.delete('/session',(req,res)=>{store.deleteSession(cookieValue(req,sessionCookieName));res.clearCookie(sessionCookieName,{httpOnly:true,sameSite:'strict',path:'/api/v2'});res.json({user:null,localMode});});
   api.get('/bootstrap',(req,res)=>res.json({user:req.actor?publicUser(req.actor):null,role:req.actor?.role||null,localMode,users:localMode?store.users():[],projects:req.actor?store.listProjects(req.actor):[]}));
   api.get('/projects',requireActor,(req,res)=>res.json({projects:store.listProjects(req.actor)}));
   api.post('/projects',requireActor,mutate(201,req=>{

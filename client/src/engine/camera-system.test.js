@@ -20,6 +20,58 @@ function createCamera() {
 }
 
 describe('camera-system', () => {
+  it('기본 중심 설정은 기존 카메라 위치를 유지한다', () => {
+    const camera = createCamera();
+    const controls = createControls();
+    const system = new CameraSystem(camera, controls, new THREE.Scene());
+    const original = camera.position.clone();
+
+    system.setExplicitCenter(2, 4, 0);
+
+    expect(camera.position.equals(original)).toBe(true);
+    expect(controls.target.toArray()).toEqual([2, 4, 0]);
+    expect(system.getMode()).toBe(MODE.MANUAL);
+  });
+
+  it('좌표 수업의 중심 이동은 정면 방향과 확대 거리를 보존하고 반복 호출로 밀리지 않는다', () => {
+    const camera = createCamera();
+    const controls = createControls();
+    const system = new CameraSystem(camera, controls, new THREE.Scene(), { preserveDirectionOnCenter: true });
+    system.setExplicitRange(6);
+    const distance = camera.position.distanceTo(controls.target);
+
+    system.setExplicitCenter(2, 4, 0);
+    expect(camera.position.toArray()).toEqual([2, 4, distance]);
+    expect(camera.position.clone().sub(controls.target).normalize().toArray()).toEqual([0, 0, 1]);
+    expect(camera.position.distanceTo(controls.target)).toBeCloseTo(distance, 10);
+
+    const firstPosition = camera.position.clone();
+    system.setExplicitCenter(2, 4, 0);
+    expect(camera.position.equals(firstPosition)).toBe(true);
+
+    system.setExplicitCenter(0, 0, 0);
+    expect(camera.position.toArray()).toEqual([0, 0, distance]);
+  });
+
+  it('선택한 평행이동은 사용자가 회전한 방향을 보존하고 해제하면 기존 동작으로 돌아온다', () => {
+    const camera = createCamera();
+    const controls = createControls();
+    camera.position.set(4, 3, 8);
+    controls.target.set(-1, 1, 0);
+    const system = new CameraSystem(camera, controls, new THREE.Scene());
+    const offset = camera.position.clone().sub(controls.target);
+    system.setPreserveDirectionOnCenter(true);
+
+    system.setExplicitCenter(2, 4, 1);
+    expect(camera.position.clone().sub(controls.target).toArray()).toEqual(offset.toArray());
+    expect(controls.target.toArray()).toEqual([2, 4, 1]);
+
+    system.setPreserveDirectionOnCenter(false);
+    const previousPosition = camera.position.clone();
+    system.setExplicitCenter(0, 0, 0);
+    expect(camera.position.equals(previousPosition)).toBe(true);
+  });
+
   it('추적 모드에서는 Group의 앵커 위치를 중심으로 사용한다', () => {
     const scene = new THREE.Scene();
     const camera = createCamera();

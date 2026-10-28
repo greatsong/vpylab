@@ -42,6 +42,7 @@ const DEFAULTS = {
   // 기본 카메라
   defaultDistance: 8,         // 물체 없을 때 기본 거리
   defaultFov: 45,
+  preserveDirectionOnCenter: false, // 좌표 수업은 중심 이동 시 시선 방향도 유지하도록 선택
 
   // 씬 내 VPython 객체 판별
   ignoreTypes: ['GridHelper', 'AxesHelper', 'AmbientLight', 'DirectionalLight', 'PointLight'],
@@ -434,9 +435,18 @@ export default class CameraSystem {
   setExplicitCenter(x, y, z) {
     this.mode = MODE.MANUAL;
     this._userInteracted = true;
+    if (this.options.preserveDirectionOnCenter) {
+      const translation = new THREE.Vector3(x, y, z).sub(this.controls.target);
+      this.camera.position.add(translation);
+    }
     this._targetCenter.set(x, y, z);
     this._currentCenter.set(x, y, z);
     this.controls.target.copy(this._currentCenter);
+  }
+
+  /** 중심을 옮길 때 카메라도 평행이동할지 선택한다. 기존 실행기의 기본값은 false. */
+  setPreserveDirectionOnCenter(enabled) {
+    this.options.preserveDirectionOnCenter = Boolean(enabled);
   }
 
   /**
