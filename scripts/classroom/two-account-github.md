@@ -18,13 +18,21 @@ node scripts/classroom/two-account-github.mjs --check --reviewer greatsong-dangg
 
 ## 실제 협업 시험
 
+이미 완료된 기록을 보면서 직접 테스트하려면 프로젝트 폴더에서 다음을 실행합니다.
+
+```sh
+node scripts/classroom/serve-two-account.mjs
+```
+
+4063번 프론트엔드와 4064번 API를 열고 기존 두 계정의 근거·피드백을 보존합니다. 로컬 화면의 학생 가·학생 나·선생님 역할로 확인합니다. GitHub에 실제 연결되어 있어 Issue·PR 제출은 고정 비공개 시험 저장소에 반영됩니다. 기존 생성·리뷰·승인 시나리오는 반복하지 않습니다. 종료는 `Ctrl+C`입니다. 동시 `--run` 실행은 같은 잠금으로 차단합니다.
+
 ```sh
 node scripts/classroom/two-account-github.mjs --run --reviewer greatsong-danggok
 ```
 
 이 명령은 GitHub에 실제 시험용 제안 브랜치와 열린 PR을 만들고, 두 번째 계정으로 `COMMENT`와 `APPROVE` 리뷰를 각각 작성합니다. Git 객체·고유 제안 브랜치 생성은 PR에 필요한 범위로 제한됩니다. `main` 변경·병합·PR 종료·Issue 생성·권한 변경은 허용하지 않습니다. 시작과 검토 전후에 PR 작성자, `head SHA`, 대상 저장소, 열린 상태, 보존된 `main SHA`를 확인합니다.
 
-로컬에서는 실제 서비스의 저장본·PR 제출·학습 기록 수집·학생별 근거·피드백 API를 사용합니다. 새 SQLite DB와 상태는 `.local/github-two-account/`에 저장하며 디렉터리 권한은 `0700`, DB·상태 파일은 `0600`입니다. 로컬 API 포트 `4064`를 사용하고 시험 후 종료합니다. 프론트엔드 서버나 `--serve` 모드는 제공하지 않습니다. 결과와 PR URL은 `.local/github-two-account/state.json`에 보존됩니다.
+로컬에서는 실제 서비스의 저장본·PR 제출·학습 기록 수집·학생별 근거·피드백 API를 사용합니다. 새 SQLite DB와 상태는 `.local/github-two-account/`에 저장하며 디렉터리 권한은 `0700`, DB·상태 파일은 `0600`입니다. `--run`은 로컬 API 포트 `4064`를 사용하고 시험 후 종료하며 프론트엔드를 시작하지 않습니다. 직접 화면을 사용할 때는 위의 별도 `serve-two-account.mjs` 명령을 실행합니다. 결과와 PR URL은 `.local/github-two-account/state.json`에 보존됩니다.
 
 확인 항목:
 
