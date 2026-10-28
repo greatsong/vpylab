@@ -22,4 +22,29 @@ describe('교사 연수의 기기 저장', () => {
     const state = loadTraining(storage(JSON.stringify({ schema: 1, activities: {}, aiPolicy: 'automatic', completed: [1, -1, 7, '2'], plan: {} })));
     expect(state.aiPolicy).toBe('disabled'); expect(state.completed).toEqual([1]);
   });
+  it('6차시와 두 3차시의 같은 실습 기록을 서로 덮어쓰지 않는다', () => {
+    const values = new Map(), cache = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
+    const courses = [{ id: 'intro-6', sessionCount: 6 }, { id: 'three-ai', sessionCount: 3, aiPolicy: 'optional', policyLocked: true }, { id: 'three-no-ai', sessionCount: 3, aiPolicy: 'disabled', policyLocked: true }];
+    for (const course of courses) {
+      const state = newTraining(course); state.activities['first-light'] = { prediction: course.id }; state.completed = [1, 3, 6];
+      expect(persistTraining(cache, state, course)).toBe(true);
+    }
+    for (const course of courses) {
+      const state = loadTraining(cache, course);
+      expect(state.activities['first-light'].prediction).toBe(course.id);
+      expect(state.completed).toEqual(course.sessionCount === 3 ? [1, 3] : [1, 3, 6]);
+      expect(state.aiPolicy).toBe(course.aiPolicy || 'disabled');
+    }
+  });
+  it('같은 예제를 재사용해도 차시별 AI 응답·검증·판단을 구별하여 보존한다', () => {
+    const course = { id: 'three-ai', sessionCount: 3, policyLocked: true, aiPolicy: 'optional' };
+    const values = new Map(), cache = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
+    const state = newTraining(course);
+    state.activities['2:math-proportion'] = { activityId: 'math-proportion', sessionNumber: 2, aiResponse: '첫 설명', aiVerification: 'x=4에서 y=8', aiDecision: 'partly-adopted' };
+    state.activities['3:math-proportion'] = { activityId: 'math-proportion', sessionNumber: 3, aiResponse: '동료 질문 검토', aiVerification: '원점도 비교함', aiDecision: 'rejected' };
+    state.aiPolicy = 'disabled'; persistTraining(cache, state, course);
+    const restored = loadTraining(cache, course);
+    expect(restored.activities).toEqual(state.activities);
+    expect(restored.aiPolicy).toBe('optional');
+  });
 });

@@ -10,6 +10,7 @@ const training = projectDir('vpylab-teacher-training');
 const downloads = new Map([
   ['instructor-guide.pdf', 'application/pdf'], ['participant-workbook.pdf', 'application/pdf'],
   ['vpylab-teacher-training-kit.zip', 'application/zip'],
+  ...['three-no-ai', 'three-ai'].flatMap(id => ['instructor', 'workbook'].map(kind => [`${id}-${kind}.pdf`, 'application/pdf'])),
 ]);
 function trainingDownloads() {
   const install = server => { server.middlewares.use((req, res, next) => {

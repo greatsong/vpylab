@@ -29,9 +29,9 @@ async function main() {
   const statePath = join(directory, 'state.json');
   let state = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : { schema: 1, projects: {} };
   assert.equal(state.schema, 1);
-  for (const [id, title, source] of [['math', '수학 연수 · 짝과 비례 실험', 'math/proportion.py'], ['science', '과학 연수 · 짝과 이동 실험', 'science/motion.py']]) {
+  for (const [id, title, source, aiPolicy = 'disabled'] of [['math', '수학 연수 · 짝과 비례 실험', 'math/proportion.py'], ['science', '과학 연수 · 짝과 이동 실험', 'science/motion.py'], ['no-ai-math', '3차시 AI 미사용 · 비례 실험', 'math/proportion.py'], ['no-ai-sound', '3차시 AI 미사용 · 소리 실험', 'science/sound-steps.py'], ['ai-math', '3차시 AI 사용 · 비례 실험', 'math/proportion.py', 'optional'], ['ai-sound', '3차시 AI 사용 · 소리 실험', 'science/sound-steps.py', 'optional']]) {
     if (state.projects[id]) { assert.ok(store.getProject(state.projects[id].id)); continue; }
-    const project = store.createProject(store.user('teacher'), { title, code: readFileSync(join(training, source), 'utf8'), aiPolicy: 'disabled', problem: '한 조건만 바꾸면 어떤 차이가 나타날까요?', successCriteria: '변경 전 예상, 같은 조건의 실행, 동료의 구체적 검토와 수정 이유를 남깁니다.' });
+    const project = store.createProject(store.user('teacher'), { title, code: readFileSync(join(training, source), 'utf8'), aiPolicy, problem: '한 조건만 바꾸면 어떤 차이가 나타날까요?', successCriteria: '변경 전 예상, 같은 조건의 실행, 동료의 구체적 검토와 수정 이유를 남깁니다.' });
     for (const userId of ['student-a', 'student-b']) store.addMember(project.id, store.user('teacher'), userId, 'editor');
     state.projects[id] = { id: project.id, title: project.title, inviteCode: project.inviteCode };
     const temporary = `${statePath}.tmp`; writeFileSync(temporary, JSON.stringify(state, null, 2) + '\n', { mode: 0o600 }); renameSync(temporary, statePath);
