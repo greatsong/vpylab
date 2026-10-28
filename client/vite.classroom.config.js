@@ -9,6 +9,8 @@ if (![previewPort, apiPort].every((port) => Number.isSafeInteger(port) && port >
 
 // 승인 전 운영 앱의 진입점과 배포 산출물을 분리합니다.
 export default mergeConfig(base, defineConfig({
+  // 여러 로컬 교실을 함께 열어도 의존성 사전 번들 캐시가 서로 덮이지 않게 합니다.
+  cacheDir: `node_modules/.vite-classroom-${previewPort}`,
   plugins: [classroomWorkerPolicy()],
   server: {
     host: '127.0.0.1',
