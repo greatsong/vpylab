@@ -16,11 +16,12 @@ const actor = { id: 'student-a', name: '학생 가', role: 'student' };
 const checkpoint = { id: 'checkpoint-0', code: '팀 시작 코드', version: 0, authorId: actor.id, message: '프로젝트 시작', evidence: {}, createdAt: '2026-10-28T00:00:00.000Z' };
 let data;
 let personalDrafts;
+let githubJobs;
 function responseFixture({ aiPolicy = 'optional', myRole = 'editor' } = {}) {
   return {
     project: { id: 'project-a', title: '충돌 조건 탐구', code: checkpoint.code, version: 0, aiPolicy, myRole, problem: '어떤 조건에서 충돌할까?', successCriteria: '다른 속도에서 비교하기', ownerId: actor.id, source: null },
     checkpoint: { ...checkpoint }, checkpoints: [{ ...checkpoint }],
-    members: [{ ...actor, systemRole: 'student', role: myRole }], proposals: [], reviews: [], issues: [], feedback: [],
+    jobs: [], members: [{ ...actor, systemRole: 'student', role: myRole }], proposals: [], reviews: [], issues: [], feedback: [],
   };
 }
 function storage() {
@@ -41,12 +42,13 @@ function fillEvidence(dialog) {
 describe('교실 작업 화면의 사용자 흐름', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', storage()); vi.stubGlobal('sessionStorage', storage()); sessionStorage.setItem('vpylab:v2:client', 'ui-test-tab');
-    data = responseFixture(); personalDrafts = []; request.mockReset();
+    data = responseFixture(); personalDrafts = []; githubJobs = null; request.mockReset();
     request.mockImplementation(async (path, options) => {
       if (path === '/projects/project-a/drafts/list') return { drafts: personalDrafts };
       if (path.includes('/drafts')) return { draft: options?.method === 'PUT' ? options.body : null, checkpoint: data.checkpoint };
       if (path === '/projects/project-a/proposals') return { proposal: { id: 'proposal-1', state: 'open', ...options.body, authorId: actor.id } };
       if (path === '/projects/project-a/checkpoints') return { checkpoint: { ...checkpoint, ...options.body, id: 'checkpoint-1', version: 1 } };
+      if (path === '/projects/project-a/github') return { mode: 'live', authMethod: 'local_cli_test', binding: { owner: 'classroom', repo: 'team' }, jobs: githubJobs || data.jobs };
       if (path === '/projects/project-a') return data;
       throw new Error(`예상하지 못한 요청: ${path}`);
     });
@@ -77,6 +79,66 @@ describe('교실 작업 화면의 사용자 흐름', () => {
     expect(screen.getByRole('button', { name: 'GitHub Issue 작업 보존됨' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: /이 질문을 GitHub Issue로 보내기/ })).toBeNull();
     expect(posts()).toHaveLength(0);
+  });
+
+
+  it('교실 안 검토에서 GitHub 제출 화면으로 이동해도 개인 초안을 유지하고 외부 제출은 하지 않는다', async () => {
+    await openWorkspace();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Python 코드' }), { target: { value: '아직 공유하지 않은 나의 코드' } });
+    fireEvent.click(screen.getByRole('tab', { name: /함께 검토/ }));
+    expect(screen.getByText(/이곳의 제안·승인은 교실 안 팀 검토/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '팀 확정 버전을 GitHub로 보내기 →' }));
+    expect(screen.getByRole('tab', { name: '팀·연결' })).toHaveAttribute('aria-selected', 'true');
+    await screen.findByText('classroom/team');
+    expect(posts()).toHaveLength(0);
+    fireEvent.click(screen.getByRole('tab', { name: /제작과 실험/ }));
+    expect(screen.getByRole('textbox', { name: 'Python 코드' })).toHaveValue('아직 공유하지 않은 나의 코드');
+    expect(data.checkpoint.code).toBe('팀 시작 코드');
+  });
+
+  it('차단된 질문의 중복 전송을 막고 반영 화면에서 Issue와 PR 원문을 구분한다', async () => {
+    data.issues = [{ id: 'issue-a', title: '비교 조건', body: '같은 거리에서 비교해요.', authorId: actor.id }];
+    githubJobs = [
+      { id: 'job-issue', kind: 'issue', state: 'blocked', issueId: 'issue-a', lastError: '전송 결과를 확인해야 합니다.', result: { url: 'https://github.com/classroom/team/issues/1' } },
+      { id: 'job-pr', kind: 'proposal', state: 'succeeded', result: { url: 'https://github.com/classroom/team/pull/2' } },
+      { id: 'job-invalid', kind: 'issue', state: 'succeeded', result: { url: 'javascript:alert(1)' } },
+    ];
+    data.jobs = githubJobs.map((job) => ({ id: job.id, kind: job.kind, state: job.state, issueId: job.issueId, lastError: job.lastError }));
+    await openWorkspace();
+    fireEvent.click(screen.getByRole('tab', { name: /문제와 질문/ }));
+    expect(screen.getByText('확인 필요')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'GitHub Issue 작업 보존됨' })).toBeDisabled();
+    expect(screen.getByText('다시 전송하지 말고 교사와 반영 상태를 확인해주세요.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Issue 열기 ↗' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'GitHub 반영 상태와 원문 확인 →' }));
+    await screen.findByText('classroom/team');
+    expect(screen.getByRole('link', { name: 'Issue 열기 ↗' })).toHaveAttribute('href', 'https://github.com/classroom/team/issues/1');
+    expect(screen.getByRole('link', { name: 'PR 열기 ↗' })).toHaveAttribute('href', 'https://github.com/classroom/team/pull/2');
+    expect(screen.getAllByRole('link').some(link => link.getAttribute('href')?.startsWith('javascript:'))).toBe(false);
+    expect(posts()).toHaveLength(0);
+  });
+
+  it('GitHub 코드 비교는 개인 초안을 유지하고 PR에는 확정한 팀 버전만 보낸다', async () => {
+    const original = request.getMockImplementation();
+    const sha = 'a'.repeat(40);
+    request.mockImplementation(async (path, options) => {
+      if (path === '/projects/project-a/github/fetch') return { remote: { available: true, sha, code: 'GitHub의 이전 코드' } };
+      if (path === '/projects/project-a/github/proposals') return { job: { id: 'job-pr', state: 'pending' } };
+      return original(path, options);
+    });
+    await openWorkspace();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Python 코드' }), { target: { value: '개인에게만 보이는 미완성 코드' } });
+    fireEvent.click(screen.getByRole('tab', { name: '팀·연결' }));
+    await screen.findByText('classroom/team');
+    fireEvent.click(screen.getByRole('button', { name: '최신 GitHub 코드 가져와 비교' }));
+    await screen.findByText(/최신 기준 aaaaaaaaaaaa/);
+    fireEvent.change(screen.getByLabelText('GitHub에 보낼 팀 확정 버전의 제안 제목'), { target: { value: '확정 실험을 함께 검토해요' } });
+    fireEvent.click(screen.getByRole('button', { name: '팀 확정 버전을 GitHub PR로 제안 ↗' }));
+    await waitFor(() => expect(posts().some(([path]) => path.endsWith('/github/proposals'))).toBe(true));
+    expect(posts().find(([path]) => path.endsWith('/github/proposals'))[1].body).toEqual({ code: checkpoint.code, title: '확정 실험을 함께 검토해요', baseSha: sha, checkpointId: checkpoint.id });
+    fireEvent.click(screen.getByRole('tab', { name: /제작과 실험/ }));
+    expect(screen.getByRole('textbox', { name: 'Python 코드' })).toHaveValue('개인에게만 보이는 미완성 코드');
+    expect(data.checkpoint.code).toBe('팀 시작 코드');
   });
 
   it.each(['disabled', 'optional'])('AI 정책 %s에서도 가설·관찰·판단을 포함한 변경 제안을 제출한다', async (aiPolicy) => {
