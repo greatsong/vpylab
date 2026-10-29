@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabase';
 import useCodeStore from './codeStore';
 import useAuthStore from './authStore';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
+import { API_BASE } from '../lib/api-base.js';
 const GITHUB_SYNC_FAST_WAIT_MS = 3500;
 const GITHUB_RECORD_FAST_WAIT_MS = 800;
 const GITHUB_SYNC_TIMEOUT_MS = 45000;

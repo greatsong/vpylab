@@ -26,6 +26,12 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '1mb' }));
 
+// === 요청 제한 1층: 같은 IP 전체 (인증 전) ===
+// 학교 공유 IP에서 30명이 쓰는 상황을 기준으로 넉넉하게 두고, 사용자별 한도는 각 라우트가
+// 인증 뒤에 적용합니다. 자세한 근거는 server/middleware/rate-limit.js 참고.
+import { createIpLimiter } from './middleware/rate-limit.js';
+app.use('/api', createIpLimiter());
+
 // === 라우트 ===
 // 새 배포 여부를 즉시 확인하기 위한 진단 정보:
 //   - startedAt: 서버 프로세스가 시작된 시각. 새 배포되면 갱신됨

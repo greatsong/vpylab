@@ -5,7 +5,7 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/((?!api/|assets/).*)",
+      "source": "/((?!api/|assets/|pyodide/|sw\\.js$).*)",
       "destination": "/classroom.html"
     }
   ],
@@ -15,7 +15,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; connect-src https://cdn.jsdelivr.net https://unpkg.com https://pypi.org https://files.pythonhosted.org; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; worker-src 'none'; child-src 'none'; object-src 'none'; base-uri 'none'"
+          "value": "default-src 'none'; connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://pypi.org https://files.pythonhosted.org; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; worker-src 'none'; child-src 'none'; object-src 'none'; base-uri 'none'"
         },
         {
           "key": "Cache-Control",
@@ -28,7 +28,7 @@
       ]
     },
     {
-      "source": "/((?!assets/pyodide-worker-[^/]+\\.js$).*)",
+      "source": "/((?!assets/pyodide-worker-[^/]+\\.js$|pyodide/).*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
@@ -53,6 +53,19 @@
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000; includeSubDomains"
+        }
+      ]
+    },
+    {
+      "source": "/pyodide/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
         }
       ]
     }

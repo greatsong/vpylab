@@ -1,8 +1,38 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import process from 'node:process'
+import { pyodideAssets } from './scripts/pyodide-assets.mjs'
+import { serviceWorker } from './scripts/service-worker-plugin.mjs'
+
+/**
+ * 교실 LAN 모드(VITE_LAN_MODE=1): 외부 글꼴 @import를 제거해 인터넷이 없는 교실에서
+ * 스타일시트가 외부 요청 응답을 기다리지 않게 합니다. 글꼴은 시스템 글꼴로 대체됩니다.
+ */
+export function stripRemoteFonts() {
+  return {
+    name: 'vpylab-strip-remote-fonts',
+    enforce: 'pre',
+    transform(code, id) {
+      if (!id.endsWith('/src/index.css')) return null;
+      return { code: code.replace(/@import url\('https:\/\/[^']+'\);\n?/g, ''), map: null };
+    },
+  };
+}
+
+// 교실 LAN 모드는 scripts/classroom/lan.mjs가 VITE_LAN_MODE=1로 빌드합니다.
+// (mergeConfig로 확장하는 교실·연수 설정이 있어 콜백 형태 설정은 쓸 수 없습니다.)
+const lanMode = process.env.VITE_LAN_MODE === '1';
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    // Tailwind가 index.css를 컴파일하기 전에 외부 글꼴 @import를 지워야 합니다.
+    ...(lanMode ? [stripRemoteFonts()] : []),
+    react(),
+    tailwindcss(),
+    pyodideAssets(),
+    serviceWorker(),
+  ],
   build: {
     rollupOptions: {
       output: {

@@ -3,7 +3,8 @@
  * VPyLab — Pyodide Web Worker
  *
  * 보안 감사 결과 반영:
- * - Pyodide 로딩 완료 후 위험 API 삭제 (fetch, WebSocket, IndexedDB, importScripts)
+ * - Pyodide 로딩 완료 후 위험 API 삭제 (WebSocket, IndexedDB, importScripts, caches 등)
+ *   fetch는 패키지 설치 중·패키지 출처에만 통과시키는 가드로 바꿉니다.
  * - Worker.terminate() 기반 강제 종료 (메인 스레드에서)
  * - 패키지 화이트리스트
  *
@@ -12,15 +13,56 @@
  */
 
 const PYODIDE_VERSION = '0.27.0';
-// 1차 CDN: jsdelivr, 2차 fallback: unpkg — 한 쪽이 일시 장애여도 다른 쪽으로 시도
+// 1순위: 같은 출처(/pyodide/v<버전>/, 빌드 때 npm 패키지에서 복사). 학교망이 CDN을 막아도 동작하고
+//        Service Worker·HTTP 캐시에 남아 재방문 때 네트워크 없이 시작합니다.
+// 2순위: jsdelivr, 3순위: unpkg — 한 쪽이 일시 장애여도 다른 쪽으로 시도합니다.
+const PYODIDE_LOCAL_BASE = (() => {
+  try { return new URL(`/pyodide/v${PYODIDE_VERSION}/`, self.location.href).href; } catch { return null; }
+})();
 const PYODIDE_CDNS = [
   `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`,
   `https://unpkg.com/pyodide@${PYODIDE_VERSION}/`,
 ];
-let PYODIDE_CDN = PYODIDE_CDNS[0];
+const PYODIDE_SOURCES = [
+  // 같은 출처는 404가 결정적이므로 한 번만 시도합니다.
+  ...(PYODIDE_LOCAL_BASE ? [{ base: PYODIDE_LOCAL_BASE, attempts: 1 }] : []),
+  ...PYODIDE_CDNS.map((base) => ({ base, attempts: 3 })),
+];
+let PYODIDE_CDN = PYODIDE_SOURCES[0].base;
 
 let pyodide = null;
 let vpythonApiCode = null;
+
+// === 패키지 설치용 fetch 가드 ===
+// 초기화 뒤 fetch를 완전히 지우면 Pyodide의 loadPackage/micropip도 fetch를 찾지 못해
+// numpy 같은 패키지를 설치할 수 없습니다. 그래서 fetch 자리에 다음 조건을 모두 만족할 때만
+// 통과시키는 가드를 둡니다. (1) Worker가 패키지를 설치하는 동안(학생 코드 실행 전)이고
+// (2) 주소가 Pyodide 패키지 출처(같은 출처 /pyodide/, Pyodide CDN, PyPI)일 때.
+// 학생 코드가 실행되는 동안에는 어떤 주소도 거부합니다.
+const nativeFetch = typeof self.fetch === 'function' ? self.fetch.bind(self) : null;
+let packageInstallDepth = 0;
+function isPackageSource(url) {
+  if (PYODIDE_LOCAL_BASE && url.href.startsWith(PYODIDE_LOCAL_BASE)) return true;
+  return /^https:\/\/cdn\.jsdelivr\.net\/pyodide\//.test(url.href)
+    || /^https:\/\/unpkg\.com\/pyodide@/.test(url.href)
+    || /^https:\/\/pypi\.org\//.test(url.href)
+    || /^https:\/\/files\.pythonhosted\.org\//.test(url.href);
+}
+function guardedFetch(input, init) {
+  if (packageInstallDepth === 0 || !nativeFetch) {
+    return Promise.reject(new TypeError('이 환경에서는 네트워크 요청을 할 수 없습니다.'));
+  }
+  let url;
+  try { url = new URL(typeof input === 'string' ? input : input.url, PYODIDE_LOCAL_BASE || undefined); } catch { url = null; }
+  if (!url || !isPackageSource(url)) {
+    return Promise.reject(new TypeError('패키지 출처가 아닌 주소에는 요청할 수 없습니다.'));
+  }
+  return nativeFetch(input, init);
+}
+async function withPackageInstall(task) {
+  packageInstallDepth += 1;
+  try { return await task(); } finally { packageInstallDepth -= 1; }
+}
 let shouldStop = false;
 let micropipLoaded = false;
 let isRunningCode = false;
@@ -128,26 +170,26 @@ _send_commands()
 }
 
 /**
- * Pyodide JS 스크립트를 importScripts로 로드 — CDN 순회 + 재시도 (3회)
- * 한 CDN이 일시 장애여도 다른 CDN으로 자동 전환.
+ * Pyodide JS 스크립트를 importScripts로 로드 — 같은 출처 → CDN 순회 + 재시도
+ * 같은 출처가 없거나(개발 서버에 파일이 없는 경우) CDN 한 곳이 장애여도 다음 출처로 넘어갑니다.
  */
 function importPyodideScript() {
   const errors = [];
-  for (const cdn of PYODIDE_CDNS) {
-    for (let attempt = 0; attempt < 3; attempt++) {
+  for (const { base, attempts } of PYODIDE_SOURCES) {
+    for (let attempt = 0; attempt < attempts; attempt++) {
       try {
-        importScripts(`${cdn}pyodide.js`);
-        PYODIDE_CDN = cdn;  // 성공한 CDN을 indexURL로도 사용
-        return cdn;
+        importScripts(`${base}pyodide.js`);
+        PYODIDE_CDN = base;  // 성공한 출처를 indexURL로도 사용
+        return base;
       } catch (e) {
         const message = e.message || String(e);
-        errors.push(`${cdn} attempt ${attempt + 1}: ${message}`);
-        // CSP가 막은 fallback은 재시도해도 성공하지 않으므로 같은 CDN 반복을 멈춥니다.
+        errors.push(`${base} attempt ${attempt + 1}: ${message}`);
+        // CSP가 막은 fallback은 재시도해도 성공하지 않으므로 같은 출처 반복을 멈춥니다.
         if (/Content Security Policy|violates.*directive|blocked by CSP/i.test(message)) break;
       }
     }
   }
-  throw new Error(`Pyodide CDN 로드 실패: 학교/회사 네트워크가 CDN을 막았거나 일시 장애가 있습니다. 새로고침 후 다시 실행해 주세요. (${errors.slice(-2).join(' | ')})`);
+  throw new Error(`Pyodide 로드 실패: 학교/회사 네트워크가 CDN을 막았거나 일시 장애가 있습니다. 새로고침 후 다시 실행해 주세요. (${errors.slice(-2).join(' | ')})`);
 }
 
 /**
@@ -157,12 +199,12 @@ async function initPyodide() {
   try {
     sendProgress(10, 'Pyodide 다운로드 중...');
 
-    // 1. Pyodide JS 로드 — CDN 순회 + 재시도
+    // 1. Pyodide JS 로드 — 같은 출처 → CDN 순회 + 재시도
     importPyodideScript();
 
     sendProgress(40, 'Python 엔진 초기화 중...');
 
-    // 2. Pyodide WASM 로드 (fetch 필요) — JS 로드에 성공한 CDN 사용
+    // 2. Pyodide WASM 로드 (fetch 필요) — JS 로드에 성공한 출처 사용
     pyodide = await self.loadPyodide({
       indexURL: PYODIDE_CDN,
     });
@@ -222,7 +264,10 @@ if 'pyodide' in sys.modules:
 
     // 5. === 보안: 위험 API 삭제 (Pyodide 로딩 완료 후!) ===
     // 상속된 API도 가리도록 값을 고정합니다. delete만 하면 프로토타입의 API가 남습니다.
-    for (const name of ['fetch', 'XMLHttpRequest', 'WebSocket', 'indexedDB', 'importScripts', 'Worker', 'SharedWorker', 'EventSource']) {
+    // caches(Cache Storage)도 같은 출처 요청을 보내고 응답을 읽을 수 있으므로 함께 지웁니다.
+    // (Worker CSP connect-src에 같은 출처 /pyodide/ 허용이 들어가면서 요청 가능한 API를 모두 막습니다.)
+    Object.defineProperty(self, 'fetch', { value: guardedFetch, configurable: false, writable: false });
+    for (const name of ['XMLHttpRequest', 'WebSocket', 'indexedDB', 'importScripts', 'Worker', 'SharedWorker', 'EventSource', 'caches']) {
       Object.defineProperty(self, name, { value: undefined, configurable: false, writable: false });
     }
     if (self.navigator) {
@@ -230,7 +275,8 @@ if 'pyodide' in sys.modules:
     }
 
     sendProgress(100, '준비 완료!');
-    self.postMessage({ type: 'ready' });
+    // source: 핵심 파일을 받은 출처. 메인 스레드가 Service Worker 캐시를 채울 때 사용합니다.
+    self.postMessage({ type: 'ready', source: PYODIDE_CDN, version: PYODIDE_VERSION });
   } catch (err) {
     self.postMessage({
       type: 'error',
@@ -331,17 +377,19 @@ async function runCode(code, runId = currentRunId + 1) {
     // 필요한 패키지 자동 설치
     const packages = detectRequiredPackages(code);
     if (packages.length > 0) {
-      // micropip 지연 로딩 (첫 사용 시에만)
-      if (!micropipLoaded) {
-        sendRunMessage(runId, 'stdout', { text: '📦 패키지 관리자 준비 중...' });
-        await pyodide.loadPackage('micropip');
-        micropipLoaded = true;
-      }
-      sendRunMessage(runId, 'stdout', { text: `📦 ${packages.join(', ')} 설치 중...` });
-      await pyodide.runPythonAsync(`
+      // micropip 지연 로딩 (첫 사용 시에만). 설치 중에만 패키지 출처로의 fetch를 허용합니다.
+      await withPackageInstall(async () => {
+        if (!micropipLoaded) {
+          sendRunMessage(runId, 'stdout', { text: '📦 패키지 관리자 준비 중...' });
+          await pyodide.loadPackage('micropip');
+          micropipLoaded = true;
+        }
+        sendRunMessage(runId, 'stdout', { text: `📦 ${packages.join(', ')} 설치 중...` });
+        await pyodide.runPythonAsync(`
 import micropip
 await micropip.install(${JSON.stringify(packages)})
 `);
+      });
       for (const pkg of packages) {
         installedPackages.add(pkg);
       }

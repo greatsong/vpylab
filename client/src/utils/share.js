@@ -6,7 +6,7 @@
 import { supabase } from '../lib/supabase';
 import { decompressFromEncodedURIComponent } from 'lz-string';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
+import { API_BASE } from '../lib/api-base.js';
 const MAX_CODE_SIZE = 50_000; // 50KB 상한
 
 /**

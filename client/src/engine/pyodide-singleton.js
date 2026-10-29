@@ -3,6 +3,7 @@
  * 마지막 화면이 떠나면 종료하고, 종료된 Worker의 늦은 메시지는 무시합니다.
  */
 import vpythonApiRaw from './vpython-api.py?raw';
+import { warmPyodideCache } from '../lib/service-worker.js';
 
 const INIT_TIMEOUT = 45_000;
 let worker = null;
@@ -63,6 +64,8 @@ function createWorker() {
     if (message.type === 'ready') {
       updateStatus('ready');
       settleInitialization();
+      // 재방문 때 네트워크 없이 시작하도록 방금 받은 핵심 파일을 Service Worker 캐시에 둡니다.
+      warmPyodideCache(message.source);
     } else if (message.type === 'error' && status === 'loading') {
       failWorker(message.error || 'Python 엔진을 준비하지 못했습니다.', 'init');
       return;

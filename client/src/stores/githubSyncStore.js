@@ -14,7 +14,7 @@ import { supabase } from '../lib/supabase';
 import useAuthStore from './authStore';
 
 // 다른 스토어와 동일한 VITE_API_URL을 사용 (Vercel 환경변수 컨벤션)
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
+import { API_BASE } from '../lib/api-base.js';
 
 // 서버 GitHub 프록시 인증용 Supabase access token (없으면 null)
 async function getSupabaseAccessToken() {
