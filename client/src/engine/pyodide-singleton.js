@@ -138,6 +138,11 @@ export function postPressedKeys(keys) {
   if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'keys', keys });
 }
 
+/** 카메라 상태를 Worker에 알린다. Python의 scene.camera.pos, scene.forward 읽기에 쓴다. */
+export function postCameraState(state) {
+  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'camera', state });
+}
+
 /** 구독은 유지하므로 종료 후 다시 준비해도 메시지가 유실되지 않습니다. */
 export function hardStop() {
   terminateWorker();

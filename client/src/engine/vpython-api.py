@@ -8,6 +8,7 @@ Three.js 메인 스레드로 JSON 커맨드를 전송하는 방식.
 
 import js
 import json
+import math
 import re
 import asyncio
 from typing import Optional
@@ -51,10 +52,46 @@ def _new_id():
 
 # === vector 클래스 ===
 class vector:
+    """3차원 벡터. 물체의 pos·axis·size·color로 쓰이면 ball.pos.x += 1 처럼 성분만 바꿔도 화면에 반영된다."""
     def __init__(self, x=0, y=0, z=0):
-        self.x = float(x)
-        self.y = float(y)
-        self.z = float(z)
+        self._owner = None   # 이 벡터를 속성으로 가진 객체 (예: sphere)
+        self._attr = None    # 그 객체에서의 속성 이름 (예: 'pos')
+        self._x = float(x)
+        self._y = float(y)
+        self._z = float(z)
+
+    def _changed(self):
+        """성분이 바뀌면 소유 객체의 속성 세터를 다시 호출해 화면 갱신 커맨드를 보낸다."""
+        owner = self._owner
+        if owner is not None:
+            setattr(owner, self._attr, self)
+
+    @property
+    def x(self):
+        return self._x
+
+    @x.setter
+    def x(self, value):
+        self._x = float(value)
+        self._changed()
+
+    @property
+    def y(self):
+        return self._y
+
+    @y.setter
+    def y(self, value):
+        self._y = float(value)
+        self._changed()
+
+    @property
+    def z(self):
+        return self._z
+
+    @z.setter
+    def z(self, value):
+        self._z = float(value)
+        self._changed()
 
     def __repr__(self):
         return f"<{self.x:.4g}, {self.y:.4g}, {self.z:.4g}>"
@@ -193,6 +230,13 @@ def _coerce_vector(value, default=None):
 # === 색상 팔레트 (30색) ===
 # color.red, color['빨'], 색상['빨강'] 모두 가능
 
+class _GrayColor(vector):
+    """color.gray는 회색 벡터이면서, color.gray(0.2)처럼 밝기를 지정할 수도 있다 (GlowScript 호환)."""
+    def __call__(self, level):
+        level = float(level)
+        return vector(level, level, level)
+
+
 class _ColorPalette:
     """30색 팔레트 — 속성(.red)과 이름 접근(['빨']) 모두 지원"""
 
@@ -206,7 +250,7 @@ class _ColorPalette:
     orange    = vector(1, 0.6, 0)
     white     = vector(1, 1, 1)
     black     = vector(0, 0, 0)
-    gray      = vector(0.5, 0.5, 0.5)
+    gray      = _GrayColor(0.5, 0.5, 0.5)
     purple    = vector(0.5, 0, 0.5)
 
     # --- 확장 색 (학생 친화적) ---
@@ -325,8 +369,25 @@ textures = _TexturePresets()
 텍스처 = textures  # 한글 별칭
 
 
+# === 벡터 소유 추적 ===
+class _VectorOwner:
+    """_pos, _axis 같은 내부 속성에 벡터를 저장할 때 벡터에 소유자를 기록한다.
+    같은 벡터를 다른 객체에도 넣으면 복제해 서로 영향을 주지 않게 한다 (GlowScript와 같은 동작)."""
+    _vector_attrs = ()
+
+    def __setattr__(self, name, value):
+        if isinstance(value, vector) and name.startswith('_') and name[1:] in self._vector_attrs:
+            if value._owner is not None and value._owner is not self:
+                value = value.clone()
+            value._owner = self
+            value._attr = name[1:]
+        object.__setattr__(self, name, value)
+
+
 # === 3D 객체 베이스 클래스 ===
-class _GObject:
+class _GObject(_VectorOwner):
+    _vector_attrs = ('pos', 'axis', 'size', 'up', 'color', 'velocity', 'trail_color')
+
     def __init__(self, obj_type, **kwargs):
         self._id = _new_id()
         self._type = obj_type
@@ -1163,10 +1224,17 @@ class compound:
 
 
 # === 조명 객체 ===
-class local_light:
+# scene.lights 조회용: 사용자가 만든 조명 목록
+_user_lights = []
+
+
+class local_light(_VectorOwner):
     """점광원 — 특정 위치에서 모든 방향으로 빛을 발산"""
+    _vector_attrs = ('pos', 'color')
+
     def __init__(self, **kwargs):
         self._id = _new_id()
+        _user_lights.append(self)
         self._pos = kwargs.get('pos', vector(0, 0, 0))
         self._color = kwargs.get('color', color.white)
         self._intensity = kwargs.get('intensity', 1.0)
@@ -1208,10 +1276,13 @@ class local_light:
         _add_command({"action": "update", "id": self._id, "intensity": value})
 
 
-class distant_light:
+class distant_light(_VectorOwner):
     """평행광 — 특정 방향에서 무한히 먼 곳으로부터 오는 빛"""
+    _vector_attrs = ('direction', 'color')
+
     def __init__(self, **kwargs):
         self._id = _new_id()
+        _user_lights.append(self)
         self._direction = kwargs.get('direction', vector(0, -1, 0))
         self._color = kwargs.get('color', color.white)
         self._intensity = kwargs.get('intensity', 1.0)
@@ -1772,14 +1843,91 @@ class winput(_Widget):
 
 
 # === scene 객체 (카메라/배경 제어) ===
-class _Scene:
+def _camera_state():
+    """메인 스레드가 약 10Hz로 보내는 카메라 상태 (pos, center, forward, up, range, fov, width, height)."""
+    try:
+        raw = js._getCameraState()
+        if raw is None:
+            return None
+        return json.loads(str(raw))
+    except Exception:
+        return None
+
+
+class _Camera:
+    """scene.camera — GlowScript VPython과 같은 의미의 카메라 제어
+    scene.camera.pos = vector(0, 5, 10)   # 카메라를 옮기고 중심도 같이 이동 (방향·거리 유지)
+    scene.camera.axis = vector(0, -5, -10)  # 카메라는 그대로 두고 중심을 pos + axis로
+    scene.camera.follow(ball)              # ball을 계속 화면 중심에 둠, follow(None)이면 해제
+    """
+    def __init__(self, scene):
+        self._scene = scene
+        self._pos = None
+        self._axis = None
+        self.follower = None
+
+    @property
+    def pos(self):
+        state = self._scene._fresh_state()
+        if state and state.get('pos'):
+            return vector(*state['pos'])
+        if self._pos is not None:
+            return self._pos.clone()
+        return self._scene.center - self._scene._forward * self._scene._distance()
+
+    @pos.setter
+    def pos(self, value):
+        value = _coerce_vector(value, vector(0, 0, 0))
+        self._pos = value
+        self._scene._autoscale = False
+        self._scene._mark_set()
+        _add_command({"action": "scene", "property": "camera_pos", "value": value.to_list()})
+
+    @property
+    def axis(self):
+        state = self._scene._fresh_state()
+        if state and state.get('pos') and state.get('center'):
+            return vector(*state['center']) - vector(*state['pos'])
+        if self._axis is not None:
+            return self._axis.clone()
+        return self._scene._forward * self._scene._distance()
+
+    @axis.setter
+    def axis(self, value):
+        value = _coerce_vector(value, vector(0, 0, -1))
+        if mag(value) == 0:
+            raise ValueError('scene.camera.axis는 길이가 0이 아닌 벡터여야 합니다')
+        self._axis = value
+        self._scene._autoscale = False
+        self._scene._forward = norm(value)
+        self._scene._range = mag(value) * math.tan(self._scene._fov / 2)
+        self._scene._mark_set()
+        _add_command({"action": "scene", "property": "camera_axis", "value": value.to_list()})
+
+    def follow(self, obj=None):
+        """객체를 계속 화면 중심에 둔다. None이면 추적을 멈춘다."""
+        self.follower = obj
+        obj_id = getattr(obj, '_id', None) if obj is not None else None
+        _add_command({"action": "scene", "property": "camera_follow", "value": obj_id})
+
+
+class _Scene(_VectorOwner):
     """씬 전역 제어 — VPython의 scene과 유사
     scene.background = color.black
-    scene.range = 5         # 카메라 시야 반경
+    scene.range = 5         # 화면 짧은 변 방향으로 보이는 범위의 절반 (GlowScript와 같음)
     scene.center = vector(0,0,0)
+    scene.forward = vector(0,-1,-1)   # 보는 방향
+    scene.up = vector(0,1,0)
+    scene.fov = pi/3                  # 시야각 (라디안)
+    scene.camera.pos / scene.camera.axis / scene.camera.follow(obj)
+    scene.ambient = color.gray(0.3)   # 환경광
+    scene.lights = []                 # 기본 조명 끄기
     scene.autoscale = True/False
-    scene.title = "..."     # (현재는 print로 대체)
+    scene.title = "..."     # 3D 화면 위쪽 글자
+    scene.caption = "..."   # 3D 화면 아래쪽 글자
     """
+    _vector_attrs = ('background', 'center', 'forward', 'up', 'ambient')
+
     def __init__(self):
         self._background = vector(0.97, 0.98, 0.98)
         self._range = None
@@ -1787,6 +1935,36 @@ class _Scene:
         self._autoscale = True
         self._title = ''
         self._caption = ''
+        self._forward = vector(0, 0, -1)
+        self._up = vector(0, 1, 0)
+        self._fov = math.pi / 4   # 뷰포트 기본 45도 (GlowScript 기본은 60도)
+        self._ambient = vector(0.6, 0.6, 0.6)
+        self._lights = None
+        self._camera = _Camera(self)
+        self._set_seq = None   # 마지막으로 카메라 값을 지정했을 때의 상태 번호
+
+    def _mark_set(self):
+        """카메라 값을 지정한 직후에는 메인 스레드 상태가 아직 옛 값이므로 로컬 값을 쓰게 한다."""
+        state = _camera_state()
+        self._set_seq = state.get('seq', 0) if state else -1
+
+    def _fresh_state(self):
+        """지정 이후에 새로 도착한 카메라 상태만 돌려준다. 없으면 None."""
+        state = _camera_state()
+        if not state:
+            return None
+        if self._set_seq is not None and state.get('seq', 0) <= self._set_seq:
+            return None
+        return state
+
+    def _reset(self):
+        """새 실행 전에 카메라·조명 설정을 기본값으로 되돌린다."""
+        self.__init__()
+
+    def _distance(self):
+        """중심에서 카메라까지 거리 — range / tan(fov/2)"""
+        r = self._range if self._range else 10.0
+        return r / math.tan(self._fov / 2)
 
     @property
     def background(self):
@@ -1799,12 +1977,103 @@ class _Scene:
 
     @property
     def range(self):
-        return self._range
+        state = self._fresh_state()
+        if state and state.get('range'):
+            return float(state['range'])
+        return self._range if self._range is not None else 10.0
 
     @range.setter
     def range(self, value):
-        self._range = float(value)
+        value = float(value)
+        if value <= 0:
+            raise ValueError('scene.range는 0보다 커야 합니다')
+        self._range = value
+        self._autoscale = False   # GlowScript처럼 range를 지정하면 자동 맞춤을 끈다
+        self._mark_set()
         _add_command({"action": "scene", "property": "range", "value": self._range})
+
+    @property
+    def forward(self):
+        state = self._fresh_state()
+        if state and state.get('forward'):
+            self._forward = vector(*state['forward'])
+        return self._forward.clone()
+
+    @forward.setter
+    def forward(self, value):
+        value = _coerce_vector(value, vector(0, 0, -1))
+        if mag(value) == 0:
+            raise ValueError('scene.forward는 길이가 0이 아닌 벡터여야 합니다')
+        self._forward = norm(value)
+        self._mark_set()
+        _add_command({"action": "scene", "property": "forward", "value": self._forward.to_list()})
+
+    @property
+    def up(self):
+        state = self._fresh_state()
+        if state and state.get('up'):
+            self._up = vector(*state['up'])
+        return self._up.clone()
+
+    @up.setter
+    def up(self, value):
+        value = _coerce_vector(value, vector(0, 1, 0))
+        if mag(value) == 0:
+            raise ValueError('scene.up은 길이가 0이 아닌 벡터여야 합니다')
+        self._up = norm(value)
+        self._mark_set()
+        _add_command({"action": "scene", "property": "up", "value": self._up.to_list()})
+
+    @property
+    def fov(self):
+        state = self._fresh_state()
+        if state and state.get('fov'):
+            self._fov = float(state['fov'])
+        return self._fov
+
+    @fov.setter
+    def fov(self, value):
+        value = float(value)
+        if not 0 < value < math.pi:
+            raise ValueError('scene.fov는 라디안 단위로 0과 pi 사이여야 합니다 (예: pi/3)')
+        self._fov = value
+        self._mark_set()
+        _add_command({"action": "scene", "property": "fov", "value": self._fov})
+
+    @property
+    def camera(self):
+        return self._camera
+
+    @property
+    def width(self):
+        state = _camera_state()
+        return int(state['width']) if state and state.get('width') else 640
+
+    @property
+    def height(self):
+        state = _camera_state()
+        return int(state['height']) if state and state.get('height') else 400
+
+    @property
+    def ambient(self):
+        return self._ambient.clone()
+
+    @ambient.setter
+    def ambient(self, value):
+        value = _coerce_vector(value, vector(0.6, 0.6, 0.6))
+        self._ambient = value
+        _add_command({"action": "scene", "property": "ambient", "value": value.to_list()})
+
+    @property
+    def lights(self):
+        return list(self._lights) if self._lights is not None else list(_user_lights)
+
+    @lights.setter
+    def lights(self, value):
+        lights = list(value) if value else []
+        self._lights = lights
+        ids = [light._id for light in lights if hasattr(light, '_id')]
+        _add_command({"action": "scene", "property": "lights", "value": ids})
 
     @property
     def center(self):
@@ -1831,8 +2100,19 @@ class _Scene:
     @title.setter
     def title(self, value):
         self._title = str(value)
-        # 콘솔 출력으로 대체 (DOM 오버레이는 Tier 3에서)
-        print(f"[scene.title] {self._title}")
+        _add_command({"action": "scene", "property": "title", "value": self._title})
+
+    def append_to_title(self, *values):
+        """3D 화면 위쪽 글자에 덧붙인다."""
+        text = ''.join(str(v) for v in values)
+        self._title += text
+        _add_command({"action": "scene", "property": "append_title", "value": text})
+
+    def append_to_caption(self, *values):
+        """3D 화면 아래쪽 글자에 덧붙인다."""
+        text = ''.join(str(v) for v in values)
+        self._caption += text
+        _add_command({"action": "scene", "property": "append_caption", "value": text})
 
     @property
     def caption(self):
@@ -1841,7 +2121,7 @@ class _Scene:
     @caption.setter
     def caption(self, value):
         self._caption = str(value)
-        print(f"[scene.caption] {self._caption}")
+        _add_command({"action": "scene", "property": "caption", "value": self._caption})
 
     @property
     def mouse(self):
@@ -1878,6 +2158,66 @@ class _Scene:
 scene = _Scene()
 
 
+# === attach_arrow — 객체의 벡터 속성을 따라다니는 화살표 ===
+_attached_arrows = []
+
+
+class attach_arrow:
+    """attach_arrow(ball, 'velocity', scale=0.5) — ball.velocity를 화살표로 계속 표시한다.
+    rate()나 sleep()을 지날 때마다 위치와 방향이 갱신된다. .stop()으로 숨기고 .start()로 다시 켠다."""
+    def __init__(self, obj, attr, scale=1.0, shaftwidth=None, color=None):
+        if not hasattr(obj, attr):
+            raise AttributeError(f"attach_arrow: 객체에 '{attr}' 속성이 없습니다")
+        self.obj = obj
+        self.attr = attr
+        self.scale = scale
+        self._active = True
+        self._last = None
+        kwargs = {'pos': obj.pos, 'axis': self._axis()}
+        if shaftwidth is not None:
+            kwargs['shaftwidth'] = shaftwidth
+        kwargs['color'] = color if color is not None else obj.color
+        self.arrow = arrow(**kwargs)
+        self._last = (obj.pos.to_list(), kwargs['axis'].to_list())
+        _attached_arrows.append(self)
+
+    def _axis(self):
+        value = getattr(self.obj, self.attr, None)
+        if not isinstance(value, vector):
+            return vector(0, 0, 0)
+        return value * self.scale
+
+    def update(self):
+        if not self._active:
+            return
+        pos = self.obj.pos
+        axis = self._axis()
+        key = (pos.to_list(), axis.to_list())
+        if key == self._last:
+            return
+        self._last = key
+        self.arrow.pos = pos
+        self.arrow.axis = axis
+
+    def stop(self):
+        self._active = False
+        self.arrow.visible = False
+
+    def start(self):
+        self._active = True
+        self.arrow.visible = True
+        self._last = None
+        self.update()
+
+
+def _update_attached_arrows():
+    for item in _attached_arrows:
+        try:
+            item.update()
+        except Exception as e:
+            print(f"[attach_arrow] 갱신 실패: {e}")
+
+
 # === frame 별칭 (compound와 동일) ===
 # VPython 구버전 호환 — frame은 사실상 compound와 같은 그룹화
 frame = compound
@@ -1909,6 +2249,8 @@ async def rate(fps):
     # 등록된 이벤트 핸들러 호출 (있을 때만)
     if _event_handlers:
         _process_pending_events()
+    if _attached_arrows:
+        _update_attached_arrows()
     if _command_buffer:
         _send_commands()  # 누적된 커맨드를 한번에 전송
     else:
@@ -1925,6 +2267,8 @@ async def sleep(seconds):
         raise _StopExecution("실행이 중지되었습니다")
     if _event_handlers:
         _process_pending_events()
+    if _attached_arrows:
+        _update_attached_arrows()
     if _command_buffer:
         _send_commands()
     else:
@@ -2416,3 +2760,6 @@ def _reset_runtime_state():
     _active_graphs.clear()
     _event_handlers.clear()
     _widget_values.clear()
+    _attached_arrows.clear()
+    _user_lights.clear()
+    scene._reset()

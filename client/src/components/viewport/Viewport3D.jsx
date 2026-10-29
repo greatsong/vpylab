@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import useAppStore from '../../stores/appStore';
 import CameraSystem from '../../engine/camera-system';
-import { postEvent, postMouseState, postPressedKeys } from '../../engine/pyodide-singleton';
+import { postCameraState, postEvent, postMouseState, postPressedKeys } from '../../engine/pyodide-singleton';
 import { isEventBound } from '../../engine/vpython-bridge';
 
 const THEME_BG = {
@@ -27,6 +27,8 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
   const animFrameRef = useRef(null);
   const gridRef = useRef(null);
   const axesRef = useRef(null);
+  const titleRef = useRef(null);
+  const captionRef = useRef(null);
   const [showAxes, setShowAxes] = useState(false);
   const [cameraMode, setCameraMode] = useState('auto-fit');
   const [lockFollowZoom, setLockFollowZoom] = useState(false);
@@ -168,13 +170,32 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
     window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', onBlur);
 
-    // 조명
+    // 조명 — scene.ambient / scene.lights 로 바꿀 수 있는 기본 조명
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    ambientLight.userData.vpDefaultLight = 'ambient';
+    ambientLight.userData.vpDefaultColor = 0xffffff;
+    ambientLight.userData.vpDefaultIntensity = 0.6;
     scene.add(ambientLight);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
     dirLight.position.set(5, 10, 7);
+    dirLight.userData.vpDefaultLight = 'distant';
     scene.add(dirLight);
+
+    // scene.title / scene.caption — 캔버스 위·아래 글자 (textContent만 사용)
+    const setText = (ref, text) => {
+      const el = ref.current;
+      if (!el) return;
+      el.textContent = text;
+      el.style.display = text ? '' : 'none';
+    };
+    scene._overlay = {
+      setTitle: (text) => setText(titleRef, text),
+      setCaption: (text) => setText(captionRef, text),
+      appendTitle: (text) => setText(titleRef, (titleRef.current?.textContent || '') + text),
+      appendCaption: (text) => setText(captionRef, (captionRef.current?.textContent || '') + text),
+      clear: () => { setText(titleRef, ''); setText(captionRef, ''); },
+    };
 
     // 그리드 (바닥 기준선) — 기본 숨김
     const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
@@ -200,6 +221,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
 
     // 렌더 루프
     let modeUpdateCounter = 0;
+    let cameraStateSeq = 0;
     function animate() {
       animFrameRef.current = requestAnimationFrame(animate);
 
@@ -209,8 +231,17 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       controls.update();
       renderer.render(scene, camera);
 
+      // 카메라 상태를 Python 쪽에 알림 (6프레임마다, 약 10Hz)
+      if (++modeUpdateCounter % 6 === 0) {
+        const state = camSystem.getState();
+        state.seq = ++cameraStateSeq;
+        state.width = renderer.domElement.clientWidth;
+        state.height = renderer.domElement.clientHeight;
+        postCameraState(state);
+      }
+
       // UI 모드 표시 업데이트 (60프레임마다)
-      if (++modeUpdateCounter % 60 === 0) {
+      if (modeUpdateCounter % 60 === 0) {
         setCameraMode(camSystem.getMode());
       }
     }
@@ -279,6 +310,20 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       data-vpylab-viewport=""
     >
       <div ref={containerRef} className="w-full h-full" />
+
+      {/* scene.title / scene.caption */}
+      <div
+        ref={titleRef}
+        className="absolute top-2 left-2 max-w-[70%] text-sm font-semibold px-2 py-1 rounded whitespace-pre-wrap"
+        style={{ display: 'none', color: 'var(--color-text-primary)', backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)' }}
+        data-vpylab-title=""
+      />
+      <div
+        ref={captionRef}
+        className="absolute bottom-2 left-2 max-w-[90%] text-xs px-2 py-1 rounded whitespace-pre-wrap"
+        style={{ display: 'none', color: 'var(--color-text-secondary)', backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)' }}
+        data-vpylab-caption=""
+      />
 
       {/* 카메라 모드 표시 + 옵션 토글 */}
       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
