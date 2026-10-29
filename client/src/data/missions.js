@@ -1941,7 +1941,7 @@ print("별자리 생성 완료")
     starterCode: `from vpython import *
 
 scene_background(색상['검정'])
-배경음악("energetic")
+배경음악("adventure")
 
 무대 = box(pos=vector(0, -0.1, 0), size=vector(5, 0.2, 3), color=색상['보라'])
 공 = sphere(pos=vector(0, 0.8, 0), radius=0.45, color=색상['하늘'], emissive=True)
@@ -1956,7 +1956,7 @@ for i in range(7):
 배경음악정지()
 효과음("success")
 
-# 바꿔보기: energetic 대신 peaceful을 넣거나 색 순서를 바꿔보세요.
+# 바꿔보기: adventure 대신 peaceful을 넣거나 색 순서를 바꿔보세요.
 print("음악 조명 무대 완료")
 `,
     solutionCode: `from vpython import *
@@ -1977,7 +1977,7 @@ for i in range(7):
 배경음악정지()
 효과음("success")
 
-# 바꿔보기: energetic 대신 peaceful을 넣거나 색 순서를 바꿔보세요.
+# 바꿔보기: adventure 대신 peaceful을 넣거나 색 순서를 바꿔보세요.
 print("음악 조명 무대 완료")
 `,
     assertions: [
@@ -1988,7 +1988,7 @@ print("음악 조명 무대 완료")
       anyOf(text('색 순서를 바꾸거나 배경음악을 peaceful로 바꿉니다', 'Change the color order or switch the BGM to peaceful'),
         prop('sphere', 'color', '!=', [0.5, 0, 0.5], { tolerance: 0.01 }),
         prop('local_light', 'color', '!=', [1, 0.6, 0], { tolerance: 0.01 }),
-        prop('bgm', 'name', '!=', 'energetic', { match: 'any' }),
+        prop('bgm', 'name', '!=', 'adventure', { match: 'any' }),
       ),
     ],
     codeChecks: [{ pattern: '배경음악\\s*\\(|bgm\\s*\\(|start_bgm\\s*\\(', minCount: 1, message: '배경음악()으로 분위기를 깔아 주세요' }, { pattern: '배경음악정지\\s*\\(|stop_bgm\\s*\\(', minCount: 1, message: '배경음악정지()로 마무리하세요' }, rateCheck],
@@ -2349,7 +2349,7 @@ for i in range(len(멜로디)):
 for i in range(len(멜로디)):
     구슬들[i].emissive = True
     구슬들[i].radius = 0.36
-    악기("벨", 멜로디[i], 0.45)
+    악기("플루트", 멜로디[i], 0.45)
     구슬들[i].radius = 0.22
     구슬들[i].emissive = False
 
@@ -2394,7 +2394,7 @@ print("BGM 멜로디 완성")
         prop('note', 'name', '!=', 'G4', { index: 2 }),
         prop('note', 'name', '!=', 'C5', { index: 3 }),
         count('note', '>=', 6),
-        prop('note', 'type', '!=', 'triangle', { index: 0 }),
+        prop('note', 'type', '!=', 'sine', { index: 0 }),
       ),
     ],
     codeChecks: [{ pattern: '배경음악정지\\s*\\(|stop_bgm\\s*\\(', minCount: 1, message: '배경음악정지()로 깔끔하게 끝내세요' }],
@@ -2488,7 +2488,7 @@ print("빛나는 타이포 패턴 완성")
     starterCode: `from vpython import *
 
 scene_background(색상['검정'])
-배경음악("energetic")
+배경음악("adventure")
 
 막대들 = []
 높이들 = [0.4, 1.2, 0.8, 1.8, 0.6, 1.4, 1.0]
@@ -2512,7 +2512,7 @@ print("리듬 막대 완성")
     solutionCode: `from vpython import *
 
 scene_background(색상['검정'])
-배경음악("energetic")
+배경음악("adventure")
 
 막대들 = []
 높이들 = [0.4, 1.2, 0.8, 1.8, 0.6, 1.4, 1.0, 1.6, 0.9]
@@ -2848,7 +2848,7 @@ print("확산 모델 완성")
     ),
     starterCode: `from vpython import *
 
-악기들 = ["피아노", "벨", "칩튠", "기타"]
+악기들 = ["피아노", "플루트", "칩튠", "기타"]
 멜로디 = ["도4", "미4", "솔4"]
 
 for i in range(len(악기들)):
@@ -2862,7 +2862,7 @@ print("악기 비교 완료")
 `,
     solutionCode: `from vpython import *
 
-악기들 = ["칩튠", "피아노", "벨", "기타"]
+악기들 = ["칩튠", "피아노", "플루트", "기타"]
 멜로디 = ["도4", "레4", "미4", "파4"]
 
 for i in range(len(악기들)):
@@ -3088,11 +3088,11 @@ scene_background(색상['검정'])
 
 로고 = sphere(pos=vector(0, 0, 0), radius=0.5, color=색상['민트'], emissive=True)
 
-악기("벨", "도5", 0.25)
+악기("플루트", "도5", 0.25)
 로고.radius = 0.75
-악기("벨", "솔4", 0.25)
+악기("플루트", "솔4", 0.25)
 로고.color = 색상['분홍']
-악기("벨", "도5", 0.45)
+악기("플루트", "도5", 0.45)
 화음([높은음계['도'], 높은음계['미'], 높은음계['솔']], 0.8)
 
 효과음("success")
@@ -3106,11 +3106,11 @@ scene_background(색상['검정'])
 
 로고 = sphere(pos=vector(0, 0, 0), radius=0.5, color=색상['민트'], emissive=True)
 
-악기("벨", "미5", 0.25)
+악기("플루트", "미5", 0.25)
 로고.radius = 0.75
-악기("벨", "솔4", 0.25)
+악기("플루트", "솔4", 0.25)
 로고.color = 색상['노랑']
-악기("벨", "도5", 0.45)
+악기("플루트", "도5", 0.45)
 화음([높은음계['도'], 높은음계['미'], 높은음계['솔']], 0.8)
 
 효과음("success")
