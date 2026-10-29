@@ -11,7 +11,8 @@ import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
 import { runSound, errorSound, stopBgm, stopAllSounds, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
-import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
+import { createShareLink, decodeCodeFromURL } from '../utils/share';
+import ShareLinkDialog from '../components/share/ShareLinkDialog';
 import {
   shouldForceDetailed,
   markDetailedSaved,
@@ -64,6 +65,7 @@ export default function Sandbox() {
   const [activeTab, setActiveTab] = useState('editor');
   const [mobileMore, setMobileMore] = useState(false);
   const [shareMsg, setShareMsg] = useState('');
+  const [shareDialog, setShareDialog] = useState(null); // { url, id } | null
   const [saveMsg, setSaveMsg] = useState('');
   const [showTeam, setShowTeam] = useState(false);
   const [showSavedCodes, setShowSavedCodes] = useState(false);
@@ -685,9 +687,21 @@ export default function Sandbox() {
   }, [addOutput, openProjectInEditor, setSearchParams, teamInviteCode, user]);
 
   const handleShare = async () => {
-    const ok = await copyCodeLink(codeRef.current);
-    setShareMsg(ok ? t('share.copied') : 'Failed');
+    const { url, error } = await createShareLink(codeRef.current);
+    if (error || !url) {
+      setShareMsg('Failed');
+      setTimeout(() => setShareMsg(''), 2000);
+      return;
+    }
+    // 예전처럼 바로 복사해 두고, 링크·QR·임베드를 한곳에서 고를 수 있게 대화상자를 엽니다.
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareMsg(t('share.copied'));
+    } catch {
+      setShareMsg(t('share.copyLink'));
+    }
     setTimeout(() => setShareMsg(''), 2000);
+    setShareDialog({ url, id: url.slice(url.lastIndexOf('/s/') + 3) });
   };
 
   const handleExport = async () => {
@@ -1042,6 +1056,9 @@ export default function Sandbox() {
   return (
     <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
+      {shareDialog && (
+        <ShareLinkDialog url={shareDialog.url} shareId={shareDialog.id} onClose={() => setShareDialog(null)} />
+      )}
 
       {/* 툴바 */}
       <div

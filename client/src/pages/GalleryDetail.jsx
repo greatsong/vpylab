@@ -8,6 +8,7 @@ import { ensureAudioReady } from '../engine/sound-system';
 import { createPosterThumbnail, isThumbnailUsable } from '../engine/thumbnail';
 import { useI18n } from '../i18n/useI18n';
 import { copyEmbedCode } from '../utils/embed';
+import QRCodeModal from '../components/share/QRCodeModal';
 
 const GalleryPreview = lazy(() => import('../components/gallery/GalleryPreview'));
 
@@ -60,6 +61,7 @@ export default function GalleryDetail() {
   const [forking, setForking] = useState(false);
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const [detailThumbnail, setDetailThumbnail] = useState(null);
   const [makingPublic, setMakingPublic] = useState(false);
   const [repoStatus, setRepoStatus] = useState(null); // { repo, broken }
@@ -396,8 +398,15 @@ export default function GalleryDetail() {
             <button onClick={handleCopyEmbed} type="button" data-testid="gallery-copy-embed">
               {embedCopied ? t('embed.embedCopied') : t('embed.copyEmbed')}
             </button>
+            <button onClick={() => setShowQr(true)} type="button" data-testid="gallery-show-qr">
+              ▦ {t('qr.show')}
+            </button>
           </div>
         </section>
+
+        {showQr && (
+          <QRCodeModal url={`${window.location.origin}/gallery/${id}`} title={currentWork.title} onClose={() => setShowQr(false)} />
+        )}
 
         {showCode && (
           <section className="gallery-code-panel">
