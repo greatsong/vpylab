@@ -979,7 +979,7 @@ export default function Sandbox() {
 
     return (
       <div className="h-screen w-screen relative" style={{ backgroundColor: '#000' }}>
-        <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} />
+        <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning, isReady }} />
 
         {/* 클릭하여 시작 오버레이 */}
         {theaterWaiting && (
@@ -1275,7 +1275,7 @@ export default function Sandbox() {
             className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex w-full`}
             style={{ height: '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
-            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} />
+            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning, isReady }} />
           </div>
 
           {/* 리사이저 (데스크톱) */}

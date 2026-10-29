@@ -39,8 +39,10 @@ export default function Embed() {
   const theme = useAppStore((s) => s.theme);
   const sceneRef = useRef(null);
   const autoRanRef = useRef(false);
-  const [work, setWork] = useState(null);
-  const [notFound, setNotFound] = useState(false);
+  // id별로 읽은 결과. id가 바뀌면 이전 결과는 무시됩니다(동기 setState 없이 파생).
+  const [loaded, setLoaded] = useState(null);
+  const work = loaded?.id === id ? loaded.work : null;
+  const notFound = loaded?.id === id && !loaded.work;
   const [lastError, setLastError] = useState('');
   const [soundOn, setSoundOn] = useState(() => isAudioUnlocked());
 
@@ -62,32 +64,32 @@ export default function Embed() {
   useEffect(() => {
     let alive = true;
     autoRanRef.current = false;
-    setWork(null);
-    setNotFound(false);
-    loadWork(id).then((loaded) => {
-      if (!alive) return;
-      if (loaded) setWork(loaded);
-      else setNotFound(true);
+    loadWork(id).then((result) => {
+      if (alive) setLoaded({ id, work: result });
     });
     return () => { alive = false; };
   }, [id]);
 
-  const run = useCallback(() => {
+  const startRun = useCallback(() => {
     if (!isReady || !work?.code) return;
     if (sceneRef.current) clearScene(sceneRef.current);
     clearRegistry();
     sceneRef.current?._cameraSystem?.onCodeStart?.();
-    setLastError('');
     runCode(work.code);
   }, [isReady, work, runCode]);
+
+  const run = () => {
+    setLastError('');
+    startRun();
+  };
 
   // 엔진과 코드가 모두 준비되면 한 번 자동 실행
   useEffect(() => {
     if (isReady && work?.code && !autoRanRef.current) {
       autoRanRef.current = true;
-      run();
+      startRun();
     }
-  }, [isReady, work, run]);
+  }, [isReady, work, startRun]);
 
   const stop = () => {
     stopExecution();

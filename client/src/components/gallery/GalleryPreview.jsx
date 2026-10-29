@@ -84,7 +84,7 @@ export default function GalleryPreview({ code }) {
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         {/* 3D */}
         <div style={{ flex: 7, minWidth: 0 }}>
-          <Viewport3D sceneRef={sceneRef} onSceneReady={() => {}} />
+          <Viewport3D sceneRef={sceneRef} onSceneReady={() => {}} controls={{ onRun: handleRun, onStop: handleStop, isRunning, isReady: isReady && !!code }} />
         </div>
         {/* 콘솔 */}
         {ran && (
