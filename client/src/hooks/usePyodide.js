@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { preprocessCode } from '../engine/code-preprocessor';
+import { preprocessCode, mapGeneratedLine } from '../engine/code-preprocessor';
+import { explainPythonError } from '../engine/python-error-explainer';
 import * as singleton from '../engine/pyodide-singleton';
 
 const ACTIVITY_TIMEOUT = 10_000;
@@ -12,20 +13,38 @@ function getTimeoutMessage(code) {
   return '실행 시간 초과 (10초 무응답). 반복문과 rate() 값을 확인하세요.';
 }
 
+/**
+ * Worker가 보낸 구조화 오류를 원래 줄 번호로 되돌리고 입문자용 설명을 붙입니다.
+ * @returns {{ message: string, raw: string, type: string, pyMessage: string, line: number|null, column: number|null, codeLine: string|null, frames: {line:number|null, name:string}[], explanation: {title:string, explanation:string, hint:string, line:number|null} }}
+ */
+export function buildErrorDetails(data, rawCode, lineMap, locale = 'ko') {
+  const detail = data.detail || {};
+  const sourceLines = String(rawCode || '').split('\n');
+  const mapLine = (line) => (Array.isArray(lineMap) && lineMap.length ? mapGeneratedLine(lineMap, line) : line);
+  const line = Number.isInteger(detail.line) ? mapLine(detail.line) : null;
+  const codeLine = Number.isInteger(line) && sourceLines[line - 1] !== undefined ? sourceLines[line - 1] : (detail.sourceLine ?? null);
+  const frames = Array.isArray(detail.frames) ? detail.frames.map((frame) => ({ line: mapLine(frame.line), name: frame.name })) : [];
+  const type = detail.type || String(data.error || '').split(':')[0] || 'Error';
+  const pyMessage = detail.message ?? String(data.error || '').replace(/^[^:]*:\s?/, '');
+  const explanation = explainPythonError({ type, message: pyMessage, line, codeLine, column: detail.column ?? null, mapLine }, locale);
+  return { message: String(data.error || ''), raw: data.raw || '', type, pyMessage, line, column: detail.column ?? null, codeLine, frames, explanation };
+}
+
 /** 실행 화면이 Worker를 소유하며 정지 확인 전에는 재실행을 허용하지 않습니다. */
-export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone } = {}) {
+export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone, locale = 'ko' } = {}) {
   const [status, setStatus] = useState(singleton.getStatus);
   const [progress, setProgress] = useState(singleton.getStatus() === 'ready' ? 100 : 0);
   const [progressMessage, setProgressMessage] = useState('');
-  const callbacksRef = useRef({ onOutput, onError, onBatch, onReady, onDone });
+  const callbacksRef = useRef({ onOutput, onError, onBatch, onReady, onDone, locale });
   const timersRef = useRef({ activity: null, stop: null });
   const activeRunRef = useRef(0);
   const stoppingRef = useRef(false);
   const lastCodeRef = useRef('');
+  const lastLineMapRef = useRef(null);
   const stopRef = useRef(null);
   const mountedRef = useRef(false);
 
-  useEffect(() => { callbacksRef.current = { onOutput, onError, onBatch, onReady, onDone }; });
+  useEffect(() => { callbacksRef.current = { onOutput, onError, onBatch, onReady, onDone, locale }; });
 
   const clearTimers = useCallback(() => {
     clearTimeout(timersRef.current.activity);
@@ -78,11 +97,17 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
         if (stopped) callbacks.onDone?.({ stopped: true });
         break;
       }
-      case 'error':
+      case 'error': {
         clearTimers();
         stoppingRef.current = false;
-        callbacks.onError?.(data.error);
+        // 파이썬 예외만 구조화 정보가 있다. 초기화·Worker 오류는 문자열 그대로 전달한다.
+        if (data.detail) {
+          callbacks.onError?.(data.error, buildErrorDetails(data, lastCodeRef.current, lastLineMapRef.current, callbacks.locale));
+        } else {
+          callbacks.onError?.(data.error);
+        }
         break;
+      }
       case 'done': {
         clearTimers();
         const stopped = stoppingRef.current;
@@ -136,11 +161,12 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
 
   const runCode = useCallback((rawCode) => {
     if (singleton.getStatus() !== 'ready') return null;
-    const { code, warnings } = preprocessCode(rawCode);
+    const { code, warnings, lineMap } = preprocessCode(rawCode);
     warnings.forEach((warning) => callbacksRef.current.onOutput?.(`⚠️ ${warning}`, 'warning'));
     clearTimers();
     stoppingRef.current = false;
     lastCodeRef.current = rawCode;
+    lastLineMapRef.current = lineMap;
     const runId = singleton.runCode(code);
     if (runId) {
       activeRunRef.current = runId;

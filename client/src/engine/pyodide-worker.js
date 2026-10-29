@@ -103,6 +103,7 @@ function resetOutputStreams() {
 const _eventQueue = [];
 const _widgetValues = {};   // { widgetId: latestValue }
 let _mouseState = { pos: [0, 0, 0], pick: null };
+let _cameraStateJson = null; // 메인 스레드가 보내는 카메라 상태 (scene.camera.pos 등 읽기용)
 let _pressedKeysJson = '[]';  // 현재 눌려있는 키 목록 (JSON 직렬화)
 
 self._popEvent = () => {
@@ -110,6 +111,7 @@ self._popEvent = () => {
 };
 self._getMousePos = () => _mouseState.pos;
 self._getMousePick = () => _mouseState.pick;
+self._getCameraState = () => _cameraStateJson;
 self._getWidgetValue = (id) => _widgetValues[id] ?? null;
 self._getPressedKeys = () => _pressedKeysJson;
 self._getCurrentRunId = () => currentRunId;
@@ -151,13 +153,13 @@ _send_commands()
     await flushOutputStreams();
     sendRunMessage(currentRunId, 'event_done');
   } catch (err) {
+    const msg = takePythonTraceback(err);
     await flushOutputStreams();
-    const msg = err.message || String(err);
     if (shouldStop || msg.includes('_StopExecution') || msg.includes('실행이 중지되었습니다')) {
       sendRunMessage(currentRunId, 'event_done', { stopped: true });
       clearInputQueues();
     } else {
-      sendRunMessage(currentRunId, 'error', { error: formatPythonError(msg), raw: msg });
+      sendRunMessage(currentRunId, 'error', { error: formatPythonError(msg), raw: msg, detail: parsePythonTraceback(msg, err.type) });
     }
   } finally {
     isDispatchingEvents = false;
@@ -211,8 +213,8 @@ async function initPyodide() {
 
     // 3. VPython API를 'vpython' 모듈로 등록 (한 번만)
     if (vpythonApiCode) {
-      // vpython-api.py 코드를 실행하여 전역에 로드
-      await pyodide.runPythonAsync(vpythonApiCode);
+      // vpython-api.py 코드를 실행하여 전역에 로드 (트레이스백에서 학생 코드와 구분되도록 파일 이름 지정)
+      await pyodide.runPythonAsync(vpythonApiCode, { filename: API_FILENAME });
       // 'vpython' 모듈로 등록 — from vpython import * 가 동작하도록
       await pyodide.runPythonAsync(`
 import sys
@@ -227,7 +229,7 @@ _vpython_names = [
     'graph', 'gcurve', 'gdots', 'gvbars', 'ghbars',
     'slider', 'button', 'checkbox', 'radio', 'menu', 'winput',
     'scene', 'keysdown',
-    'local_light', 'distant_light',
+    'local_light', 'distant_light', 'attach_arrow',
     'rate', 'sleep', 'scene_background',
     'mag', 'mag2', 'hat', 'dot', 'cross', 'norm',
     'play_sound', 'play_note', 'play_chord', 'play_sequence',
@@ -419,8 +421,8 @@ sys.stderr = _VPLBoundedOutput('stderr')
     // 학생 코드 실행 전 heartbeat — 모바일에서 초기화 지연으로 인한 타임아웃 방지
     sendRunMessage(runId, 'batch', { commands: [] });
 
-    // 학생 코드 실행
-    await pyodide.runPythonAsync(code);
+    // 학생 코드 실행 — 파일 이름을 붙여 트레이스백에서 API 코드와 구분한다
+    await pyodide.runPythonAsync(code, { filename: STUDENT_FILENAME });
 
     // 실행 후 남은 커맨드 버퍼 플러시
     await pyodide.runPythonAsync('_send_commands()');
@@ -431,8 +433,8 @@ sys.stderr = _VPLBoundedOutput('stderr')
     isRunningCode = false;
     sendRunMessage(runId, 'done');
   } catch (err) {
+    const msg = takePythonTraceback(err);
     await flushOutputStreams(runId);
-    const msg = err.message || String(err);
     // 사용자 중지로 인한 예외는 에러가 아닌 정상 종료로 처리
     // shouldStop 플래그 또는 예외 메시지로 판별
     if (shouldStop || msg.includes('_StopExecution') || msg.includes('실행이 중지되었습니다')) {
@@ -448,7 +450,7 @@ sys.stderr = _VPLBoundedOutput('stderr')
     }
     const errorMsg = formatPythonError(msg);
     isRunningCode = false;
-    sendRunMessage(runId, 'error', { error: errorMsg, raw: msg });
+    sendRunMessage(runId, 'error', { error: errorMsg, raw: msg, detail: parsePythonTraceback(msg, err.type) });
   }
 
   if (queuedRun) {
@@ -459,7 +461,7 @@ sys.stderr = _VPLBoundedOutput('stderr')
 }
 
 /**
- * Python 에러 메시지를 사용자 친화적으로 포맷
+ * Python 에러 메시지를 사용자 친화적으로 포맷 — 마지막 예외 한 줄만 남긴다.
  */
 function formatPythonError(msg) {
   const lines = msg.split('\n').filter(l => l.trim());
@@ -470,6 +472,80 @@ function formatPythonError(msg) {
     }
   }
   return lines[lines.length - 1]?.trim() || msg;
+}
+
+// 학생 코드와 VPython API를 구분하는 트레이스백 파일 이름
+const STUDENT_FILENAME = '<student>';
+const API_FILENAME = '<vpython-api>';
+const TRACEBACK_MARKER = 'Traceback (most recent call last):';
+
+/**
+ * 예외의 트레이스백 전문을 얻는다.
+ * Pyodide는 sys.stderr가 바뀌어 있으면 PythonError.message를 비우고 트레이스백을 stderr로 보낸다.
+ * 그 경우 stderr 버퍼 끝의 트레이스백을 떼어 내 사용하고, 콘솔에 중복 출력되지 않게 버퍼에서 지운다.
+ */
+function takePythonTraceback(err) {
+  if (err && err.message) return err.message;
+  const stream = outputStreams.stderr;
+  const start = stream.text.lastIndexOf(TRACEBACK_MARKER);
+  if (start >= 0) {
+    const traceback = stream.text.slice(start);
+    stream.text = stream.text.slice(0, start);
+    return traceback;
+  }
+  return String(err);
+}
+
+/**
+ * CPython 트레이스백을 구조화한다. 줄 번호는 전처리된 코드 기준이며
+ * 메인 스레드가 원래 줄 번호로 되돌린다.
+ * @param {string} msg - 트레이스백 전문
+ * @param {string} [typeHint] - Pyodide가 알려 준 예외 클래스 이름
+ * @returns {{ type: string, message: string, line: number|null, column: number|null, frames: {line:number, name:string}[], sourceLine: string|null }}
+ */
+function parsePythonTraceback(msg, typeHint) {
+  const lines = msg.split('\n');
+  const frames = [];
+  let column = null;
+  let sourceLine = null;
+  let syntaxLine = null;
+  const framePattern = /^\s*File "([^"]*)", line (\d+)(?:, in (.+))?$/;
+
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(framePattern);
+    if (!match) continue;
+    const [, file, lineText, name] = match;
+    if (file !== STUDENT_FILENAME) continue;
+    const line = Number(lineText);
+    if (name) {
+      frames.push({ line, name });
+      continue;
+    }
+    // 함수 이름이 없는 프레임은 SyntaxError 계열 — 다음 줄이 소스, 그다음이 ^ 표시
+    syntaxLine = line;
+    const source = lines[i + 1] ?? '';
+    const caret = lines[i + 2] ?? '';
+    if (source && !framePattern.test(source) && !/^\w*Error/.test(source.trim())) {
+      sourceLine = source.replace(/^\s{4}/, '');
+      const caretIndex = caret.indexOf('^');
+      if (caretIndex >= 0) column = Math.max(0, caretIndex - (source.length - source.trimStart().length)) + 1;
+    }
+  }
+
+  // 마지막 줄의 `Type: message`
+  const nonEmpty = lines.filter(l => l.trim());
+  const last = nonEmpty[nonEmpty.length - 1]?.trim() || '';
+  const lastMatch = last.match(/^([A-Za-z_][\w.]*(?:Error|Exception|Exit|Interrupt|Warning|Iteration|_StopExecution)?):\s?(.*)$/s);
+  let type = typeHint || '';
+  let message = last;
+  if (lastMatch) {
+    if (!type) type = lastMatch[1].split('.').pop();
+    message = lastMatch[2];
+  }
+  if (!type) type = 'Error';
+
+  const innermost = frames.length ? frames[frames.length - 1].line : null;
+  return { type, message, line: syntaxLine ?? innermost, column, frames, sourceLine };
 }
 
 // === 메시지 핸들러 ===
@@ -512,6 +588,12 @@ self.onmessage = async (event) => {
       // 마우스 좌표/픽 객체 갱신
       if (Array.isArray(event.data.pos)) _mouseState.pos = event.data.pos;
       if ('pick' in event.data) _mouseState.pick = event.data.pick;
+      break;
+
+    case 'camera':
+      // 카메라 위치·중심·방향·range — scene.camera.pos 등 폴링용
+      try { _cameraStateJson = JSON.stringify(event.data.state); }
+      catch { _cameraStateJson = null; }
       break;
 
     case 'keys':

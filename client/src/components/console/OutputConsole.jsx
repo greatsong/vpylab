@@ -2,6 +2,46 @@ import { useRef, useEffect } from 'react';
 import { useI18n } from '../../i18n/useI18n';
 
 /**
+ * 파이썬 오류의 입문자용 설명 — 설명을 먼저, 원문 한 줄과 줄 번호를 아래에 작게 보여 준다.
+ * 보안: 모든 문자열은 React 텍스트 노드(textContent)로만 렌더링한다.
+ */
+function ErrorExplanation({ item, t }) {
+  const { title, explanation, hint, line } = item.details.explanation;
+  const lineLabel = Number.isInteger(line) ? t('console.errorLine', { line }) : '';
+  return (
+    <div
+      className="my-1 py-1.5 pl-2.5 pr-2 rounded-r animate-slide-up"
+      role="alert"
+      style={{
+        borderLeft: '3px solid var(--color-error)',
+        backgroundColor: 'color-mix(in srgb, var(--color-error) 6%, transparent)',
+        fontFamily: 'var(--font-sans)',
+      }}
+    >
+      <div className="font-semibold" style={{ color: 'var(--color-error)' }}>
+        <span style={{ marginRight: 4 }}>&#x2716;</span>
+        {title}
+      </div>
+      <div className="mt-0.5" style={{ color: 'var(--color-text-primary)' }}>{explanation}</div>
+      {hint && (
+        <div className="mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+          <span style={{ marginRight: 4 }}>&#x2192;</span>
+          {hint}
+        </div>
+      )}
+      {item.details.codeLine && Number.isInteger(line) && (
+        <div className="mt-1 text-xs whitespace-pre-wrap" style={{ color: 'var(--color-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+          {lineLabel}: {item.details.codeLine.trim()}
+        </div>
+      )}
+      <div className="mt-1 text-xs" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
+        {lineLabel ? `${lineLabel} · ` : ''}{item.text}
+      </div>
+    </div>
+  );
+}
+
+/**
  * 콘솔 출력 패널
  * 보안: textContent만 사용 (innerHTML 절대 금지 — XSS 방지)
  */
@@ -54,7 +94,9 @@ export default function OutputConsole({ outputs = [], onClear }) {
             {t('console.noOutput')}
           </div>
         ) : (
-          outputs.map((item, i) => (
+          outputs.map((item, i) => item.type === 'error' && item.details?.explanation ? (
+            <ErrorExplanation key={i} item={item} t={t} />
+          ) : (
             <div
               key={i}
               className="py-0.5 animate-slide-up"

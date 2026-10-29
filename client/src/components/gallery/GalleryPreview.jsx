@@ -12,13 +12,13 @@ import { useI18n } from '../../i18n/useI18n';
  * Sandbox의 코드 실행 로직을 재사용하되, 읽기 전용 뷰만 제공
  */
 export default function GalleryPreview({ code }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const sceneRef = useRef(null);
   const [outputs, setOutputs] = useState([]);
   const [ran, setRan] = useState(false);
 
-  const addOutput = useCallback((text, type = 'log') => {
-    setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
+  const addOutput = useCallback((text, type = 'log', details) => {
+    setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random(), ...(details ? { details } : {}) }]);
   }, []);
 
   const handleBatch = useCallback((commands) => {
@@ -27,12 +27,13 @@ export default function GalleryPreview({ code }) {
 
   const { runCode, stopExecution, isReady, isRunning } = usePyodide({
     onOutput: addOutput,
-    onError: (err) => {
-      addOutput(err, 'error');
+    onError: (err, details) => {
+      addOutput(err, 'error', details);
       stopBgm();
     },
     onBatch: handleBatch,
     onDone: () => stopBgm(),
+    locale,
   });
 
   // 컴포넌트 언마운트 시 정리

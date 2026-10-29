@@ -925,6 +925,45 @@ function updateMesh(cmd) {
 }
 
 /**
+ * scene.ambient = color — 뷰포트 기본 환경광의 색을 바꾼다.
+ * GlowScript처럼 색의 밝기가 곧 세기다 (흰색 = 전부 밝힘, gray(0.2) = 어둡게).
+ */
+function setAmbientLight(scene, rgb) {
+  scene.traverse((child) => {
+    if (child.isAmbientLight && child.userData?.vpDefaultLight) {
+      child.color = toThreeColor(rgb);
+      child.intensity = 1;
+    }
+  });
+}
+
+/**
+ * scene.lights = [...] — 기본 방향광을 끄고, 목록에 있는 사용자 조명만 켠다.
+ * 빈 목록이면 사용자가 만든 조명도 모두 꺼진다 (GlowScript의 scene.lights = [] 와 같음).
+ */
+function setSceneLights(scene, ids) {
+  const keep = new Set(ids.map(String));
+  scene.traverse((child) => {
+    if (child.isLight && !child.isAmbientLight && child.userData?.vpDefaultLight) child.visible = false;
+  });
+  for (const [id, mesh] of meshRegistry) {
+    if (mesh.isLight && !mesh.isAmbientLight) mesh.visible = keep.has(String(id));
+  }
+}
+
+/** 새 실행 전에 기본 조명을 원래대로 되돌린다. */
+export function resetDefaultLights(scene) {
+  scene.traverse((child) => {
+    if (!child.isLight || !child.userData?.vpDefaultLight) return;
+    child.visible = true;
+    if (child.isAmbientLight && child.userData.vpDefaultColor !== undefined) {
+      child.color = new THREE.Color(child.userData.vpDefaultColor);
+      child.intensity = child.userData.vpDefaultIntensity ?? 0.6;
+    }
+  });
+}
+
+/**
  * 배치 커맨드 처리 (커맨드 배칭 패턴)
  */
 export function processBatch(commands, scene) {
@@ -946,6 +985,31 @@ export function processBatch(commands, scene) {
           scene._cameraSystem.setExplicitCenter(c[0], c[1], c[2]);
         } else if (cmd.property === 'autoscale' && scene._cameraSystem) {
           scene._cameraSystem.setAutoscale(Boolean(cmd.value));
+        } else if (cmd.property === 'forward' && scene._cameraSystem && Array.isArray(cmd.value)) {
+          scene._cameraSystem.setForward(cmd.value[0], cmd.value[1], cmd.value[2]);
+        } else if (cmd.property === 'up' && scene._cameraSystem && Array.isArray(cmd.value)) {
+          scene._cameraSystem.setUp(cmd.value[0], cmd.value[1], cmd.value[2]);
+        } else if (cmd.property === 'fov' && scene._cameraSystem) {
+          scene._cameraSystem.setFov(Number(cmd.value));
+        } else if (cmd.property === 'camera_pos' && scene._cameraSystem && Array.isArray(cmd.value)) {
+          scene._cameraSystem.setCameraPos(cmd.value[0], cmd.value[1], cmd.value[2]);
+        } else if (cmd.property === 'camera_axis' && scene._cameraSystem && Array.isArray(cmd.value)) {
+          scene._cameraSystem.setCameraAxis(cmd.value[0], cmd.value[1], cmd.value[2]);
+        } else if (cmd.property === 'camera_follow' && scene._cameraSystem) {
+          scene._cameraSystem.followObject(cmd.value ? meshRegistry.get(cmd.value) || null : null);
+        } else if (cmd.property === 'ambient' && Array.isArray(cmd.value)) {
+          setAmbientLight(scene, cmd.value);
+        } else if (cmd.property === 'lights') {
+          setSceneLights(scene, Array.isArray(cmd.value) ? cmd.value : []);
+        } else if (['title', 'caption', 'append_title', 'append_caption'].includes(cmd.property)) {
+          const overlay = scene._overlay;
+          const text = String(cmd.value ?? '');
+          if (overlay) {
+            if (cmd.property === 'title') overlay.setTitle(text);
+            else if (cmd.property === 'caption') overlay.setCaption(text);
+            else if (cmd.property === 'append_title') overlay.appendTitle(text);
+            else overlay.appendCaption(text);
+          }
         }
         break;
       case 'trail_update':
@@ -1138,6 +1202,10 @@ export function clearScene(scene) {
 
   // 차트 객체 정리
   clearCharts(scene);
+
+  // scene.lights / scene.ambient / scene.title 로 바꾼 기본 상태 복구
+  resetDefaultLights(scene);
+  scene._overlay?.clear?.();
 
   clearRegistry();
 }
