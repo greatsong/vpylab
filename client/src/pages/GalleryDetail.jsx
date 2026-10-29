@@ -7,6 +7,7 @@ import useAuthStore from '../stores/authStore';
 import { ensureAudioReady } from '../engine/sound-system';
 import { createPosterThumbnail, isThumbnailUsable } from '../engine/thumbnail';
 import { useI18n } from '../i18n/useI18n';
+import { copyEmbedCode } from '../utils/embed';
 
 const GalleryPreview = lazy(() => import('../components/gallery/GalleryPreview'));
 
@@ -47,7 +48,7 @@ function DetailStat({ label, value, children }) {
 export default function GalleryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { locale: lang } = useI18n();
+  const { locale: lang, t } = useI18n();
   const { currentWork, loading, fetchWork, toggleLike, checkIfLiked, forkWork, republishWork } = useGalleryStore();
   const user = useAuthStore(s => s.user);
   const getGitHubToken = useAuthStore(s => s.getGitHubToken);
@@ -58,6 +59,7 @@ export default function GalleryDetail() {
   const [showPreview, setShowPreview] = useState(false);
   const [forking, setForking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
   const [detailThumbnail, setDetailThumbnail] = useState(null);
   const [makingPublic, setMakingPublic] = useState(false);
   const [repoStatus, setRepoStatus] = useState(null); // { repo, broken }
@@ -217,6 +219,13 @@ export default function GalleryDetail() {
     alert(lang === 'ko'
       ? '작품이 갤러리에 공개되었습니다. 이제 누구나 실행하고 Remix할 수 있습니다.'
       : 'Your work is now public in the gallery.');
+  };
+
+  const handleCopyEmbed = async () => {
+    const ok = await copyEmbedCode(id);
+    if (!ok) return;
+    setEmbedCopied(true);
+    setTimeout(() => setEmbedCopied(false), 1400);
   };
 
   const handleCopyCode = async () => {
@@ -383,6 +392,9 @@ export default function GalleryDetail() {
             </button>
             <button onClick={() => setShowPreview(value => !value)} type="button">
               {showPreview ? '미리보기 닫기' : '3D 미리보기'}
+            </button>
+            <button onClick={handleCopyEmbed} type="button" data-testid="gallery-copy-embed">
+              {embedCopied ? t('embed.embedCopied') : t('embed.copyEmbed')}
             </button>
           </div>
         </section>
