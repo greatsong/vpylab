@@ -358,11 +358,21 @@ v_curve.clear()
 
 ## 표준 VPython과의 차이점
 
+### 카메라·조명 (GlowScript와 같은 의미)
+
+- `scene.forward`, `scene.up`, `scene.fov`, `scene.range`, `scene.center`, `scene.autoscale`
+- `scene.camera.pos`, `scene.camera.axis`, `scene.camera.follow(obj)`
+- `scene.ambient`, `scene.lights` (빈 목록이면 기본 조명을 끔), `local_light`, `distant_light`
+- `scene.title`, `scene.caption`, `scene.append_to_title()`, `scene.append_to_caption()` → 3D 화면 위·아래 글자
+- `attach_arrow(obj, 'velocity', scale=1)` → `rate()`·`sleep()`마다 갱신되는 화살표
+- `scene.range`는 화면의 짧은 변 방향으로 보이는 범위의 절반이다. 기본 시야각은 45도(GlowScript는 60도)이며 `scene.fov`로 바꿀 수 있다.
+- `ball.pos.x += 0.1`처럼 벡터 성분만 바꿔도 화면에 반영된다 (pos, axis, size, up, color, scene.center 등). 같은 벡터를 다른 물체에 넣으면 복제되어 서로 영향을 주지 않는다.
+- `color.gray(0.3)`처럼 밝기를 지정한 회색을 만들 수 있다.
+
 ### 미지원 (현 시점)
 
-- **카메라 직접 제어**: `scene.camera.pos`, `scene.forward`, `scene.up`
-  → `scene.range` / `scene.center`로 부분 우회 가능
-- **DOM 오버레이**: `scene.title` / `scene.caption`은 현재 콘솔 출력으로 대체
+- `scene.width` / `scene.height` 쓰기 (읽기는 가능), 여러 개의 `canvas()`
+- 3D 입체 글자 `text()` (현재 2D 라벨로 대체), `shapes`·`paths` 라이브러리
 
 ### standalone HTML export 시 주의
 

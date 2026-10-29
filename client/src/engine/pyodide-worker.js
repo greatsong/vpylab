@@ -61,6 +61,7 @@ function resetOutputStreams() {
 const _eventQueue = [];
 const _widgetValues = {};   // { widgetId: latestValue }
 let _mouseState = { pos: [0, 0, 0], pick: null };
+let _cameraStateJson = null; // 메인 스레드가 보내는 카메라 상태 (scene.camera.pos 등 읽기용)
 let _pressedKeysJson = '[]';  // 현재 눌려있는 키 목록 (JSON 직렬화)
 
 self._popEvent = () => {
@@ -68,6 +69,7 @@ self._popEvent = () => {
 };
 self._getMousePos = () => _mouseState.pos;
 self._getMousePick = () => _mouseState.pick;
+self._getCameraState = () => _cameraStateJson;
 self._getWidgetValue = (id) => _widgetValues[id] ?? null;
 self._getPressedKeys = () => _pressedKeysJson;
 self._getCurrentRunId = () => currentRunId;
@@ -185,7 +187,7 @@ _vpython_names = [
     'graph', 'gcurve', 'gdots', 'gvbars', 'ghbars',
     'slider', 'button', 'checkbox', 'radio', 'menu', 'winput',
     'scene', 'keysdown',
-    'local_light', 'distant_light',
+    'local_light', 'distant_light', 'attach_arrow',
     'rate', 'sleep', 'scene_background',
     'mag', 'mag2', 'hat', 'dot', 'cross', 'norm',
     'play_sound', 'play_note', 'play_chord', 'play_sequence',
@@ -464,6 +466,12 @@ self.onmessage = async (event) => {
       // 마우스 좌표/픽 객체 갱신
       if (Array.isArray(event.data.pos)) _mouseState.pos = event.data.pos;
       if ('pick' in event.data) _mouseState.pick = event.data.pick;
+      break;
+
+    case 'camera':
+      // 카메라 위치·중심·방향·range — scene.camera.pos 등 폴링용
+      try { _cameraStateJson = JSON.stringify(event.data.state); }
+      catch { _cameraStateJson = null; }
       break;
 
     case 'keys':

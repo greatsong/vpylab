@@ -114,6 +114,34 @@ vel = arrow(pos=ball.pos, axis=vector(2, 1, 0), shaftwidth=0.08, color=color.yel
     tags: ['3d', 'object', 'geometry', 'arrow', 'vector', 'force', 'velocity'],
   },
   {
+    id: 'attach_arrow',
+    category: 'objects',
+    title: { ko: '따라다니는 화살표 (attach_arrow)', en: 'attach_arrow' },
+    description: {
+      ko: '물체의 벡터 속성(예: velocity)을 화살표로 계속 표시합니다. rate()나 sleep()을 지날 때마다 위치와 방향이 갱신됩니다.',
+      en: 'Keeps drawing an arrow for a vector attribute of an object (for example velocity). The arrow updates on every rate() or sleep().',
+    },
+    signature: "attach_arrow(obj, 'velocity', scale=1, shaftwidth=None, color=None)",
+    params: [
+      { name: 'obj', type: 'object', default: '-', desc: { ko: '따라갈 물체', en: 'Object to follow' } },
+      { name: 'attr', type: 'str', default: '-', desc: { ko: '벡터 속성 이름', en: 'Name of the vector attribute' } },
+      { name: 'scale', type: 'number', default: '1', desc: { ko: '화살표 길이 배율', en: 'Length multiplier' } },
+      { name: 'shaftwidth', type: 'number', default: '자동', desc: { ko: '화살대 굵기', en: 'Shaft width' } },
+      { name: 'color', type: 'vector', default: '물체 색', desc: { ko: '화살표 색', en: 'Arrow color' } },
+    ],
+    code: `from vpython import *
+ball = sphere(pos=vector(-4, 0, 0), radius=0.4, color=color.cyan)
+ball.velocity = vector(2, 3, 0)
+attach_arrow(ball, 'velocity', scale=0.5, color=color.yellow)
+g = vector(0, -9.8, 0)
+dt = 1 / 60
+while ball.pos.y >= -2:
+    rate(60)
+    ball.velocity = ball.velocity + g * dt
+    ball.pos = ball.pos + ball.velocity * dt`,
+    tags: ['arrow', 'attach_arrow', 'velocity', 'vector', 'physics', '화살표', '속도'],
+  },
+  {
     id: 'cone',
     category: 'objects',
     title: { ko: '원뿔 (cone)', en: 'cone' },
@@ -788,6 +816,116 @@ scene_background(color.skyblue)
 distant_light(direction=vector(1, -1, -0.5), color=color.white, intensity=1.2)
 box(size=vector(2, 0.5, 2), color=color.orange)`,
     tags: ['scene', 'light', 'directional', 'distant', 'sun', 'lighting'],
+  },
+  {
+    id: 'scene_camera',
+    category: 'scene',
+    title: { ko: '카메라 위치와 방향 (scene.camera, scene.forward)', en: 'scene.camera / scene.forward' },
+    description: {
+      ko: '카메라를 직접 움직입니다. scene.forward는 보는 방향, scene.camera.pos는 카메라 위치, scene.camera.axis는 카메라에서 중심까지의 벡터입니다. GlowScript VPython과 같은 의미입니다. 값을 지정하면 자동 맞춤이 꺼지고, 자동 버튼을 누르면 다시 켜집니다.',
+      en: 'Moves the camera directly. scene.forward is the viewing direction, scene.camera.pos the camera position and scene.camera.axis the vector from the camera to the center, with the same meaning as GlowScript VPython. Setting a value turns autoscale off.',
+    },
+    signature: "scene.forward = vector(0, -1, -1); scene.camera.pos = vector(0, 5, 10); scene.camera.axis = vector(0, -5, -10); scene.camera.follow(obj)",
+    params: [
+      { name: 'scene.forward', type: 'vector', default: 'vector(0,0,-1)', desc: { ko: '보는 방향 (길이는 무시)', en: 'Viewing direction (length ignored)' } },
+      { name: 'scene.up', type: 'vector', default: 'vector(0,1,0)', desc: { ko: '화면의 위쪽 방향', en: 'Screen up direction' } },
+      { name: 'scene.camera.pos', type: 'vector', default: '-', desc: { ko: '카메라 위치. 중심도 같이 이동', en: 'Camera position; the center moves with it' } },
+      { name: 'scene.camera.axis', type: 'vector', default: '-', desc: { ko: '카메라에서 중심까지의 벡터', en: 'Vector from camera to center' } },
+      { name: 'scene.camera.follow(obj)', type: 'object', default: 'None', desc: { ko: '객체를 계속 화면 중심에 둠. None이면 해제', en: 'Keep an object centered; None stops following' } },
+    ],
+    code: `from vpython import *
+ball = sphere(pos=vector(0, 0, 0), radius=0.5, color=color.orange)
+box(pos=vector(0, -1, 0), size=vector(10, 0.2, 10), color=color.green)
+
+# 비스듬히 위에서 내려다보기
+scene.forward = vector(0, -0.6, -1)
+scene.range = 4
+
+# 공을 따라가는 카메라
+scene.camera.follow(ball)
+for i in range(200):
+    rate(60)
+    ball.pos.x += 0.03`,
+    tags: ['scene', 'camera', 'forward', 'up', 'follow', 'view', '카메라', '시점'],
+  },
+  {
+    id: 'scene_range_fov',
+    category: 'scene',
+    title: { ko: '보이는 범위와 시야각 (scene.range, scene.fov)', en: 'scene.range / scene.fov' },
+    description: {
+      ko: 'scene.range는 화면의 짧은 변 방향으로 중심에서 보이는 범위의 절반입니다. range=5이면 중심 위아래로 5만큼이 보입니다. scene.fov는 시야각(라디안)이며 기본값은 45도입니다. scene.center는 카메라가 바라보는 점입니다.',
+      en: 'scene.range is half of the visible extent along the shorter side of the view. scene.fov is the field of view in radians (default 45 degrees). scene.center is the point the camera looks at.',
+    },
+    signature: "scene.range = 5; scene.center = vector(0, 0, 0); scene.fov = pi/3; scene.autoscale = False",
+    params: [
+      { name: 'scene.range', type: 'number', default: '자동', desc: { ko: '짧은 변 방향 시야의 절반', en: 'Half extent along the shorter side' } },
+      { name: 'scene.center', type: 'vector', default: 'vector(0,0,0)', desc: { ko: '카메라가 보는 점', en: 'Point the camera looks at' } },
+      { name: 'scene.fov', type: 'number', default: 'pi/4', desc: { ko: '시야각 (라디안)', en: 'Field of view (radians)' } },
+      { name: 'scene.autoscale', type: 'bool', default: 'True', desc: { ko: '모든 물체가 보이도록 자동 조절', en: 'Fit all objects automatically' } },
+    ],
+    code: `from vpython import *
+from math import pi
+for i in range(5):
+    sphere(pos=vector(i * 2 - 4, 0, 0), radius=0.4, color=color.cyan)
+
+scene.center = vector(0, 0, 0)
+scene.range = 3        # 가운데 세 개만 크게
+sleep(1.5)
+scene.fov = pi / 3     # 시야각을 넓히면 원근감이 커진다
+sleep(1.5)
+scene.autoscale = True # 다시 전체 보기`,
+    tags: ['scene', 'range', 'fov', 'center', 'autoscale', 'zoom', '범위', '시야각'],
+  },
+  {
+    id: 'scene_lights',
+    category: 'scene',
+    title: { ko: '환경광과 기본 조명 (scene.ambient, scene.lights)', en: 'scene.ambient / scene.lights' },
+    description: {
+      ko: 'scene.ambient는 그림자 쪽도 고르게 밝히는 환경광의 색입니다. 밝은 색일수록 전체가 밝아집니다. scene.lights = []로 기본 조명을 끄고 local_light, distant_light만으로 장면을 밝힐 수 있습니다.',
+      en: 'scene.ambient is the color of the ambient light that brightens every face evenly. scene.lights = [] turns off the default lights so only your local_light and distant_light remain.',
+    },
+    signature: "scene.ambient = color.gray(0.2); scene.lights = []",
+    params: [
+      { name: 'scene.ambient', type: 'vector', default: 'color.gray(0.6)', desc: { ko: '환경광 색 (밝기)', en: 'Ambient light color (brightness)' } },
+      { name: 'scene.lights', type: 'list', default: '기본 조명', desc: { ko: '켜 둘 조명 목록. 빈 목록이면 모두 끔', en: 'Lights to keep on; empty list turns all off' } },
+    ],
+    code: `from vpython import *
+scene.ambient = color.gray(0.1)   # 어두운 방
+scene.lights = []                 # 기본 조명 끄기
+lamp = local_light(pos=vector(2, 3, 2), color=color.yellow, intensity=20)
+sphere(pos=vector(0, 0, 0), radius=1, color=color.white)
+box(pos=vector(0, -1.2, 0), size=vector(6, 0.2, 6), color=color.gray(0.7))
+for i in range(300):
+    rate(60)
+    lamp.pos = vector(3 * cos(i * 0.03), 3, 3 * sin(i * 0.03))`,
+    tags: ['scene', 'ambient', 'lights', 'light', 'dark', '조명', '환경광'],
+  },
+  {
+    id: 'scene_title',
+    category: 'scene',
+    title: { ko: '화면 제목과 설명 (scene.title, scene.caption)', en: 'scene.title / scene.caption' },
+    description: {
+      ko: '3D 화면 위쪽에 제목을, 아래쪽에 설명을 표시합니다. scene.append_to_caption()으로 글을 덧붙일 수 있습니다.',
+      en: 'Shows a title above the 3D view and a caption below it. scene.append_to_caption() appends text.',
+    },
+    signature: "scene.title = '제목'; scene.caption = '설명'; scene.append_to_caption('덧붙일 글')",
+    params: [
+      { name: 'scene.title', type: 'str', default: "''", desc: { ko: '화면 위쪽 글자', en: 'Text above the view' } },
+      { name: 'scene.caption', type: 'str', default: "''", desc: { ko: '화면 아래쪽 글자', en: 'Text below the view' } },
+    ],
+    code: `from vpython import *
+scene.title = '자유 낙하 실험'
+scene.caption = '공이 바닥에 닿을 때까지의 시간을 관찰하세요.'
+ball = sphere(pos=vector(0, 5, 0), radius=0.3, color=color.red)
+v = 0
+t = 0
+while ball.pos.y > 0:
+    rate(60)
+    v -= 9.8 / 60
+    ball.pos.y += v / 60
+    t += 1 / 60
+scene.append_to_caption(f' 걸린 시간: {t:.2f}초')`,
+    tags: ['scene', 'title', 'caption', 'text', '제목', '설명'],
   },
   {
     id: 'scene-object',
