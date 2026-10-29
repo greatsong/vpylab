@@ -217,7 +217,7 @@ glowscript.org `GlowScriptDemos/Examples` 폴더의 Web VPython 프로그램 33�
 | C1 | `curve.append(pos=, color=, radius=)`, dict·리스트 점 | 8개 |
 | F1·F2 | 코스 코드 두 곳 | 내장 코스 2개 |
 
-## 5. 실행 구조 수정 뒤 재측정 (2026-10-30)
+## 6. 실행 구조 수정 뒤 재측정 (2026-10-30)
 
 2.4절의 D1·D2·D3과 2.2절의 B2·B3, 2.3절의 C3을 고쳤다. 학생 코드 변환을 JS 정규식 전처리기 대신 Worker 안의 Python `ast`([client/src/engine/student-code-transform.py](../client/src/engine/student-code-transform.py))가 맡는다. 대기 함수(`rate`·`sleep`·`scene.pause`·`scene.waitfor`·`input`·`악기`)를 부르는 함수만 호출 그래프를 따라 `async def`로 바꾸고 호출에 `await`를 붙이며, 모듈 수준 코드는 함수로 감싸지 않고 최상위 `await`로 실행한다. 그래서 `global`이 동작하고 트레이스백 줄 번호가 학생 코드와 같다. 설계 비교와 남은 제약은 PR 본문과 [docs/VPYTHON_API.md](VPYTHON_API.md)의 "시뮬레이션 제어" 절에 있다.
 
@@ -233,6 +233,8 @@ glowscript.org `GlowScriptDemos/Examples` 폴더의 Web VPython 프로그램 33�
 | **합계** | **562** | **346 → 362** | **426 → 444** |
 
 판정이 바뀐 항목은 모두 실패→통과이며 회귀는 없다. 바뀐 항목: `idiom:flow-rate-in-function`(D1), `idiom:flow-rate-in-method`(D1), `idiom:flow-global-called-in-loop`(D2), `idiom:flow-import-as`(D3), `idiom:event-waitfor-click`·`event-waitfor-keydown`(B3), `idiom:event-pause`(B2), `idiom:flow-input`(C3), `docs:mouse:line1`·`line5`, `docs:pause:line1`, `docs:userinput:pre1`·`line1`, `docs:textinput:pre1`·`line1`, `gsexample:Bounce-Callbacks-VPython`(D1, `rate(200, move)` 콜백 형식). 심 적용 시 `gsexample:Stars-VPython`과 `demos:Stars`(D2)도 통과한다. Stars는 심 없이는 여전히 B1(`scene.width` setter)에서 멈춘다.
+
+PR #11(즉시 수정 묶음: 수학 이름·`scene.width`·`length`·`size`·색 변환)이 `main`에 먼저 들어가 이 수정과 합친 뒤 다시 재면 정적 통과는 **414**(내장 211, 관용구 94, 공식 예제 14, 문서 조각 95, 데모 0)이고 심 적용 시 **452**다. 공식 예제 Stars와 Bounce-Callbacks는 심 없이 통과한다. 합치기 전 결과와 비교해 통과에서 실패로 바뀐 항목은 없다. `scripts/compat/out/static-results.json`·`static-shim-results.json`은 합친 뒤의 결과다.
 
 정적 하네스는 `scene.waitfor()`가 기다리는 이벤트를 js 스텁이 한 번 만들어 주고(`scene_bind` 커맨드의 `waiting` 표시로 구분), `input()`에는 `'42'`를 답한다.
 

@@ -509,7 +509,7 @@
   "kind": "program",
   "title": "코스 [object Object] / [object Object]",
   "origin": "client/src/data/courses.js#beg-patterns/beg-patterns-2",
-  "code": "from vpython import *\n\nscene_background(색상['검정'])\n\nfor i in range(8):\n    크기 = 0.2 + i * 0.1\n    높이 = i * 0.6\n    sphere(pos=vector(0, 높이, 0), radius=크기, color=무지개[i])\n"
+  "code": "from vpython import *\n\nscene_background(색상['검정'])\n\nfor i in range(7):\n    크기 = 0.2 + i * 0.1\n    높이 = i * 0.6\n    sphere(pos=vector(0, 높이, 0), radius=크기, color=무지개[i])\n"
  },
  {
   "id": "internal:course:beg-patterns:beg-patterns-3",
