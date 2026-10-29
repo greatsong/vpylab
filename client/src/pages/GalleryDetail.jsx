@@ -112,10 +112,10 @@ export default function GalleryDetail() {
     repo: currentWork?.github_repo,
     author,
   }), [author, currentWork?.category, currentWork?.code, currentWork?.description, currentWork?.github_repo, currentWork?.title]);
-  const stageThumbnail = detailThumbnail?.id === currentWork?.id && detailThumbnail.src
-    ? detailThumbnail.src
-    : posterThumbnail;
-  const hasStageCapturedThumbnail = detailThumbnail?.id === currentWork?.id && !!detailThumbnail.src;
+  // 로딩 중에는 둘 다 null이라 id 비교가 참이 되어 null.src를 읽던 오류를 막습니다.
+  const stageMatches = !!detailThumbnail && !!currentWork && detailThumbnail.id === currentWork.id;
+  const stageThumbnail = stageMatches && detailThumbnail.src ? detailThumbnail.src : posterThumbnail;
+  const hasStageCapturedThumbnail = stageMatches && !!detailThumbnail.src;
 
   useEffect(() => {
     let alive = true;
