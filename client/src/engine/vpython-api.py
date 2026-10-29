@@ -2581,7 +2581,7 @@ def _raise_if_stopped():
         raise _StopExecution("실행이 중지되었습니다")
 
 
-_HEARTBEAT_INTERVAL = 0.5
+_HEARTBEAT_INTERVAL = 0.2   # 메인 스레드의 정지 확인(750ms 뒤 하드 스톱)보다 충분히 짧게
 
 
 async def _sleep_chunked(seconds):
@@ -2689,10 +2689,13 @@ async def rate(fps, callback=None):
         _spawn_task(_later(), 'rate callback')
         # 양보해서 정지 메시지와 콜백 태스크가 처리될 기회를 준다
         await asyncio.sleep(0)
-        # 미완료 콜백이 너무 많으면(while True: rate(60, tick)) 줄어들 때까지 기다린다
-        while len(_pending_tasks) > _MAX_PENDING_CALLBACKS:
+        # 미완료 콜백이 너무 많으면(while True: rate(60, tick)) 줄어들 때까지 기다린다.
+        # 콜백 태스크 안에서 다시 예약하는 경우 자기 자신은 세지 않는다 (교착 방지).
+        me = asyncio.current_task()
+        while len(_pending_tasks - {me}) > _MAX_PENDING_CALLBACKS:
             _raise_if_stopped()
             _raise_task_error()
+            _heartbeat()
             await asyncio.sleep(delay)
         return
     await _sleep_chunked(delay)
@@ -3074,23 +3077,15 @@ def 소리(frequency=440, duration=0.3, type='sine', volume=0.3):
     """sound()의 한글 별칭"""
     play_sound(frequency, duration, type, volume)
 
-def 음표(name, duration=0.5, type='sine', volume=0.4):
+async def 음표(name, duration=0.5, type='sine', volume=0.4):
     """play_note()의 한글 별칭 — 한글 노트 이름 지원 + 자동 순차 대기.
     예: 음표("도4", 0.4), 음표("솔#5", 0.3)
-    동기 함수이지만 duration 만큼 워커를 block 시켜 학생이 sleep을 명시하지 않아도
-    음이 분리되어 들립니다. 50ms 단위로 stop 체크/이벤트 디스패치하여
-    실행 중지·인터랙션도 즉시 반응합니다.
+    duration 만큼 기다려 학생이 sleep을 명시하지 않아도 음이 분리되어 들립니다.
+    변환기가 await를 붙이며, 기다리는 동안 하트비트·정지 확인·이벤트 디스패치를 합니다.
     """
-    import time as _time  # Pyodide 표준 모듈
     play_note(_resolve_note_name(name), duration, type, volume)
-    _send_commands()
-    end = _time.time() + duration
-    while _time.time() < end:
-        if _check_stop():
-            raise _StopExecution("실행이 중지되었습니다")
-        if _event_handlers:
-            _process_pending_events()
-        _time.sleep(min(0.05, max(0.0, end - _time.time())))
+    _before_wait()
+    await _sleep_chunked(duration)
 
 def 효과음(name):
     """play_sfx()의 한글 별칭"""
@@ -3104,20 +3099,13 @@ def 배경음악정지():
     """stop_bgm()의 한글 별칭"""
     stop_bgm()
 
-def 화음(frequencies, duration=1.0, type='sine', volume=0.25):
+async def 화음(frequencies, duration=1.0, type='sine', volume=0.25):
     """play_chord()의 한글 별칭 — 동시 발음 + 자동 순차 대기.
-    음표와 동일하게 duration 만큼 워커를 block시켜 다음 화음과 자연스럽게 분리됩니다.
+    음표와 같이 duration 만큼 기다려 다음 화음과 분리됩니다. 변환기가 await를 붙입니다.
     """
-    import time as _time
     play_chord(frequencies, duration, type, volume)
-    _send_commands()
-    end = _time.time() + duration
-    while _time.time() < end:
-        if _check_stop():
-            raise _StopExecution("실행이 중지되었습니다")
-        if _event_handlers:
-            _process_pending_events()
-        _time.sleep(min(0.05, max(0.0, end - _time.time())))
+    _before_wait()
+    await _sleep_chunked(duration)
 
 
 # ===================================================================
@@ -3323,7 +3311,9 @@ async def _vpylab_run(source, filename='<student>', namespace=None):
     for text in warnings:
         js.postMessage(json.dumps({"type": "warning", "runId": _current_run_id(), "text": text}))
     scope = _new_student_namespace() if namespace is None else namespace
-    scope[transform.RUNTIME_NAME] = transform
+    # 실행마다 필요한 함수만 담은 얇은 객체를 넣는다 (학생이 바꿔도 다음 실행에 남지 않는다)
+    import types as _types
+    scope[transform.RUNTIME_NAME] = _types.SimpleNamespace(maybe_await=transform.maybe_await)
     try:
         result = eval(code, scope)
         if inspect.iscoroutine(result):
@@ -3331,6 +3321,23 @@ async def _vpylab_run(source, filename='<student>', namespace=None):
         await _wait_pending_tasks()
     finally:
         await _cancel_pending_tasks()
+
+
+async def _vpylab_dispatch_events():
+    """본문이 끝난 뒤 들어온 이벤트를 처리한다. 핸들러 태스크가 끝날 때까지 기다리고,
+    오류·정지로 끝나도 finally에서 남은 태스크를 취소·회수한 뒤 커맨드를 내보낸다."""
+    try:
+        _process_pending_events()
+        await _wait_pending_tasks()
+    finally:
+        await _cancel_pending_tasks()
+        _send_commands()
+
+
+async def _vpylab_reset_runtime():
+    """새 실행 전 정리 — 이전 실행의 태스크를 취소·회수(await)한 뒤 상태를 초기화한다."""
+    await _cancel_pending_tasks()
+    _reset_runtime_state()
 
 
 def _reset_runtime_state():

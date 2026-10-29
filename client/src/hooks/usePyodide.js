@@ -7,7 +7,7 @@ const STOP_TIMEOUT = 750;
 
 function getTimeoutMessage(code) {
   const hasLoop = /\b(while|for)\b/.test(code);
-  const hasRate = /(?<![\w.가-힣])(rate|sleep)\s*\(/.test(code);
+  const hasRate = /(?<![\w.가-힣])(rate|sleep|waitfor|pause|input|악기|음표|화음)\s*\(/.test(code);
   if (hasLoop && !hasRate) {
     return '실행 시간 초과 (10초 무응답). 반복문 안에 rate()를 넣어주세요.';
   }

@@ -132,7 +132,7 @@ describe('실제 Worker 스크립트의 출력 제한과 샌드박스', () => {
     await self.onmessage({ data: { type: 'run', runId: 5, code: '학생 코드' } });
     self.postMessage.mockClear();
     python.runPythonAsync.mockImplementation(async (code) => {
-      if (code.includes('_process_pending_events()')) self._popEvent();
+      if (code.includes('_vpylab_dispatch_events()')) self._popEvent();
     });
     await self.onmessage({ data: { type: 'event', payload: { name: 'click' } } });
     expect(self.postMessage.mock.calls.map(([message]) => message.type)).toEqual(['event_start', 'event_done']);
@@ -146,9 +146,9 @@ describe('실제 Worker 스크립트의 출력 제한과 샌드박스', () => {
     let finishHandler;
     const handlerDone = new Promise((resolve) => { finishHandler = resolve; });
     python.runPythonAsync.mockImplementation(async (code) => {
-      if (code.includes('_process_pending_events()')) {
-        // 핸들러 안의 sleep()처럼 태스크가 남아 있으면 Python 쪽이 _wait_pending_tasks()로 기다린다
-        expect(code).toContain('await _wait_pending_tasks()');
+      if (code.includes('_vpylab_dispatch_events()')) {
+        // 핸들러 안의 sleep()처럼 태스크가 남아 있으면 Python 쪽(_vpylab_dispatch_events)이 기다린 뒤 finally에서 정리한다
+        expect(code).toBe('await _vpylab_dispatch_events()');
         self._popEvent();
         await handlerDone;
       }
@@ -173,7 +173,7 @@ describe('실제 Worker 스크립트의 출력 제한과 샌드박스', () => {
     await self.onmessage({ data: { type: 'run', runId: 5, code: '학생 코드' } });
     self.postMessage.mockClear();
     python.runPythonAsync.mockImplementation(async (code) => {
-      if (!code.includes('_process_pending_events()')) return;
+      if (!code.includes('_vpylab_dispatch_events()')) return;
       self._popEvent();
       const error = new Error('Traceback (most recent call last):\n  File "<vpython-api>", line 9, in _wait_pending_tasks\n  File "<student>", line 3, in on_click\nZeroDivisionError: division by zero\n');
       error.type = 'ZeroDivisionError';

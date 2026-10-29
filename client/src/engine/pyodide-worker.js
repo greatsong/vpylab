@@ -155,11 +155,7 @@ async function dispatchQueuedEvents() {
   try {
     // 핸들러가 rate()·sleep()·input()을 쓰면 별도 태스크로 돈다. 그 태스크가 끝날 때까지
     // 실행 상태(event_start~event_done)를 유지해 하트비트·정지 버튼·입력 위젯이 동작하게 한다.
-    await pyodide.runPythonAsync(`
-_process_pending_events()
-await _wait_pending_tasks()
-_send_commands()
-`);
+    await pyodide.runPythonAsync('await _vpylab_dispatch_events()');
     await flushOutputStreams();
     sendRunMessage(currentRunId, 'event_done');
   } catch (err) {
@@ -448,8 +444,8 @@ sys.stdout = _VPLBoundedOutput('stdout')
 sys.stderr = _VPLBoundedOutput('stderr')
 `);
 
-    // 이전 실행에서 남은 Python 측 객체/핸들러를 정리
-    await pyodide.runPythonAsync('_reset_runtime_state()');
+    // 이전 실행에서 남은 태스크를 취소·회수하고 Python 측 객체/핸들러를 정리
+    await pyodide.runPythonAsync('await _vpylab_reset_runtime()');
 
     // 학생 코드 실행 전 heartbeat — 모바일에서 초기화 지연으로 인한 타임아웃 방지
     sendRunMessage(runId, 'batch', { commands: [] });

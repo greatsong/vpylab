@@ -50,10 +50,42 @@ describe.skipIf(!pythonAvailable)('학생 코드 실행 런타임', { timeout: 6
     expect(runs.get('second:a').stdout).toBe('ok\n');
   });
 
-  it('긴 sleep()도 0.5초마다 하트비트를 보낸다', () => {
+  it('긴 sleep()도 0.2초마다 하트비트를 보낸다 (정지 확인 750ms보다 짧게)', () => {
     const r = one('from vpython import *\nsleep(15)\n');
     expect(r.ok).toBe(true);
-    expect(r.heartbeats).toBeGreaterThanOrEqual(29);
+    expect(r.heartbeats).toBeGreaterThanOrEqual(74);
+  });
+
+  it('콜백 태스크 안에서 다시 rate(fps, cb)를 예약해도 상한에 걸려 교착하지 않는다', () => {
+    const source = [
+      'from vpython import *',
+      'done = 0',
+      'class Obj:',
+      '    def __init__(self):',
+      '        self.n = 0',
+      '    def tick(self):',
+      '        global done',
+      '        self.n += 1',
+      '        if self.n < 3:',
+      '            rate(200, self.tick)',
+      '        else:',
+      '            done += 1',
+      'objs = [Obj() for i in range(70)]',
+      'for o in objs:',
+      '    rate(200, o.tick)',
+      'print("scheduled")',
+    ].join('\n');
+    const r = one(source);
+    expect(r.ok).toBe(true);
+    expect(r.stdout).toBe('scheduled\n');
+    expect(r.pendingTasks).toBe(0);
+  });
+
+  it('음표()·화음()은 코루틴이라 변환기가 기다리고 하트비트를 보낸다', () => {
+    const r = one('from vpython import *\n음표("도4", 1)\n화음([262, 330], 1)\nprint("ok")\n');
+    expect(r.ok).toBe(true);
+    expect(r.stdout).toBe('ok\n');
+    expect(r.heartbeats).toBeGreaterThanOrEqual(8);
   });
 
   it('실행마다 새 전역이라 내부 이름을 덮어써도 다음 실행이 깨지지 않고, 이전 실행의 변수도 남지 않는다', () => {

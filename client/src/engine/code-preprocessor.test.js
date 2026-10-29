@@ -379,6 +379,69 @@ describe.skipIf(!python)('검토 재현 사례 — 이름 겹침·스코프·가
     expect(r.warnings[0]).toContain('클래스 본문');
   });
 
+  it('2차-1. 모듈 수준의 global 선언이 있어도 이름 해석이 끝나고 호출을 기다린다', () => {
+    const r = run('global rate\nrate(60)\nglobal x\nx = 1\ndef f():\n    global x\n    x += 1\n    rate(1)\nf()\nprint(x)');
+    expect(r.code).toContain('await rate(60)');
+    expect(r.code).toContain('async def f():');
+    expect(r.error).toBeNull();
+    expect(r.stdout).toBe('2\n');
+  });
+
+  it('2차-5. 특수 메서드·property는 async로 바꾸지 않고 경고한다', () => {
+    const source = [
+      'class V:',
+      '    def fmt(self, v):',
+      '        rate(1)',
+      '        return str(v)',
+      '    def __str__(self):',
+      '        return "V"',
+      '    def __eq__(self, o):',
+      '        return self.fmt(0) == o',
+      '    @property',
+      '    def size(self):',
+      '        sleep(1)',
+      '        return 1',
+      'print(V())',
+    ].join('\n');
+    const r = run(source);
+    expect(r.code).toContain('    def __eq__(self, o):');
+    expect(r.code).toContain('    def size(self):');
+    expect(r.code).not.toContain('async def __eq__');
+    expect(r.code).not.toContain('async def size');
+    expect(r.warnings.some((w) => w.includes('__eq__'))).toBe(true);
+    expect(r.warnings.some((w) => w.includes('size'))).toBe(true);
+    expect(r.stdout).toBe('V\n');
+  });
+
+  it('2차-6. 부모 클래스의 동기 메서드도 자식이 대기 메서드로 재정의했으면 런타임 보조로 기다린다', () => {
+    const r = run('class Base:\n    def step(self):\n        return "base"\nclass Kid(Base):\n    def step(self):\n        rate(1)\n        return "kid"\nb = Base()\nprint(b.step())\nk = Kid()\nprint(k.step())\nfor o in [b, k]:\n    print(o.step())');
+    expect(r.code).toContain(`print(await ${MAYBE}(b.step()))`);
+    expect(r.code).toContain('print(await k.step())');
+    expect(r.error).toBeNull();
+    expect(r.stdout).toBe('base\nkid\nbase\nkid\n');
+  });
+
+  it('2차-7. lambda·제너레이터식 안의 미확정 호출도 경고한다', () => {
+    const r = run('class B:\n    def update(self):\n        rate(1)\nb = B()\nscene.bind("click", lambda e: b.update())\nf = lambda fn: fn()\ng = list(h() for h in [])');
+    expect(r.warnings.some((w) => w.includes('5번 줄') && w.includes('b.update()'))).toBe(true);
+    expect(r.warnings.some((w) => w.includes('6번 줄') && w.includes('fn()'))).toBe(true);
+    expect(r.warnings.some((w) => w.includes('7번 줄') && w.includes('제너레이터식'))).toBe(true);
+  });
+
+  it('2차-10. 런타임 보조는 Future 같은 awaitable도 기다리고, async generator는 진단한다', () => {
+    const r = run('import asyncio\ndef make():\n    loop = asyncio.get_event_loop()\n    f = loop.create_future()\n    f.set_result(5)\n    return f\ndef call(fn):\n    return fn()\nprint(call(make))\nasync def agen():\n    yield 1\nlist(call(agen))');
+    expect(r.stdout).toBe('5\n');
+    expect(r.error).toContain('TypeError');
+    expect(r.error).toContain('제너레이터');
+  });
+
+  it('음표()·화음()도 대기 함수다', () => {
+    const r = run('음표("도4", 0.2)\n화음([1, 2], 0.3)\ndef melody():\n    음표("미4")\nmelody()');
+    expect(r.code).toContain("await 음표('도4', 0.2)");
+    expect(r.code).toContain('async def melody():');
+    expect(r.log).toEqual(['음표', '화음', '음표']);
+  });
+
   it('vec = vector 같은 별칭과 다른 모듈의 함수 별칭은 동기로 본다', () => {
     const r = run('vec = vector\nv = vec(1, 2, 3)\nfrom random import choice\nc = choice([5])\nprint(v, c)');
     expect(r.code).not.toContain('await');

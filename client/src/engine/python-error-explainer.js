@@ -344,7 +344,7 @@ const RULES = [
     en: (m) => ({ title: 'This value cannot be awaited', explanation: `Tried to await a ${m[1]} value. This happens when a waiting function name (rate, sleep, input) was reassigned, or await was written before something that is not a waiting function.`, hint: 'Do not reuse rate, sleep or input as variable names, and remove any await you wrote yourself.' }),
   },
   {
-    type: 'TypeError', pattern: /^'(coroutine|async_generator)' object is not (iterable|subscriptable|callable)|^unsupported operand type\(s\) for .*'coroutine'|^'<' not supported between instances of 'coroutine'/,
+    type: 'TypeError', pattern: /^'(coroutine|async_generator)' object is not (iterable|subscriptable|callable)|^unsupported operand type\(s\) for .*'coroutine'|^'<' not supported between instances of 'coroutine'|^__(str|repr|format)__ returned non-string \(type coroutine\)|^'coroutine' object cannot be interpreted as an integer/,
     ko: () => ({ title: '대기 함수의 결과를 바로 썼습니다', explanation: 'rate()·sleep()·input()이나 그것을 부르는 함수는 기다린 뒤에 값이 나옵니다. 제너레이터식, lambda, yield가 있는 함수 안에서 대기 함수를 쓰거나, 그 결과를 바로 계산·순회하면 생깁니다.', hint: '제너레이터식은 for 문이나 리스트 컴프리헨션으로, lambda 안의 rate()는 def 함수로 바꿉니다.' }),
     en: () => ({ title: 'Used a waiting function result directly', explanation: 'rate(), sleep(), input() and functions that call them produce a value only after waiting. This happens when a waiting function is used inside a generator expression, a lambda or a function with yield, or its result is used right away.', hint: 'Turn generator expressions into for loops or list comprehensions, and lambdas with rate() into def functions.' }),
   },

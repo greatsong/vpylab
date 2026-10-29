@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-30T08:20:43",
+ "generatedAt": "2026-10-30T08:36:03",
  "python": "3.12.4",
  "api": "client/src/engine/vpython-api.py",
  "count": 562,
@@ -48,7 +48,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.2
+   "elapsed": 0.62
   },
   {
    "id": "internal:example:shooting-stars",
@@ -62,16 +62,16 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 1105,
+    "total": 1143,
     "actions": {
      "scene": 1,
-     "create": 105,
-     "sound": 5,
-     "update": 598,
-     "trail_update": 396
+     "create": 106,
+     "sound": 6,
+     "update": 620,
+     "trail_update": 410
     },
     "createTypes": {
-     "sphere": 105
+     "sphere": 106
     },
     "sceneProps": {
      "background": 1
@@ -81,7 +81,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.11
+   "elapsed": 0.58
   },
   {
    "id": "internal:example:dna-helix",
@@ -112,7 +112,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.94
+   "elapsed": 0.42
   },
   {
    "id": "internal:example:galaxy",
@@ -144,7 +144,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.94
+   "elapsed": 1.76
   },
   {
    "id": "internal:example:rain",
@@ -158,12 +158,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 7411,
+    "total": 7413,
     "actions": {
      "scene": 1,
      "create": 31,
-     "update": 7334,
-     "sound": 45
+     "update": 7340,
+     "sound": 41
     },
     "createTypes": {
      "box": 1,
@@ -177,7 +177,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.74
+   "elapsed": 0.67
   },
   {
    "id": "internal:example:music-box",
@@ -191,12 +191,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 489,
+    "total": 249,
     "actions": {
      "scene": 1,
      "create": 8,
-     "update": 360,
-     "sound": 120
+     "update": 180,
+     "sound": 60
     },
     "createTypes": {
      "box": 7,
@@ -210,7 +210,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.47
+   "elapsed": 0.53
   },
   {
    "id": "internal:example:rainbow-xylophone",
@@ -224,12 +224,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 489,
+    "total": 249,
     "actions": {
      "scene": 1,
      "create": 8,
-     "update": 360,
-     "sound": 120
+     "update": 180,
+     "sound": 60
     },
     "createTypes": {
      "box": 7,
@@ -243,7 +243,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.97
+   "elapsed": 0.41
   },
   {
    "id": "internal:example:fireflies",
@@ -257,12 +257,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 11624,
+    "total": 11631,
     "actions": {
      "scene": 1,
      "create": 24,
      "update": 11520,
-     "sound": 79
+     "sound": 86
     },
     "createTypes": {
      "sphere": 12,
@@ -276,7 +276,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.23
+   "elapsed": 0.55
   },
   {
    "id": "internal:example:rhythm-viz",
@@ -309,7 +309,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.8
+   "elapsed": 0.34
   },
   {
    "id": "internal:example:space-bgm",
@@ -344,7 +344,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.97
+   "elapsed": 0.35
   },
   {
    "id": "internal:example:cannon",
@@ -380,7 +380,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.64
+   "elapsed": 0.25
   },
   {
    "id": "internal:example:wave-sim",
@@ -390,15 +390,15 @@
    "origin": "client/src/data/examples.js#wave-sim",
    "progress": false,
    "category": "pass",
-   "detail": "rate 176회 뒤 정지",
+   "detail": "rate 241회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 78976,
+    "total": 108226,
     "actions": {
      "scene": 1,
      "create": 225,
-     "update": 78750
+     "update": 108000
     },
     "createTypes": {
      "sphere": 225
@@ -411,7 +411,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 4.37
+   "elapsed": 1.89
   },
   {
    "id": "internal:example:surface-plot",
@@ -436,7 +436,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.7
+   "elapsed": 0.41
   },
   {
    "id": "internal:example:pendulum",
@@ -472,7 +472,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.53
+   "elapsed": 0.36
   },
   {
    "id": "internal:example:fireworks",
@@ -486,13 +486,13 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 28537,
+    "total": 27337,
     "actions": {
      "scene": 1,
      "sound": 6,
      "create": 180,
-     "update": 21300,
-     "trail_update": 7050
+     "update": 20400,
+     "trail_update": 6750
     },
     "createTypes": {
      "sphere": 180
@@ -505,7 +505,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.48
+   "elapsed": 0.86
   },
   {
    "id": "internal:example:christmas-tree",
@@ -540,7 +540,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.69
+   "elapsed": 0.38
   },
   {
    "id": "internal:example:kaleidoscope",
@@ -571,7 +571,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.11
+   "elapsed": 0.57
   },
   {
    "id": "internal:example:neon-city",
@@ -585,13 +585,13 @@
    "status": "pass",
    "error": null,
    "commands": {
-    "total": 118,
+    "total": 111,
     "actions": {
      "scene": 1,
-     "create": 117
+     "create": 110
     },
     "createTypes": {
-     "box": 87,
+     "box": 80,
      "local_light": 30
     },
     "sceneProps": {
@@ -602,7 +602,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.93
+   "elapsed": 0.33
   },
   {
    "id": "internal:example:bounce-ball",
@@ -636,7 +636,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.08
+   "elapsed": 0.3
   },
   {
    "id": "internal:example:planet-collision",
@@ -669,7 +669,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.77
+   "elapsed": 0.29
   },
   {
    "id": "internal:example:showcase-shapes",
@@ -704,7 +704,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.69
+   "elapsed": 0.23
   },
   {
    "id": "internal:example:showcase-curve",
@@ -736,7 +736,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.32
+   "elapsed": 0.28
   },
   {
    "id": "internal:example:showcase-clone-rotate",
@@ -769,7 +769,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.4
+   "elapsed": 0.25
   },
   {
    "id": "internal:example:showcase-event-click",
@@ -801,7 +801,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.41
+   "elapsed": 0.29
   },
   {
    "id": "internal:example:showcase-keyboard-bouncing",
@@ -836,7 +836,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.2
+   "elapsed": 0.35
   },
   {
    "id": "internal:example:showcase-slider-control",
@@ -868,7 +868,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.22
+   "elapsed": 0.21
   },
   {
    "id": "internal:example:showcase-vertex-rainbow",
@@ -899,7 +899,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.67
+   "elapsed": 0.18
   },
   {
    "id": "internal:example:showcase-platonic-solids",
@@ -931,7 +931,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.67
+   "elapsed": 0.2
   },
   {
    "id": "internal:example:showcase-extrusion-tube",
@@ -962,7 +962,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.6
+   "elapsed": 0.22
   },
   {
    "id": "internal:example:showcase-keysdown-spaceship",
@@ -996,7 +996,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.64
+   "elapsed": 0.26
   },
   {
    "id": "internal:example:showcase-mouse-follow",
@@ -1032,7 +1032,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.57
+   "elapsed": 0.27
   },
   {
    "id": "internal:example:showcase-graph-functions",
@@ -1064,7 +1064,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.19
   },
   {
    "id": "internal:example:showcase-scatter-regression",
@@ -1087,11 +1087,11 @@
     "createTypes": {},
     "sceneProps": {}
    },
-   "stdout": "회귀식: y = 1.985 · x + 5.143\n빨간 점 = 데이터, 파란 선 = 회귀, 회색 선 = 진짜 식\n",
+   "stdout": "회귀식: y = 2.085 · x + 4.965\n빨간 점 = 데이터, 파란 선 = 회귀, 회색 선 = 진짜 식\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.2
   },
   {
    "id": "internal:example:showcase-pendulum-trail",
@@ -1127,7 +1127,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.29
   },
   {
    "id": "internal:example:music-frequency-tower",
@@ -1159,7 +1159,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.24
   },
   {
    "id": "internal:example:music-sine-wave",
@@ -1193,7 +1193,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.25
   },
   {
    "id": "internal:example:music-fibonacci-rhythm",
@@ -1207,12 +1207,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 717,
+    "total": 684,
     "actions": {
      "scene": 1,
      "create": 15,
-     "update": 467,
-     "sound": 234
+     "update": 445,
+     "sound": 223
     },
     "createTypes": {
      "box": 7,
@@ -1226,7 +1226,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.42
+   "elapsed": 0.31
   },
   {
    "id": "internal:example:music-doppler",
@@ -1240,14 +1240,14 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 732,
+    "total": 726,
     "actions": {
      "scene": 1,
      "create": 5,
-     "update": 242,
-     "trail_update": 242,
+     "update": 240,
+     "trail_update": 240,
      "trail_clear": 3,
-     "sound": 239
+     "sound": 237
     },
     "createTypes": {
      "box": 2,
@@ -1262,7 +1262,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.72
+   "elapsed": 0.34
   },
   {
    "id": "internal:example:music-wave-interference",
@@ -1295,7 +1295,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.49
+   "elapsed": 0.21
   },
   {
    "id": "internal:example:music-planet-orchestra",
@@ -1331,7 +1331,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.45
+   "elapsed": 0.3
   },
   {
    "id": "internal:example:music-rainbow-piano",
@@ -1365,7 +1365,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.18
+   "elapsed": 0.23
   },
   {
    "id": "internal:example:music-note-fireworks",
@@ -1398,7 +1398,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.21
+   "elapsed": 0.34
   },
   {
    "id": "internal:example:music-mario-dance",
@@ -1412,12 +1412,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 298,
+    "total": 273,
     "actions": {
      "scene": 3,
      "create": 7,
-     "sound": 96,
-     "update": 192
+     "sound": 88,
+     "update": 175
     },
     "createTypes": {
      "sphere": 1,
@@ -1438,7 +1438,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.36
+   "elapsed": 0.45
   },
   {
    "id": "internal:example:music-childrens-songs",
@@ -1471,7 +1471,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.7
+   "elapsed": 0.41
   },
   {
    "id": "internal:example:music-game-themes",
@@ -1503,7 +1503,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.69
+   "elapsed": 0.38
   },
   {
    "id": "internal:example:music-piano-recorder",
@@ -1538,7 +1538,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.94
+   "elapsed": 0.44
   },
   {
    "id": "internal:example:music-endless-cosmos",
@@ -1552,16 +1552,15 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 527,
+    "total": 242,
     "actions": {
      "scene": 3,
-     "create": 242,
-     "sound": 241,
-     "update": 41
+     "create": 120,
+     "sound": 119
     },
     "createTypes": {
      "label": 1,
-     "sphere": 241
+     "sphere": 119
     },
     "sceneProps": {
      "background": 1,
@@ -1573,7 +1572,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.99
+   "elapsed": 0.44
   },
   {
    "id": "internal:example:lightshow-aurora-symphony",
@@ -1609,7 +1608,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.62
+   "elapsed": 1.15
   },
   {
    "id": "internal:example:lightshow-piano-fountain",
@@ -1645,7 +1644,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.18
+   "elapsed": 0.43
   },
   {
    "id": "internal:example:lightshow-galaxy-disco",
@@ -1683,7 +1682,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.04
+   "elapsed": 0.5
   },
   {
    "id": "internal:example:synesthesia-color-piano",
@@ -1719,7 +1718,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.34
   },
   {
    "id": "internal:example:synesthesia-pitch-painter",
@@ -1754,7 +1753,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.54
+   "elapsed": 0.29
   },
   {
    "id": "internal:example:synesthesia-aurora-orchestra",
@@ -1793,7 +1792,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.73
+   "elapsed": 0.73
   },
   {
    "id": "internal:example:cosmic-aurora-veil",
@@ -1803,15 +1802,15 @@
    "origin": "client/src/data/examples.js#cosmic-aurora-veil",
    "progress": false,
    "category": "pass",
-   "detail": "rate 29회 뒤 정지",
+   "detail": "rate 66회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 102124,
+    "total": 235324,
     "actions": {
      "scene": 2,
      "create": 1322,
-     "update": 100800
+     "update": 234000
     },
     "createTypes": {
      "label": 1,
@@ -1827,7 +1826,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.82
+   "elapsed": 5.3
   },
   {
    "id": "internal:example:cosmic-firefly-choir",
@@ -1841,12 +1840,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 48282,
+    "total": 48285,
     "actions": {
      "scene": 2,
      "create": 103,
      "update": 48001,
-     "sound": 176
+     "sound": 179
     },
     "createTypes": {
      "label": 1,
@@ -1863,7 +1862,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.68
+   "elapsed": 1.04
   },
   {
    "id": "internal:example:cosmic-galaxy-grow",
@@ -1877,16 +1876,16 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 8371,
+    "total": 7579,
     "actions": {
      "scene": 2,
-     "create": 35,
-     "update": 8296,
-     "sound": 38
+     "create": 32,
+     "update": 7510,
+     "sound": 35
     },
     "createTypes": {
      "label": 1,
-     "sphere": 33,
+     "sphere": 30,
      "local_light": 1
     },
     "sceneProps": {
@@ -1898,7 +1897,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.73
+   "elapsed": 0.43
   },
   {
    "id": "internal:example:texture-showcase",
@@ -1930,7 +1929,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.22
   },
   {
    "id": "internal:course:beg-shapes:beg-shapes-1",
@@ -1960,7 +1959,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.24
   },
   {
    "id": "internal:course:beg-shapes:beg-shapes-2",
@@ -1991,7 +1990,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.62
+   "elapsed": 0.22
   },
   {
    "id": "internal:course:beg-shapes:beg-shapes-3",
@@ -2022,7 +2021,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.7
+   "elapsed": 0.25
   },
   {
    "id": "internal:course:beg-shapes:beg-shapes-4",
@@ -2053,7 +2052,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.99
+   "elapsed": 0.29
   },
   {
    "id": "internal:course:beg-shapes:beg-shapes-5",
@@ -2085,7 +2084,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.24
+   "elapsed": 0.27
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-1",
@@ -2115,7 +2114,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.3
+   "elapsed": 0.28
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-2",
@@ -2145,7 +2144,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.26
+   "elapsed": 0.22
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-3",
@@ -2176,7 +2175,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.63
+   "elapsed": 0.18
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-4",
@@ -2206,7 +2205,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.42
+   "elapsed": 0.21
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-5",
@@ -2236,7 +2235,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.6
+   "elapsed": 0.25
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-6",
@@ -2267,7 +2266,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.68
+   "elapsed": 0.26
   },
   {
    "id": "internal:course:beg-melody:beg-melody-1",
@@ -2292,7 +2291,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.04
+   "elapsed": 0.32
   },
   {
    "id": "internal:course:beg-melody:beg-melody-2",
@@ -2317,7 +2316,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.06
+   "elapsed": 0.33
   },
   {
    "id": "internal:course:beg-melody:beg-melody-3",
@@ -2327,8 +2326,8 @@
    "origin": "client/src/data/courses.js#beg-melody/beg-melody-3",
    "progress": false,
    "category": "pass",
-   "detail": "rate 58회 뒤 정지",
-   "status": "stopped",
+   "detail": "",
+   "status": "pass",
    "error": null,
    "commands": {
     "total": 7,
@@ -2342,7 +2341,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 4.31
+   "elapsed": 0.35
   },
   {
    "id": "internal:course:beg-melody:beg-melody-4",
@@ -2352,13 +2351,13 @@
    "origin": "client/src/data/courses.js#beg-melody/beg-melody-4",
    "progress": false,
    "category": "pass",
-   "detail": "rate 61회 뒤 정지",
-   "status": "stopped",
+   "detail": "",
+   "status": "pass",
    "error": null,
    "commands": {
-    "total": 10,
+    "total": 12,
     "actions": {
-     "sound": 10
+     "sound": 12
     },
     "createTypes": {},
     "sceneProps": {}
@@ -2367,7 +2366,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.99
+   "elapsed": 0.29
   },
   {
    "id": "internal:course:beg-melody:beg-melody-5",
@@ -2377,18 +2376,18 @@
    "origin": "client/src/data/courses.js#beg-melody/beg-melody-5",
    "progress": false,
    "category": "pass",
-   "detail": "rate 58회 뒤 정지",
-   "status": "stopped",
+   "detail": "",
+   "status": "pass",
    "error": null,
    "commands": {
-    "total": 15,
+    "total": 17,
     "actions": {
      "scene": 1,
-     "create": 7,
-     "sound": 7
+     "create": 8,
+     "sound": 8
     },
     "createTypes": {
-     "box": 7
+     "box": 8
     },
     "sceneProps": {
      "background": 1
@@ -2398,7 +2397,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.95
+   "elapsed": 0.27
   },
   {
    "id": "internal:course:fus-math-functions:fus-math-1",
@@ -2454,7 +2453,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.3
   },
   {
    "id": "internal:course:fus-math-functions:fus-math-3",
@@ -2510,7 +2509,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.26
   },
   {
    "id": "internal:course:fus-math-functions:fus-math-5",
@@ -2539,7 +2538,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.61
+   "elapsed": 0.23
   },
   {
    "id": "internal:course:fus-math-functions:fus-math-6",
@@ -2570,7 +2569,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.19
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-1",
@@ -2602,7 +2601,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.74
+   "elapsed": 0.26
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-2",
@@ -2635,7 +2634,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.7
+   "elapsed": 0.19
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-3",
@@ -2668,7 +2667,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.51
+   "elapsed": 0.22
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-4",
@@ -2701,7 +2700,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.63
+   "elapsed": 0.21
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-5",
@@ -2736,7 +2735,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.56
+   "elapsed": 0.23
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-6",
@@ -2768,7 +2767,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.53
+   "elapsed": 0.25
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-7",
@@ -2795,7 +2794,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 0.19
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-1",
@@ -2825,7 +2824,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.21
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-2",
@@ -2857,7 +2856,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.21
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-3",
@@ -2887,7 +2886,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.6
+   "elapsed": 0.24
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-4",
@@ -2917,7 +2916,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.31
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-5",
@@ -2947,7 +2946,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.45
+   "elapsed": 0.33
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-6",
@@ -2957,16 +2956,16 @@
    "origin": "client/src/data/courses.js#fus-art-generative/fus-art-6",
    "progress": false,
    "category": "pass",
-   "detail": "rate 40회 뒤 정지",
-   "status": "stopped",
+   "detail": "",
+   "status": "pass",
    "error": null,
    "commands": {
-    "total": 36,
+    "total": 50,
     "actions": {
      "scene": 1,
      "create": 7,
-     "update": 23,
-     "sound": 5
+     "update": 35,
+     "sound": 7
     },
     "createTypes": {
      "box": 7
@@ -2979,7 +2978,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 4.05
+   "elapsed": 0.3
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-1",
@@ -3008,7 +3007,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.04
+   "elapsed": 0.4
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-2",
@@ -3040,7 +3039,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.75
+   "elapsed": 1.93
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-3",
@@ -3072,7 +3071,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.52
+   "elapsed": 2.01
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-4",
@@ -3104,7 +3103,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.76
+   "elapsed": 1.9
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-5",
@@ -3136,7 +3135,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.36
+   "elapsed": 2.29
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-6",
@@ -3168,7 +3167,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.58
+   "elapsed": 1.88
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-7",
@@ -3201,7 +3200,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.91
+   "elapsed": 0.48
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-8",
@@ -3228,7 +3227,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.37
+   "elapsed": 0.54
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-9",
@@ -3256,7 +3255,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.52
+   "elapsed": 0.51
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-10",
@@ -3281,7 +3280,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 4.56
+   "elapsed": 0.48
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-11",
@@ -3313,7 +3312,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.96
+   "elapsed": 0.28
   },
   {
    "id": "internal:mission:CT-1:starter",
@@ -3340,7 +3339,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.88
+   "elapsed": 0.22
   },
   {
    "id": "internal:mission:CT-1:solution",
@@ -3370,7 +3369,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.79
+   "elapsed": 0.25
   },
   {
    "id": "internal:mission:CT-2:starter",
@@ -3399,7 +3398,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.6
+   "elapsed": 0.23
   },
   {
    "id": "internal:mission:CT-2:solution",
@@ -3428,7 +3427,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.23
   },
   {
    "id": "internal:mission:CT-3:starter",
@@ -3456,7 +3455,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.45
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:CT-3:solution",
@@ -3484,7 +3483,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:CT-4:starter",
@@ -3507,7 +3506,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.52
+   "elapsed": 0.21
   },
   {
    "id": "internal:mission:CT-4:solution",
@@ -3534,7 +3533,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.52
+   "elapsed": 0.21
   },
   {
    "id": "internal:mission:CT-5:starter",
@@ -3561,7 +3560,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.49
+   "elapsed": 0.21
   },
   {
    "id": "internal:mission:CT-5:solution",
@@ -3590,7 +3589,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.03
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:CT-6:starter",
@@ -3620,7 +3619,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.07
+   "elapsed": 0.19
   },
   {
    "id": "internal:mission:CT-6:solution",
@@ -3650,7 +3649,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.24
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:CT-7:starter",
@@ -3680,7 +3679,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.28
+   "elapsed": 0.17
   },
   {
    "id": "internal:mission:CT-7:solution",
@@ -3710,7 +3709,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.24
+   "elapsed": 0.19
   },
   {
    "id": "internal:mission:CT-8:starter",
@@ -3737,7 +3736,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.63
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:CT-8:solution",
@@ -3764,7 +3763,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.21
   },
   {
    "id": "internal:mission:CT-9:starter",
@@ -3791,7 +3790,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.18
   },
   {
    "id": "internal:mission:CT-9:solution",
@@ -3818,7 +3817,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:CT-10:starter",
@@ -3845,7 +3844,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.19
   },
   {
    "id": "internal:mission:CT-10:solution",
@@ -3873,7 +3872,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.19
   },
   {
    "id": "internal:mission:CT-11:starter",
@@ -3900,7 +3899,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:CT-11:solution",
@@ -3927,7 +3926,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.17
   },
   {
    "id": "internal:mission:CT-12:starter",
@@ -3954,7 +3953,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.17
   },
   {
    "id": "internal:mission:CT-12:solution",
@@ -3982,7 +3981,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:CT-13:starter",
@@ -4009,7 +4008,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:CT-13:solution",
@@ -4037,7 +4036,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.18
   },
   {
    "id": "internal:mission:CT-14:starter",
@@ -4065,7 +4064,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.17
   },
   {
    "id": "internal:mission:CT-14:solution",
@@ -4093,7 +4092,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.17
   },
   {
    "id": "internal:mission:CT-15:starter",
@@ -4121,7 +4120,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.17
   },
   {
    "id": "internal:mission:CT-15:solution",
@@ -4149,7 +4148,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:CT-16:starter",
@@ -4176,7 +4175,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.18
   },
   {
    "id": "internal:mission:CT-16:solution",
@@ -4204,7 +4203,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.22
   },
   {
    "id": "internal:mission:CT-17:starter",
@@ -4234,7 +4233,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:CT-17:solution",
@@ -4264,7 +4263,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.18
   },
   {
    "id": "internal:mission:CR-1:starter",
@@ -4296,7 +4295,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.21
   },
   {
    "id": "internal:mission:CR-1:solution",
@@ -4328,7 +4327,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.17
   },
   {
    "id": "internal:mission:CR-2:starter",
@@ -4358,7 +4357,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.24
   },
   {
    "id": "internal:mission:CR-2:solution",
@@ -4388,7 +4387,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.19
   },
   {
    "id": "internal:mission:CR-3:starter",
@@ -4419,7 +4418,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.5
+   "elapsed": 0.27
   },
   {
    "id": "internal:mission:CR-3:solution",
@@ -4450,7 +4449,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.23
   },
   {
    "id": "internal:mission:CR-4:starter",
@@ -4483,7 +4482,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.41
+   "elapsed": 0.23
   },
   {
    "id": "internal:mission:CR-4:solution",
@@ -4516,7 +4515,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.49
+   "elapsed": 0.24
   },
   {
    "id": "internal:mission:CR-5:starter",
@@ -4547,7 +4546,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.21
   },
   {
    "id": "internal:mission:CR-5:solution",
@@ -4578,7 +4577,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.23
   },
   {
    "id": "internal:mission:MA-1:starter",
@@ -4609,7 +4608,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:MA-1:solution",
@@ -4640,7 +4639,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.41
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:MA-2:starter",
@@ -4667,7 +4666,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.23
   },
   {
    "id": "internal:mission:MA-2:solution",
@@ -4694,7 +4693,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.22
   },
   {
    "id": "internal:mission:MA-3:starter",
@@ -4721,7 +4720,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:MA-3:solution",
@@ -4748,7 +4747,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:MA-4:starter",
@@ -4775,7 +4774,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.25
   },
   {
    "id": "internal:mission:MA-4:solution",
@@ -4802,7 +4801,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.18
   },
   {
    "id": "internal:mission:MA-5:starter",
@@ -4829,7 +4828,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.29
   },
   {
    "id": "internal:mission:MA-5:solution",
@@ -4856,7 +4855,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.29
   },
   {
    "id": "internal:mission:SC-1:starter",
@@ -4885,7 +4884,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.32
   },
   {
    "id": "internal:mission:SC-1:solution",
@@ -4914,7 +4913,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.48
   },
   {
    "id": "internal:mission:SC-2:starter",
@@ -4943,7 +4942,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.27
   },
   {
    "id": "internal:mission:SC-2:solution",
@@ -4972,7 +4971,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.57
   },
   {
    "id": "internal:mission:SC-3:starter",
@@ -5003,7 +5002,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.53
   },
   {
    "id": "internal:mission:SC-3:solution",
@@ -5034,7 +5033,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.58
   },
   {
    "id": "internal:mission:SC-4:starter",
@@ -5064,7 +5063,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.53
   },
   {
    "id": "internal:mission:SC-4:solution",
@@ -5094,7 +5093,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.48
   },
   {
    "id": "internal:mission:SC-5:starter",
@@ -5126,7 +5125,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.31
   },
   {
    "id": "internal:mission:SC-5:solution",
@@ -5158,7 +5157,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.45
+   "elapsed": 0.3
   },
   {
    "id": "internal:mission:AR-1:starter",
@@ -5189,7 +5188,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.59
+   "elapsed": 0.27
   },
   {
    "id": "internal:mission:AR-1:solution",
@@ -5220,7 +5219,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.54
+   "elapsed": 0.32
   },
   {
    "id": "internal:mission:AR-2:starter",
@@ -5248,7 +5247,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.76
+   "elapsed": 0.35
   },
   {
    "id": "internal:mission:AR-2:solution",
@@ -5276,7 +5275,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.72
+   "elapsed": 0.46
   },
   {
    "id": "internal:mission:AR-3:starter",
@@ -5306,7 +5305,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.49
+   "elapsed": 0.22
   },
   {
    "id": "internal:mission:AR-3:solution",
@@ -5336,7 +5335,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.22
   },
   {
    "id": "internal:mission:AR-4:starter",
@@ -5370,7 +5369,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.19
   },
   {
    "id": "internal:mission:AR-4:solution",
@@ -5404,7 +5403,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 0.19
   },
   {
    "id": "internal:mission:AR-5:starter",
@@ -5435,7 +5434,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.61
+   "elapsed": 0.65
   },
   {
    "id": "internal:mission:AR-5:solution",
@@ -5466,7 +5465,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.63
+   "elapsed": 0.73
   },
   {
    "id": "internal:mission:SN-1:starter",
@@ -5495,7 +5494,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.32
+   "elapsed": 0.33
   },
   {
    "id": "internal:mission:SN-1:solution",
@@ -5524,7 +5523,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.32
+   "elapsed": 0.3
   },
   {
    "id": "internal:mission:SN-2:starter",
@@ -5552,7 +5551,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.48
   },
   {
    "id": "internal:mission:SN-2:solution",
@@ -5580,7 +5579,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.55
   },
   {
    "id": "internal:mission:SN-3:starter",
@@ -5611,7 +5610,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.3
+   "elapsed": 0.41
   },
   {
    "id": "internal:mission:SN-3:solution",
@@ -5621,8 +5620,8 @@
    "origin": "client/src/data/missions.js#SN-3",
    "progress": false,
    "category": "pass",
-   "detail": "rate 58회 뒤 정지",
-   "status": "stopped",
+   "detail": "",
+   "status": "pass",
    "error": null,
    "commands": {
     "total": 7,
@@ -5638,11 +5637,11 @@
      "background": 1
     }
    },
-   "stdout": "",
+   "stdout": "화음 비교 완료\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.47
+   "elapsed": 0.39
   },
   {
    "id": "internal:mission:SN-4:starter",
@@ -5673,7 +5672,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.23
   },
   {
    "id": "internal:mission:SN-4:solution",
@@ -5704,7 +5703,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:SN-5:starter",
@@ -5736,7 +5735,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.42
+   "elapsed": 0.18
   },
   {
    "id": "internal:mission:SN-5:solution",
@@ -5768,7 +5767,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.43
+   "elapsed": 0.22
   },
   {
    "id": "internal:mission:AR-6:starter",
@@ -5798,7 +5797,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.23
   },
   {
    "id": "internal:mission:AR-6:solution",
@@ -5828,7 +5827,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.21
   },
   {
    "id": "internal:mission:AR-7:starter",
@@ -5860,7 +5859,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.24
   },
   {
    "id": "internal:mission:AR-7:solution",
@@ -5892,7 +5891,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.27
   },
   {
    "id": "internal:mission:AR-8:starter",
@@ -5922,7 +5921,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.23
   },
   {
    "id": "internal:mission:AR-8:solution",
@@ -5952,7 +5951,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.41
+   "elapsed": 0.46
   },
   {
    "id": "internal:mission:AR-9:starter",
@@ -5985,7 +5984,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.74
   },
   {
    "id": "internal:mission:AR-9:solution",
@@ -6018,7 +6017,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.72
   },
   {
    "id": "internal:mission:MA-6:starter",
@@ -6045,7 +6044,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 1.6
   },
   {
    "id": "internal:mission:MA-6:solution",
@@ -6072,7 +6071,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 1.93
   },
   {
    "id": "internal:mission:MA-7:starter",
@@ -6102,7 +6101,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 1.95
   },
   {
    "id": "internal:mission:MA-7:solution",
@@ -6132,7 +6131,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 1.66
   },
   {
    "id": "internal:mission:SC-6:starter",
@@ -6160,7 +6159,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 2.23
   },
   {
    "id": "internal:mission:SC-6:solution",
@@ -6188,7 +6187,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 2.28
   },
   {
    "id": "internal:mission:SN-6:starter",
@@ -6216,7 +6215,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 1.69
   },
   {
    "id": "internal:mission:SN-6:solution",
@@ -6244,7 +6243,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 1.33
   },
   {
    "id": "internal:mission:SN-7:starter",
@@ -6272,7 +6271,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.11
+   "elapsed": 1.29
   },
   {
    "id": "internal:mission:SN-7:solution",
@@ -6300,7 +6299,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.89
+   "elapsed": 1.3
   },
   {
    "id": "internal:mission:SN-8:starter",
@@ -6328,7 +6327,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.47
   },
   {
    "id": "internal:mission:SN-8:solution",
@@ -6356,7 +6355,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.4
   },
   {
    "id": "internal:mission:SN-9:starter",
@@ -6384,7 +6383,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.52
+   "elapsed": 1.03
   },
   {
    "id": "internal:mission:SN-9:solution",
@@ -6412,7 +6411,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.8
+   "elapsed": 1.16
   },
   {
    "id": "internal:mission:SN-10:starter",
@@ -6444,7 +6443,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.43
+   "elapsed": 1.04
   },
   {
    "id": "internal:mission:SN-10:solution",
@@ -6476,7 +6475,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.02
+   "elapsed": 1.02
   },
   {
    "id": "idiom:vec-component-add",
@@ -6504,7 +6503,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.56
+   "elapsed": 1.24
   },
   {
    "id": "idiom:vec-pos-plus-vdt",
@@ -6532,7 +6531,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.58
+   "elapsed": 1.24
   },
   {
    "id": "idiom:vec-size-component",
@@ -6560,7 +6559,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.15
+   "elapsed": 0.59
   },
   {
    "id": "idiom:vec-mag-hat-norm",
@@ -6583,7 +6582,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.34
+   "elapsed": 0.51
   },
   {
    "id": "idiom:vec-dot-cross",
@@ -6606,7 +6605,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.36
+   "elapsed": 0.54
   },
   {
    "id": "idiom:vec-proj-comp-diff-angle",
@@ -6629,7 +6628,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.12
+   "elapsed": 0.44
   },
   {
    "id": "idiom:vec-rotate-function",
@@ -6652,7 +6651,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.79
+   "elapsed": 0.4
   },
   {
    "id": "idiom:vec-arith",
@@ -6675,7 +6674,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.76
+   "elapsed": 0.33
   },
   {
    "id": "idiom:vec-random",
@@ -6698,7 +6697,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.65
+   "elapsed": 0.26
   },
   {
    "id": "idiom:vec-alias",
@@ -6725,7 +6724,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.66
+   "elapsed": 0.22
   },
   {
    "id": "idiom:vec-tuple-pos",
@@ -6748,7 +6747,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.74
+   "elapsed": 0.22
   },
   {
    "id": "idiom:vec-int-mul-rhs",
@@ -6771,7 +6770,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.2
   },
   {
    "id": "idiom:vec-value-copy",
@@ -6798,7 +6797,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.2
   },
   {
    "id": "idiom:obj-box-lhw",
@@ -6826,7 +6825,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.53
+   "elapsed": 0.21
   },
   {
    "id": "idiom:obj-box-axis-up",
@@ -6854,7 +6853,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.21
   },
   {
    "id": "idiom:obj-sphere-size",
@@ -6881,7 +6880,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.52
+   "elapsed": 0.27
   },
   {
    "id": "idiom:obj-cylinder",
@@ -6909,7 +6908,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.52
+   "elapsed": 0.21
   },
   {
    "id": "idiom:obj-cone-pyramid",
@@ -6937,7 +6936,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.2
   },
   {
    "id": "idiom:obj-ellipsoid",
@@ -6965,7 +6964,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.23
   },
   {
    "id": "idiom:obj-ring",
@@ -6993,7 +6992,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.56
+   "elapsed": 0.3
   },
   {
    "id": "idiom:obj-helix",
@@ -7021,7 +7020,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.49
+   "elapsed": 0.22
   },
   {
    "id": "idiom:obj-arrow",
@@ -7049,7 +7048,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.22
   },
   {
    "id": "idiom:obj-label",
@@ -7077,7 +7076,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.26
   },
   {
    "id": "idiom:obj-text",
@@ -7094,7 +7093,7 @@
     "type": "AttributeError",
     "message": "'label' object has no attribute 'length'",
     "studentLine": 4,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -7107,7 +7106,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.24
   },
   {
    "id": "idiom:obj-curve-pos-list",
@@ -7124,7 +7123,7 @@
     "type": "AttributeError",
     "message": "'curve' object has no attribute 'npoints'",
     "studentLine": 6,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -7137,7 +7136,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.22
   },
   {
    "id": "idiom:obj-curve-dict-points",
@@ -7167,7 +7166,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.2
   },
   {
    "id": "idiom:obj-points",
@@ -7195,7 +7194,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.22
   },
   {
    "id": "idiom:obj-compound",
@@ -7212,7 +7211,7 @@
     "type": "AttributeError",
     "message": "'compound' object has no attribute 'rotate'",
     "studentLine": 6,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -7225,7 +7224,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.22
   },
   {
    "id": "idiom:obj-compound-origin",
@@ -7254,7 +7253,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.21
   },
   {
    "id": "idiom:obj-extrusion",
@@ -7271,7 +7270,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 2,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -7284,7 +7283,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.2
   },
   {
    "id": "idiom:obj-shapes-paths",
@@ -7301,7 +7300,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 2,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -7314,7 +7313,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.21
   },
   {
    "id": "idiom:obj-vertex-triangle-quad",
@@ -7342,7 +7341,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.22
   },
   {
    "id": "idiom:obj-simple-sphere",
@@ -7369,7 +7368,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.19
   },
   {
    "id": "idiom:obj-group",
@@ -7386,7 +7385,7 @@
     "type": "NameError",
     "message": "name 'group' is not defined",
     "studentLine": 2,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -7399,7 +7398,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.19
   },
   {
    "id": "idiom:attr-color-gray",
@@ -7426,7 +7425,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.18
   },
   {
    "id": "idiom:attr-color-hsv",
@@ -7449,7 +7448,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.19
   },
   {
    "id": "idiom:attr-color-names",
@@ -7472,7 +7471,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.18
   },
   {
    "id": "idiom:attr-opacity-emissive-shininess",
@@ -7500,7 +7499,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.21
   },
   {
    "id": "idiom:attr-texture-preset",
@@ -7529,7 +7528,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 0.19
   },
   {
    "id": "idiom:attr-texture-url",
@@ -7556,7 +7555,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.26
   },
   {
    "id": "idiom:attr-visible-false",
@@ -7584,7 +7583,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.26
   },
   {
    "id": "idiom:attr-up-axis",
@@ -7613,7 +7612,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.25
   },
   {
    "id": "idiom:attr-axis-mag",
@@ -7640,7 +7639,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.25
   },
   {
    "id": "idiom:attr-user-attributes",
@@ -7667,7 +7666,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.42
+   "elapsed": 0.28
   },
   {
    "id": "idiom:attr-clone",
@@ -7695,7 +7694,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.27
   },
   {
    "id": "idiom:attr-del-object",
@@ -7724,7 +7723,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.42
+   "elapsed": 0.2
   },
   {
    "id": "idiom:attr-rotate-method",
@@ -7752,7 +7751,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 0.19
   },
   {
    "id": "idiom:attr-rotate-sphere-default-axis",
@@ -7780,7 +7779,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.59
+   "elapsed": 0.2
   },
   {
    "id": "idiom:attr-dynamic-size-from-length",
@@ -7808,7 +7807,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.19
   },
   {
    "id": "idiom:trail-basic",
@@ -7838,7 +7837,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.52
+   "elapsed": 0.26
   },
   {
    "id": "idiom:trail-points-interval",
@@ -7867,7 +7866,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.28
   },
   {
    "id": "idiom:trail-attach-trail",
@@ -7898,7 +7897,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.54
+   "elapsed": 0.28
   },
   {
    "id": "idiom:trail-attach-trail-function",
@@ -7921,7 +7920,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.54
+   "elapsed": 0.29
   },
   {
    "id": "idiom:attach-arrow",
@@ -7950,7 +7949,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.3
   },
   {
    "id": "idiom:attach-light",
@@ -7978,7 +7977,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.42
+   "elapsed": 0.29
   },
   {
    "id": "idiom:scene-camera",
@@ -8010,7 +8009,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.24
   },
   {
    "id": "idiom:scene-forward-range-center",
@@ -8042,7 +8041,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.23
   },
   {
    "id": "idiom:scene-ambient-lights",
@@ -8074,7 +8073,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.22
   },
   {
    "id": "idiom:scene-title-caption",
@@ -8104,7 +8103,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.24
   },
   {
    "id": "idiom:scene-size",
@@ -8131,7 +8130,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.2
   },
   {
    "id": "idiom:scene-userzoom",
@@ -8154,7 +8153,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.26
   },
   {
    "id": "idiom:scene-objects-delete",
@@ -8171,7 +8170,7 @@
     "type": "AttributeError",
     "message": "'_Scene' object has no attribute 'delete'",
     "studentLine": 6,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -8184,7 +8183,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.24
   },
   {
    "id": "idiom:scene-canvas-new",
@@ -8216,7 +8215,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.22
   },
   {
    "id": "idiom:scene-align",
@@ -8241,7 +8240,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.53
+   "elapsed": 0.23
   },
   {
    "id": "idiom:scene-pixel-to-world",
@@ -8264,7 +8263,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.22
   },
   {
    "id": "idiom:graph-gcurve",
@@ -8281,7 +8280,7 @@
     "type": "TypeError",
     "message": "_GSeriesBase.plot() got an unexpected keyword argument 'pos'",
     "studentLine": 6,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -8294,7 +8293,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.45
+   "elapsed": 0.21
   },
   {
    "id": "idiom:graph-gdots-gvbars",
@@ -8322,7 +8321,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.63
+   "elapsed": 0.2
   },
   {
    "id": "idiom:graph-fast-false",
@@ -8351,7 +8350,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.61
+   "elapsed": 0.18
   },
   {
    "id": "idiom:event-bind-keydown",
@@ -8376,7 +8375,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.54
+   "elapsed": 0.18
   },
   {
    "id": "idiom:event-bind-click-pos",
@@ -8401,7 +8400,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.51
+   "elapsed": 0.18
   },
   {
    "id": "idiom:event-bind-decorator",
@@ -8426,7 +8425,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.16
   },
   {
    "id": "idiom:event-mouse-pos-pick",
@@ -8443,7 +8442,7 @@
     "type": "AttributeError",
     "message": "'_MouseState' object has no attribute 'ray'",
     "studentLine": 6,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -8456,7 +8455,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.51
+   "elapsed": 0.19
   },
   {
    "id": "idiom:event-keysdown",
@@ -8479,7 +8478,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.18
   },
   {
    "id": "idiom:event-waitfor-click",
@@ -8508,7 +8507,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.19
   },
   {
    "id": "idiom:event-waitfor-keydown",
@@ -8534,7 +8533,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.19
   },
   {
    "id": "idiom:event-pause",
@@ -8565,7 +8564,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.17
   },
   {
    "id": "idiom:event-waitfor-redraw",
@@ -8592,7 +8591,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.21
   },
   {
    "id": "idiom:widget-slider",
@@ -8619,7 +8618,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 0.17
   },
   {
    "id": "idiom:widget-button",
@@ -8645,7 +8644,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.18
   },
   {
    "id": "idiom:widget-wtext",
@@ -8672,7 +8671,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.2
   },
   {
    "id": "idiom:widget-winput",
@@ -8697,7 +8696,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.19
   },
   {
    "id": "idiom:widget-checkbox-radio-menu",
@@ -8724,7 +8723,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.2
   },
   {
    "id": "idiom:widget-caption-placement",
@@ -8752,7 +8751,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.21
   },
   {
    "id": "idiom:flow-rate-loop",
@@ -8780,7 +8779,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.56
+   "elapsed": 0.23
   },
   {
    "id": "idiom:flow-rate-in-function",
@@ -8808,7 +8807,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.41
+   "elapsed": 0.22
   },
   {
    "id": "idiom:flow-rate-in-method",
@@ -8836,7 +8835,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-sleep",
@@ -8863,7 +8862,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.18
   },
   {
    "id": "idiom:flow-while-no-rate",
@@ -8886,7 +8885,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 12.03
+   "elapsed": 12.11
   },
   {
    "id": "idiom:flow-for-no-rate",
@@ -8914,7 +8913,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.59
+   "elapsed": 0.17
   },
   {
    "id": "idiom:flow-import-vpython",
@@ -8941,7 +8940,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-import-as",
@@ -8968,7 +8967,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-from-import-names",
@@ -8995,7 +8994,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-math-bare",
@@ -9018,7 +9017,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.17
   },
   {
    "id": "idiom:flow-random-bare",
@@ -9041,7 +9040,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.15
   },
   {
    "id": "idiom:flow-random-module",
@@ -9060,11 +9059,11 @@
     "createTypes": {},
     "sceneProps": {}
    },
-   "stdout": "0.08459352656720243 3 0.6176781612773096 1\n1 0.5066775634579019\n",
+   "stdout": "0.8146685472852029 2 0.7207375762169723 1\n2 0.7640606914860363\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.15
   },
   {
    "id": "idiom:flow-math-module",
@@ -9087,7 +9086,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.15
   },
   {
    "id": "idiom:flow-arange-clock",
@@ -9106,11 +9105,11 @@
     "createTypes": {},
     "sceneProps": {}
    },
-   "stdout": "1793316019116.677 -1 10\n",
+   "stdout": "1793316940463.9539 -1 10\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.15
   },
   {
    "id": "idiom:flow-print-formats",
@@ -9133,7 +9132,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.15
   },
   {
    "id": "idiom:flow-input",
@@ -9159,7 +9158,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-comprehension",
@@ -9187,7 +9186,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.14
   },
   {
    "id": "idiom:flow-class-with-objects",
@@ -9216,7 +9215,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-global-in-handler",
@@ -9245,7 +9244,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.2
   },
   {
    "id": "idiom:flow-global-called-in-loop",
@@ -9272,7 +9271,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.27
   },
   {
    "id": "idiom:flow-global-no-rate",
@@ -9295,7 +9294,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.29
   },
   {
    "id": "idiom:flow-lambda-rate-warning",
@@ -9320,7 +9319,7 @@
    "preprocessWarnings": [
     "2번 줄: lambda 안의 rate()은 기다릴 수 없습니다. def로 바꾸세요."
    ],
-   "elapsed": 0.32
+   "elapsed": 0.28
   },
   {
    "id": "idiom:flow-scene-visible-false",
@@ -9347,7 +9346,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.29
   },
   {
    "id": "idiom:flow-rotate-keyword-only",
@@ -9375,7 +9374,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.24
   },
   {
    "id": "idiom:flow-pos-chain",
@@ -9403,7 +9402,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.18
   },
   {
    "id": "idiom:flow-vector-in-fstring",
@@ -9426,7 +9425,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.17
   },
   {
    "id": "idiom:flow-two-objects-same-var",
@@ -9453,7 +9452,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.52
+   "elapsed": 0.18
   },
   {
    "id": "idiom:flow-local-light-attrs",
@@ -9482,7 +9481,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.63
+   "elapsed": 0.19
   },
   {
    "id": "idiom:flow-canvas-events-on-other",
@@ -9507,7 +9506,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-compound-clone",
@@ -9524,7 +9523,7 @@
     "type": "AttributeError",
     "message": "'compound' object has no attribute 'clone'",
     "studentLine": 3,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -9537,7 +9536,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.54
+   "elapsed": 0.15
   },
   {
    "id": "idiom:flow-get-library",
@@ -9554,7 +9553,7 @@
     "type": "NameError",
     "message": "name 'get_library' is not defined",
     "studentLine": 2,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -9567,7 +9566,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.54
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:AtomicSolid-VPython",
@@ -9577,15 +9576,15 @@
    "origin": "https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/AtomicSolid-VPython",
    "progress": false,
    "category": "pass",
-   "detail": "rate 70회 뒤 정지",
+   "detail": "rate 206회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 73354,
+    "total": 212618,
     "actions": {
      "scene": 2,
      "create": 456,
-     "update": 72896
+     "update": 212160
     },
     "createTypes": {
      "sphere": 216,
@@ -9600,7 +9599,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.93
+   "elapsed": 3.69
   },
   {
    "id": "gsexample:BillboardingText",
@@ -9617,7 +9616,7 @@
     "type": "AttributeError",
     "message": "'label' object has no attribute 'start'",
     "studentLine": 12,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -9630,7 +9629,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.18
   },
   {
    "id": "gsexample:BinaryStar-VPython",
@@ -9663,7 +9662,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.74
+   "elapsed": 0.21
   },
   {
    "id": "gsexample:Bounce-Callbacks-VPython",
@@ -9696,7 +9695,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.58
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:Bounce-VPython",
@@ -9729,7 +9728,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.19
   },
   {
    "id": "gsexample:BoxLightTest",
@@ -9765,7 +9764,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.86
+   "elapsed": 0.18
   },
   {
    "id": "gsexample:Bumpmaps-VPython",
@@ -9800,7 +9799,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.57
+   "elapsed": 0.14
   },
   {
    "id": "gsexample:ButtonsSlidersMenus-VPython",
@@ -9838,7 +9837,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.73
+   "elapsed": 0.21
   },
   {
    "id": "gsexample:CORS",
@@ -9871,7 +9870,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.71
+   "elapsed": 0.16
   },
   {
    "id": "gsexample:Car",
@@ -9888,7 +9887,7 @@
     "type": "NameError",
     "message": "name 'group' is not defined",
     "studentLine": 17,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -9901,7 +9900,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.51
+   "elapsed": 0.16
   },
   {
    "id": "gsexample:Color-RGB-HSV-VPython",
@@ -9938,7 +9937,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.16
   },
   {
    "id": "gsexample:Conch",
@@ -9955,7 +9954,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 33,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -9968,7 +9967,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.16
   },
   {
    "id": "gsexample:DipoleElectricField",
@@ -10000,7 +9999,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.16
   },
   {
    "id": "gsexample:DoublePendulum-VPython",
@@ -10036,7 +10035,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.72
+   "elapsed": 0.19
   },
   {
    "id": "gsexample:ElectricMotor",
@@ -10053,7 +10052,7 @@
     "type": "AttributeError",
     "message": "'extrusion' object has no attribute 'clone'",
     "studentLine": 48,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -10066,7 +10065,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.18
   },
   {
    "id": "gsexample:Extrusions",
@@ -10083,7 +10082,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -10096,7 +10095,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.52
+   "elapsed": 0.16
   },
   {
    "id": "gsexample:GraphTest",
@@ -10123,7 +10122,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.49
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:Gyroscope-VPython",
@@ -10140,7 +10139,7 @@
     "type": "AttributeError",
     "message": "'compound' object has no attribute 'length'",
     "studentLine": 68,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -10153,7 +10152,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.66
+   "elapsed": 0.16
   },
   {
    "id": "gsexample:HardSphereGas-VPython",
@@ -10163,11 +10162,11 @@
    "origin": "https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/HardSphereGas-VPython",
    "progress": false,
    "category": "pass",
-   "detail": "rate 45회 뒤 정지",
+   "detail": "rate 107회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 9376,
+    "total": 21838,
     "actions": {
      "scene": 3,
      "create": 206,
@@ -10175,8 +10174,8 @@
      "graph_create": 1,
      "graph_series_create": 2,
      "graph_series_plot": 302,
-     "update": 8800,
-     "trail_update": 44
+     "update": 21200,
+     "trail_update": 106
     },
     "createTypes": {
      "curve": 6,
@@ -10192,7 +10191,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.56
+   "elapsed": 3.21
   },
   {
    "id": "gsexample:LaTexMathDisplay",
@@ -10209,7 +10208,7 @@
     "type": "NameError",
     "message": "name 'MathJax' is not defined",
     "studentLine": 7,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -10222,7 +10221,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.16
   },
   {
    "id": "gsexample:MatterAndInteractions",
@@ -10239,7 +10238,7 @@
     "type": "SyntaxError",
     "message": "invalid syntax (<student>, line 114)",
     "studentLine": null,
-    "apiLine": 3322,
+    "apiLine": 3310,
     "inApi": true
    },
    "commands": {
@@ -10252,7 +10251,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:MousePicking-VPython",
@@ -10269,7 +10268,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 25,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -10282,7 +10281,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:Plot3D",
@@ -10292,7 +10291,7 @@
    "origin": "https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Plot3D",
    "progress": false,
    "category": "pass",
-   "detail": "rate 127회 뒤 정지",
+   "detail": "rate 241회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
@@ -10318,7 +10317,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.51
+   "elapsed": 2.85
   },
   {
    "id": "gsexample:RotatingCubes-VPython",
@@ -10328,16 +10327,16 @@
    "origin": "https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/RotatingCubes-VPython",
    "progress": false,
    "category": "pass",
-   "detail": "rate 20회 뒤 정지",
+   "detail": "rate 44회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 77005,
+    "total": 173005,
     "actions": {
      "scene": 4,
      "create": 1000,
      "scene_bind": 1,
-     "update": 76000
+     "update": 172000
     },
     "createTypes": {
      "box": 1000
@@ -10353,7 +10352,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 4.51
+   "elapsed": 3.75
   },
   {
    "id": "gsexample:RotatingCurve",
@@ -10370,7 +10369,7 @@
     "type": "TypeError",
     "message": "curve.__init__() takes 1 positional argument but 2 were given",
     "studentLine": 36,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -10383,7 +10382,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.7
+   "elapsed": 0.35
   },
   {
    "id": "gsexample:RotatingPoints",
@@ -10413,7 +10412,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.53
+   "elapsed": 0.28
   },
   {
    "id": "gsexample:Rug",
@@ -10430,7 +10429,7 @@
     "type": "TypeError",
     "message": "vertex.__init__() got an unexpected keyword argument 'texpos'",
     "studentLine": 33,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -10443,7 +10442,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.14
   },
   {
    "id": "gsexample:ScrollingText",
@@ -10460,7 +10459,7 @@
     "type": "SyntaxError",
     "message": "invalid syntax (<student>, line 10)",
     "studentLine": null,
-    "apiLine": 3322,
+    "apiLine": 3310,
     "inApi": true
    },
    "commands": {
@@ -10473,7 +10472,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.2
   },
   {
    "id": "gsexample:Stars-VPython",
@@ -10487,14 +10486,14 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 8157,
+    "total": 7334,
     "actions": {
      "scene": 4,
      "create": 23,
      "curve_append": 6,
-     "update": 4085,
-     "trail_update": 4027,
-     "trail_clear": 12
+     "update": 3674,
+     "trail_update": 3613,
+     "trail_clear": 14
     },
     "createTypes": {
      "curve": 3,
@@ -10511,7 +10510,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.93
+   "elapsed": 0.6
   },
   {
    "id": "gsexample:Stonehenge-VPython",
@@ -10528,7 +10527,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 107,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -10541,7 +10540,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.18
   },
   {
    "id": "gsexample:Textures-VPython",
@@ -10581,7 +10580,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.74
+   "elapsed": 0.19
   },
   {
    "id": "gsexample:Transparency",
@@ -10615,7 +10614,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.6
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:VPythonObjects-VPython",
@@ -10629,13 +10628,13 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 737,
+    "total": 731,
     "actions": {
      "create": 13,
      "scene_bind": 3,
-     "scene": 6,
+     "scene": 4,
      "curve_append": 239,
-     "update": 476
+     "update": 472
     },
     "createTypes": {
      "sphere": 2,
@@ -10654,16 +10653,14 @@
      "title": 1,
      "background": 1,
      "center": 1,
-     "forward": 1,
-     "autoscale": 1,
-     "append_caption": 1
+     "forward": 1
     }
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.5
+   "elapsed": 0.21
   },
   {
    "id": "docs:arrow:line1",
@@ -10692,7 +10689,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 0.16
   },
   {
    "id": "docs:arrow:line2",
@@ -10721,7 +10718,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.54
+   "elapsed": 0.15
   },
   {
    "id": "docs:attach_light:line1",
@@ -10738,7 +10735,7 @@
     "type": "TypeError",
     "message": "<lambda>() missing 1 required positional argument: 'obj'",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -10751,7 +10748,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.56
+   "elapsed": 0.17
   },
   {
    "id": "docs:attach_light:line2",
@@ -10780,7 +10777,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.51
+   "elapsed": 0.16
   },
   {
    "id": "docs:attacharrow:pre1",
@@ -10810,7 +10807,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.03
+   "elapsed": 0.15
   },
   {
    "id": "docs:attacharrow:line1",
@@ -10827,7 +10824,7 @@
     "type": "TypeError",
     "message": "attach_arrow.__init__() missing 2 required positional arguments: 'obj' and 'attr'",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -10840,7 +10837,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.89
+   "elapsed": 0.15
   },
   {
    "id": "docs:attacharrow:line2",
@@ -10869,7 +10866,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.02
+   "elapsed": 0.16
   },
   {
    "id": "docs:box:line1",
@@ -10897,7 +10894,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.11
+   "elapsed": 0.23
   },
   {
    "id": "docs:box:line2",
@@ -10925,7 +10922,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.24
   },
   {
    "id": "docs:button:pre1",
@@ -10954,7 +10951,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.5
+   "elapsed": 0.23
   },
   {
    "id": "docs:button:line1",
@@ -10983,7 +10980,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.75
+   "elapsed": 0.24
   },
   {
    "id": "docs:camera:line1",
@@ -11016,7 +11013,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.51
+   "elapsed": 0.21
   },
   {
    "id": "docs:canvas:line1",
@@ -11047,7 +11044,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.57
+   "elapsed": 0.2
   },
   {
    "id": "docs:canvas:line2",
@@ -11075,7 +11072,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.57
+   "elapsed": 0.19
   },
   {
    "id": "docs:canvas:line3",
@@ -11103,7 +11100,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.17
   },
   {
    "id": "docs:canvas:line4",
@@ -11131,7 +11128,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.2
   },
   {
    "id": "docs:canvas:line5",
@@ -11163,7 +11160,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.19
   },
   {
    "id": "docs:canvas:line6",
@@ -11194,7 +11191,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.41
+   "elapsed": 0.18
   },
   {
    "id": "docs:canvas:line7",
@@ -11222,7 +11219,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.2
   },
   {
    "id": "docs:canvas:line8",
@@ -11250,7 +11247,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.19
   },
   {
    "id": "docs:checkbox:pre1",
@@ -11280,7 +11277,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.58
+   "elapsed": 0.22
   },
   {
    "id": "docs:checkbox:line1",
@@ -11309,7 +11306,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.45
+   "elapsed": 0.19
   },
   {
    "id": "docs:clone:line1",
@@ -11337,7 +11334,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.17
   },
   {
    "id": "docs:color:pre1",
@@ -11354,7 +11351,7 @@
     "type": "NameError",
     "message": "name 'hsv' is not defined",
     "studentLine": 16,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -11367,7 +11364,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 0.16
   },
   {
    "id": "docs:color:line1",
@@ -11384,7 +11381,7 @@
     "type": "NameError",
     "message": "name 'c' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -11397,7 +11394,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.49
+   "elapsed": 0.16
   },
   {
    "id": "docs:color:line2",
@@ -11414,7 +11411,7 @@
     "type": "NameError",
     "message": "name 'c' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -11427,7 +11424,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.17
   },
   {
    "id": "docs:compound:pre1",
@@ -11457,7 +11454,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.17
   },
   {
    "id": "docs:compound:line1",
@@ -11486,7 +11483,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.17
   },
   {
    "id": "docs:compound:line2",
@@ -11503,7 +11500,7 @@
     "type": "TypeError",
     "message": "compound.__init__() missing 1 required positional argument: 'objects'",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -11516,7 +11513,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.18
   },
   {
    "id": "docs:cone:line1",
@@ -11545,7 +11542,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.19
   },
   {
    "id": "docs:cone:line2",
@@ -11574,7 +11571,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.25
   },
   {
    "id": "docs:curve:pre1",
@@ -11604,7 +11601,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.25
   },
   {
    "id": "docs:curve:pre2",
@@ -11634,7 +11631,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 0.32
   },
   {
    "id": "docs:curve:line1",
@@ -11663,7 +11660,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.54
   },
   {
    "id": "docs:curve:line2",
@@ -11692,7 +11689,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.54
   },
   {
    "id": "docs:curve:line3",
@@ -11720,7 +11717,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.46
   },
   {
    "id": "docs:curve:line4",
@@ -11748,7 +11745,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.46
   },
   {
    "id": "docs:cylinder:line1",
@@ -11777,7 +11774,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.44
   },
   {
    "id": "docs:cylinder:line2",
@@ -11806,7 +11803,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.28
   },
   {
    "id": "docs:ellipsoid:line1",
@@ -11835,7 +11832,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.28
   },
   {
    "id": "docs:ellipsoid:line2",
@@ -11864,7 +11861,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.29
   },
   {
    "id": "docs:extrusion:pre1",
@@ -11893,7 +11890,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.25
   },
   {
    "id": "docs:extrusion:pre2",
@@ -11922,7 +11919,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.46
   },
   {
    "id": "docs:extrusion:pre3",
@@ -11939,7 +11936,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -11952,7 +11949,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.76
   },
   {
    "id": "docs:extrusion:pre4",
@@ -11969,7 +11966,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -11982,7 +11979,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.64
   },
   {
    "id": "docs:extrusion:pre5",
@@ -11999,7 +11996,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 25,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12012,7 +12009,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 1.23
   },
   {
    "id": "docs:extrusion:line1",
@@ -12041,7 +12038,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.92
   },
   {
    "id": "docs:extrusion:line2",
@@ -12070,7 +12067,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 2.26
   },
   {
    "id": "docs:extrusion:line3",
@@ -12087,7 +12084,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12100,7 +12097,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 2.52
   },
   {
    "id": "docs:file:line1",
@@ -12117,7 +12114,7 @@
     "type": "NameError",
     "message": "name 'get_library' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12130,7 +12127,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 2.64
   },
   {
    "id": "docs:file:line2",
@@ -12147,7 +12144,7 @@
     "type": "NameError",
     "message": "name 'read_local_file' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12160,7 +12157,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 2.43
   },
   {
    "id": "docs:file:line3",
@@ -12177,7 +12174,7 @@
     "type": "NameError",
     "message": "name 'download' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12190,7 +12187,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 2.13
   },
   {
    "id": "docs:graph:pre1",
@@ -12221,7 +12218,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 1.13
   },
   {
    "id": "docs:graph:line1",
@@ -12250,7 +12247,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.54
   },
   {
    "id": "docs:graph:line2",
@@ -12267,7 +12264,7 @@
     "type": "NameError",
     "message": "name 'mygraph' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12280,7 +12277,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.31
   },
   {
    "id": "docs:graph:line3",
@@ -12297,7 +12294,7 @@
     "type": "NameError",
     "message": "name 'mygraph' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12310,7 +12307,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.4
   },
   {
    "id": "docs:graph:line4",
@@ -12327,7 +12324,7 @@
     "type": "AttributeError",
     "message": "type object 'graph' has no attribute 'get_selected'",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12340,7 +12337,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.49
+   "elapsed": 0.38
   },
   {
    "id": "docs:graph:line5",
@@ -12370,7 +12367,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.39
   },
   {
    "id": "docs:graph:line6",
@@ -12387,7 +12384,7 @@
     "type": "NameError",
     "message": "name 'gc' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12417,7 +12414,7 @@
     "type": "NameError",
     "message": "name 'gc' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12430,7 +12427,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.4
   },
   {
    "id": "docs:graph:line8",
@@ -12460,7 +12457,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.55
   },
   {
    "id": "docs:graph:line9",
@@ -12490,7 +12487,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.47
   },
   {
    "id": "docs:group:pre1",
@@ -12507,7 +12504,7 @@
     "type": "NameError",
     "message": "name 'group' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12520,7 +12517,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.65
   },
   {
    "id": "docs:group:line1",
@@ -12537,7 +12534,7 @@
     "type": "NameError",
     "message": "name 'group' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12550,7 +12547,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.63
   },
   {
    "id": "docs:group:line2",
@@ -12567,7 +12564,7 @@
     "type": "NameError",
     "message": "name 'mygroup' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12580,7 +12577,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.68
   },
   {
    "id": "docs:helix:line1",
@@ -12609,7 +12606,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.54
   },
   {
    "id": "docs:helix:line2",
@@ -12638,7 +12635,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.55
   },
   {
    "id": "docs:key:pre1",
@@ -12668,7 +12665,7 @@
    "stderr": "<student>:20: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.47
   },
   {
    "id": "docs:label:line1",
@@ -12726,7 +12723,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.78
   },
   {
    "id": "docs:latexmath:pre1",
@@ -12743,7 +12740,7 @@
     "type": "NameError",
     "message": "name 'MathJax' is not defined",
     "studentLine": 17,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12756,7 +12753,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.8
   },
   {
    "id": "docs:latexmath:pre2",
@@ -12773,7 +12770,7 @@
     "type": "NameError",
     "message": "name 'MathJax' is not defined",
     "studentLine": 15,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -12786,7 +12783,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.54
+   "elapsed": 0.77
   },
   {
    "id": "docs:light:pre1",
@@ -12814,7 +12811,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.56
+   "elapsed": 0.53
   },
   {
    "id": "docs:light:line1",
@@ -12843,7 +12840,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.61
+   "elapsed": 0.53
   },
   {
    "id": "docs:light:line2",
@@ -12872,7 +12869,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.36
   },
   {
    "id": "docs:light:line3",
@@ -12900,7 +12897,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.53
+   "elapsed": 0.28
   },
   {
    "id": "docs:light:line4",
@@ -12928,7 +12925,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.51
+   "elapsed": 0.25
   },
   {
    "id": "docs:light:line5",
@@ -12959,7 +12956,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.28
   },
   {
    "id": "docs:menu:pre1",
@@ -12989,7 +12986,7 @@
    "stderr": "<student>:20: SyntaxWarning: \"is\" with 'int' literal. Did you mean \"==\"?\n<student>:22: SyntaxWarning: \"is\" with 'int' literal. Did you mean \"==\"?\n<student>:24: SyntaxWarning: \"is\" with 'int' literal. Did you mean \"==\"?\n",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.28
   },
   {
    "id": "docs:menu:line1",
@@ -13018,7 +13015,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.33
   },
   {
    "id": "docs:mouse:pre2",
@@ -13075,7 +13072,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.71
+   "elapsed": 0.38
   },
   {
    "id": "docs:mouse:line2",
@@ -13092,7 +13089,7 @@
     "type": "TypeError",
     "message": "_Scene.waitfor() missing 1 required positional argument: 'event_names'",
     "studentLine": 14,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -13105,7 +13102,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.31
   },
   {
    "id": "docs:mouse:line3",
@@ -13122,7 +13119,7 @@
     "type": "TypeError",
     "message": "'_MouseState' object is not callable",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -13135,7 +13132,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.89
+   "elapsed": 0.35
   },
   {
    "id": "docs:mouse:line4",
@@ -13152,7 +13149,7 @@
     "type": "AttributeError",
     "message": "'_MouseState' object has no attribute 'project'",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -13165,7 +13162,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.95
+   "elapsed": 0.31
   },
   {
    "id": "docs:mouse:line5",
@@ -13197,7 +13194,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.89
+   "elapsed": 0.29
   },
   {
    "id": "docs:mouse:line6",
@@ -13227,7 +13224,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.86
+   "elapsed": 0.32
   },
   {
    "id": "docs:mouse:line7",
@@ -13244,7 +13241,7 @@
     "type": "TypeError",
     "message": "'_MouseState' object is not callable",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -13257,7 +13254,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.81
+   "elapsed": 0.27
   },
   {
    "id": "docs:mouse:line8",
@@ -13274,7 +13271,7 @@
     "type": "AttributeError",
     "message": "'_MouseState' object has no attribute 'project'",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -13287,7 +13284,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.25
   },
   {
    "id": "docs:mouse:line9",
@@ -13304,7 +13301,7 @@
     "type": "NameError",
     "message": "name 'newcolor' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -13317,7 +13314,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.23
   },
   {
    "id": "docs:objects:line1",
@@ -13346,7 +13343,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.25
   },
   {
    "id": "docs:pause:line1",
@@ -13378,7 +13375,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.21
   },
   {
    "id": "docs:points:line1",
@@ -13407,7 +13404,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.2
   },
   {
    "id": "docs:points:line2",
@@ -13436,7 +13433,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.19
   },
   {
    "id": "docs:print:line1",
@@ -13464,7 +13461,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.19
   },
   {
    "id": "docs:print:line2",
@@ -13492,7 +13489,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.2
   },
   {
    "id": "docs:print:line3",
@@ -13520,7 +13517,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.19
   },
   {
    "id": "docs:print:line4",
@@ -13548,7 +13545,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.18
   },
   {
    "id": "docs:pyramid:line1",
@@ -13577,7 +13574,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.18
   },
   {
    "id": "docs:pyramid:line2",
@@ -13606,7 +13603,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.29
   },
   {
    "id": "docs:radiobutton:pre1",
@@ -13635,7 +13632,7 @@
    "stderr": "<student>:17: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n<student>:19: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n<student>:21: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.39
   },
   {
    "id": "docs:radiobutton:line1",
@@ -13664,7 +13661,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.56
   },
   {
    "id": "docs:rate:pre1",
@@ -13694,7 +13691,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.54
   },
   {
    "id": "docs:rate:line1",
@@ -13711,7 +13708,7 @@
     "type": "TypeError",
     "message": "rate() missing 1 required positional argument: 'fps'",
     "studentLine": 14,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -13724,7 +13721,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.53
   },
   {
    "id": "docs:rate:line2",
@@ -13752,7 +13749,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.52
   },
   {
    "id": "docs:rate:line3",
@@ -13769,7 +13766,7 @@
     "type": "NameError",
     "message": "name 'make_trail' is not defined",
     "studentLine": 14,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -13782,7 +13779,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.45
   },
   {
    "id": "docs:ring:line1",
@@ -13811,7 +13808,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.33
   },
   {
    "id": "docs:rotation:line1",
@@ -13840,7 +13837,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.22
   },
   {
    "id": "docs:rotation:line2",
@@ -13869,7 +13866,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.21
   },
   {
    "id": "docs:shapes_and_paths:pre1",
@@ -13886,7 +13883,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -13899,7 +13896,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.2
   },
   {
    "id": "docs:shapes_and_paths:pre2",
@@ -13916,7 +13913,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -13929,7 +13926,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.21
   },
   {
    "id": "docs:shapes_and_paths:line1",
@@ -13946,7 +13943,7 @@
     "type": "NameError",
     "message": "name 'x0' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -13959,7 +13956,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.19
   },
   {
    "id": "docs:shapes_and_paths:line2",
@@ -13976,7 +13973,7 @@
     "type": "NameError",
     "message": "name 'x0' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -13989,7 +13986,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.18
   },
   {
    "id": "docs:shapes_and_paths:line3",
@@ -14006,7 +14003,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14019,7 +14016,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.18
   },
   {
    "id": "docs:shapes_and_paths:line4",
@@ -14036,7 +14033,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14049,7 +14046,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.16
   },
   {
    "id": "docs:shapes_and_paths:line5",
@@ -14066,7 +14063,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14079,7 +14076,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.42
+   "elapsed": 0.17
   },
   {
    "id": "docs:shapes_and_paths:line6",
@@ -14096,7 +14093,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14109,7 +14106,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.17
   },
   {
    "id": "docs:shapes_and_paths:line7",
@@ -14126,7 +14123,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14139,7 +14136,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.17
   },
   {
    "id": "docs:shapes_and_paths:line8",
@@ -14156,7 +14153,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14169,7 +14166,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line9",
@@ -14186,7 +14183,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14199,7 +14196,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.2
   },
   {
    "id": "docs:shapes_and_paths:line10",
@@ -14216,7 +14213,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14229,7 +14226,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.18
   },
   {
    "id": "docs:shapes_and_paths:line11",
@@ -14246,7 +14243,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14259,7 +14256,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.18
   },
   {
    "id": "docs:shapes_and_paths:line12",
@@ -14276,7 +14273,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14289,7 +14286,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.19
   },
   {
    "id": "docs:shapes_and_paths:line13",
@@ -14306,7 +14303,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14319,7 +14316,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.49
   },
   {
    "id": "docs:shapes_and_paths:line14",
@@ -14336,7 +14333,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14349,7 +14346,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 1.08
   },
   {
    "id": "docs:shapes_and_paths:line15",
@@ -14366,7 +14363,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14379,7 +14376,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 1.53
   },
   {
    "id": "docs:shapes_and_paths:line16",
@@ -14396,7 +14393,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14409,7 +14406,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 1.48
   },
   {
    "id": "docs:shapes_and_paths:line17",
@@ -14426,7 +14423,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14439,7 +14436,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 1.51
   },
   {
    "id": "docs:shapes_and_paths:line18",
@@ -14456,7 +14453,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14469,7 +14466,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 1.48
   },
   {
    "id": "docs:shapes_and_paths:line19",
@@ -14486,7 +14483,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14499,7 +14496,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 1.26
   },
   {
    "id": "docs:shapes_and_paths:line20",
@@ -14516,7 +14513,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14529,7 +14526,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.72
   },
   {
    "id": "docs:shapes_and_paths:line21",
@@ -14546,7 +14543,7 @@
     "type": "NameError",
     "message": "name 'outer' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -14559,7 +14556,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.36
   },
   {
    "id": "docs:slider:pre1",
@@ -14589,7 +14586,7 @@
    "stderr": "<student>:18: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.35
   },
   {
    "id": "docs:slider:line1",
@@ -14618,7 +14615,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.34
   },
   {
    "id": "docs:speed:line1",
@@ -14635,7 +14632,7 @@
     "type": "TypeError",
     "message": "rate() missing 1 required positional argument: 'fps'",
     "studentLine": 14,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -14648,7 +14645,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.32
   },
   {
    "id": "docs:sphere:line1",
@@ -14676,7 +14673,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.28
   },
   {
    "id": "docs:sphere:line2",
@@ -14704,7 +14701,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.29
   },
   {
    "id": "docs:text:line1",
@@ -14733,7 +14730,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.35
   },
   {
    "id": "docs:text:line2",
@@ -14762,7 +14759,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.32
   },
   {
    "id": "docs:textinput:pre1",
@@ -14824,7 +14821,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.34
   },
   {
    "id": "docs:textinput:line1",
@@ -14854,7 +14851,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.32
   },
   {
    "id": "docs:textinput:line2",
@@ -14883,7 +14880,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.3
   },
   {
    "id": "docs:texture:pre1",
@@ -14913,7 +14910,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.3
   },
   {
    "id": "docs:texture:line1",
@@ -14971,7 +14968,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.26
   },
   {
    "id": "docs:trail:line1",
@@ -14999,7 +14996,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.3
   },
   {
    "id": "docs:userinput:pre1",
@@ -15031,7 +15028,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.3
   },
   {
    "id": "docs:userinput:pre2",
@@ -15060,7 +15057,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.29
   },
   {
    "id": "docs:userinput:pre3",
@@ -15088,7 +15085,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 0.26
   },
   {
    "id": "docs:userinput:line1",
@@ -15120,7 +15117,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.59
+   "elapsed": 0.24
   },
   {
    "id": "docs:userinput:line2",
@@ -15150,7 +15147,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.24
   },
   {
    "id": "docs:userinput:line3",
@@ -15167,7 +15164,7 @@
     "type": "NameError",
     "message": "name 'key_pressed' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -15180,7 +15177,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.22
   },
   {
    "id": "docs:vector:pre1",
@@ -15208,7 +15205,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.22
   },
   {
    "id": "docs:vector:pre2",
@@ -15236,7 +15233,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.25
   },
   {
    "id": "docs:vector:pre3",
@@ -15264,7 +15261,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.49
+   "elapsed": 0.24
   },
   {
    "id": "docs:vector:pre4",
@@ -15292,7 +15289,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.26
   },
   {
    "id": "docs:vector:pre5",
@@ -15320,7 +15317,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.24
   },
   {
    "id": "docs:vector:pre6",
@@ -15348,7 +15345,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.29
   },
   {
    "id": "docs:vector:pre7",
@@ -15376,7 +15373,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.45
+   "elapsed": 0.26
   },
   {
    "id": "docs:vector:pre8",
@@ -15404,7 +15401,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.37
   },
   {
    "id": "docs:vector:line1",
@@ -15421,7 +15418,7 @@
     "type": "NameError",
     "message": "name 'myvec1' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -15434,7 +15431,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.39
   },
   {
    "id": "docs:vertex:pre1",
@@ -15463,7 +15460,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.43
   },
   {
    "id": "docs:vertex:line1",
@@ -15491,7 +15488,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.41
   },
   {
    "id": "docs:vertex:line2",
@@ -15508,7 +15505,7 @@
     "type": "NameError",
     "message": "name 'myvertex0' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -15521,7 +15518,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.45
   },
   {
    "id": "docs:vertex:line3",
@@ -15538,7 +15535,7 @@
     "type": "NameError",
     "message": "name 'myvertexlist' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -15551,7 +15548,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.41
   },
   {
    "id": "docs:vertex:line4",
@@ -15568,7 +15565,7 @@
     "type": "NameError",
     "message": "name 'c' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -15581,7 +15578,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.33
   },
   {
    "id": "docs:vertex:line5",
@@ -15598,7 +15595,7 @@
     "type": "NameError",
     "message": "name 'c' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -15611,7 +15608,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.28
   },
   {
    "id": "docs:wtext:line1",
@@ -15628,7 +15625,7 @@
     "type": "NameError",
     "message": "name 'vslider' is not defined",
     "studentLine": 14,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -15641,7 +15638,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.25
   },
   {
    "id": "demos:AtomicSolid",
@@ -15651,15 +15648,15 @@
    "origin": "https://github.com/vpython/vpython-jupyter/blob/master/Demos/AtomicSolid.ipynb",
    "progress": false,
    "category": "pass",
-   "detail": "rate 205회 뒤 정지",
+   "detail": "rate 241회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 94992,
+    "total": 111516,
     "actions": {
      "scene": 2,
      "create": 233,
-     "update": 94757
+     "update": 111281
     },
     "createTypes": {
      "sphere": 125,
@@ -15674,7 +15671,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.89
+   "elapsed": 2.83
   },
   {
    "id": "demos:BillboardingText",
@@ -15691,7 +15688,7 @@
     "type": "AttributeError",
     "message": "'label' object has no attribute 'start'",
     "studentLine": 13,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -15704,7 +15701,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.28
   },
   {
    "id": "demos:BinaryStar",
@@ -15736,7 +15733,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.45
+   "elapsed": 0.36
   },
   {
    "id": "demos:Bounce-VPython",
@@ -15769,7 +15766,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.33
   },
   {
    "id": "demos:BoxLightTest",
@@ -15804,7 +15801,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.37
   },
   {
    "id": "demos:ButtonsSlidersMenus1-async",
@@ -15821,7 +15818,7 @@
     "type": "ModuleNotFoundError",
     "message": "No module named 'ipywidgets'",
     "studentLine": 1,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -15834,7 +15831,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.25
   },
   {
    "id": "demos:ButtonsSlidersMenus1",
@@ -15851,7 +15848,7 @@
     "type": "ModuleNotFoundError",
     "message": "No module named 'ipywidgets'",
     "studentLine": 1,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -15864,7 +15861,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.27
   },
   {
    "id": "demos:ButtonsSlidersMenus2",
@@ -15902,7 +15899,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.39
   },
   {
    "id": "demos:CORS",
@@ -15935,7 +15932,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.3
   },
   {
    "id": "demos:Color-RGB-HSV1",
@@ -15952,7 +15949,7 @@
     "type": "ModuleNotFoundError",
     "message": "No module named 'ipywidgets'",
     "studentLine": 1,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -15965,7 +15962,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.3
   },
   {
    "id": "demos:Color-RGB-HSV2",
@@ -16002,7 +15999,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.3
   },
   {
    "id": "demos:Conch",
@@ -16019,7 +16016,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 34,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -16064,7 +16061,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.21
   },
   {
    "id": "demos:DoublePendulum",
@@ -16098,7 +16095,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.65
+   "elapsed": 0.4
   },
   {
    "id": "demos:ElectricMotor",
@@ -16115,7 +16112,7 @@
     "type": "AttributeError",
     "message": "'extrusion' object has no attribute 'clone'",
     "studentLine": 49,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -16128,7 +16125,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.42
+   "elapsed": 0.25
   },
   {
    "id": "demos:Extrusions",
@@ -16145,7 +16142,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 13,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -16158,7 +16155,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.23
   },
   {
    "id": "demos:Graphs",
@@ -16175,7 +16172,7 @@
     "type": "AttributeError",
     "message": "'gdots' object has no attribute 'radius'",
     "studentLine": 33,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -16199,7 +16196,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.24
   },
   {
    "id": "demos:Gyroscope-Suspended",
@@ -16216,7 +16213,7 @@
     "type": "AttributeError",
     "message": "'compound' object has no attribute 'rotate'",
     "studentLine": 50,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -16229,7 +16226,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.26
   },
   {
    "id": "demos:Gyroscope",
@@ -16246,7 +16243,7 @@
     "type": "AttributeError",
     "message": "'compound' object has no attribute 'length'",
     "studentLine": 69,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -16259,7 +16256,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.33
   },
   {
    "id": "demos:HardSphereGas",
@@ -16269,11 +16266,11 @@
    "origin": "https://github.com/vpython/vpython-jupyter/blob/master/Demos/HardSphereGas.ipynb",
    "progress": false,
    "category": "pass",
-   "detail": "rate 240회 뒤 정지",
+   "detail": "rate 241회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 24571,
+    "total": 24672,
     "actions": {
      "create": 106,
      "curve_append": 18,
@@ -16281,8 +16278,8 @@
      "graph_create": 1,
      "graph_series_create": 2,
      "graph_series_plot": 302,
-     "update": 23900,
-     "trail_update": 239
+     "update": 24000,
+     "trail_update": 240
     },
     "createTypes": {
      "curve": 6,
@@ -16298,7 +16295,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.4
+   "elapsed": 2.44
   },
   {
    "id": "demos:Lorenz",
@@ -16335,7 +16332,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.89
+   "elapsed": 0.69
   },
   {
    "id": "demos:MouseDrag",
@@ -16367,7 +16364,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.4
   },
   {
    "id": "demos:MousePicking",
@@ -16384,7 +16381,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 26,
-    "apiLine": 3328,
+    "apiLine": 3318,
     "inApi": false
    },
    "commands": {
@@ -16397,7 +16394,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.39
   },
   {
    "id": "demos:Plot3D",
@@ -16432,7 +16429,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.07
+   "elapsed": 1.36
   },
   {
    "id": "demos:RotatingBoxes",
@@ -16442,15 +16439,15 @@
    "origin": "https://github.com/vpython/vpython-jupyter/blob/master/Demos/RotatingBoxes.ipynb",
    "progress": false,
    "category": "pass",
-   "detail": "rate 62회 뒤 정지",
+   "detail": "rate 122회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 123002,
+    "total": 243002,
     "actions": {
      "scene": 2,
      "create": 1000,
-     "update": 122000
+     "update": 242000
     },
     "createTypes": {
      "box": 1000
@@ -16464,7 +16461,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.78
+   "elapsed": 3.8
   },
   {
    "id": "demos:RotatingCurve",
@@ -16481,7 +16478,7 @@
     "type": "TypeError",
     "message": "curve.__init__() takes 1 positional argument but 2 were given",
     "studentLine": 34,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -16494,7 +16491,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.76
+   "elapsed": 0.54
   },
   {
    "id": "demos:RotatingPoints",
@@ -16524,7 +16521,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.89
+   "elapsed": 0.44
   },
   {
    "id": "demos:Rug",
@@ -16541,7 +16538,7 @@
     "type": "TypeError",
     "message": "vertex.__init__() got an unexpected keyword argument 'texpos'",
     "studentLine": 37,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -16554,7 +16551,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.3
   },
   {
    "id": "demos:Stars",
@@ -16568,14 +16565,14 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 8198,
+    "total": 8909,
     "actions": {
      "scene": 4,
      "create": 23,
      "curve_append": 6,
-     "update": 4105,
-     "trail_update": 4050,
-     "trail_clear": 10
+     "update": 4459,
+     "trail_update": 4413,
+     "trail_clear": 4
     },
     "createTypes": {
      "curve": 3,
@@ -16592,7 +16589,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.94
+   "elapsed": 0.88
   },
   {
    "id": "demos:Stonehenge",
@@ -16609,7 +16606,7 @@
     "type": "NameError",
     "message": "name 'shapes' is not defined",
     "studentLine": 115,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -16622,7 +16619,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.41
+   "elapsed": 0.24
   },
   {
    "id": "demos:Textures1-async",
@@ -16639,7 +16636,7 @@
     "type": "ModuleNotFoundError",
     "message": "No module named 'ipywidgets'",
     "studentLine": 1,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -16652,7 +16649,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.22
   },
   {
    "id": "demos:Textures1",
@@ -16669,7 +16666,7 @@
     "type": "ModuleNotFoundError",
     "message": "No module named 'ipywidgets'",
     "studentLine": 1,
-    "apiLine": 3330,
+    "apiLine": 3320,
     "inApi": false
    },
    "commands": {
@@ -16682,7 +16679,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.27
   },
   {
    "id": "demos:Textures2",
@@ -16722,7 +16719,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.42
+   "elapsed": 0.27
   },
   {
    "id": "demos:Transparency",
@@ -16756,7 +16753,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.23
   },
   {
    "id": "demos:VPythonObjects",
@@ -16770,12 +16767,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 732,
+    "total": 727,
     "actions": {
-     "scene": 5,
+     "scene": 4,
      "create": 12,
      "curve_append": 239,
-     "update": 476
+     "update": 472
     },
     "createTypes": {
      "label": 1,
@@ -16794,15 +16791,14 @@
      "title": 1,
      "background": 1,
      "center": 1,
-     "forward": 1,
-     "autoscale": 1
+     "forward": 1
     }
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.19
   }
  ]
 }

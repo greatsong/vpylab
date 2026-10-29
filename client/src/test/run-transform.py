@@ -45,6 +45,14 @@ def make_namespace(log, inputs):
         log.append('악기')
         await asyncio.sleep(0)
 
+    async def 음표(*args, **kwargs):
+        log.append('음표')
+        await asyncio.sleep(0)
+
+    async def 화음(*args, **kwargs):
+        log.append('화음')
+        await asyncio.sleep(0)
+
     async def input(prompt=''):
         value = next(answers, '')
         log.append(f'input({prompt!r})={value!r}')
@@ -69,10 +77,10 @@ def make_namespace(log, inputs):
 
     namespace = {
         '__name__': '__main__',
-        'rate': rate, 'sleep': sleep, '악기': 악기, 'input': input,
+        'rate': rate, 'sleep': sleep, '악기': 악기, '음표': 음표, '화음': 화음, 'input': input,
         'scene': Scene(), 'canvas': lambda **kw: Scene(),
         'vector': lambda x=0, y=0, z=0: (x, y, z), 'sphere': sphere, 'box': sphere,
-        transform.RUNTIME_NAME: transform,
+        transform.RUNTIME_NAME: types.SimpleNamespace(maybe_await=transform.maybe_await),
     }
     return namespace
 

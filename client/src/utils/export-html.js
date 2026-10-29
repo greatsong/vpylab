@@ -939,15 +939,8 @@ def _send_commands():
 
     loading.classList.add('done');
 
-    // 학생 코드 전처리 + 실행
-    // vpython import 제거 (이미 글로벌 네임스페이스에 로드됨)
-    const filtered = code.split('\\n').filter(line => {
-      const trimmed = line.trimStart();
-      if (trimmed === 'from vpython import *') return false;
-      if (trimmed.startsWith('from vpython import ')) return false;
-      if (trimmed === 'import vpython') return false;
-      return true;
-    }).join('\\n');
+    // 학생 코드 실행 — vpython 모듈이 sys.modules에 등록돼 있으므로 import 줄을 그대로 둔다 (줄 번호도 유지된다)
+    const filtered = code;
 
     // 편집기와 같은 변환기(student-code-transform.py)로 rate()·sleep()이 든 함수를 async def로 바꾸고
     // 호출에 await를 붙인 뒤, 함수로 감싸지 않고 모듈 수준(최상위 await)에서 실행한다. global 선언이 동작한다.
@@ -1631,8 +1624,18 @@ class distant_light:
 
 
 # === rate/sleep ===
-async def rate(fps):
+async def rate(fps, callback=None):
     _send_commands()
+    if callback is not None:
+        # GlowScript 콜백 형식 — 한 프레임 뒤 콜백을 별도 태스크로 부르고 바로 돌아온다
+        async def _later():
+            await asyncio.sleep(1.0/fps)
+            result = callback()
+            if asyncio.iscoroutine(result):
+                await result
+        asyncio.ensure_future(_later())
+        await asyncio.sleep(0)
+        return
     await asyncio.sleep(1.0/fps)
 
 async def sleep(seconds):
@@ -1744,7 +1747,10 @@ async def 음표(name, duration=0.5, type='sine', volume=0.4):
 def 효과음(name): play_sfx(name)
 def 배경음악(name, loop=True): start_bgm(name,loop)
 def 배경음악정지(): stop_bgm()
-def 화음(frequencies, duration=1.0, type='sine', volume=0.25): play_chord(frequencies,duration,type,volume)
+async def 화음(frequencies, duration=1.0, type='sine', volume=0.25):
+    play_chord(frequencies, duration, type, volume)
+    _send_commands()
+    await asyncio.sleep(duration)
 
 
 # === NamedList ===

@@ -31,7 +31,7 @@ import ast
 import inspect
 
 # 바로 부르는 코루틴 이름 (vpython-api.py에서 async def로 정의)
-BLOCKING_NAMES = frozenset({'rate', 'sleep', '악기', 'input'})
+BLOCKING_NAMES = frozenset({'rate', 'sleep', '악기', '음표', '화음', 'input'})
 # scene.<이름>(...) 형태의 코루틴 메서드
 SCENE_BLOCKING_ATTRS = frozenset({'pause', 'waitfor'})
 # `import vpython as vp` 뒤 vp.rate()·vp.scene.pause()를 인식하기 위한 모듈 이름
@@ -49,10 +49,21 @@ UNCERTAIN = 'maybe'
 
 
 async def maybe_await(value):
-    """미확정 호출의 결과가 코루틴이면 기다리고, 아니면 그대로 돌려준다."""
-    if inspect.iscoroutine(value):
+    """미확정 호출의 결과가 코루틴(또는 Future·Task 같은 awaitable)이면 기다리고, 아니면 그대로 돌려준다."""
+    if inspect.isasyncgen(value):
+        raise TypeError("rate()·sleep() 같은 대기 함수가 든 제너레이터는 쓸 수 없습니다. for 문이나 리스트로 바꾸세요.")
+    if inspect.isawaitable(value):
         return await value
     return value
+
+
+# async def로 바꾸면 파이썬 규약이 깨지는 특수 메서드 — 대기 함수를 넣으면 경고만 낸다
+SYNC_ONLY_DUNDERS = frozenset({
+    '__str__', '__repr__', '__format__', '__eq__', '__ne__', '__lt__', '__le__', '__gt__', '__ge__',
+    '__len__', '__bool__', '__hash__', '__iter__', '__next__', '__getitem__', '__setitem__', '__delitem__',
+    '__contains__', '__enter__', '__exit__', '__del__', '__getattr__', '__setattr__', '__index__',
+    '__int__', '__float__', '__add__', '__sub__', '__mul__', '__truediv__', '__neg__', '__call__',
+})
 
 
 # === 스코프와 바인딩 ===
@@ -319,10 +330,12 @@ class _Analysis:
         current = scope
         first = True
         while current is not None:
-            if name in current.globals:
-                current = self.module_scope
-                first = False
-                continue
+            if name in current.globals and current is not self.module_scope:
+                # global 선언 — 모듈 전역만 본다 (모듈 수준의 global 선언은 아무 뜻이 없다)
+                module = self.module_scope
+                if name in module.bindings:
+                    return module.bindings[name], module
+                return None, None
             if current.kind == 'class' and not first:
                 current = current.parent
                 continue
@@ -481,7 +494,10 @@ class _Analysis:
             if class_node is not None:
                 method = self._find_method(class_node, attr)
                 if method is not None:
-                    return self._func_kind(method)
+                    kind = self._func_kind(method)
+                    if kind == CERTAIN_SYNC and attr in self.async_method_names:
+                        return UNCERTAIN  # 자식 클래스가 대기 메서드로 재정의했을 수 있다
+                    return kind
             if attr in self.async_method_names or attr in SCENE_BLOCKING_ATTRS:
                 return UNCERTAIN
             return CERTAIN_SYNC
@@ -510,6 +526,11 @@ class _Analysis:
                     self.warnings.append(
                         f"{node.lineno}번 줄: __init__ 안에서는 rate()·sleep() 같은 대기 함수를 쓸 수 없습니다. 별도 메서드로 옮기세요.")
                     continue
+                if id(node) in self.class_of_method and (node.name in SYNC_ONLY_DUNDERS or _is_property(node)):
+                    self.sync_only.add(id(node))
+                    self.warnings.append(
+                        f"{node.lineno}번 줄: {node.name}() 같은 특수 메서드·property 안에서는 rate()·sleep() 같은 대기 함수를 쓸 수 없습니다.")
+                    continue
                 self.async_nodes.add(id(node))
                 if id(node) in self.class_of_method:
                     self.async_method_names.add(node.name)
@@ -530,6 +551,16 @@ class _Analysis:
             self.scope_of[id(new)] = self.scope_of[id(old)]
         if id(old) in self.class_of_method:
             self.class_of_method[id(new)] = self.class_of_method[id(old)]
+
+
+def _is_property(func):
+    """@property·@x.setter·@x.getter·@x.deleter가 붙은 메서드"""
+    for dec in func.decorator_list:
+        if isinstance(dec, ast.Name) and dec.id == 'property':
+            return True
+        if isinstance(dec, ast.Attribute) and dec.attr in ('setter', 'getter', 'deleter'):
+            return True
+    return False
 
 
 def _contains_yield(func):
@@ -656,20 +687,19 @@ class _Transformer(ast.NodeTransformer):
         if kind == CERTAIN_SYNC:
             return node
         awaitable, label = self.context[-1]
+        maybe = '' if kind == CERTAIN_ASYNC else ' (대기 함수를 부를 수 있는 호출)'
         if self.genexp_depth:
-            if kind == CERTAIN_ASYNC:
-                self.analysis.warnings.append(
-                    f"{node.lineno}번 줄: 제너레이터식 안에서는 {_label(node)}()을 기다릴 수 없습니다. for 문이나 리스트 컴프리헨션으로 바꾸세요.")
+            self.analysis.warnings.append(
+                f"{node.lineno}번 줄: 제너레이터식 안에서는 {_label(node)}(){maybe}을 기다릴 수 없습니다. for 문이나 리스트 컴프리헨션으로 바꾸세요.")
             return node
         if not awaitable:
-            if kind == CERTAIN_ASYNC:
-                if label == 'lambda':
-                    self.analysis.warnings.append(
-                        f"{node.lineno}번 줄: lambda 안의 {_label(node)}()은 기다릴 수 없습니다. def로 바꾸세요.")
-                elif label == 'class':
-                    self.analysis.warnings.append(
-                        f"{node.lineno}번 줄: 클래스 본문에서는 {_label(node)}()을 기다릴 수 없습니다. 메서드 안으로 옮기세요.")
-                # sync(생성기·__init__)는 mark_async에서 이미 경고했다
+            if label == 'lambda':
+                self.analysis.warnings.append(
+                    f"{node.lineno}번 줄: lambda 안의 {_label(node)}(){maybe}은 기다릴 수 없습니다. def로 바꾸세요.")
+            elif label == 'class':
+                self.analysis.warnings.append(
+                    f"{node.lineno}번 줄: 클래스 본문에서는 {_label(node)}(){maybe}을 기다릴 수 없습니다. 메서드 안으로 옮기세요.")
+            # sync(생성기·__init__·특수 메서드)는 mark_async에서 이미 경고했다
             return node
         if kind == CERTAIN_ASYNC:
             return ast.copy_location(ast.Await(value=node), node)
