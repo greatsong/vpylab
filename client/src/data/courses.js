@@ -158,7 +158,7 @@ for i in range(5):
 
 scene_background(색상['검정'])
 
-for i in range(8):
+for i in range(7):
     크기 = 0.2 + i * 0.1
     높이 = i * 0.6
     sphere(pos=vector(0, 높이, 0), radius=크기, color=무지개[i])

@@ -65,9 +65,25 @@ a.proj(b)                         # b 방향으로 투영한 벡터
 a.comp(b)                         # b 방향 스칼라 성분
 a.diff_angle(b)                   # 두 벡터 사이 각(라디안)
 a.rotate(angle, axis=...)         # axis 축으로 회전한 새 벡터
+v.norm()                          # v.hat과 같음
+v.equals(w)                       # v == w와 같음
+vector.random()                   # 각 성분이 -1~1인 난수 벡터
 ```
 
-전역 함수: `mag(v)`, `mag2(v)`, `hat(v)`, `dot(a,b)`, `cross(a,b)`, `norm(v)`.
+전역 함수: `mag(v)`, `mag2(v)`, `hat(v)`, `dot(a,b)`, `cross(a,b)`, `norm(v)`, `proj(a,b)`, `comp(a,b)`, `diff_angle(a,b)`, `rotate(v, angle=, axis=)` (3D 객체를 넣으면 그 자리에서 회전).
+
+### 수학 이름 (GlowScript와 같음)
+
+`from vpython import *` 뒤에 `sin`, `cos`, `tan`, `sqrt`, `exp`, `log`, `pi`, `e` 등 `math` 모듈의 공개 이름을 바로 사용할 수 있다. 그 밖에 다음을 제공한다.
+
+```python
+random()                 # 0 이상 1 미만 난수. random.randint(1, 6)처럼 random 모듈 함수도 그대로 된다
+arange(start, stop, step)   # 목록 반환
+sign(x)                  # 1, -1, 0
+combin(n, k)             # 조합의 수
+clock(), msclock()       # 경과 시간 (초, 밀리초)
+print_options(digits=3)  # 벡터 출력 자릿수
+```
 
 ---
 
@@ -98,6 +114,10 @@ obj.emissive  # bool — 자체 발광
 ```
 
 axis가 있는 객체(`cylinder`, `arrow`, `cone`, `pyramid`, `helix`)는 `obj.axis`로 방향을 갖습니다.
+
+`cylinder`, `cone`, `arrow`, `helix`의 `obj.length`는 `axis`의 길이와 연동됩니다. `length`를 바꾸면 `axis`가 같은 방향으로 늘어나거나 줄어들고, 생성할 때 `length=`를 주면 그 길이가 됩니다. `cylinder`·`cone`의 `size`는 `vector(length, 2*radius, 2*radius)`, `sphere`의 `size`는 지름 벡터입니다. `ellipsoid`는 `length`, `height`, `width`로도 만들 수 있습니다.
+
+`pos`에는 `vector`만 넣을 수 있습니다. 튜플을 넣으면 `TypeError`로 안내합니다.
 
 ### 공통 메서드
 
@@ -180,9 +200,15 @@ scene.background = color.black
 scene.range = 5                      # 카메라 시야 반경 (MANUAL 모드 진입)
 scene.center = vector(0, 0, 0)       # 카메라 타겟 중심
 scene.autoscale = False              # True면 Auto-Fit 복귀
-scene.title = "내 시뮬레이션"        # 콘솔에 출력 (DOM 오버레이는 미지원)
-scene.caption = "설명..."            # 콘솔에 출력
+scene.title = "내 시뮬레이션"        # 3D 화면 위쪽 글자
+scene.caption = "설명..."            # 3D 화면 아래쪽 글자
+scene.width = 800                    # 값만 기억 (화면 크기는 배치가 정한다)
+scene.height = 500
+scene.objects                        # 보이는 3D 객체 목록
+scene.camera.rotate(angle=0.1, axis=vector(0, 1, 0))   # 중심을 보는 채로 카메라 회전
 ```
+
+`scene.align`, `scene.resizable`, `scene.caption_anchor`, `scene.title_anchor`는 GlowScript 코드가 멈추지 않도록 받기만 합니다.
 
 > **참고**: `scene.range` / `scene.center`를 설정하면 자동 카메라(Auto-Fit/Follow)가 비활성화됩니다. `scene.autoscale = True` 또는 뷰 더블클릭으로 복귀할 수 있습니다.
 
@@ -212,6 +238,8 @@ await sleep(0.5)      # 비동기 sleep
 ## 차트 (3D 데이터 시각화)
 
 `scatter3d`, `surface3d`, `line3d`, `bar3d` (한글: `산점도`, `표면그래프`, `선그래프`, `막대그래프`).
+
+`scatter3d`는 `scatter3d(points)` 외에 `scatter3d(x목록, y목록, z목록, color=색)`으로도 부를 수 있다. `colors=`에는 `vector` 목록도 된다.
 
 VPython의 `graph`/`gcurve` 시리즈와는 다른 자체 API입니다.
 
@@ -327,6 +355,7 @@ winput(prompt='속도', type='numeric', bind=lambda e: print(e.value))
 
 # 모든 위젯은 .value로 현재값 읽기/쓰기 가능
 # .disabled = True/False, .delete()로 제거
+# menu: .selected, .index / winput: .text, .number (GlowScript 호환)
 ```
 
 ---
@@ -367,11 +396,13 @@ v_curve.clear()
 - `attach_arrow(obj, 'velocity', scale=1)` → `rate()`·`sleep()`마다 갱신되는 화살표
 - `scene.range`는 화면의 짧은 변 방향으로 보이는 범위의 절반이다. 기본 시야각은 45도(GlowScript는 60도)이며 `scene.fov`로 바꿀 수 있다.
 - `ball.pos.x += 0.1`처럼 벡터 성분만 바꿔도 화면에 반영된다 (pos, axis, size, up, color, scene.center 등). 같은 벡터를 다른 물체에 넣으면 복제되어 서로 영향을 주지 않는다.
-- `color.gray(0.3)`처럼 밝기를 지정한 회색을 만들 수 있다.
+- `color.gray(0.3)`처럼 밝기를 지정한 회색을 만들 수 있다. `color.hsv_to_rgb()`, `color.rgb_to_hsv()`로 색을 변환한다.
+- `textures.rock`, `textures.wood_old`는 가장 가까운 프리셋으로 그린다. `bumpmaps.*`는 받기만 하고 그리지 않는다.
+- `simple_sphere`는 `sphere`와 같다.
 
 ### 미지원 (현 시점)
 
-- `scene.width` / `scene.height` 쓰기 (읽기는 가능), 여러 개의 `canvas()`
+- `scene.width` / `scene.height`로 실제 화면 크기 바꾸기 (값은 받지만 화면은 그대로), 여러 개의 `canvas()`
 - 3D 입체 글자 `text()` (현재 2D 라벨로 대체), `shapes`·`paths` 라이브러리
 
 ### standalone HTML export 시 주의
