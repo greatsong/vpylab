@@ -79,9 +79,21 @@ function isInsideLambda(line, pos) {
 }
 
 /**
+ * 변환된 코드의 줄 번호를 학생이 쓴 원래 줄 번호로 되돌린다.
+ * @param {(number|null)[]} lineMap - 변환 코드의 i번째 줄(0부터)이 원래 몇 번째 줄(1부터)인지. 삽입된 줄은 null
+ * @param {number} generatedLine - 변환 코드의 줄 번호(1부터)
+ * @returns {number|null} 원래 줄 번호. 삽입된 줄이거나 범위를 벗어나면 null
+ */
+export function mapGeneratedLine(lineMap, generatedLine) {
+  if (!Array.isArray(lineMap) || !Number.isInteger(generatedLine)) return null;
+  return lineMap[generatedLine - 1] ?? null;
+}
+
+/**
  * 코드 전처리: rate(), sleep() → await rate(), await sleep()
  * @param {string} code - 학생 Python 코드
- * @returns {{ code: string, warnings: string[] }}
+ * @returns {{ code: string, warnings: string[], lineMap: (number|null)[] }}
+ *   lineMap[i]는 변환 코드 i+1번째 줄에 해당하는 원래 줄 번호(1부터). 삽입된 줄은 null.
  */
 export function preprocessCode(code) {
   const lines = code.split('\n');
@@ -136,13 +148,15 @@ export function preprocessCode(code) {
   });
 
   let finalCode = processedLines.join('\n');
+  // 감싸지 않으면 줄 번호가 그대로 대응한다.
+  let lineMap = processedLines.map((_, index) => index + 1);
 
   if (hasAsyncCall) {
     // import 문은 모듈 레벨에 유지 (async 함수 안에서 `from X import *`는 SyntaxError)
     const importLines = [];
     const bodyLines = [];
 
-    for (const line of processedLines) {
+    processedLines.forEach((line, index) => {
       const trimmed = line.trimStart();
       // 모듈 레벨(들여쓰기 없는) import만 추출 — 함수/클래스 내부 import는 그대로 둠
       const isTopLevel = line === trimmed || line.length === trimmed.length;
@@ -150,16 +164,24 @@ export function preprocessCode(code) {
         trimmed.startsWith('import ') ||
         (trimmed.startsWith('from ') && trimmed.includes('import'));
       if (isTopLevel && isImport) {
-        importLines.push(line);
+        importLines.push({ text: line, origin: index + 1 });
       } else {
-        bodyLines.push(line);
+        bodyLines.push({ text: line ? '    ' + line : line, origin: index + 1 });
       }
-    }
+    });
 
-    const imports = importLines.join('\n');
-    const indented = bodyLines.map(l => l ? '    ' + l : l).join('\n');
-    finalCode = `import asyncio\n${imports}\nasync def __vpylab_main__():\n${indented}\n\nawait __vpylab_main__()`;
+    // 오류 줄 번호를 되돌릴 수 있도록 생성 줄마다 원래 줄 번호를 기록한다.
+    const generated = [
+      { text: 'import asyncio', origin: null },
+      ...(importLines.length ? importLines : [{ text: '', origin: null }]),
+      { text: 'async def __vpylab_main__():', origin: null },
+      ...bodyLines,
+      { text: '', origin: null },
+      { text: 'await __vpylab_main__()', origin: null },
+    ];
+    finalCode = generated.map(entry => entry.text).join('\n');
+    lineMap = generated.map(entry => entry.origin);
   }
 
-  return { code: finalCode, warnings };
+  return { code: finalCode, warnings, lineMap };
 }
