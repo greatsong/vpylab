@@ -263,7 +263,13 @@ _vpython_names = [
     'play_instrument', '\uc545\uae30',
     'scatter3d', 'surface3d', 'line3d', 'bar3d',
     '\uc0b0\uc810\ub3c4', '\ud45c\uba74\uadf8\ub798\ud504', '\uc120\uadf8\ub798\ud504', '\ub9c9\ub300\uadf8\ub798\ud504',
+    # GlowScript 호환: 함수형 벡터 연산, 수학·난수·시간 함수, 별칭
+    'simple_sphere', 'bumpmaps', 'proj', 'comp', 'diff_angle', 'rotate',
+    'random', 'arange', 'clock', 'msclock', 'sign', 'combin', 'print_options',
 ]
+# GlowScript처럼 from vpython import * 가 math의 공개 이름(sin, cos, pi, sqrt ...)도 제공한다
+import math as _math_for_export
+_vpython_names += [_n for _n in dir(_math_for_export) if not _n.startswith('_')]
 for _name in _vpython_names:
     if _name in dir():
         setattr(vpython_module, _name, eval(_name))
