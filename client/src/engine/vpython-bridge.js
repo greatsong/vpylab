@@ -10,12 +10,18 @@ import {
   updateObject,
   clearRegistry,
   registerNote,
+  registerSound,
 } from './object-registry';
-import { processSoundCommand, setNotePlayCallback } from './sound-system';
+import { processSoundCommand, setNotePlayCallback, setSoundEventCallback } from './sound-system';
 import { resolveTexture } from './texture-system';
+import {
+  DEFAULT_OBJECT_PROPS, asNumber, asVectorArray, resolveBoxSize, getRegistryProps,
+} from './registry-props';
 
 // 음표 재생 시 레지스트리에 기록
-setNotePlayCallback((name, duration) => registerNote(name, duration));
+setNotePlayCallback((name, duration, type) => registerNote(name, duration, type));
+// 효과음·배경음악 재생 시 레지스트리에 기록
+setSoundEventCallback((kind, name) => registerSound(kind, name));
 import { renderChart, clearCharts } from './chart-system';
 import {
   createWidget, updateWidget, deleteWidget, clearWidgets,
@@ -45,57 +51,6 @@ const DEFAULT_MATERIAL_PARAMS = {
   roughness: 0.4,
   metalness: 0.1,
 };
-
-const DEFAULT_OBJECT_PROPS = {
-  sphere: { radius: 1 },
-  box: { size: [1, 1, 1], axis: [1, 0, 0], up: [0, 1, 0] },
-  cylinder: { radius: 1, axis: [1, 0, 0] },
-  arrow: { axis: [1, 0, 0], shaftwidth: 0.1 },
-  cone: { radius: 1, axis: [1, 0, 0] },
-  ring: { radius: 1, thickness: 0.1 },
-  pyramid: { size: [1, 1, 1], axis: [1, 0, 0] },
-  ellipsoid: { size: [1, 1, 1] },
-  helix: { radius: 1, axis: [1, 0, 0], length: 1, coils: 5, thickness: 0.05 },
-  local_light: { intensity: 1 },
-  distant_light: { direction: [0, -1, 0], intensity: 1 },
-};
-
-function cloneDefaultProps(type) {
-  const defaults = DEFAULT_OBJECT_PROPS[type] || {};
-  return Object.fromEntries(
-    Object.entries(defaults).map(([key, value]) => [
-      key,
-      Array.isArray(value) ? [...value] : value,
-    ]),
-  );
-}
-
-function asNumber(value, fallback = 0) {
-  const next = Number(value);
-  return Number.isFinite(next) ? next : fallback;
-}
-
-function asVectorArray(value, fallback = [0, 0, 0]) {
-  if (!Array.isArray(value)) return [...fallback];
-  return [
-    asNumber(value[0], fallback[0] ?? 0),
-    asNumber(value[1], fallback[1] ?? 0),
-    asNumber(value[2], fallback[2] ?? 0),
-  ];
-}
-
-function resolveBoxSize(cmd, fallback = DEFAULT_OBJECT_PROPS.box.size) {
-  const base = Array.isArray(cmd.size) ? cmd.size : fallback;
-  const size = [
-    asNumber(base?.[0], DEFAULT_OBJECT_PROPS.box.size[0]),
-    asNumber(base?.[1], DEFAULT_OBJECT_PROPS.box.size[1]),
-    asNumber(base?.[2], DEFAULT_OBJECT_PROPS.box.size[2]),
-  ];
-  if (cmd.length !== undefined) size[0] = asNumber(cmd.length, size[0]);
-  if (cmd.height !== undefined) size[1] = asNumber(cmd.height, size[1]);
-  if (cmd.width !== undefined) size[2] = asNumber(cmd.width, size[2]);
-  return size;
-}
 
 function applyBoxOrientation(mesh, axisValue, upValue) {
   const axis = asVectorArray(axisValue, DEFAULT_OBJECT_PROPS.box.axis);
@@ -171,30 +126,6 @@ function rebuildHelixGeometry(line, len) {
  */
 function toThreeColor(arr) {
   return new THREE.Color(arr[0], arr[1], arr[2]);
-}
-
-/**
- * 채점 레지스트리에 저장할 객체 속성 추출
- */
-function getRegistryProps(cmd) {
-  const props = {
-    pos: cmd.pos || [0, 0, 0],
-    color: cmd.color || [1, 1, 1],
-    visible: cmd.visible !== false,
-    opacity: cmd.opacity ?? 1,
-    ...cloneDefaultProps(cmd.type),
-  };
-
-  if (cmd.type === 'box') {
-    props.size = resolveBoxSize(cmd, props.size);
-  }
-
-  for (const key of ['radius', 'size', 'axis', 'up', 'length', 'height', 'width', 'thickness', 'shaftwidth', 'intensity', 'direction', 'emissive']) {
-    if (cmd.type === 'box' && key === 'size') continue;
-    if (cmd[key] !== undefined) props[key] = cmd[key];
-  }
-
-  return props;
 }
 
 function cloneThreeColor(color) {

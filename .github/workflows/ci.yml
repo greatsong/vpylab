@@ -42,11 +42,16 @@ jobs:
           cache: npm
           cache-dependency-path: client/package-lock.json
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Install client dependencies
         working-directory: client
         run: npm ci
 
       - name: Run mission tests
+        # missions.grading.test.js가 python3로 vpython-api.py를 실행해 "시작 코드 실패·모범 답안 통과"를 검증한다
         working-directory: client
         run: npm run test:run
 
