@@ -1,0 +1,9 @@
+{
+  "name": "vpylab-compat-harness",
+  "private": true,
+  "type": "module",
+  "description": "GlowScript VPython 호환성 점검 하네스 (브라우저 하네스용 Playwright 의존성)",
+  "devDependencies": {
+    "playwright": "^1.58.0"
+  }
+}
