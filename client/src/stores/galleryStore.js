@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
+import { API_BASE } from '../lib/api-base.js';
 
 /**
  * 사용자 프로필을 일괄 조회하여 작품에 매핑

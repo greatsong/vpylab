@@ -13,14 +13,17 @@ function directives(policy) {
 const template = JSON.parse(readFileSync(resolve('vercel.classroom.json'), 'utf8'));
 
 describe('Python Worker의 독립적인 응답 보안 정책', () => {
-  it('런타임 다운로드 출처만 연결을 허용하고 같은 출처 API와 하위 Worker를 차단한다', () => {
+  it('런타임 다운로드 출처(같은 출처 /pyodide/ 포함)만 연결을 허용하고 하위 Worker를 차단한다', () => {
     const policy = directives(WORKER_CSP);
     expect(policy['default-src']).toEqual(["'none'"]);
-    expect(policy['connect-src']).toEqual(['https://cdn.jsdelivr.net', 'https://unpkg.com', 'https://pypi.org', 'https://files.pythonhosted.org']);
-    expect(policy['connect-src']).not.toContain("'self'");
+    // 'self'는 같은 출처 /pyodide/v<버전>/ 핵심 파일을 받기 위한 것입니다. 같은 출처 API 보호는
+    // Worker가 초기화 뒤 요청 가능한 API(fetch·XHR·WebSocket·EventSource·caches 등)를 모두 지우는 것으로 유지합니다.
+    expect(policy['connect-src']).toEqual(["'self'", 'https://cdn.jsdelivr.net', 'https://unpkg.com', 'https://pypi.org', 'https://files.pythonhosted.org']);
     expect(policy['worker-src']).toEqual(["'none'"]);
     expect(policy['child-src']).toEqual(["'none'"]);
-    expect(policy['script-src']).toEqual(expect.arrayContaining(["'unsafe-eval'", "'wasm-unsafe-eval'", 'https://cdn.jsdelivr.net', 'https://unpkg.com']));
+    expect(policy['script-src']).toContain("'self'");
+    expect(policy['script-src']).toContain("'wasm-unsafe-eval'");
+    expect(policy).not.toHaveProperty('img-src');
   });
 
   it('Vite Worker query와 배포 해시 파일을 인식하되 메인 앱과 다른 Worker에는 적용하지 않는다', () => {
@@ -41,7 +44,8 @@ describe('Python Worker의 독립적인 응답 보안 정책', () => {
 
   it('Vercel 템플릿은 Worker와 메인 앱 정책을 겹치지 않게 분리한다', () => {
     const worker = template.headers.find((rule) => rule.source === '/assets/pyodide-worker-:hash.js');
-    const main = template.headers.find((rule) => rule !== worker);
+    const main = template.headers.find((rule) => rule.source.startsWith('/((?!assets/pyodide-worker'));
+    const pyodide = template.headers.find((rule) => rule.source === '/pyodide/(.*)');
     const workerHeaders = Object.fromEntries(worker.headers.map(({ key, value }) => [key, value]));
     const mainHeaders = Object.fromEntries(main.headers.map(({ key, value }) => [key, value]));
     expect(workerHeaders['Content-Security-Policy']).toBe(WORKER_CSP);
@@ -51,6 +55,11 @@ describe('Python Worker의 독립적인 응답 보안 정책', () => {
     const mainPath = new RegExp(`^${main.source}$`);
     expect(mainPath.test('/assets/pyodide-worker-CtSakRF1.js')).toBe(false);
     for (const path of ['/classroom.html', '/', '/assets/editor.worker-Dpt_xPrs.js', '/api/v2/projects']) expect(mainPath.test(path), path).toBe(true);
+    expect(mainPath.test('/pyodide/v0.27.0/pyodide.asm.wasm')).toBe(false);
+    // 같은 출처 Pyodide 핵심 파일: Worker CSP가 허용하고, 버전 경로라 1년 immutable 캐시를 둡니다.
+    expect(directives(WORKER_CSP)['connect-src']).toContain("'self'");
+    expect(Object.fromEntries(pyodide.headers.map(({ key, value }) => [key, value]))['Cache-Control']).toBe('public, max-age=31536000, immutable');
+    expect(template.rewrites.every((rule) => new RegExp(`^${rule.source}$`).test('/pyodide/v0.27.0/pyodide.js') === false)).toBe(true);
     expect(template.outputDirectory).toBe('dist-classroom');
   });
 });

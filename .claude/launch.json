@@ -13,6 +13,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:classroom"],
       "port": 4043
+    },
+    {
+      "name": "classroom-lan",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "classroom:lan", "--", "--skip-build", "--no-qr"],
+      "port": 4077
     }
   ]
 }

@@ -8,26 +8,23 @@
  *
  * 보안:
  *   - GitHub OAuth token은 매 요청마다 클라이언트가 전송, 서버 저장 X
- *   - rate-limit: 분당 10회
+ *   - rate-limit: IP 층(분당 600회, 인증 전) + 사용자 층(읽기 120회·쓰기 30회, 인증 후)
+ *     — server/middleware/rate-limit.js. 학교 공유 IP에서 30명이 써도 정상 사용은 막히지 않습니다.
  *   - 코드 크기 100KB 상한
  *   - Supabase 행 INSERT/UPDATE는 클라이언트가 자기 JWT로 수행 (RLS 그대로 적용)
  */
 import { Router } from 'express';
 import crypto from 'crypto';
-import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { generateStandaloneHTML } from '../utils/export-html.js';
 import { requireSupabaseUser, requireTeamProjectAccess } from '../middleware/require-supabase-user.js';
+import { createReadLimiter, createWriteLimiter } from '../middleware/rate-limit.js';
 
 const router = Router();
 
-const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  message: { error: '잠시 후 다시 시도해주세요. (분당 10회)' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// IP 층은 server/index.js가 /api 전체에 적용하고, 사용자 층은 인증 뒤 경로별로 적용합니다.
+const readLimiter = createReadLimiter();
+const writeLimiter = createWriteLimiter();
 
 const MAX_CODE_BYTES = 100 * 1024;
 const MAX_HISTORY_BYTES = 256 * 1024;
@@ -1251,7 +1248,7 @@ function generateIndexHtml({ title, code, owner, repo }) {
 // POST /api/projects/setup
 // 프로젝트 신규 생성: GitHub 레포 + 초기 파일 + Pages 활성화
 // ========================================
-router.post('/setup', limiter, requireSupabaseUser, async (req, res) => {
+router.post('/setup', requireSupabaseUser, writeLimiter, async (req, res) => {
   let createdRepoFullName = null;
   // 단계별 timing 측정: Railway 로그에 [setup] +Xms (총 Yms) <단계>로 남깁니다.
   // 5분 hang 같은 사고 시 어느 단계에서 멎었는지 즉시 식별 가능.
@@ -1378,7 +1375,7 @@ router.post('/setup', limiter, requireSupabaseUser, async (req, res) => {
 // POST /api/projects/access
 // 현재 GitHub 토큰이 프로젝트 레포에 쓰기 권한을 갖는지 확인
 // ========================================
-router.post('/access', limiter, requireSupabaseUser, async (req, res) => {
+router.post('/access', requireSupabaseUser, readLimiter, async (req, res) => {
   try {
     const { repoFullName, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1424,7 +1421,7 @@ router.post('/access', limiter, requireSupabaseUser, async (req, res) => {
 // POST /api/projects/members/github-usernames
 // 프로젝트 멤버의 GitHub OAuth username 조회
 // ========================================
-router.post('/members/github-usernames', limiter, async (req, res) => {
+router.post('/members/github-usernames', readLimiter, async (req, res) => {
   try {
     const { projectId, accessToken } = req.body;
     if (!projectId) return res.status(400).json({ error: '프로젝트 ID가 없습니다.', code: 'missing_project_id' });
@@ -1481,7 +1478,7 @@ router.post('/members/github-usernames', limiter, async (req, res) => {
 // POST /api/projects/collaborators/invite
 // 저장소 소유자가 팀원의 GitHub 계정을 collaborator로 초대
 // ========================================
-router.post('/collaborators/invite', limiter, requireSupabaseUser, async (req, res) => {
+router.post('/collaborators/invite', requireSupabaseUser, writeLimiter, async (req, res) => {
   try {
     const { repoFullName, username, usernames, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1583,7 +1580,7 @@ router.post('/collaborators/invite', limiter, requireSupabaseUser, async (req, r
 //
 // POST로 한 이유: GitHub OAuth token을 body로 받아야 해서 (URL에 토큰 노출 금지).
 // ========================================
-router.post('/collaborators/pending', limiter, requireSupabaseUser, async (req, res) => {
+router.post('/collaborators/pending', requireSupabaseUser, readLimiter, async (req, res) => {
   try {
     const { repoFullName, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1623,7 +1620,7 @@ router.post('/collaborators/pending', limiter, requireSupabaseUser, async (req, 
 // (DELETE 메서드를 쓰면 URL에 invitationId가 들어가는데 토큰을 body로 보내는 패턴과
 //  맞추기 위해 POST + invitationId를 body로 받습니다.)
 // ========================================
-router.post('/collaborators/cancel', limiter, requireSupabaseUser, async (req, res) => {
+router.post('/collaborators/cancel', requireSupabaseUser, writeLimiter, async (req, res) => {
   try {
     const { repoFullName, invitationId, githubToken } = req.body;
     const parsed = parseRepoFullName(repoFullName);
@@ -1655,7 +1652,7 @@ router.post('/collaborators/cancel', limiter, requireSupabaseUser, async (req, r
 // POST /api/projects/commit
 // 기존 프로젝트에 코드 변경 commit + history.md 갱신 + index.html 갱신
 // ========================================
-router.post('/commit', limiter, requireSupabaseUser, requireTeamProjectAccess, async (req, res) => {
+router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAccess, async (req, res) => {
   try {
     const {
       repoFullName, code, htmlContent, title, message, githubToken,
@@ -1935,7 +1932,7 @@ router.post('/commit', limiter, requireSupabaseUser, requireTeamProjectAccess, a
 // 팀 데이터는 RLS로 멤버만 읽을 수 있으므로 service-role로 집계하되,
 // 요청자가 해당 학급의 담당 교사임을 반드시 먼저 검증한다.
 // ========================================
-router.get('/class-overview', limiter, requireSupabaseUser, async (req, res) => {
+router.get('/class-overview', requireSupabaseUser, readLimiter, async (req, res) => {
   try {
     const classId = req.query.classId;
     if (!classId) {

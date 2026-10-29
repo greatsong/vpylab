@@ -5,6 +5,7 @@ dist/
 !.env.example
 !.env.classroom.example
 !client/.env.production
+!client/.env.lan
 .DS_Store
 *.log
 .vercel
@@ -15,3 +16,7 @@ __pycache__/
 client/dist-classroom/
 client/dist-month-projects/
 client/dist-teacher-training/
+client/dist-lan/
+
+# Pyodide 핵심 파일은 빌드 때 npm 패키지에서 복사합니다(client/scripts/pyodide-assets.mjs)
+client/public/pyodide/

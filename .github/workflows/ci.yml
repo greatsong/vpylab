@@ -23,7 +23,7 @@ jobs:
             server/package-lock.json
       - run: npm --prefix client ci
       - run: npm --prefix server ci
-      - run: node --test server/classroom/*.test.js scripts/classroom/backup.test.mjs
+      - run: node --test server/classroom/*.test.js server/middleware/*.test.js server/lan/*.test.js scripts/classroom/backup.test.mjs
       - run: npm --prefix client run build:classroom
       - run: node scripts/classroom/check-curriculum.mjs
 

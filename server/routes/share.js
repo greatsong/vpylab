@@ -5,7 +5,7 @@
  */
 
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import { RATE_LIMITS, createAnonymousLimiter } from '../middleware/rate-limit.js';
 import { createClient } from '@supabase/supabase-js';
 import { nanoid } from 'nanoid';
 
@@ -30,14 +30,8 @@ function getSupabase() {
 const MAX_CODE_SIZE = 50_000; // 50KB
 const SHARE_ID_LENGTH = 8;
 
-// 공유 생성 rate-limit (IP당 분당 10회)
-const shareLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  message: { error: '잠시 후 다시 시도해주세요. (분당 10회 제한)' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// 공유 생성 rate-limit — 비로그인 경로라 IP 기준. 한 학급(30명)이 1분 안에 모두 공유해도 통과하도록 60회.
+const shareLimiter = createAnonymousLimiter({ limit: RATE_LIMITS.anonymousSharePerMinute, scope: '공유 링크 생성' });
 
 /**
  * POST /api/share

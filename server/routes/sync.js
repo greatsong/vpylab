@@ -9,23 +9,17 @@
  * 보안:
  *   - GitHub token은 클라이언트가 매 요청마다 전송 (서버 저장 X)
  *   - 코드 크기 100KB 제한
- *   - rate-limit: 분당 10회 (publish의 3회보다 완화 — 자주 누를 수 있음)
+ *   - rate-limit: IP 층(분당 600회) + 사용자별 쓰기 분당 30회 (publish의 3회보다 완화 — 자주 누를 수 있음)
  *   - 리포 이름 sanitize는 publish.js와 동일 규칙 사용
  */
 import { Router } from 'express';
 import crypto from 'crypto';
-import rateLimit from 'express-rate-limit';
 import { requireSupabaseUser, requireTeamProjectAccess } from '../middleware/require-supabase-user.js';
+import { createWriteLimiter } from '../middleware/rate-limit.js';
 
 const router = Router();
 
-const syncLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  message: { error: '잠시 후 다시 시도해주세요. (분당 10회 제한)' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+const syncLimiter = createWriteLimiter();
 
 const MAX_CODE_BYTES = 100 * 1024;        // 100KB
 const MAX_HISTORY_BYTES = 256 * 1024;     // history.md 누적 상한
@@ -187,7 +181,7 @@ function generateMeta(title, codeId, projectId) {
  *
  * Returns: { repoFullName, commitSha, repoUrl }
  */
-router.post('/github', syncLimiter, requireSupabaseUser, requireTeamProjectAccess, async (req, res) => {
+router.post('/github', requireSupabaseUser, syncLimiter, requireTeamProjectAccess, async (req, res) => {
   try {
     const {
       code,

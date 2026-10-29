@@ -2,6 +2,10 @@ import { defineConfig, mergeConfig } from 'vite';
 import process from 'node:process';
 import base from './vite.config.js';
 import { classroomWorkerPolicy } from './src/classroom/worker-policy.js';
+import { setServiceWorkerAppShell } from './scripts/service-worker-plugin.mjs';
+
+// 기본 설정의 Service Worker는 index.html을 앱 셸로 삼으므로 교실 진입점으로 바꿉니다.
+setServiceWorkerAppShell('classroom.html');
 
 const previewPort = Number(process.env.CLASSROOM_PREVIEW_PORT || 4043);
 const apiPort = Number(process.env.CLASSROOM_API_PORT || 4044);

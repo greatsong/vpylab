@@ -3,7 +3,7 @@ import { useI18n } from '../../i18n/useI18n';
 import useAuthStore from '../../stores/authStore';
 import { supabase } from '../../lib/supabase';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4034';
+import { API_BASE } from '../../lib/api-base.js';
 
 /**
  * 교사 학급 팀 프로젝트 개요.

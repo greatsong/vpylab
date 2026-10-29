@@ -5,29 +5,23 @@
  * - GitHub token은 DB에 저장하지 않음 (요청 시 전송, 메모리에서만 사용)
  * - 리포 이름 sanitize (특수문자 제거, 슬래시 인젝션 방지)
  * - HTML 내용 크기 제한 (500KB)
- * - rate-limit: 사용자당 분당 3회
+ * - rate-limit: IP 층(분당 600회) + 사용자 ID 기준 분당 3회 (같은 IP의 다른 학생과 한도를 나누지 않음)
  * - GitHub API 호출은 서버에서만 (클라이언트에 token 노출 최소화)
  */
 
 import { Router } from 'express';
 import crypto from 'crypto';
-import rateLimit from 'express-rate-limit';
 import { generateStandaloneHTML } from '../utils/export-html.js';
 import { requireSupabaseUser } from '../middleware/require-supabase-user.js';
+import { createPublishLimiter } from '../middleware/rate-limit.js';
 
 const router = Router();
 const GITHUB_API_TIMEOUT_MS = Number(process.env.GITHUB_API_TIMEOUT_MS || 20_000);
 const GITHUB_PAGES_API_TIMEOUT_MS = Math.min(GITHUB_API_TIMEOUT_MS, 8_000);
 const PAGES_ENABLE_RETRY_DELAYS_MS = [0, 1_000, 2_500, 5_000, 9_000];
 
-// 발행 전용 rate-limit (분당 3회)
-const publishLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 3,
-  message: { error: '잠시 후 다시 시도해주세요. (분당 3회 제한)' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// 발행 전용 rate-limit — 사용자별 분당 3회. 인증 뒤에 적용해야 사용자 ID로 키를 만듭니다.
+const publishLimiter = createPublishLimiter();
 
 /**
  * 리포지토리 이름 sanitize
@@ -267,7 +261,7 @@ function generateMeta(title, category, remixFrom) {
  * Body: { code, pythonCode, title, description, category, remixFrom, existingRepo, githubToken }
  * Returns: { githubUrl, githubRepo, warnings }
  */
-router.post('/', publishLimiter, requireSupabaseUser, async (req, res) => {
+router.post('/', requireSupabaseUser, publishLimiter, async (req, res) => {
   try {
     const { code, pythonCode, title, description, category, remixFrom, existingRepo, githubToken } = req.body;
 
@@ -422,7 +416,7 @@ router.post('/', publishLimiter, requireSupabaseUser, async (req, res) => {
  * Body: { repo, githubToken }
  * 보안: 토큰을 URL 쿼리스트링이 아닌 POST body로 전달
  */
-router.post('/fetch', publishLimiter, requireSupabaseUser, async (req, res) => {
+router.post('/fetch', requireSupabaseUser, publishLimiter, async (req, res) => {
   try {
     const { repo, githubToken } = req.body;
 
@@ -492,7 +486,7 @@ router.post('/fetch', publishLimiter, requireSupabaseUser, async (req, res) => {
  * 기존 GitHub 리포의 파일들을 업데이트
  * Body: { githubRepo, title, description, category, remixFrom, code (완성 HTML), pythonCode, githubToken }
  */
-router.put('/update', publishLimiter, requireSupabaseUser, async (req, res) => {
+router.put('/update', requireSupabaseUser, publishLimiter, async (req, res) => {
   try {
     const { githubRepo, title, description, category, remixFrom, code, pythonCode, githubToken } = req.body;
 
@@ -561,7 +555,7 @@ router.put('/update', publishLimiter, requireSupabaseUser, async (req, res) => {
  * 다른 사용자의 리포를 fork
  * Body: { sourceRepo, githubToken }
  */
-router.post('/fork', publishLimiter, requireSupabaseUser, async (req, res) => {
+router.post('/fork', requireSupabaseUser, publishLimiter, async (req, res) => {
   try {
     const { sourceRepo, githubToken } = req.body;
 

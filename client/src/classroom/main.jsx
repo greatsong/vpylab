@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '../index.css';
 import './classroom.css';
 import ClassroomApp from './ClassroomApp.jsx';
+import { registerServiceWorker } from '../lib/service-worker.js';
 
 class ClassroomBoundary extends Component {
   state = { failed: false };
@@ -12,5 +13,7 @@ class ClassroomBoundary extends Component {
     return this.props.children;
   }
 }
+
+registerServiceWorker();
 
 createRoot(document.getElementById('root')).render(<StrictMode><ClassroomBoundary><ClassroomApp /></ClassroomBoundary></StrictMode>);

@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n/useI18n';
 import useAppStore from '../../stores/appStore';
 import useAuthStore from '../../stores/authStore';
 import { prewarm } from '../../engine/pyodide-singleton';
+import { LAN_MODE } from '../../lib/api-base.js';
 import BrandLogo from '../shared/BrandLogo';
 
 export default function Header() {
@@ -309,7 +310,8 @@ export default function Header() {
               </div>
             )}
           </div>
-        ) : (
+        ) : LAN_MODE ? null : (
+          // 교실 LAN 모드에서는 OAuth 로그인이 동작하지 않으므로 버튼을 숨깁니다.
           <button
             onClick={() => setAuthModalOpen(true)}
             className="btn-primary text-xs !py-1.5 !px-3.5"
