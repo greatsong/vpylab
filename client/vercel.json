@@ -4,7 +4,7 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/((?!api/|assets/|pyodide/|sw\\.js$).*)",
+      "source": "/((?!api/|assets/|pyodide/|sw\\.js$|manifest\\.webmanifest$).*)",
       "destination": "/index.html"
     }
   ],

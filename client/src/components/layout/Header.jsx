@@ -7,6 +7,7 @@ import useAuthStore from '../../stores/authStore';
 import { prewarm } from '../../engine/pyodide-singleton';
 import { LAN_MODE } from '../../lib/api-base.js';
 import BrandLogo from '../shared/BrandLogo';
+import { InstallButton, IosInstallHint } from './InstallPrompt';
 
 export default function Header() {
   const { theme, setTheme, locale, setLocale, THEMES, THEME_META } = useAppStore();
@@ -190,6 +191,7 @@ export default function Header() {
 
       {/* 컨트롤 */}
       <div className="flex items-center gap-1.5">
+        <InstallButton />
         <button
           onClick={() => setLocale(locale === 'ko' ? 'en' : 'ko')}
           className="text-xs px-2 py-1.5 rounded-md transition-all cursor-pointer border"
@@ -320,6 +322,7 @@ export default function Header() {
           </button>
         )}
       </div>
+      <IosInstallHint />
     </header>
   );
 }

@@ -304,5 +304,39 @@
     "newCodeReceived": "Teacher sent new code",
     "clickToOpen": "Click to open inbox",
     "open": "Open"
+  },
+  "pwa": {
+    "install": "Install app",
+    "installTitle": "Install VPyLab on your home screen or desktop",
+    "iosHint": "On iPhone or iPad, tap Safari's Share button and choose 'Add to Home Screen' to use VPyLab like an app.",
+    "dismiss": "Dismiss"
+  },
+  "embed": {
+    "openInVPyLab": "Open in VPyLab",
+    "enableSound": "Enable sound",
+    "soundOn": "Sound on",
+    "copyEmbed": "Copy embed code",
+    "embedCopied": "Embed code copied",
+    "notFound": "Work not found",
+    "loading": "Loading work",
+    "preparing": "Preparing the Python engine"
+  },
+  "qr": {
+    "show": "Show QR",
+    "title": "Open with a QR code",
+    "hint": "Put it on the projector so students can open it with their phone camera.",
+    "download": "Download PNG",
+    "copyLink": "Copy link",
+    "copied": "Copied",
+    "close": "Close"
+  },
+  "shareLink": {
+    "title": "Share link",
+    "created": "Link created and copied to the clipboard.",
+    "open": "Open"
+  },
+  "viewport": {
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen"
   }
 }

@@ -304,5 +304,39 @@
     "newCodeReceived": "선생님이 새 코드를 보냈습니다",
     "clickToOpen": "클릭하여 수신함 열기",
     "open": "열기"
+  },
+  "pwa": {
+    "install": "앱으로 설치",
+    "installTitle": "홈 화면이나 바탕화면에 VPyLab을 설치합니다",
+    "iosHint": "iPhone·iPad에서는 Safari의 공유 버튼을 누르고 '홈 화면에 추가'를 선택하면 앱처럼 사용할 수 있습니다.",
+    "dismiss": "닫기"
+  },
+  "embed": {
+    "openInVPyLab": "VPyLab에서 열기",
+    "enableSound": "소리 켜기",
+    "soundOn": "소리 켜짐",
+    "copyEmbed": "임베드 코드 복사",
+    "embedCopied": "임베드 코드를 복사했습니다",
+    "notFound": "작품을 찾을 수 없습니다",
+    "loading": "작품을 불러오는 중입니다",
+    "preparing": "Python 엔진을 준비하는 중입니다"
+  },
+  "qr": {
+    "show": "QR 보기",
+    "title": "QR 코드로 열기",
+    "hint": "프로젝터에 띄우면 학생이 휴대폰 카메라로 바로 열 수 있습니다.",
+    "download": "PNG 내려받기",
+    "copyLink": "링크 복사",
+    "copied": "복사됨",
+    "close": "닫기"
+  },
+  "shareLink": {
+    "title": "공유 링크",
+    "created": "링크를 만들어 클립보드에 복사했습니다.",
+    "open": "열기"
+  },
+  "viewport": {
+    "fullscreen": "전체 화면",
+    "exitFullscreen": "전체 화면 나가기"
   }
 }

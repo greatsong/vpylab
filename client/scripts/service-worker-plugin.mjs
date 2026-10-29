@@ -11,12 +11,12 @@ import { PYODIDE_VERSION } from './pyodide-assets.mjs';
 const clientRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TEMPLATE = resolve(clientRoot, 'src/sw/service-worker.js');
 
-/** 미리 저장할 산출물: JS·CSS·HTML·글꼴·SVG. 소스맵과 sw.js 자체는 제외합니다. */
+/** 미리 저장할 산출물: JS·CSS·HTML·글꼴·SVG·웹 매니페스트. 소스맵과 sw.js 자체는 제외합니다. */
 export function buildPrecacheManifest(bundle) {
   const manifest = [];
   for (const [fileName, output] of Object.entries(bundle)) {
     if (fileName === 'sw.js' || fileName.endsWith('.map')) continue;
-    if (!/\.(js|css|html|woff2?|svg)$/.test(fileName)) continue;
+    if (!/\.(js|css|html|woff2?|svg|webmanifest)$/.test(fileName)) continue;
     const source = output.type === 'chunk' ? output.code : output.source;
     const revision = /-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/.test(fileName)
       ? null
