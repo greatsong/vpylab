@@ -171,6 +171,23 @@ export function stopAllSounds() {
 // 채점용 노트 기록 콜백 (vpython-bridge에서 주입)
 let _onNotePlay = null;
 export function setNotePlayCallback(cb) { _onNotePlay = cb; }
+// 효과음·BGM 재생 시 호출 — (kind: 'sfx'|'bgm', name)
+let _onSoundEvent = null;
+export function setSoundEventCallback(cb) { _onSoundEvent = cb; }
+
+const NOTE_NAME_BY_SEMITONE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+/**
+ * 주파수 → 가장 가까운 노트 이름 (A4 = 440Hz 기준, 12-TET)
+ * @returns {string|null}
+ */
+export function freqToNoteName(freq) {
+  const f = Number(freq);
+  if (!Number.isFinite(f) || f <= 0) return null;
+  const midi = Math.round(69 + 12 * Math.log2(f / 440));
+  const octave = Math.floor(midi / 12) - 1;
+  return `${NOTE_NAME_BY_SEMITONE[((midi % 12) + 12) % 12]}${octave}`;
+}
 
 function getAudioContext() {
   const AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext;
@@ -563,7 +580,7 @@ export function noteToFreq(name) {
 export function playNote(name, duration = 0.5, type = 'sine', volume = 0.4) {
   const freq = noteToFreq(name);
   if (freq === null) return;
-  if (_onNotePlay) _onNotePlay(name, duration);
+  if (_onNotePlay) _onNotePlay(name, duration, type);
   beep(freq, duration, type, volume);
 }
 
@@ -573,6 +590,10 @@ export function playNote(name, duration = 0.5, type = 'sine', volume = 0.4) {
 export function playChord(frequencies, duration = 1.0, type = 'sine', volume = 0.25) {
   if (!frequencies || frequencies.length === 0) return;
   const notes = frequencies.slice(0, 24);
+  if (_onNotePlay) {
+    const names = notes.map(freqToNoteName).filter(Boolean);
+    if (names.length > 0) _onNotePlay(names.join('+'), duration, type);
+  }
   for (const freq of notes) beep(freq, duration, type, volume / Math.sqrt(notes.length));
 }
 
@@ -831,9 +852,16 @@ const SFX_MAP = {
  * 이름으로 효과음 재생
  * @param {string} name - 효과음 이름 (jump, coin, powerup, death 등)
  */
+/** 지원하는 효과음 이름인지 확인 */
+export function hasSfx(name) {
+  return Boolean(SFX_MAP[name?.toLowerCase()]);
+}
+
 export function playSfx(name) {
   const fn = SFX_MAP[name?.toLowerCase()];
-  if (fn) fn();
+  if (!fn) return;
+  if (_onSoundEvent) _onSoundEvent('sfx', name.toLowerCase());
+  fn();
 }
 
 // ===================================================================
@@ -942,11 +970,17 @@ const BGM_PATTERNS = {
  * @param {string} name - BGM 이름 (adventure, explore, battle, peaceful, victory)
  * @param {boolean} loop - 반복 여부 (기본 true)
  */
+/** 지원하는 배경음악 이름인지 확인 */
+export function hasBgm(name) {
+  return Boolean(BGM_PATTERNS[name?.toLowerCase()]);
+}
+
 export function startBgm(name, loop = true) {
   stopBgm(); // 기존 BGM 중지
 
   const pattern = BGM_PATTERNS[name?.toLowerCase()];
   if (!pattern) return;
+  if (_onSoundEvent) _onSoundEvent('bgm', name.toLowerCase());
 
   const { notes, durations, type, volume } = pattern;
   let running = true;

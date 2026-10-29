@@ -8,7 +8,7 @@ import OutputConsole from '../components/console/OutputConsole';
 import LoadingScreen from '../components/shared/LoadingScreen';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
-import { gradeA, gradeB, gradeCodeChecks, gradeNotes, gradeRun } from '../engine/grading-engine';
+import { gradeMission } from '../engine/grading-engine';
 import { clearRegistry } from '../engine/object-registry';
 import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, resumeAndRun } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
@@ -164,52 +164,8 @@ export default function MissionPlay() {
   const handleGradeInternal = () => {
     if (!mission) return;
 
-    let result;
-
-    if (mission.gradeType === 'notes') {
-      // 음악 미션: 재생된 노트 시퀀스와 정답 비교
-      result = gradeNotes(mission.expectedNotes);
-    } else if (mission.gradeType === 'code') {
-      // 코드 검사형 미션: 특정 패턴이 코드에 있는지 확인
-      result = gradeCodeChecks(code, mission.codeChecks || []);
-    } else if (mission.gradeType === 'run') {
-      // 탐험형 미션: 실제 실행 결과 또는 assertion을 확인
-      result = gradeRun(mission.assertions || []);
-    } else if (mission.gradeType === 'A') {
-      result = gradeA(mission.assertions);
-    } else if (mission.gradeType === 'B') {
-      result = gradeB(mission.targetObjectId || 'obj_1', mission.referenceTrajectory, 0.9);
-    } else {
-      // A+B 복합
-      const aResult = gradeA(mission.assertions);
-      if (mission.referenceTrajectory) {
-        const bResult = gradeB(mission.targetObjectId || 'obj_1', mission.referenceTrajectory, 0.8);
-        result = {
-          grade: 'A+B',
-          passed: aResult.passed && bResult.passed,
-          score: Math.round((aResult.score + bResult.score) / 2),
-          aResult,
-          bResult,
-          results: [...aResult.results],
-        };
-      } else {
-        result = aResult;
-      }
-    }
-
-    // codeChecks 병행 검사: A, A+B 등에서도 codeChecks가 있으면 추가 검증
-    if (mission.gradeType !== 'code' && mission.codeChecks && mission.codeChecks.length > 0 && result.passed) {
-      const codeResult = gradeCodeChecks(code, mission.codeChecks);
-      if (!codeResult.passed) {
-        result = {
-          ...result,
-          passed: false,
-          score: Math.round((result.score + codeResult.score) / 2),
-          results: [...(result.results || []), ...codeResult.results],
-          message: '코드를 더 완성해 보세요.',
-        };
-      }
-    }
+    // 미션 종류별 채점기 조합 + codeChecks·expectedNotes 병행 검사
+    const result = gradeMission(mission, code, { lang });
 
     setGradeResult(result);
 

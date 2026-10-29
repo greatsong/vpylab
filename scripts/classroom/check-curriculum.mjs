@@ -30,8 +30,23 @@ try {
 const curriculumChanged = changed.filter((file) => curriculumFiles.includes(file));
 const classroomChanged = changed.filter((file) => file !== selfPath && classroomPrefixes.some((prefix) => file.startsWith(prefix)));
 
+// 의도한 동시 변경은 커밋 메시지에 [curriculum] 표시를 넣거나 CURRICULUM_CHANGE_OK=1 로 허용한다.
+let allowedByMarker = Boolean(process.env.CURRICULUM_CHANGE_OK);
+if (!allowedByMarker) {
+  try {
+    allowedByMarker = /\[curriculum\]/i.test(git(['log', '--format=%s%n%b', `${base}..HEAD`]));
+  } catch {
+    allowedByMarker = false;
+  }
+}
+
+if (curriculumChanged.length && classroomChanged.length && allowedByMarker) {
+  process.stdout.write(`수업 자료와 교실 코드가 함께 바뀌었지만 [curriculum] 표시로 허용합니다 (기준 ${base}).\n  수업 자료: ${curriculumChanged.join(', ')}\n  교실 코드: ${classroomChanged.join(', ')}\n`);
+  process.exit(0);
+}
+
 if (curriculumChanged.length && classroomChanged.length) {
-  process.stderr.write(`새 교실 코드와 수업 자료가 같은 변경에 섞여 있습니다. 수업 자료는 별도 변경으로 나눠 주세요.\n  수업 자료: ${curriculumChanged.join(', ')}\n  교실 코드: ${classroomChanged.slice(0, 5).join(', ')}${classroomChanged.length > 5 ? ' 외' : ''}\n`);
+  process.stderr.write(`새 교실 코드와 수업 자료가 같은 변경에 섞여 있습니다. 수업 자료는 별도 변경으로 나누거나, 의도한 변경이면 커밋 메시지에 [curriculum]을 넣어 주세요.\n  수업 자료: ${curriculumChanged.join(', ')}\n  교실 코드: ${classroomChanged.slice(0, 5).join(', ')}${classroomChanged.length > 5 ? ' 외' : ''}\n`);
   process.exit(1);
 }
 

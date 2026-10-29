@@ -4,9 +4,9 @@
  * B등급: 궤적 유사도 비교
  */
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { gradeA, gradeB, gradeCodeChecks, gradeRun, stripPythonComments } from './grading-engine';
+import { gradeA, gradeB, gradeCodeChecks, gradeNotes, gradeRun, gradeMission, stripPythonComments } from './grading-engine';
 import {
-  registerObject, updateObject, clearRegistry,
+  registerObject, updateObject, clearRegistry, registerNote, registerSound,
 } from './object-registry';
 
 // performance.now() 모킹 (jsdom에서 안정적 테스트)
@@ -309,5 +309,211 @@ describe('gradeRun — 실행형 미션 검사', () => {
 
     expect(result.passed).toBe(true);
     expect(result.grade).toBe('run');
+  });
+});
+
+describe('gradeA — 확장 DSL (종류·개수·범위·소리)', () => {
+  beforeEach(() => {
+    clearRegistry();
+  });
+
+  it('count 속성으로 객체 종류별 개수를 비교한다', () => {
+    registerObject('box', { pos: [0, 0, 0], size: [1, 2, 3] });
+    registerObject('box', { pos: [1, 0, 0], size: [1, 1, 1] });
+    registerObject('cylinder', { pos: [0, 0, 0], radius: 0.5, axis: [3, 0, 0] });
+
+    const result = gradeA([
+      { type: 'box', property: 'count', operator: '>=', value: 2 },
+      { type: 'cylinder', property: 'count', operator: '==', value: 1 },
+      { type: ['box', 'cylinder'], property: 'count', operator: '==', value: 3 },
+      { type: '*', property: 'count', operator: '==', value: 3 },
+      { type: 'sphere', property: 'count', operator: '==', value: 0 },
+    ]);
+
+    expect(result.passed).toBe(true);
+  });
+
+  it('box size.y, cylinder axis.mag, 색 벡터 비교를 지원한다', () => {
+    registerObject('box', { pos: [0, 0, 0], size: [2, 0.1, 3], color: [0.5, 0.5, 0.5] });
+    registerObject('cylinder', { pos: [0, 0, 0], radius: 0.5, axis: [0, 4, 0] });
+
+    const result = gradeA([
+      { type: 'box', property: 'size.y', operator: '<', value: 0.5 },
+      { type: 'cylinder', property: 'axis.mag', operator: 'approx', value: 4 },
+      { type: 'box', property: 'color', operator: '==', value: [0.5, 0.5, 0.5], tolerance: 0.01 },
+      { type: 'box', property: 'color', operator: '!=', value: [1, 0, 0], tolerance: 0.01 },
+    ]);
+
+    expect(result.passed).toBe(true);
+  });
+
+  it('match: any/all/count/distinct로 여러 객체를 한 번에 검사한다', () => {
+    registerObject('sphere', { pos: [0, 1, 0], radius: 0.2, emissive: true });
+    registerObject('sphere', { pos: [0, 2, 0], radius: 0.2, emissive: false });
+    registerObject('sphere', { pos: [0, -1, 0], radius: 0.4, emissive: true });
+
+    const result = gradeA([
+      { type: 'sphere', property: 'pos.y', operator: '>', value: 1.5, match: 'any' },
+      { type: 'sphere', property: 'radius', operator: '>', value: 0.1, match: 'all' },
+      { type: 'sphere', property: 'emissive', operator: '==', value: true, match: 'count', minCount: 2 },
+      { type: 'sphere', property: 'radius', operator: '==', value: 2, match: 'distinct' },
+    ]);
+    expect(result.passed).toBe(true);
+
+    const failing = gradeA([
+      { type: 'sphere', property: 'pos.y', operator: '>', value: 0, match: 'all' },
+      { type: 'sphere', property: 'emissive', operator: '==', value: true, match: 'count', minCount: 3 },
+    ]);
+    expect(failing.passed).toBe(false);
+    expect(failing.score).toBe(0);
+  });
+
+  it('in / not_in / between / exists 연산자', () => {
+    registerObject('sphere', { pos: [0.3, 0, 0], color: [1, 0, 0], texture: 'wood' });
+
+    const result = gradeA([
+      { type: 'sphere', property: 'color', operator: 'in', value: [[0, 0, 1], [1, 0, 0]], tolerance: 0.01 },
+      { type: 'sphere', property: 'color', operator: 'not_in', value: [[0, 0, 1]], tolerance: 0.01 },
+      { type: 'sphere', property: 'pos.x', operator: 'between', value: [0, 1] },
+      { type: 'sphere', property: 'texture', operator: 'exists' },
+      { type: 'sphere', property: 'texture', operator: '==', value: 'wood' },
+    ]);
+
+    expect(result.passed).toBe(true);
+  });
+
+  it('anyOf 묶음은 하나만 만족하면 통과한다', () => {
+    registerObject('sphere', { pos: [0, 0, 0], color: [1, 1, 0] });
+
+    const result = gradeA([
+      {
+        anyOf: [
+          { type: 'sphere', property: 'count', operator: '>=', value: 2 },
+          { type: 'sphere', property: 'color', operator: '!=', value: [1, 0, 0], tolerance: 0.01 },
+        ],
+        message: '구를 추가하거나 색을 바꾸기',
+      },
+    ]);
+
+    expect(result.passed).toBe(true);
+    expect(result.results[0].message).toContain('구를 추가하거나 색을 바꾸기');
+
+    const failing = gradeA([
+      { anyOf: [
+        { type: 'sphere', property: 'count', operator: '>=', value: 2 },
+        { type: 'sphere', property: 'color', operator: '!=', value: [1, 1, 0], tolerance: 0.01 },
+      ] },
+    ]);
+    expect(failing.passed).toBe(false);
+  });
+
+  it('historyLength와 history.max/min으로 움직임을 검사한다', () => {
+    const id = registerObject('sphere', { pos: [0, 0, 0] });
+    for (let i = 1; i <= 5; i++) updateObject(id, { pos: [i, i * i, 0] }, i);
+
+    const result = gradeA([
+      { type: 'sphere', property: 'historyLength', operator: '>=', value: 5 },
+      { type: 'sphere', property: 'history.max.pos.y', operator: '==', value: 25 },
+      { type: 'sphere', property: 'history.min.pos.x', operator: '==', value: 1 },
+    ]);
+
+    expect(result.passed).toBe(true);
+    expect(gradeA([{ type: 'sphere', property: 'history.max.pos.y', operator: '>', value: 30 }]).passed).toBe(false);
+  });
+
+  it('note/sfx/bgm 종류로 재생된 소리를 검사한다', () => {
+    registerNote('C4', 0.2, 'triangle');
+    registerNote('E4', 0.4, 'square');
+    registerNote('C4+E4+G4', 1.0, 'sine');
+    registerSound('sfx', 'jump');
+    registerSound('sfx', 'coin');
+    registerSound('bgm', 'peaceful');
+
+    const result = gradeA([
+      { type: 'note', property: 'count', operator: '>=', value: 3 },
+      { type: 'note', property: 'name', operator: '==', value: 'E4', index: 1 },
+      { type: 'note', property: 'duration', operator: '==', value: 3, match: 'distinct' },
+      { type: 'note', property: 'type', operator: '!=', value: 'triangle', match: 'any' },
+      { type: 'note', property: 'name', operator: '==', value: 'C4+E4+G4', index: 2 },
+      { type: 'sfx', property: 'count', operator: '==', value: 2 },
+      { type: 'sfx', property: 'name', operator: 'not_in', value: ['jump'], match: 'any' },
+      { type: 'bgm', property: 'name', operator: '==', value: 'peaceful', match: 'any' },
+    ]);
+
+    expect(result.passed).toBe(true);
+  });
+
+  it('객체가 없으면 count 0으로 비교하고, 속성 검사는 실패한다', () => {
+    const result = gradeA([
+      { type: 'box', property: 'count', operator: '==', value: 0 },
+      { type: 'box', property: 'size.x', operator: '>', value: 0, match: 'any' },
+    ]);
+
+    expect(result.results[0].passed).toBe(true);
+    expect(result.results[1].passed).toBe(false);
+    expect(result.results[1].message).toContain('찾을 수 없습니다');
+  });
+});
+
+describe('gradeNotes — 음표 시퀀스 비교', () => {
+  beforeEach(() => {
+    clearRegistry();
+  });
+
+  it('재생 기록이 없으면 실패한다', () => {
+    const result = gradeNotes(['C4', 'E4']);
+    expect(result.passed).toBe(false);
+    expect(result.message).toContain('재생되지 않았습니다');
+  });
+
+  it('순서까지 같아야 통과한다', () => {
+    registerNote('c4', 0.3);
+    registerNote('E4', 0.3);
+    registerNote('G4', 0.3);
+
+    expect(gradeNotes(['C4', 'E4', 'G4']).passed).toBe(true);
+    const wrong = gradeNotes(['C4', 'G4', 'E4']);
+    expect(wrong.passed).toBe(false);
+    expect(wrong.matched).toBe(1);
+  });
+});
+
+describe('gradeMission — 미션 데이터 기준 채점 조합', () => {
+  beforeEach(() => {
+    clearRegistry();
+  });
+
+  it('run 미션: 조건식과 codeChecks를 함께 검사한다', () => {
+    registerObject('sphere', { pos: [0, 0, 0] });
+    const mission = {
+      gradeType: 'run',
+      assertions: [{ type: 'sphere', property: 'count', operator: '>=', value: 1 }],
+      codeChecks: [{ pattern: 'rate\\s*\\(', minCount: 1, message: 'rate() 사용' }],
+    };
+
+    expect(gradeMission(mission, 'sphere()\n').passed).toBe(false);
+    expect(gradeMission(mission, 'sphere()\nrate(30)\n').passed).toBe(true);
+  });
+
+  it('run 미션에 expectedNotes가 있으면 멜로디도 확인한다', () => {
+    registerObject('sphere', { pos: [0, 0, 0] });
+    registerNote('C4', 0.2);
+    const mission = {
+      gradeType: 'run',
+      assertions: [{ type: 'sphere', property: 'count', operator: '>=', value: 1 }],
+      expectedNotes: ['C4', 'E4'],
+    };
+
+    const result = gradeMission(mission, '');
+    expect(result.passed).toBe(false);
+    expect(result.message).toContain('멜로디');
+  });
+
+  it('A 미션은 gradeA 결과를 그대로 돌려준다', () => {
+    registerObject('sphere', { pos: [5, 0, 0] });
+    const mission = { gradeType: 'A', assertions: [{ type: 'sphere', property: 'pos.x', operator: '>', value: 3 }] };
+    const result = gradeMission(mission, '');
+    expect(result.grade).toBe('A');
+    expect(result.passed).toBe(true);
   });
 });

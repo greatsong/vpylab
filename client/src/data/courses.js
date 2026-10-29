@@ -2,11 +2,11 @@
  * VPyLab 코스 데이터
  *
  * 코스 = 차시(lesson) 단위로 묶인 학습 트랙.
- * 입문 3종 + 융합 4종 = 총 7개. 차시마다 독립 실행 가능한 vpython 코드 1개.
+ * 입문 3종 + 융합 3종 + 튜토리얼(pro-toolkit) 1종 = 총 7개, 46차시. 차시마다 독립 실행 가능한 vpython 코드 1개.
  *
  * 스키마:
  *   id           : 코스 고유 ID (kebab-case)
- *   track        : 'beginner' | 'fusion'
+ *   track        : 'beginner' | 'fusion' | 'tutorial'
  *   level        : 1~3 (1=완전 입문, 2=변수/반복까지, 3=시뮬/AI 포함)
  *   title.ko/en  : 코스명
  *   subject      : 융합 코스의 결합 교과 (입문은 '코딩')

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import CameraSystem from './camera-system';
 
 vi.mock('./chart-system', () => ({ renderChart: vi.fn(), clearCharts: vi.fn() }));
-vi.mock('./sound-system', () => ({ processSoundCommand: vi.fn(), setNotePlayCallback: vi.fn() }));
+vi.mock('./sound-system', () => ({ processSoundCommand: vi.fn(), setNotePlayCallback: vi.fn(), setSoundEventCallback: vi.fn() }));
 
 import { clearScene, getMesh, processBatch } from './vpython-bridge';
 

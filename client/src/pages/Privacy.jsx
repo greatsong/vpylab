@@ -70,10 +70,6 @@ export default function Privacy() {
               위해 코드·제목·설명·메타데이터를 전송합니다. 이메일·이름 등 식별정보는
               전송되지 않습니다.
             </li>
-            <li>
-              <strong>Upstage Solar Pro</strong> — 선택 기능인 AI 힌트 제공 시
-              코드 텍스트만 전송되며, 식별정보는 전송되지 않습니다.
-            </li>
           </ul>
           <p className="mt-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
             데이터는 서비스 운영을 위한 기술적 처리 목적으로만 사용되며, 외부 API

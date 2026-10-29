@@ -10,7 +10,7 @@ import useDraft from './useDraft';
 import { downloadFile, request } from './api';
 import missions from '../data/missions';
 import { projectAppearance } from './curriculum';
-import { gradeA, gradeCodeChecks, gradeNotes, gradeRun } from '../engine/grading-engine';
+import { gradeMission } from '../engine/grading-engine';
 
 const dateText = (value) => value ? new Date(value).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 const evidenceLabels = { hypothesis: '예상과 가설', observation: '실험과 관찰', reasoning: '판단한 이유', nextStep: '다음에 확인할 것', aiUse: 'AI 제안과 판단' };
@@ -108,12 +108,7 @@ function WorkingSession({ initial, user, projectId, localMode, users, onRefresh,
 
   const checkMission = () => {
     if (!material || !runResult || runResult.code !== draft?.code || runResult.status === 'error') return;
-    let result = material.gradeType === 'code' ? gradeCodeChecks(draft.code, material.codeChecks) : material.gradeType === 'notes' ? gradeNotes(material.expectedNotes) : material.gradeType === 'run' ? gradeRun(material.assertions) : gradeA(material.assertions);
-    if (material.gradeType !== 'code' && material.codeChecks?.length && result.passed) {
-      const codeResult = gradeCodeChecks(draft.code, material.codeChecks);
-      if (!codeResult.passed) result = { ...result, passed: false, score: Math.round((result.score + codeResult.score) / 2), results: [...(result.results || []), ...codeResult.results], message: '코드를 더 완성해 보세요.' };
-    }
-    setGrade(result);
+    setGrade(gradeMission(material, draft.code));
   };
 
   if (!draft) return <div className="cr-loading">개인 초안을 복구하고 있습니다…</div>;
