@@ -78,3 +78,109 @@ describe('실제 Worker 스크립트의 출력 제한과 샌드박스', () => {
     expect(self.postMessage.mock.calls.map(([message]) => message.type)).toEqual(['event_start', 'event_done']);
   });
 });
+
+describe('실제 Worker 스크립트의 트레이스백 구조화', () => {
+  function pythonError(type, traceback) {
+    const error = new Error(traceback);
+    error.type = type;
+    return error;
+  }
+
+  it('학생 코드에는 파일 이름을 붙이고, 가장 안쪽 학생 프레임의 줄 번호를 보낸다', async () => {
+    const { self, python } = createWorkerContext();
+    await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
+    const apiCall = python.runPythonAsync.mock.calls.find(([code]) => code === '# API');
+    expect(apiCall[1]).toEqual({ filename: '<vpython-api>' });
+    python.runPythonAsync.mockImplementation(async (code) => {
+      if (code !== '학생 코드') return;
+      throw pythonError('KeyError', [
+        'Traceback (most recent call last):',
+        '  File "/lib/python312.zip/_pyodide/_base.py", line 597, in eval_code_async',
+        '    await CodeRunner(',
+        '  File "<student>", line 8, in <module>',
+        '  File "<student>", line 4, in __vpylab_main__',
+        '  File "<vpython-api>", line 279, in __getitem__',
+        'KeyError: "\'핑크색\' 색상을 찾을 수 없습니다. 사용 가능: 빨, 빨강..."',
+        '',
+      ].join('\n'));
+    });
+    await self.onmessage({ data: { type: 'run', runId: 3, code: '학생 코드' } });
+    const studentCall = python.runPythonAsync.mock.calls.find(([code]) => code === '학생 코드');
+    expect(studentCall[1]).toEqual({ filename: '<student>' });
+    const message = self.postMessage.mock.calls.map(([entry]) => entry).find((entry) => entry.type === 'error');
+    expect(message.runId).toBe(3);
+    expect(message.error).toBe('KeyError: "\'핑크색\' 색상을 찾을 수 없습니다. 사용 가능: 빨, 빨강..."');
+    expect(message.detail).toMatchObject({
+      type: 'KeyError',
+      message: '"\'핑크색\' 색상을 찾을 수 없습니다. 사용 가능: 빨, 빨강..."',
+      line: 4,
+      frames: [{ line: 8, name: '<module>' }, { line: 4, name: '__vpylab_main__' }],
+    });
+  });
+
+  it('SyntaxError는 소스 줄과 ^ 위치(열)를 함께 보낸다', async () => {
+    const { self, python } = createWorkerContext();
+    await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
+    python.runPythonAsync.mockImplementation(async (code) => {
+      if (code !== '학생 코드') return;
+      throw pythonError('SyntaxError', [
+        'Traceback (most recent call last):',
+        '  File "/lib/python312.zip/_pyodide/_base.py", line 149, in _parse_and_compile_gen',
+        '    mod = compile(source, filename, mode, flags | ast.PyCF_ONLY_AST)',
+        '  File "<student>", line 2',
+        '    if x > 3',
+        '            ^',
+        "SyntaxError: expected ':'",
+      ].join('\n'));
+    });
+    await self.onmessage({ data: { type: 'run', runId: 4, code: '학생 코드' } });
+    const message = self.postMessage.mock.calls.map(([entry]) => entry).find((entry) => entry.type === 'error');
+    expect(message.detail).toMatchObject({ type: 'SyntaxError', message: "expected ':'", line: 2, column: 9, sourceLine: 'if x > 3', frames: [] });
+  });
+
+  it('message가 빈 PythonError는 stderr 버퍼 끝의 트레이스백을 떼어 내 사용한다', async () => {
+    const { self, python } = createWorkerContext();
+    await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
+    self.postMessage.mockClear();
+    python.runPythonAsync.mockImplementation(async (code) => {
+      if (code !== '학생 코드') return;
+      self._queueOutput('stderr', '학생이 직접 쓴 경고\n');
+      self._queueOutput('stderr', 'Traceback (most recent call last):\n  File "<student>", line 2, in <module>\nNameError: name \'spd\' is not defined\n');
+      throw pythonError('NameError', '');
+    });
+    await self.onmessage({ data: { type: 'run', runId: 6, code: '학생 코드' } });
+    const messages = self.postMessage.mock.calls.map(([entry]) => entry);
+    expect(messages.filter((entry) => entry.type === 'stderr')).toEqual([expect.objectContaining({ text: '학생이 직접 쓴 경고' })]);
+    const error = messages.find((entry) => entry.type === 'error');
+    expect(error.error).toBe("NameError: name 'spd' is not defined");
+    expect(error.raw).toContain('Traceback');
+    expect(error.detail).toMatchObject({ type: 'NameError', message: "name 'spd' is not defined", line: 2 });
+  });
+
+  it('message가 빈 _StopExecution도 stderr 트레이스백으로 정지를 알아본다', async () => {
+    const { self, python } = createWorkerContext();
+    await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
+    self.postMessage.mockClear();
+    python.runPythonAsync.mockImplementation(async (code) => {
+      if (code !== '학생 코드') return;
+      self._queueOutput('stderr', 'Traceback (most recent call last):\n  File "<student>", line 3, in __vpylab_main__\n_StopExecution: 실행이 중지되었습니다\n');
+      throw pythonError('_StopExecution', '');
+    });
+    await self.onmessage({ data: { type: 'run', runId: 7, code: '학생 코드' } });
+    const types = self.postMessage.mock.calls.map(([entry]) => entry.type);
+    expect(types).not.toContain('error');
+    expect(types).not.toContain('stderr');
+    expect(types).toContain('done');
+  });
+
+  it('Pyodide가 종류를 알려 주지 않아도 마지막 줄에서 종류를 읽는다', async () => {
+    const { self, python } = createWorkerContext();
+    await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
+    python.runPythonAsync.mockImplementation(async (code) => {
+      if (code === '학생 코드') throw new Error('Traceback (most recent call last):\n  File "<student>", line 1, in <module>\nZeroDivisionError: division by zero\n');
+    });
+    await self.onmessage({ data: { type: 'run', runId: 5, code: '학생 코드' } });
+    const message = self.postMessage.mock.calls.map(([entry]) => entry).find((entry) => entry.type === 'error');
+    expect(message.detail).toMatchObject({ type: 'ZeroDivisionError', message: 'division by zero', line: 1 });
+  });
+});

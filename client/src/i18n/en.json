@@ -82,7 +82,8 @@
   "console": {
     "title": "Console Output",
     "clear": "Clear",
-    "noOutput": "No output yet. Try running your code."
+    "noOutput": "No output yet. Try running your code.",
+    "errorLine": "line {{line}}"
   },
   "grading": {
     "title": "Grading Result",

@@ -502,3 +502,10 @@ form.cr-project-card.action { cursor:default; text-align:left; }
   .cr-learning-strip { padding:18px; }
   .cr-learning-strip ol { grid-template-columns:1fr; gap:14px; }
 }
+.runtime-error--explained { display:flex; flex-direction:column; gap:4px; line-height:1.5; }
+.runtime-error--explained strong { font-size:13px; }
+.runtime-error--explained p { margin:0; color:var(--cr-text); }
+.runtime-error-hint { color:var(--cr-text); }
+.runtime-error-code, .runtime-error-original { display:block; font:11px/1.6 var(--font-mono); white-space:pre-wrap; overflow-wrap:anywhere; }
+.runtime-error-code { color:var(--cr-text); }
+.runtime-error-original { color:var(--cr-muted); }

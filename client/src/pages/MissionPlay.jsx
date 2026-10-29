@@ -64,8 +64,9 @@ export default function MissionPlay() {
     }
   }, [code, user]);
 
-  const addOutput = useCallback((text, type = 'log') => {
-    setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
+  // details: 파이썬 오류의 구조화 정보(입문자용 설명 포함). 콘솔이 설명을 먼저 보여 준다.
+  const addOutput = useCallback((text, type = 'log', details) => {
+    setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random(), ...(details ? { details } : {}) }]);
   }, []);
 
   const handleBatch = useCallback((commands) => {
@@ -98,8 +99,8 @@ export default function MissionPlay() {
     isLoading, isReady, isRunning,
   } = usePyodide({
     onOutput: addOutput,
-    onError: (err) => {
-      addOutput(err, 'error');
+    onError: (err, details) => {
+      addOutput(err, 'error', details);
       stopBgm();  // 에러 시 BGM 자동 정지
       errorSound();
       if (pendingGradeRef.current) {
@@ -112,6 +113,7 @@ export default function MissionPlay() {
         });
       }
     },
+    locale: lang,
     onBatch: handleBatch,
     onReady: () => addOutput('Python 엔진 준비 완료!', 'success'),
     onDone: () => {

@@ -58,7 +58,7 @@ function waitForSaveTimeout(ms, message) {
  * 태블릿: 탭 전환 (에디터/3D 토글)
  */
 export default function Sandbox() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [code, setCode] = useState(DEFAULT_CODE);
   const [outputs, setOutputs] = useState([]);
   const [activeTab, setActiveTab] = useState('editor');
@@ -330,8 +330,9 @@ export default function Sandbox() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const addOutput = useCallback((text, type = 'log') => {
-    setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random() }]);
+  // details: 파이썬 오류의 구조화 정보(입문자용 설명 포함). 콘솔이 설명을 먼저 보여 준다.
+  const addOutput = useCallback((text, type = 'log', details) => {
+    setOutputs((prev) => [...prev, { text, type, id: Date.now() + Math.random(), ...(details ? { details } : {}) }]);
   }, []);
 
   useEffect(() => {
@@ -498,8 +499,8 @@ export default function Sandbox() {
     isLoading, isReady, isRunning,
   } = usePyodide({
     onOutput: addOutput,
-    onError: (err) => {
-      addOutput(err, 'error');
+    onError: (err, details) => {
+      addOutput(err, 'error', details);
       stopBgm();  // 에러 시 BGM 자동 정지
       errorSound();
     },
@@ -508,6 +509,7 @@ export default function Sandbox() {
     onDone: () => {
       stopBgm();
     },
+    locale,
   });
 
   // 최초 Worker 초기화
