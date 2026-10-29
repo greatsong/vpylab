@@ -57,4 +57,4 @@
 
 ## 다시 촬영할 때
 
-프로젝트의 `scripts/classroom/guide-preview.mjs`로 별도 복사본을 열고, 다른 터미널에서 `scripts/classroom/capture-guide.mjs`를 실행합니다. 설치된 Playwright 모듈을 자동으로 찾지 못하면 `VPYLAB_PLAYWRIGHT_MODULE` 환경 변수에 해당 모듈 파일 위치를 지정합니다. 사용자 브라우저 프로필이나 기존 로그인 정보를 가져오지 않습니다.
+프로젝트의 `scripts/classroom/guide-preview.mjs`로 별도 복사본을 열고, Playwright로 각 장면을 촬영합니다. 촬영에 사용한 일회성 스크립트(`capture-guide.mjs`)는 날짜와 포트가 고정되어 있어 저장소에서 제거했습니다. 필요하면 git 이력(커밋 919a61d 이전)에서 참고할 수 있습니다. 사용자 브라우저 프로필이나 기존 로그인 정보를 가져오지 않습니다.

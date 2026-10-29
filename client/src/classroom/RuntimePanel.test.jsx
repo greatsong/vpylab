@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import RuntimePanel from './RuntimePanel';
 import * as singleton from '../engine/pyodide-singleton';
-import { previewInstrument, setMasterMuted, setMasterVolume, stopAllSounds } from '../engine/sound-system';
+import { setMasterMuted, setMasterVolume, stopAllSounds } from '../engine/sound-system';
 
 const sound = vi.hoisted(() => ({ state: { volume: 0.6, muted: false, playing: false }, listeners: new Set() }));
 const cameraSystems = vi.hoisted(() => []);
@@ -30,7 +30,6 @@ vi.mock('../engine/sound-system', () => {
     subscribeAudioState: (listener) => { sound.listeners.add(listener); return () => sound.listeners.delete(listener); },
     setMasterVolume: vi.fn((volume) => publish({ volume })),
     setMasterMuted: vi.fn((muted) => { if (muted) stop(); publish({ muted }); }),
-    previewInstrument: vi.fn(async () => { publish({ playing: true }); return true; }),
   };
 });
 
@@ -120,22 +119,17 @@ describe('교실 Python 실행 화면', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('음색을 골라도 자동 재생하지 않고 클릭으로 미리 듣기·음량·음소거를 제어한다', async () => {
+  it('소리 설정은 접혀 있고, 열면 음량과 음소거만 제어한다', async () => {
     const view = render(<RuntimePanel code="print(1)" />); await ready();
-    expect(previewInstrument).not.toHaveBeenCalled();
-    expect(screen.queryByLabelText('미리 듣기 음색')).toBeNull();
+    expect(screen.queryByLabelText('소리 음량')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /소리$/ }));
-    fireEvent.change(screen.getByLabelText('미리 듣기 음색'), { target: { value: 'piano' } });
+    expect(screen.queryByLabelText('미리 듣기 음색')).toBeNull();
+    expect(screen.queryByRole('button', { name: /미리 듣기/ })).toBeNull();
     fireEvent.change(screen.getByLabelText('소리 음량'), { target: { value: '35' } });
     expect(setMasterVolume).toHaveBeenCalledWith(0.35);
-    expect(previewInstrument).not.toHaveBeenCalled();
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: '♫ 소리 미리 듣기' })); });
-    expect(previewInstrument).toHaveBeenCalledExactlyOnceWith('piano');
-    expect(screen.getByRole('button', { name: '■ 정지' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: '음소거' }));
     expect(setMasterMuted).toHaveBeenCalledWith(true);
     expect(screen.getByRole('button', { name: '소리 켜기' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: '♫ 소리 미리 듣기' })).toBeDisabled();
     const stops = stopAllSounds.mock.calls.length; view.unmount();
     expect(stopAllSounds).toHaveBeenCalledTimes(stops + 1);
   });
