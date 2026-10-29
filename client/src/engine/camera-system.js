@@ -68,6 +68,8 @@ export default class CameraSystem {
     // 추적 모드용: 이전 프레임의 물체 위치 기록
     this._prevPositions = new Map(); // object.uuid → Vector3
     this._followZoomLocked = false;   // Follow 모드 내부 줌 고정 플래그
+    this._explicitRange = null;       // scene.range로 지정한 시야 반경 (GlowScript 호환)
+    this._followTarget = null;        // scene.camera.follow(obj)로 지정한 추적 대상
 
     // 사용자 조작 감지 — 마우스 이벤트로 수동 모드 전환
     this._onUserInteraction = () => {
@@ -270,6 +272,24 @@ export default class CameraSystem {
   update() {
     this._frameCount++;
 
+    // scene.camera.follow(obj): 지정한 객체의 위치를 중심으로 삼고 거리·방향은 유지
+    if (this._followTarget) {
+      if (!this._followTarget.parent) {
+        this._followTarget = null;
+      } else {
+        const center = new THREE.Vector3();
+        this._followTarget.getWorldPosition(center);
+        const direction = new THREE.Vector3().subVectors(this.camera.position, this.controls.target);
+        if (direction.lengthSq() < 0.001) direction.set(0, 0, 1);
+        else direction.normalize();
+        this._targetCenter.copy(center);
+        this._currentCenter.copy(center);
+        this.controls.target.copy(center);
+        this.camera.position.copy(center).addScaledVector(direction, this._currentDistance);
+        return;
+      }
+    }
+
     // 수동 모드면 아무것도 하지 않음
     if (this.mode === MODE.MANUAL) return;
 
@@ -343,6 +363,8 @@ export default class CameraSystem {
   resetToAutoFit() {
     this.mode = MODE.AUTO_FIT;
     this._userInteracted = false;
+    this._followTarget = null;
+    this._explicitRange = null;
     this._autoFit();
   }
 
@@ -370,6 +392,8 @@ export default class CameraSystem {
     this._userInteracted = false;
     this._frameCount = 0;
     this._prevPositions.clear();
+    this._followTarget = null;
+    this._explicitRange = null;
 
     // 약간의 딜레이 후 Auto-Fit (물체 생성 시간 확보)
     clearTimeout(this._fitTimer);
@@ -415,18 +439,149 @@ export default class CameraSystem {
     if (!Number.isFinite(range) || range <= 0) return;
     this.mode = MODE.MANUAL;
     this._userInteracted = true;
-    // FOV 기반으로 거리 계산: tan(fov/2) = range/distance
+    this._explicitRange = range;
+    this._applyDistance(this._distanceForRange(range));
+  }
+
+  /**
+   * GlowScript 호환: range는 화면의 짧은 변 방향으로 보이는 영역의 절반이다.
+   * Three.js의 fov는 세로 기준이므로 세로가 더 짧을 때는 그대로, 가로가 더 짧을 때는 종횡비로 나눈다.
+   */
+  _distanceForRange(range) {
     const fov = this.camera.fov * (Math.PI / 180);
-    const distance = range / Math.tan(fov / 2);
+    const aspect = this.camera.aspect || 1;
+    const verticalHalfExtent = aspect >= 1 ? range : range / aspect;
+    return verticalHalfExtent / Math.tan(fov / 2);
+  }
+
+  /** 현재 보는 방향을 유지한 채 카메라 거리만 바꾼다. */
+  _applyDistance(distance) {
     this._targetDistance = distance;
     this._currentDistance = distance;
+    const direction = this._viewDirection();
+    this.camera.position.copy(this.controls.target).addScaledVector(direction, distance);
+    this._currentCenter.copy(this.controls.target);
+    this._targetCenter.copy(this.controls.target);
+  }
 
-    // 즉시 적용
-    const direction = new THREE.Vector3();
-    direction.subVectors(this.camera.position, this.controls.target);
+  /** 중심에서 카메라를 향하는 단위 벡터 (forward의 반대 방향). */
+  _viewDirection() {
+    const direction = new THREE.Vector3().subVectors(this.camera.position, this.controls.target);
     if (direction.lengthSq() < 0.001) direction.set(0, 0, 1);
     else direction.normalize();
-    this.camera.position.copy(this._currentCenter).addScaledVector(direction, distance);
+    return direction;
+  }
+
+  /** 현재 카메라 거리 (중심에서 카메라까지). */
+  _currentCameraDistance() {
+    const distance = this.camera.position.distanceTo(this.controls.target);
+    return distance > 0.001 ? distance : this._currentDistance;
+  }
+
+  /**
+   * scene.forward = vec — 보는 방향을 바꾼다. 중심과 거리는 유지한다.
+   * GlowScript처럼 autoscale 상태는 바꾸지 않는다.
+   */
+  setForward(x, y, z) {
+    const forward = new THREE.Vector3(x, y, z);
+    if (forward.lengthSq() < 1e-9) return;
+    forward.normalize();
+    const distance = this._currentCameraDistance();
+    this.camera.position.copy(this.controls.target).addScaledVector(forward, -distance);
+    this._currentDistance = distance;
+    this._targetDistance = distance;
+    this.camera.lookAt(this.controls.target);
+  }
+
+  /** scene.up = vec — 화면의 위쪽 방향. */
+  setUp(x, y, z) {
+    const up = new THREE.Vector3(x, y, z);
+    if (up.lengthSq() < 1e-9) return;
+    this.camera.up.copy(up.normalize());
+    this.camera.lookAt(this.controls.target);
+  }
+
+  /** scene.fov = 라디안 — 시야각. 명시한 range가 있으면 같은 범위가 보이도록 거리를 다시 계산한다. */
+  setFov(radians) {
+    if (!Number.isFinite(radians) || radians <= 0 || radians >= Math.PI) return;
+    this.camera.fov = radians * (180 / Math.PI);
+    this.camera.updateProjectionMatrix();
+    if (this.mode === MODE.MANUAL && this._explicitRange) {
+      this._applyDistance(this._distanceForRange(this._explicitRange));
+    }
+  }
+
+  /**
+   * scene.camera.pos = vec — 카메라를 옮기고 중심도 같이 평행이동한다 (방향·거리 유지).
+   */
+  setCameraPos(x, y, z) {
+    this.mode = MODE.MANUAL;
+    this._userInteracted = true;
+    this._followTarget = null;
+    const next = new THREE.Vector3(x, y, z);
+    const translation = next.clone().sub(this.camera.position);
+    this.controls.target.add(translation);
+    this.camera.position.copy(next);
+    this._currentCenter.copy(this.controls.target);
+    this._targetCenter.copy(this.controls.target);
+  }
+
+  /**
+   * scene.camera.axis = vec — 카메라 위치는 그대로 두고 중심을 pos + axis로 옮긴다.
+   * 축의 길이가 카메라 거리가 되고, range는 거리·fov에서 다시 계산된다.
+   */
+  setCameraAxis(x, y, z) {
+    const axis = new THREE.Vector3(x, y, z);
+    if (axis.lengthSq() < 1e-9) return;
+    this.mode = MODE.MANUAL;
+    this._userInteracted = true;
+    this._followTarget = null;
+    this.controls.target.copy(this.camera.position).add(axis);
+    this._currentCenter.copy(this.controls.target);
+    this._targetCenter.copy(this.controls.target);
+    this._currentDistance = axis.length();
+    this._targetDistance = this._currentDistance;
+    this._explicitRange = this.getRange();
+    this.camera.lookAt(this.controls.target);
+  }
+
+  /** scene.camera.follow(obj) — 객체를 계속 화면 중심에 둔다. null이면 해제. */
+  followObject(mesh) {
+    this._followTarget = mesh || null;
+    if (mesh) {
+      this._currentDistance = this._currentCameraDistance();
+      this._targetDistance = this._currentDistance;
+    } else {
+      this.mode = MODE.MANUAL;
+      this._userInteracted = true;
+    }
+  }
+
+  /** 현재 range (화면 짧은 변 방향 시야 절반) — GlowScript 의미. */
+  getRange() {
+    const fov = this.camera.fov * (Math.PI / 180);
+    const aspect = this.camera.aspect || 1;
+    const verticalHalfExtent = this._currentCameraDistance() * Math.tan(fov / 2);
+    return aspect >= 1 ? verticalHalfExtent : verticalHalfExtent * aspect;
+  }
+
+  /** Python 쪽 scene.camera.pos 등이 읽을 현재 카메라 상태. */
+  getState() {
+    const forward = new THREE.Vector3().subVectors(this.controls.target, this.camera.position);
+    if (forward.lengthSq() < 1e-9) forward.set(0, 0, -1);
+    else forward.normalize();
+    const p = this.camera.position;
+    const c = this.controls.target;
+    const u = this.camera.up;
+    return {
+      pos: [p.x, p.y, p.z],
+      center: [c.x, c.y, c.z],
+      forward: [forward.x, forward.y, forward.z],
+      up: [u.x, u.y, u.z],
+      range: this.getRange(),
+      fov: this.camera.fov * (Math.PI / 180),
+      aspect: this.camera.aspect || 1,
+    };
   }
 
   /**
@@ -435,6 +590,7 @@ export default class CameraSystem {
   setExplicitCenter(x, y, z) {
     this.mode = MODE.MANUAL;
     this._userInteracted = true;
+    this._followTarget = null;
     if (this.options.preserveDirectionOnCenter) {
       const translation = new THREE.Vector3(x, y, z).sub(this.controls.target);
       this.camera.position.add(translation);

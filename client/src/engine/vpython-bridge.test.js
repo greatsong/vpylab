@@ -662,3 +662,91 @@ describe('vpython-bridge: processBatch', () => {
     expect(shaft.geometry.parameters.height).toBeCloseTo(4 * 0.8); // 길이 유지
   });
 });
+
+describe('vpython-bridge: scene 카메라·조명·제목 커맨드', () => {
+  let scene;
+
+  function fakeDefaultLights() {
+    const ambient = {
+      isLight: true, isAmbientLight: true, visible: true, intensity: 0.6,
+      color: { r: 1, g: 1, b: 1, setHex(hex) { this.hex = hex; } },
+      userData: { vpDefaultLight: 'ambient', vpDefaultColor: 0xffffff, vpDefaultIntensity: 0.6 },
+    };
+    const distant = { isLight: true, isDirectionalLight: true, visible: true, userData: { vpDefaultLight: 'distant' } };
+    scene.add(ambient);
+    scene.add(distant);
+    return { ambient, distant };
+  }
+
+  beforeEach(() => {
+    scene = new THREE.Scene();
+    clearScene(scene);
+  });
+
+  it('카메라 속성 커맨드는 카메라 시스템의 해당 메서드로 전달된다', () => {
+    const cameraSystem = {
+      setForward: vi.fn(), setUp: vi.fn(), setFov: vi.fn(), setCameraPos: vi.fn(), setCameraAxis: vi.fn(), followObject: vi.fn(),
+    };
+    scene._cameraSystem = cameraSystem;
+    processBatch([
+      { action: 'create', id: 'ball', type: 'sphere', pos: [0, 0, 0], radius: 1 },
+      { action: 'scene', property: 'forward', value: [0, -1, -1] },
+      { action: 'scene', property: 'up', value: [0, 0, 1] },
+      { action: 'scene', property: 'fov', value: Math.PI / 3 },
+      { action: 'scene', property: 'camera_pos', value: [1, 2, 3] },
+      { action: 'scene', property: 'camera_axis', value: [0, 0, -5] },
+      { action: 'scene', property: 'camera_follow', value: 'ball' },
+      { action: 'scene', property: 'camera_follow', value: null },
+    ], scene);
+    expect(cameraSystem.setForward).toHaveBeenCalledWith(0, -1, -1);
+    expect(cameraSystem.setUp).toHaveBeenCalledWith(0, 0, 1);
+    expect(cameraSystem.setFov).toHaveBeenCalledWith(Math.PI / 3);
+    expect(cameraSystem.setCameraPos).toHaveBeenCalledWith(1, 2, 3);
+    expect(cameraSystem.setCameraAxis).toHaveBeenCalledWith(0, 0, -5);
+    expect(cameraSystem.followObject).toHaveBeenNthCalledWith(1, getMesh('ball'));
+    expect(cameraSystem.followObject).toHaveBeenNthCalledWith(2, null);
+  });
+
+  it('scene.ambient는 기본 환경광의 색을 바꾸고 새 실행에서 복구된다', () => {
+    const { ambient } = fakeDefaultLights();
+    processBatch([{ action: 'scene', property: 'ambient', value: [0.2, 0.2, 0.2] }], scene);
+    expect(ambient.intensity).toBe(1);
+    expect(ambient.color.r).toBeCloseTo(0.2, 5);
+    const changed = ambient.color;
+    clearScene(scene);
+    expect(ambient.intensity).toBe(0.6);
+    expect(ambient.color).not.toBe(changed);
+  });
+
+  it('scene.lights = [...]는 기본 방향광을 끄고 목록에 있는 사용자 조명만 켠다', () => {
+    const { ambient, distant } = fakeDefaultLights();
+    processBatch([
+      { action: 'create', id: 'lamp', type: 'local_light', pos: [1, 2, 3], color: [1, 1, 1], intensity: 1 },
+      { action: 'create', id: 'sun', type: 'distant_light', direction: [0, -1, 0], color: [1, 1, 1], intensity: 1 },
+      { action: 'scene', property: 'lights', value: ['lamp'] },
+    ], scene);
+    expect(distant.visible).toBe(false);
+    expect(ambient.visible).toBe(true);
+    expect(getMesh('lamp').visible).toBe(true);
+    expect(getMesh('sun').visible).toBe(false);
+    processBatch([{ action: 'scene', property: 'lights', value: [] }], scene);
+    expect(getMesh('lamp').visible).toBe(false);
+    clearScene(scene);
+    expect(distant.visible).toBe(true);
+  });
+
+  it('scene.title / caption 커맨드는 오버레이로 전달되고 새 실행에서 지워진다', () => {
+    const overlay = { setTitle: vi.fn(), setCaption: vi.fn(), appendTitle: vi.fn(), appendCaption: vi.fn(), clear: vi.fn() };
+    scene._overlay = overlay;
+    processBatch([
+      { action: 'scene', property: 'title', value: '제목' },
+      { action: 'scene', property: 'caption', value: '설명' },
+      { action: 'scene', property: 'append_caption', value: ' 추가' },
+    ], scene);
+    expect(overlay.setTitle).toHaveBeenCalledWith('제목');
+    expect(overlay.setCaption).toHaveBeenCalledWith('설명');
+    expect(overlay.appendCaption).toHaveBeenCalledWith(' 추가');
+    clearScene(scene);
+    expect(overlay.clear).toHaveBeenCalled();
+  });
+});
