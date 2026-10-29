@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { preprocessCode, mapGeneratedLine } from '../engine/code-preprocessor';
 import { explainPythonError } from '../engine/python-error-explainer';
 import * as singleton from '../engine/pyodide-singleton';
 
@@ -7,21 +6,27 @@ const ACTIVITY_TIMEOUT = 10_000;
 const STOP_TIMEOUT = 750;
 
 function getTimeoutMessage(code) {
-  if (/while\s/.test(code) && !/rate\s*\(/.test(code)) {
-    return '실행 시간 초과 (10초 무응답). while 루프 안에 rate()를 넣어주세요.';
+  const hasLoop = /\b(while|for)\b/.test(code);
+  const hasRate = /(?<![\w.가-힣])(rate|sleep|waitfor|pause|input|악기|음표|화음)\s*\(/.test(code);
+  if (hasLoop && !hasRate) {
+    return '실행 시간 초과 (10초 무응답). 반복문 안에 rate()를 넣어주세요.';
   }
-  return '실행 시간 초과 (10초 무응답). 반복문과 rate() 값을 확인하세요.';
+  if (hasLoop && hasRate) {
+    return '실행 시간 초과 (10초 무응답). rate()가 반복문 안에 있는지, rate() 없이 도는 반복문이나 아주 긴 계산이 없는지 확인하세요.';
+  }
+  return '실행 시간 초과 (10초 무응답). 끝나지 않는 재귀 호출이나 아주 긴 계산이 없는지 확인하세요.';
 }
 
 /**
- * Worker가 보낸 구조화 오류를 원래 줄 번호로 되돌리고 입문자용 설명을 붙입니다.
+ * Worker가 보낸 구조화 오류에 입문자용 설명을 붙입니다.
+ * 학생 코드는 Worker 안에서 ast로 변환해 실행하므로 트레이스백 줄 번호가 학생이 쓴 줄 번호와 같습니다.
  * @returns {{ message: string, raw: string, type: string, pyMessage: string, line: number|null, column: number|null, codeLine: string|null, frames: {line:number|null, name:string}[], explanation: {title:string, explanation:string, hint:string, line:number|null} }}
  */
-export function buildErrorDetails(data, rawCode, lineMap, locale = 'ko') {
+export function buildErrorDetails(data, rawCode, locale = 'ko') {
   const detail = data.detail || {};
   const sourceLines = String(rawCode || '').split('\n');
-  const mapLine = (line) => (Array.isArray(lineMap) && lineMap.length ? mapGeneratedLine(lineMap, line) : line);
-  const line = Number.isInteger(detail.line) ? mapLine(detail.line) : null;
+  const mapLine = (line) => (Number.isInteger(line) ? line : null);
+  const line = mapLine(detail.line);
   const codeLine = Number.isInteger(line) && sourceLines[line - 1] !== undefined ? sourceLines[line - 1] : (detail.sourceLine ?? null);
   const frames = Array.isArray(detail.frames) ? detail.frames.map((frame) => ({ line: mapLine(frame.line), name: frame.name })) : [];
   const type = detail.type || String(data.error || '').split(':')[0] || 'Error';
@@ -40,7 +45,6 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
   const activeRunRef = useRef(0);
   const stoppingRef = useRef(false);
   const lastCodeRef = useRef('');
-  const lastLineMapRef = useRef(null);
   const stopRef = useRef(null);
   const mountedRef = useRef(false);
 
@@ -84,6 +88,10 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
       case 'stderr':
         callbacks.onOutput?.(data.text, 'error');
         break;
+      case 'warning':
+        // 변환기 경고 (lambda 안의 rate() 등) — 실행은 계속된다
+        callbacks.onOutput?.(`⚠️ ${data.text}`, 'warning');
+        break;
       case 'batch':
         if (data.commands?.length) callbacks.onBatch?.(data.commands);
         break;
@@ -102,7 +110,7 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
         stoppingRef.current = false;
         // 파이썬 예외만 구조화 정보가 있다. 초기화·Worker 오류는 문자열 그대로 전달한다.
         if (data.detail) {
-          callbacks.onError?.(data.error, buildErrorDetails(data, lastCodeRef.current, lastLineMapRef.current, callbacks.locale));
+          callbacks.onError?.(data.error, buildErrorDetails(data, lastCodeRef.current, callbacks.locale));
         } else {
           callbacks.onError?.(data.error);
         }
@@ -161,13 +169,11 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
 
   const runCode = useCallback((rawCode) => {
     if (singleton.getStatus() !== 'ready') return null;
-    const { code, warnings, lineMap } = preprocessCode(rawCode);
-    warnings.forEach((warning) => callbacksRef.current.onOutput?.(`⚠️ ${warning}`, 'warning'));
+    // 변환(rate() 등이 든 함수의 async 전환)은 Worker 안의 Python이 맡는다. 경고는 'warning' 메시지로 돌아온다.
     clearTimers();
     stoppingRef.current = false;
     lastCodeRef.current = rawCode;
-    lastLineMapRef.current = lineMap;
-    const runId = singleton.runCode(code);
+    const runId = singleton.runCode(rawCode);
     if (runId) {
       activeRunRef.current = runId;
       armActivityTimer();

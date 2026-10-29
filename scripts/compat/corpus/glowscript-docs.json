@@ -1,0 +1,1354 @@
+[
+ {
+  "id": "docs:arrow:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "arrow 문서 한 줄: arrow(pos=vec(0, 0, 0), axis=vec(1, 0, 0), color=color.orang",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/arrow.html",
+  "code": "arrow(pos=vec(0, 0, 0), axis=vec(1, 0, 0), color=color.orange)"
+ },
+ {
+  "id": "docs:arrow:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "arrow 문서 한 줄: arrow(opacity=0.5, shininess=0.2, texture=textures.wood, mak",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/arrow.html",
+  "code": "arrow(opacity=0.5, shininess=0.2, texture=textures.wood, make_trail=True, canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:attach_light:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "attach_light 문서 한 줄: attach_light()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/attach_light.html",
+  "code": "attach_light()"
+ },
+ {
+  "id": "docs:attach_light:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "attach_light 문서 한 줄: attach_light(ball, offset=vec(3, 0, 1), color=color.green)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/attach_light.html",
+  "code": "attach_light(ball, offset=vec(3, 0, 1), color=color.green)"
+ },
+ {
+  "id": "docs:attacharrow:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "attacharrow 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/attacharrow.html",
+  "code": "ball = sphere(color=color.yellow, velocity=vec(0,0,0) )\nmyarrow = attach_arrow( ball, \"velocity\", scale=2.0)\n...\nmyarrow.stop()  # stops arrow display\n...\nmyarrow.start() # restarts arrow display"
+ },
+ {
+  "id": "docs:attacharrow:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "attacharrow 문서 한 줄: attach_arrow()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/attacharrow.html",
+  "code": "attach_arrow()"
+ },
+ {
+  "id": "docs:attacharrow:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "attacharrow 문서 한 줄: attach_arrow(ball, \"velocity\", color=color.green, scale=10, ",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/attacharrow.html",
+  "code": "attach_arrow(ball, \"velocity\", color=color.green, scale=10, shaftwidth=ball.radius/3)"
+ },
+ {
+  "id": "docs:box:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "box 문서 한 줄: box(pos=vec(0, 0, 0), length=3, height=2, width=1, color=col",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/box.html",
+  "code": "box(pos=vec(0, 0, 0), length=3, height=2, width=1, color=color.cyan)"
+ },
+ {
+  "id": "docs:box:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "box 문서 한 줄: box(opacity=0.5, shininess=0.2, texture=textures.wood, make_",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/box.html",
+  "code": "box(opacity=0.5, shininess=0.2, texture=textures.wood, make_trail=True, canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:button:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "button 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/button.html",
+  "code": "ball = sphere(color=color.cyan)\n\ndef changecolor(evt):\n        if evt.text == 'red':\n                ball.color=color.red\n                clrbtn.background = color.cyan\n                clrbtn.text = 'cyan'\n        else:\n                ball.color=color.cyan\n                clrbtn.text = 'red'\n                clrbtn.background = color.red\n\nclrbtn = button( bind=changecolor, text='red', background=color.red )"
+ },
+ {
+  "id": "docs:button:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "button 문서 한 줄: mybutton = button( bind=myaction, text='Click me!' )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/button.html",
+  "code": "mybutton = button( bind=myaction, text='Click me!' )"
+ },
+ {
+  "id": "docs:camera:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "camera 문서 한 줄: scene.camera.rotate(angle=myangle, axis=myaxis, origin=myori",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/camera.html",
+  "code": "scene.camera.rotate(angle=myangle, axis=myaxis, origin=myorigin)"
+ },
+ {
+  "id": "docs:canvas:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "canvas 문서 한 줄: canvas(width=600, height=300, background=color.white)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/canvas.html",
+  "code": "canvas(width=600, height=300, background=color.white)"
+ },
+ {
+  "id": "docs:canvas:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "canvas 문서 한 줄: canvas(resizable=True, visible=True, align='left')",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/canvas.html",
+  "code": "canvas(resizable=True, visible=True, align='left')"
+ },
+ {
+  "id": "docs:canvas:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "canvas 문서 한 줄: mycanvas.select()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/canvas.html",
+  "code": "mycanvas.select()"
+ },
+ {
+  "id": "docs:canvas:line4",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "canvas 문서 한 줄: current = canvas.get_selected()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/canvas.html",
+  "code": "current = canvas.get_selected()"
+ },
+ {
+  "id": "docs:canvas:line5",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "canvas 문서 한 줄: canvas(title='This is the <i>Title</i>', caption='This is th",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/canvas.html",
+  "code": "canvas(title='This is the <i>Title</i>', caption='This is the <b>caption</b>')"
+ },
+ {
+  "id": "docs:canvas:line6",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "canvas 문서 한 줄: mycanvas.append_to_caption(\"Some additional text.\")",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/canvas.html",
+  "code": "mycanvas.append_to_caption(\"Some additional text.\")"
+ },
+ {
+  "id": "docs:canvas:line7",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "canvas 문서 한 줄: evt = scene.waitfor('redraw')",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/canvas.html",
+  "code": "evt = scene.waitfor('redraw')"
+ },
+ {
+  "id": "docs:canvas:line8",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "canvas 문서 한 줄: evt = scene.waitfor('draw_complete')",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/canvas.html",
+  "code": "evt = scene.waitfor('draw_complete')"
+ },
+ {
+  "id": "docs:checkbox:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "checkbox 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/checkbox.html",
+  "code": "cube = box(color=color.orange)\nspin = True\n\ndef rotate(evt):\n        global spin\n        if evt.checked:\n                spin=True\n        else:\n                spin=False\n\nrcheck = checkbox( bind=rotate, text='Spin', checked=True)\n\nwhile True:\n        rate(20)\n        if spin:\n                cube.rotate(angle=pi/20, axis=vec(0,1,0))\n        else:\n                pass"
+ },
+ {
+  "id": "docs:checkbox:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "checkbox 문서 한 줄: checkbox(bind=myfunction, text='mytext')",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/checkbox.html",
+  "code": "checkbox(bind=myfunction, text='mytext')"
+ },
+ {
+  "id": "docs:clone:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "clone 문서 한 줄: mycopy = myobject.clone(pos=vec(0,2,0), canvas=scene2 )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/clone.html",
+  "code": "mycopy = myobject.clone(pos=vec(0,2,0), canvas=scene2 )"
+ },
+ {
+  "id": "docs:color:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "color 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/color.html",
+  "code": "c = vector(1,1,0)\nc2 = color.rgb_to_hsv(c) # convert RGB to HSV\nprint(hsv) # vector(0.16667, 1, 1)\nc3 = color.hsv_to_rgb(c2) # convert back to RGB\nprint(c3) # vector(1, 1, 0)"
+ },
+ {
+  "id": "docs:color:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "color 문서 한 줄: color.rgb_to_hsv(c)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/color.html",
+  "code": "color.rgb_to_hsv(c)"
+ },
+ {
+  "id": "docs:color:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "color 문서 한 줄: color.hsv_to_rgb(c)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/color.html",
+  "code": "color.hsv_to_rgb(c)"
+ },
+ {
+  "id": "docs:compound:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "compound 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/compound.html",
+  "code": "handle = cylinder( size=vec(1, 0.2, 0.2), color=vec(0.72, 0.42, 0) )\nhead = box( size=vec(0.2, 0.6, 0.2), pos=vec(1.1, 0, 0), color=color.gray(0.6) )\nhammer = compound( [handle, head] )\nhammer.axis = vec(1,1,0)"
+ },
+ {
+  "id": "docs:compound:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "compound 문서 한 줄: compound(objectlist, pos=vec(3, 2, 0), axis=vec(1, 1, 0))",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/compound.html",
+  "code": "compound(objectlist, pos=vec(3, 2, 0), axis=vec(1, 1, 0))"
+ },
+ {
+  "id": "docs:compound:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "compound 문서 한 줄: compound(canvas=mycanvas, emissive=False)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/compound.html",
+  "code": "compound(canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:cone:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "cone 문서 한 줄: cone(pos=vec(5, 2, 0), axis=vec(3, 0, 0), radius=1, color=co",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/cone.html",
+  "code": "cone(pos=vec(5, 2, 0), axis=vec(3, 0, 0), radius=1, color=color.cyan)"
+ },
+ {
+  "id": "docs:cone:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "cone 문서 한 줄: cone(opacity=0.5, shininess=0.2, texture=textures.wood, make",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/cone.html",
+  "code": "cone(opacity=0.5, shininess=0.2, texture=textures.wood, make_trail=True, canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:curve:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "curve 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/curve.html",
+  "code": "mycurve = curve()\nmycurve.append(pos=vector(-1,0,0), color=color.red,\n            radius=0.05)\nmycurve.append(pos=vector(0,1,0), color=color.cyan,\n            radius=0.15)\nmycurve.append(pos=vector(1,0,0), color=color.red,\n            radius=0.05)"
+ },
+ {
+  "id": "docs:curve:pre2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "curve 문서 예제 블록 2",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/curve.html",
+  "code": "c = curve(color=color.cyan, radius=0.2)\nc.append( vector(-1,0.5,0) )\n# add an extra cyan point:\nc.append( vector(0,0,0) )\n# repeat the same point:\nc.append( pos=vector(0,0,0),\n         color=color.orange )\n# add another orange point:\nc.append( pos=vector(1,0.5,0),\n         color=color.orange )"
+ },
+ {
+  "id": "docs:curve:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "curve 문서 한 줄: curve(pos=[vec(- 1, 3, 2), vec(2, 0, - 1)], color=color.yell",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/curve.html",
+  "code": "curve(pos=[vec(- 1, 3, 2), vec(2, 0, - 1)], color=color.yellow)"
+ },
+ {
+  "id": "docs:curve:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "curve 문서 한 줄: curve(canvas=mycanvas, emissive=False)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/curve.html",
+  "code": "curve(canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:curve:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "curve 문서 한 줄: mypoint1=dict(pos=myvector1, color=mycolor1, radius=myradius",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/curve.html",
+  "code": "mypoint1=dict(pos=myvector1, color=mycolor1, radius=myradius1)"
+ },
+ {
+  "id": "docs:curve:line4",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "curve 문서 한 줄: mypoint1 = {'pos':myvector1, 'color':mycolor1, 'radius':myra",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/curve.html",
+  "code": "mypoint1 = {'pos':myvector1, 'color':mycolor1, 'radius':myradius1}"
+ },
+ {
+  "id": "docs:cylinder:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "cylinder 문서 한 줄: cylinder(pos=vec(0, 0, 0), axis=vec(3, 0, 0), color=color.re",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/cylinder.html",
+  "code": "cylinder(pos=vec(0, 0, 0), axis=vec(3, 0, 0), color=color.red)"
+ },
+ {
+  "id": "docs:cylinder:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "cylinder 문서 한 줄: cylinder(opacity=0.5, shininess=0.2, texture=textures.wood, ",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/cylinder.html",
+  "code": "cylinder(opacity=0.5, shininess=0.2, texture=textures.wood, make_trail=True, canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:ellipsoid:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "ellipsoid 문서 한 줄: ellipsoid(pos=vec(0, 0, 0), length=2, height=1, width=3, col",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/ellipsoid.html",
+  "code": "ellipsoid(pos=vec(0, 0, 0), length=2, height=1, width=3, color=color.cyan)"
+ },
+ {
+  "id": "docs:ellipsoid:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "ellipsoid 문서 한 줄: ellipsoid(opacity=0.5, shininess=0.2, texture=textures.wood,",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/ellipsoid.html",
+  "code": "ellipsoid(opacity=0.5, shininess=0.2, texture=textures.wood, make_trail=True, canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:extrusion:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "extrusion 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/extrusion.html",
+  "code": "triangleshape = [ [2,0], [0,4], [-2,0], [2,0] ]\nlinepath = [ vec(0,0,-4), vec(0,0,4) ]\nwedge = extrusion( shape=triangleshape, path=linepath, color=color.magenta)"
+ },
+ {
+  "id": "docs:extrusion:pre2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "extrusion 문서 예제 블록 2",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/extrusion.html",
+  "code": "outershape =  [[0.5, -0.5], [0.5, 0.5], [-0.5, 0.5], [-0.5, -0.5], [0.5, -0.5]]\ninnershape = [[0.35, -0.20], [0, 0.40], [-0.35, -0.20], [0.35, -0.20]]\nzpath = [ vec(0,0,0), vec(0,0,0.5) ]\nthing = extrusion( shape=[ outershape, innershape ], path=zpath, color=color.yellow )"
+ },
+ {
+  "id": "docs:extrusion:pre3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "extrusion 문서 예제 블록 3",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/extrusion.html",
+  "code": "trishape = shapes.triangle(xscale=0.5, yscale=0.3)\ncircpath = paths.circle(scale=2)\noddring = extrusion(shape=trishape, path=circpath, color=color.yellow)"
+ },
+ {
+  "id": "docs:extrusion:pre4",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "extrusion 문서 예제 블록 4",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/extrusion.html",
+  "code": "hshape = shapes.arc(angle1=0, angle2=0.999*pi/2, radius=0.5, thickness=0.01, pos=[-0.5,0] )\nhpath = paths.circle(radius=0.5)\ndemihemi = extrusion( shape=hshape, path=hpath, color=color.green)"
+ },
+ {
+  "id": "docs:extrusion:pre5",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "extrusion 문서 예제 블록 5",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/extrusion.html",
+  "code": "rr = 1\nN = 400\nx = 0\ndx = 1/(N)\nscalef = []\nhpath = []\nfor i in range(0,N+1,1):\n    rad = sqrt(rr**2 - x**2)\n    scalef.append(rad)\n    x = i*dx\n    hpath.append(vec(0,x,0))\nhem = extrusion(path=hpath, shape=shapes.circle(radius=rr), scale=scalef,\n      show_start_face = False, color=color.magenta )"
+ },
+ {
+  "id": "docs:extrusion:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "extrusion 문서 한 줄: myext = extrusion( shape=myshape, path=mypath )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/extrusion.html",
+  "code": "myext = extrusion( shape=myshape, path=mypath )"
+ },
+ {
+  "id": "docs:extrusion:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "extrusion 문서 한 줄: myext = extrusion( shape=myshape, path=mypath, color=color.r",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/extrusion.html",
+  "code": "myext = extrusion( shape=myshape, path=mypath, color=color.red, smooth=0.9, scale=3, twist=0.1 )"
+ },
+ {
+  "id": "docs:extrusion:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "extrusion 문서 한 줄: myextrusion = extrusion( shape=shapes.rectangle(width=10, he",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/extrusion.html",
+  "code": "myextrusion = extrusion( shape=shapes.rectangle(width=10, height=6), path=mypath )"
+ },
+ {
+  "id": "docs:file:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "file 문서 한 줄: get_library(\"https://xyz.org/lib.js\")",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/file.html",
+  "code": "get_library(\"https://xyz.org/lib.js\")"
+ },
+ {
+  "id": "docs:file:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "file 문서 한 줄: myfile = read_local_file(scene.title_anchor)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/file.html",
+  "code": "myfile = read_local_file(scene.title_anchor)"
+ },
+ {
+  "id": "docs:file:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "file 문서 한 줄: download(filename, data)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/file.html",
+  "code": "download(filename, data)"
+ },
+ {
+  "id": "docs:graph:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "graph 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/graph.html",
+  "code": "a = gcurve()\n\nfor x in arange(0, 2*pi, pi/20):\n        rate(30)\n        a.plot(x, sin(x))"
+ },
+ {
+  "id": "docs:graph:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "graph 문서 한 줄: g1 = graph(title='My Graph', xtitle='x', ytitle='t', xmin=0,",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/graph.html",
+  "code": "g1 = graph(title='My Graph', xtitle='x', ytitle='t', xmin=0, ymin=-20 )"
+ },
+ {
+  "id": "docs:graph:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "graph 문서 한 줄: mygraph.select()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/graph.html",
+  "code": "mygraph.select()"
+ },
+ {
+  "id": "docs:graph:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "graph 문서 한 줄: mygraph.delete()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/graph.html",
+  "code": "mygraph.delete()"
+ },
+ {
+  "id": "docs:graph:line4",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "graph 문서 한 줄: current = graph.get_selected()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/graph.html",
+  "code": "current = graph.get_selected()"
+ },
+ {
+  "id": "docs:graph:line5",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "graph 문서 한 줄: gc = gcurve(color=color.red)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/graph.html",
+  "code": "gc = gcurve(color=color.red)"
+ },
+ {
+  "id": "docs:graph:line6",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "graph 문서 한 줄: gc.plot(x, y)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/graph.html",
+  "code": "gc.plot(x, y)"
+ },
+ {
+  "id": "docs:graph:line7",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "graph 문서 한 줄: gc.delete()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/graph.html",
+  "code": "gc.delete()"
+ },
+ {
+  "id": "docs:graph:line8",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "graph 문서 한 줄: gd = gdots(color=color.red)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/graph.html",
+  "code": "gd = gdots(color=color.red)"
+ },
+ {
+  "id": "docs:graph:line9",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "graph 문서 한 줄: gv = gvbars(delta=0.05, color=color.blue)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/graph.html",
+  "code": "gv = gvbars(delta=0.05, color=color.blue)"
+ },
+ {
+  "id": "docs:group:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "group 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/group.html",
+  "code": "mygroup = group()\nb = box( group=mygroup )\ns = sphere( pos=vec(2,0,0), group=mygroup )\nmygroup.pos = vec(1,0,0)  # moves both objects"
+ },
+ {
+  "id": "docs:group:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "group 문서 한 줄: mygroup = group()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/group.html",
+  "code": "mygroup = group()"
+ },
+ {
+  "id": "docs:group:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "group 문서 한 줄: mygroup.rotate( angle=a, axis=vec(0,1,0) )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/group.html",
+  "code": "mygroup.rotate( angle=a, axis=vec(0,1,0) )"
+ },
+ {
+  "id": "docs:helix:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "helix 문서 한 줄: helix(pos=vec(0, 0, 0), axis=vec(3, 0, 0), color=color.red)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/helix.html",
+  "code": "helix(pos=vec(0, 0, 0), axis=vec(3, 0, 0), color=color.red)"
+ },
+ {
+  "id": "docs:helix:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "helix 문서 한 줄: helix(canvas=mycanvas, make_trail=True, emissive=False)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/helix.html",
+  "code": "helix(canvas=mycanvas, make_trail=True, emissive=False)"
+ },
+ {
+  "id": "docs:key:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "key 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/key.html",
+  "code": "prose = label() # initially blank text\n\ndef keyInput(evt):\n    s = evt.key\n    if len(s) == 1: # includes enter ('\\n')\n        prose.text += s # append new character\n    elif ( s == 'delete' or s is 'backspace' ) and len(prose.text) > 0:\n        prose.text = prose.text[:-1] # erase letter\n\nscene.bind('keydown', keyInput)"
+ },
+ {
+  "id": "docs:label:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "label 문서 한 줄: label(pos=vec(0, 0, 0), text='Early', xoffset=20, yoffset=50",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/label.html",
+  "code": "label(pos=vec(0, 0, 0), text='Early', xoffset=20, yoffset=50, space=30, height=16, border=4, font='sans')"
+ },
+ {
+  "id": "docs:label:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "label 문서 한 줄: label(opacity=0.5, canvas=mycanvas, visible=True)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/label.html",
+  "code": "label(opacity=0.5, canvas=mycanvas, visible=True)"
+ },
+ {
+  "id": "docs:latexmath:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "latexmath 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/latexmath.html",
+  "code": "box()\nscene.caption = \"Final kinetic energy = \\\\( \\\\dfrac {1} {2}mv_i^{2}+\\\\int _{i}^{f}\\\\vec{F}\\\\cdot d \\\\vec{r} \\\\)\"\nscene.title = \"\\\\(\\\\dfrac {5} {7} \\\\)\"\nMathJax.Hub.Queue([\"Typeset\",MathJax.Hub])"
+ },
+ {
+  "id": "docs:latexmath:pre2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "latexmath 문서 예제 블록 2",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/latexmath.html",
+  "code": "scene.title = \"\\\\(\\\\dfrac {3y} {4x} \\\\)\"\nMathJax.Hub.Queue([\"Typeset\",MathJax.Hub,scene.title])"
+ },
+ {
+  "id": "docs:light:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "light 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/light.html",
+  "code": "for i in range( 0, len(scene.lights) ):\n        LL = scene.lights[i]\n        print( LL.pos, LL.direction, LL.color )"
+ },
+ {
+  "id": "docs:light:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "light 문서 한 줄: distant_light(direction=vec(0, - 1, 0), color=color.orange)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/light.html",
+  "code": "distant_light(direction=vec(0, - 1, 0), color=color.orange)"
+ },
+ {
+  "id": "docs:light:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "light 문서 한 줄: local_light(pos=vec(- 3, 1, - 2), color=color.yellow)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/light.html",
+  "code": "local_light(pos=vec(- 3, 1, - 2), color=color.yellow)"
+ },
+ {
+  "id": "docs:light:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "light 문서 한 줄: scene.ambient",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/light.html",
+  "code": "scene.ambient"
+ },
+ {
+  "id": "docs:light:line4",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "light 문서 한 줄: scene.lights",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/light.html",
+  "code": "scene.lights"
+ },
+ {
+  "id": "docs:light:line5",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "light 문서 한 줄: scene.lights=[]",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/light.html",
+  "code": "scene.lights=[]"
+ },
+ {
+  "id": "docs:menu:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "menu 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/menu.html",
+  "code": "pointer = arrow(pos=vec(-3,-3,0), axis=vec(6,6,0), color=color.white )\n\ndef changeattr(evt):\n        console.log(evt)\n        if evt.index < 1:\n                pass\n        elif evt.index is 1:\n                pointer.color=color.yellow\n        elif evt.index is 2:\n                pointer.color=color.magenta\n        elif evt.index is 3:\n                pointer.color=color.cyan\n\nchoicelist = ['Color', 'yellow', 'magenta', 'cyan']\n\nmenu( choices=choicelist, bind=changeattr )"
+ },
+ {
+  "id": "docs:menu:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "menu 문서 한 줄: menu(bind=myfunction, choices=choicelist)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/menu.html",
+  "code": "menu(bind=myfunction, choices=choicelist)"
+ },
+ {
+  "id": "docs:mouse:pre2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "mouse 문서 예제 블록 2",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "s = sphere(color=color.cyan)\n\ndef change():\n        if s.color.equals(color.cyan):\n                s.color = color.red\n        else:\n                s.color = color.cyan\n\nscene.bind('click', change)"
+ },
+ {
+  "id": "docs:mouse:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "mouse 문서 한 줄: scene.pause",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "scene.pause"
+ },
+ {
+  "id": "docs:mouse:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "mouse 문서 한 줄: scene.waitfor()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "scene.waitfor()"
+ },
+ {
+  "id": "docs:mouse:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "mouse 문서 한 줄: scene.mouse()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "scene.mouse()"
+ },
+ {
+  "id": "docs:mouse:line4",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "mouse 문서 한 줄: scene.mouse.project()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "scene.mouse.project()"
+ },
+ {
+  "id": "docs:mouse:line5",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "mouse 문서 한 줄: myevt = scene.pause()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "myevt = scene.pause()"
+ },
+ {
+  "id": "docs:mouse:line6",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "mouse 문서 한 줄: myevt = scene.waitfor('click')",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "myevt = scene.waitfor('click')"
+ },
+ {
+  "id": "docs:mouse:line7",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "mouse 문서 한 줄: mickey = scene.mouse()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "mickey = scene.mouse()"
+ },
+ {
+  "id": "docs:mouse:line8",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "mouse 문서 한 줄: mypos = scene.mouse.project( normal=vec(0,1,0), point=vec(0,",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "mypos = scene.mouse.project( normal=vec(0,1,0), point=vec(0,3,0) )"
+ },
+ {
+  "id": "docs:mouse:line9",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "mouse 문서 한 줄: scene.bind('click', newcolor)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "scene.bind('click', newcolor)"
+ },
+ {
+  "id": "docs:objects:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "objects 문서 한 줄: ball.visible = False",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/objects.html",
+  "code": "ball.visible = False"
+ },
+ {
+  "id": "docs:pause:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "pause 문서 한 줄: scene.pause()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/pause.html",
+  "code": "scene.pause()"
+ },
+ {
+  "id": "docs:points:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "points 문서 한 줄: points(pos=[vec(- 1, 3, 2), vec(2, 0, - 1)], color=color.yel",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/points.html",
+  "code": "points(pos=[vec(- 1, 3, 2), vec(2, 0, - 1)], color=color.yellow)"
+ },
+ {
+  "id": "docs:points:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "points 문서 한 줄: points(opacity=0.5, shininess=0.2, canvas=mycanvas, emissive",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/points.html",
+  "code": "points(opacity=0.5, shininess=0.2, canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:print:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "print 문서 한 줄: print_options(width=500, height=300, readonly=False, digits=",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/print.html",
+  "code": "print_options(width=500, height=300, readonly=False, digits=4, pos='right', place=scene.title_anchor)"
+ },
+ {
+  "id": "docs:print:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "print 문서 한 줄: mytext=print_options(contents=True)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/print.html",
+  "code": "mytext=print_options(contents=True)"
+ },
+ {
+  "id": "docs:print:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "print 문서 한 줄: print_options(clear=True)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/print.html",
+  "code": "print_options(clear=True)"
+ },
+ {
+  "id": "docs:print:line4",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "print 문서 한 줄: print_options(delete=True)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/print.html",
+  "code": "print_options(delete=True)"
+ },
+ {
+  "id": "docs:pyramid:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "pyramid 문서 한 줄: pyramid(pos=vec(0, 0, 0), axis=vec(1, 0, 0), color=color.gre",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/pyramid.html",
+  "code": "pyramid(pos=vec(0, 0, 0), axis=vec(1, 0, 0), color=color.green)"
+ },
+ {
+  "id": "docs:pyramid:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "pyramid 문서 한 줄: pyramid(opacity=0.5, shininess=0.2, texture=textures.wood, m",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/pyramid.html",
+  "code": "pyramid(opacity=0.5, shininess=0.2, texture=textures.wood, make_trail=True, canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:radiobutton:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "radiobutton 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/radiobutton.html",
+  "code": "ball = sphere(color=color.red)\n\ndef rfun(evt):\n        if evt.text is'red':\n                ball.color=color.red\n        elif evt.text is 'green':\n                ball.color=color.green\n        elif evt.text is 'blue':\n                ball.color=color.blue\n\nredbutton = radio(bind=rfun, text='red', name='colors', checked=True)\ngreenbutton = radio(bind=rfun, text='green', name='colors')\nbluebutton = radio(bind=rfun, text='blue', name='colors')"
+ },
+ {
+  "id": "docs:radiobutton:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "radiobutton 문서 한 줄: radio(bind=myfunction, text='mytext', name='mygroup')",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/radiobutton.html",
+  "code": "radio(bind=myfunction, text='mytext', name='mygroup')"
+ },
+ {
+  "id": "docs:rate:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "rate 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/rate.html",
+  "code": "ball = sphere(pos=vec(-3,-3,0), radius=0.3, color=color.yellow, make_trail = True)\nvelocity = vec(0.5, 0.5, 0)\ndt = 0.1\n\nwhile ball.pos.y < 3:\n    rate(30)\n    ball.pos = ball.pos + velocity * dt"
+ },
+ {
+  "id": "docs:rate:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "rate 문서 한 줄: rate()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/rate.html",
+  "code": "rate()"
+ },
+ {
+  "id": "docs:rate:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "rate 문서 한 줄: rate(60)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/rate.html",
+  "code": "rate(60)"
+ },
+ {
+  "id": "docs:rate:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "rate 문서 한 줄: make_trail and rate()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/rate.html",
+  "code": "make_trail and rate()"
+ },
+ {
+  "id": "docs:ring:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "ring 문서 한 줄: ring(opacity=0.5, shininess=0.2, texture=textures.wood, make",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/ring.html",
+  "code": "ring(opacity=0.5, shininess=0.2, texture=textures.wood, make_trail=True, canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:rotation:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "rotation 문서 한 줄: myobject.rotate(axis=vec(0, 1, 0), angle=pi / 3, origin=vec(",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/rotation.html",
+  "code": "myobject.rotate(axis=vec(0, 1, 0), angle=pi / 3, origin=vec(0, 0, 0))"
+ },
+ {
+  "id": "docs:rotation:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "rotation 문서 한 줄: rotate(myobject, axis=vec(0, 1, 0), angle=pi / 3, origin=vec",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/rotation.html",
+  "code": "rotate(myobject, axis=vec(0, 1, 0), angle=pi / 3, origin=vec(0, 0, 0))"
+ },
+ {
+  "id": "docs:shapes_and_paths:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "rectshape = shapes.rectangle(width=10, height=6)\nlinepath = [ vec(0,0,0), vec(0,0,-0.1) ]\nextrusion( shape=rectshape, path=linepath )"
+ },
+ {
+  "id": "docs:shapes_and_paths:pre2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 예제 블록 2",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "hshape = shapes.arc(angle1=0, angle2=pi/3)\nhpath = paths.arc(angle1=pi/2, angle2=pi)\ndemihemi = extrusion( shape=hshape, path=hpath, color=color.yellow)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: [ [x0,y0], [x1,y1], [x2,y2], ... ]",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "[ [x0,y0], [x1,y1], [x2,y2], ... ]"
+ },
+ {
+  "id": "docs:shapes_and_paths:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: [ vec(x0,y0,z0), vec(x1,y1,z1), ... ]",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "[ vec(x0,y0,z0), vec(x1,y1,z1), ... ]"
+ },
+ {
+  "id": "docs:shapes_and_paths:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: rt = shapes.rectangle(width=10, height=6)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "rt = shapes.rectangle(width=10, height=6)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line4",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: rt = shapes.rectangle(rotate=pi/6, roundness=0.1, invert=Tru",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "rt = shapes.rectangle(rotate=pi/6, roundness=0.1, invert=True, scale=2, pos=[2,1] )"
+ },
+ {
+  "id": "docs:shapes_and_paths:line5",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: cr = shapes.circle(radius=2, np=128)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "cr = shapes.circle(radius=2, np=128)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line6",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: myellipse = shapes.ellipse(width=5, height=3)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "myellipse = shapes.ellipse(width=5, height=3)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line7",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: myarc = shapes.arc(radius=2, angle1=0, angle2=pi/2)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "myarc = shapes.arc(radius=2, angle1=0, angle2=pi/2)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line8",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: Lshape = shapes.line(start=(1,0), end=(1,1), np=20)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "Lshape = shapes.line(start=(1,0), end=(1,1), np=20)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line9",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: trishape = shapes.triangle(length=5, roundness=0.2)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "trishape = shapes.triangle(length=5, roundness=0.2)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line10",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: pt = shapes.pentagon(length=3)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "pt = shapes.pentagon(length=3)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line11",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: hx = shapes.hexagon(length=5)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "hx = shapes.hexagon(length=5)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line12",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: oc = shapes.octagon(length=5)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "oc = shapes.octagon(length=5)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line13",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: poly = shapes.ngon(np=7, length=5)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "poly = shapes.ngon(np=7, length=5)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line14",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: starshape = shapes.star(n=6, radius=3, iradius=1)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "starshape = shapes.star(n=6, radius=3, iradius=1)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line15",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: tr=shapes.trapezoid(pos=[-2,3], width=5, height=1, top=3)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "tr=shapes.trapezoid(pos=[-2,3], width=5, height=1, top=3)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line16",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: st = shapes.cross(width=10, thickness=2)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "st = shapes.cross(width=10, thickness=2)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line17",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: ptshape = shapes.points(pos=[ [1,0], [1,1], [-2,3], [1,0] ],",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "ptshape = shapes.points(pos=[ [1,0], [1,1], [-2,3], [1,0] ], rotate=pi/4)"
+ },
+ {
+  "id": "docs:shapes_and_paths:line18",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: g = shapes.gear()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "g = shapes.gear()"
+ },
+ {
+  "id": "docs:shapes_and_paths:line19",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: outer = shapes.circle(radius=1) # a disk",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "outer = shapes.circle(radius=1) # a disk"
+ },
+ {
+  "id": "docs:shapes_and_paths:line20",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: inner = shapes.gear(radius=0.8) # a gear-shaped hole in the ",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "inner = shapes.gear(radius=0.8) # a gear-shaped hole in the disk"
+ },
+ {
+  "id": "docs:shapes_and_paths:line21",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "shapes_and_paths 문서 한 줄: extrusion(path=[vec(0,0,0), vec(0,0,0.2)], shape=[outer, inn",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "extrusion(path=[vec(0,0,0), vec(0,0,0.2)], shape=[outer, inner])"
+ },
+ {
+  "id": "docs:slider:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "slider 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/slider.html",
+  "code": "cc = cone(color=color.yellow, axis=vec(2.5,0,0), pos=vec(-2,0,0) )\n\ndef stretch(evt):\n        console.log(evt)\n        if evt.id is 'x':\n                cc.length = evt.value\n\nxslider = slider(bind=stretch, max=5, min=0.5, step=0.1, value=cc.length, id='x')"
+ },
+ {
+  "id": "docs:slider:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "slider 문서 한 줄: myslider = slider( bind=myaction, min=0, max=50 )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/slider.html",
+  "code": "myslider = slider( bind=myaction, min=0, max=50 )"
+ },
+ {
+  "id": "docs:speed:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "speed 문서 한 줄: rate()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/speed.html",
+  "code": "rate()"
+ },
+ {
+  "id": "docs:sphere:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "sphere 문서 한 줄: sphere(pos=vec(0, 0, 0), radius=2, color=color.cyan)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/sphere.html",
+  "code": "sphere(pos=vec(0, 0, 0), radius=2, color=color.cyan)"
+ },
+ {
+  "id": "docs:sphere:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "sphere 문서 한 줄: sphere(opacity=0.5, shininess=0.2, texture=textures.wood, ma",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/sphere.html",
+  "code": "sphere(opacity=0.5, shininess=0.2, texture=textures.wood, make_trail=True, canvas=mycanvas, emissive=False)"
+ },
+ {
+  "id": "docs:text:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "text 문서 한 줄: text(text='My text is\\ngreen', align='center', color=color.g",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/text.html",
+  "code": "text(text='My text is\\ngreen', align='center', color=color.green)"
+ },
+ {
+  "id": "docs:text:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "text 문서 한 줄: text(text='mytext', start_face_color=color.red, end_face_col",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/text.html",
+  "code": "text(text='mytext', start_face_color=color.red, end_face_color=color.cyan)"
+ },
+ {
+  "id": "docs:textinput:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "textinput 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/textinput.html",
+  "code": "ss = input( 'What is your name?')\n\nif ss != None:\n        print('Hello',  ss)\nelse:\n        print('Goodbye')"
+ },
+ {
+  "id": "docs:textinput:pre2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "textinput 문서 예제 블록 2",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/textinput.html",
+  "code": "ss = sphere(pos=vec(-2,0,0), radius=0.2, color=color.yellow)\n\ndef change_radius(evt):\n        rad = evt.number\n        if rad != None:\n                if rad < 10:\n                        ss.radius=evt.number\n                else:\n                        print(rad + ' is too large')\n                        ww.text = ''\n\nscene.append_to_caption('Radius must be less than 10 \\n')\nww = winput(prompt='Radius:', bind=change_radius, type='numeric')"
+ },
+ {
+  "id": "docs:textinput:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "textinput 문서 한 줄: mytext = input(prompt='Enter a color:')",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/textinput.html",
+  "code": "mytext = input(prompt='Enter a color:')"
+ },
+ {
+  "id": "docs:textinput:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "textinput 문서 한 줄: ww = winput(bind=myfunction, prompt='value', type='numeric')",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/textinput.html",
+  "code": "ww = winput(bind=myfunction, prompt='value', type='numeric')"
+ },
+ {
+  "id": "docs:texture:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "texture 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/texture.html",
+  "code": "scene.visible = False  # display nothing\n# create objects here\nscene.waitfor(\"textures\")\nscene.visible = True # now display everything"
+ },
+ {
+  "id": "docs:texture:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "texture 문서 한 줄: mybox = box( texture=textures.stucco )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/texture.html",
+  "code": "mybox = box( texture=textures.stucco )"
+ },
+ {
+  "id": "docs:texture:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "texture 문서 한 줄: scene.waitfor(\"textures\")",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/texture.html",
+  "code": "scene.waitfor(\"textures\")"
+ },
+ {
+  "id": "docs:trail:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "trail 문서 한 줄: ball=sphere( make_trail=True, trail_type=\"points\", trail_rad",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/trail.html",
+  "code": "ball=sphere( make_trail=True, trail_type=\"points\", trail_radius=0.2, interval=10, retain = 1000 )"
+ },
+ {
+  "id": "docs:userinput:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "userinput 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/userinput.html",
+  "code": "ball = sphere(pos=vec(-1,0,0), radius=0.5, color=color.magenta)\nscene.pause()\ncube = box(pos=vec(1,0,0), color=color.green)"
+ },
+ {
+  "id": "docs:userinput:pre2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "userinput 문서 예제 블록 2",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/userinput.html",
+  "code": "box()  # we need an object to get a canvas\n\ndef key_pressed(evt):  # info about event is stored in evt\n    keyname = evt.key\n    print('The ' + keyname + ' key was pressed.')\n\nscene.bind('keydown', key_pressed)"
+ },
+ {
+  "id": "docs:userinput:pre3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "userinput 문서 예제 블록 3",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/userinput.html",
+  "code": "ball = sphere(color=color.cyan)\nwhile True:\n    rate(10)\n    k = keysdown() # a list of keys that are down\n    if 'q' in k:\n        break\nprint('Done with loop')"
+ },
+ {
+  "id": "docs:userinput:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "userinput 문서 한 줄: scene.pause()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/userinput.html",
+  "code": "scene.pause()"
+ },
+ {
+  "id": "docs:userinput:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "userinput 문서 한 줄: scene.waitfor('click keydown')",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/userinput.html",
+  "code": "scene.waitfor('click keydown')"
+ },
+ {
+  "id": "docs:userinput:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "userinput 문서 한 줄: scene.bind('keydown', key_pressed)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/userinput.html",
+  "code": "scene.bind('keydown', key_pressed)"
+ },
+ {
+  "id": "docs:vector:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vector 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vector.html",
+  "code": "a = vector(1,2,3)\nb = vector(10,20,30)\nprint(a+b)    # displays < 1, 22, 33 >"
+ },
+ {
+  "id": "docs:vector:pre2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vector 문서 예제 블록 2",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vector.html",
+  "code": "a = vector(1,2,3)\nc = 2*a\nprint(c)   # displays < 2, 4, 6 >"
+ },
+ {
+  "id": "docs:vector:pre3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vector 문서 예제 블록 3",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vector.html",
+  "code": "a = vector(1,2,3)\nb = vector(10,20,30)\nd = mag(a)\nprint(d)    # displays 3.74166\ne = b.mag\nprint(e)    # displays 37.4166"
+ },
+ {
+  "id": "docs:vector:pre4",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vector 문서 예제 블록 4",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vector.html",
+  "code": "a = vector(1,2,3)\nb = vector(10,20,30)\nf = hat(a)\nprint(f)  # displays < 0.267261, 0.534522, 0.801784 >\ng = norm(a)\nprint(g)  # displays < 0.267261, 0.534522, 0.801784 >\n\nh = a.hat\ni = b.norm"
+ },
+ {
+  "id": "docs:vector:pre5",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vector 문서 예제 블록 5",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vector.html",
+  "code": "a1 = vector(3,1,0)\nb1 = vector(0,2,0)\nj = dot(a,b)\nprint(j)   # displays 2\nk = cross(a,b)\nprint(k)   # displays < 0, 0, 6 >\n\nm = a1.dot(b1)\nn = a1.cross(b1)"
+ },
+ {
+  "id": "docs:vector:pre6",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vector 문서 예제 블록 6",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vector.html",
+  "code": "a1 = vector(3,1,0)\nb1 = vector(0,2,0)\np = diff_angle(a1,b1)\nprint(p)  # displays 1.24905\n\nq = a1.diff_angle(b1)"
+ },
+ {
+  "id": "docs:vector:pre7",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vector 문서 예제 블록 7",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vector.html",
+  "code": "A = vector(3,1,0)\nB = vector(0,2,0)\nC = proj(A,B)\nprint(C)   # displays < 0, 1, 0 >"
+ },
+ {
+  "id": "docs:vector:pre8",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vector 문서 예제 블록 8",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vector.html",
+  "code": "A = vector(3,1,0)\nB = vector(0,2,0)\nC = comp(A,B)\nprint(C)   # displays 1."
+ },
+ {
+  "id": "docs:vector:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vector 문서 한 줄: myvec2 = rotate( myvec1, angle=a, axis=vector(x,y,z) )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vector.html",
+  "code": "myvec2 = rotate( myvec1, angle=a, axis=vector(x,y,z) )"
+ },
+ {
+  "id": "docs:vertex:pre1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vertex 문서 예제 블록 1",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vertex.html",
+  "code": "a = vertex(pos=vec(-1,-1,0), color=color.red)\nb = vertex(pos = vec(1,-1,0), color=color.green)\nc = vertex(pos = vec(0,1,0), color=color.blue)\nt = triangle(v0=a, v1=b, v2=c)"
+ },
+ {
+  "id": "docs:vertex:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vertex 문서 한 줄: myvertex = vertex( pos=vec(1,0,0), normal=vec(0,0,1), color=",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vertex.html",
+  "code": "myvertex = vertex( pos=vec(1,0,0), normal=vec(0,0,1), color=color.green )"
+ },
+ {
+  "id": "docs:vertex:line2",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vertex 문서 한 줄: T = triangle( v0=myvertex0, v1=myvertex1, v2=myvertex2 )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vertex.html",
+  "code": "T = triangle( v0=myvertex0, v1=myvertex1, v2=myvertex2 )"
+ },
+ {
+  "id": "docs:vertex:line3",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vertex 문서 한 줄: T = triangle( vs = myvertexlist )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vertex.html",
+  "code": "T = triangle( vs = myvertexlist )"
+ },
+ {
+  "id": "docs:vertex:line4",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vertex 문서 한 줄: Q = quad( vs = [a, b, c, d] )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vertex.html",
+  "code": "Q = quad( vs = [a, b, c, d] )"
+ },
+ {
+  "id": "docs:vertex:line5",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "vertex 문서 한 줄: Q = quad( v0 = a, v1 = b, v2 = c, v3 = d )",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/vertex.html",
+  "code": "Q = quad( v0 = a, v1 = b, v2 = c, v3 = d )"
+ },
+ {
+  "id": "docs:wtext:line1",
+  "source": "docs",
+  "kind": "fragment",
+  "title": "wtext 문서 한 줄: myspeedtxt.text = f'omega = {vslider.value:.1e} radians/s'",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/wtext.html",
+  "code": "myspeedtxt.text = f'omega = {vslider.value:.1e} radians/s'"
+ }
+]

@@ -3,6 +3,7 @@
  * 마지막 화면이 떠나면 종료하고, 종료된 Worker의 늦은 메시지는 무시합니다.
  */
 import vpythonApiRaw from './vpython-api.py?raw';
+import transformRaw from './student-code-transform.py?raw';
 import { warmPyodideCache } from '../lib/service-worker.js';
 
 const INIT_TIMEOUT = 45_000;
@@ -102,7 +103,7 @@ export function initIfNeeded() {
   }, INIT_TIMEOUT);
   try {
     worker = createWorker();
-    worker.postMessage({ type: 'init', vpythonApi: vpythonApiRaw });
+    worker.postMessage({ type: 'init', vpythonApi: vpythonApiRaw, transformSource: transformRaw });
   } catch (error) {
     failWorker(`Python 엔진 초기화 실패: ${error.message}`, 'init');
   }
@@ -131,6 +132,11 @@ export function postEvent(payload) {
 
 export function postWidgetValue(id, value) {
   if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'widget_value', id, value });
+}
+
+/** input() 입력 위젯의 답을 Worker에 보낸다. value가 null이면 취소(Python 쪽 EOFError). */
+export function postInputValue(id, value) {
+  if (worker && ['running', 'stopping'].includes(status)) worker.postMessage({ type: 'input_value', id, value });
 }
 
 export function postMouseState(pos, pick) {

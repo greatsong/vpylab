@@ -4,7 +4,6 @@
  */
 import { describe, expect, it } from 'vitest';
 import { explainPythonError, formatErrorLine } from './python-error-explainer';
-import { preprocessCode, mapGeneratedLine } from './code-preprocessor';
 import { buildErrorDetails } from '../hooks/usePyodide';
 
 const explain = (type, message, extra = {}) => explainPythonError({ type, message, line: 3, ...extra }, 'ko');
@@ -155,63 +154,26 @@ describe('explainPythonError — 일반 설명과 영어', () => {
   });
 });
 
-describe('줄 번호 보정 — async 래핑 코드의 줄을 원래 줄로 되돌린다', () => {
-  it('rate()가 없으면 줄 번호가 그대로 대응한다', () => {
-    const { lineMap } = preprocessCode('x = 1\ny = x + z');
-    expect(lineMap).toEqual([1, 2]);
-    expect(mapGeneratedLine(lineMap, 2)).toBe(2);
-  });
-
-  it('import가 위로 빠지고 본문이 들여쓰기돼도 원래 줄을 찾는다', () => {
-    const source = ['ball = sphere()', 'import math', 'while True:', '    rate(30)', '    ball.pos = ball.pos + spd'].join('\n');
-    const { code, lineMap } = preprocessCode(source);
-    const generatedLines = code.split('\n');
-    const awaitLine = generatedLines.findIndex((line) => line.includes('await rate(30)')) + 1;
-    const posLine = generatedLines.findIndex((line) => line.includes('ball.pos + spd')) + 1;
-    expect(mapGeneratedLine(lineMap, awaitLine)).toBe(4);
-    expect(mapGeneratedLine(lineMap, posLine)).toBe(5);
-    expect(mapGeneratedLine(lineMap, generatedLines.findIndex((line) => line === 'import math') + 1)).toBe(2);
-    expect(mapGeneratedLine(lineMap, generatedLines.findIndex((line) => line.startsWith('async def')) + 1)).toBeNull();
-    expect(mapGeneratedLine(lineMap, 1)).toBeNull();
-    expect(mapGeneratedLine(lineMap, generatedLines.length)).toBeNull();
-    expect(lineMap).toHaveLength(generatedLines.length);
-  });
-
-  it('import가 없을 때 삽입되는 빈 줄도 셈한다', () => {
-    const { code, lineMap } = preprocessCode('rate(30)\nprint(q)');
-    const generatedLines = code.split('\n');
-    expect(lineMap).toHaveLength(generatedLines.length);
-    expect(mapGeneratedLine(lineMap, generatedLines.findIndex((line) => line.includes('print(q)')) + 1)).toBe(2);
-  });
-
-  it('범위 밖 줄 번호와 잘못된 입력은 null을 준다', () => {
-    expect(mapGeneratedLine([1, 2], 9)).toBeNull();
-    expect(mapGeneratedLine(null, 1)).toBeNull();
-    expect(mapGeneratedLine([1, 2], 'x')).toBeNull();
-  });
-});
-
 describe('buildErrorDetails — Worker 구조화 오류를 화면용 정보로 바꾼다', () => {
+  // 학생 코드는 Worker 안에서 ast로 변환해 실행하므로 트레이스백 줄 번호가 학생 코드 줄 번호와 같다
   const source = 'from vpython import *\nball = sphere()\nwhile True:\n    rate(30)\n    ball.pos = ball.pos + spd';
-  const { lineMap, code } = preprocessCode(source);
-  const generatedLine = code.split('\n').findIndex((line) => line.includes('ball.pos + spd')) + 1;
 
-  it('줄 번호를 되돌리고 해당 줄 코드와 한국어 설명을 붙인다', () => {
+  it('줄 번호의 코드와 한국어 설명을 붙인다', () => {
     const details = buildErrorDetails({
       error: "NameError: name 'spd' is not defined",
       raw: 'Traceback ...',
-      detail: { type: 'NameError', message: "name 'spd' is not defined", line: generatedLine, frames: [{ line: generatedLine, name: '__vpylab_main__' }], column: null, sourceLine: null },
-    }, source, lineMap, 'ko');
+      detail: { type: 'NameError', message: "name 'spd' is not defined", line: 5, frames: [{ line: 5, name: '<module>' }], column: null, sourceLine: null },
+    }, source, 'ko');
     expect(details.line).toBe(5);
     expect(details.codeLine).toBe('    ball.pos = ball.pos + spd');
-    expect(details.frames).toEqual([{ line: 5, name: '__vpylab_main__' }]);
+    expect(details.frames).toEqual([{ line: 5, name: '<module>' }]);
     expect(details.explanation.title).toBe('이름을 찾을 수 없습니다');
     expect(details.explanation.hint).toContain('5번 줄');
     expect(details.message).toBe("NameError: name 'spd' is not defined");
   });
 
   it('구조화 정보가 빠져도 마지막 줄에서 종류와 메시지를 뽑는다', () => {
-    const details = buildErrorDetails({ error: 'ZeroDivisionError: division by zero', detail: {} }, 'x = 1/0', [1], 'en');
+    const details = buildErrorDetails({ error: 'ZeroDivisionError: division by zero', detail: {} }, 'x = 1/0', 'en');
     expect(details.type).toBe('ZeroDivisionError');
     expect(details.explanation.title).toBe('Division by zero');
     expect(details.line).toBeNull();

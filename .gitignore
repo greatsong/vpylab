@@ -20,3 +20,8 @@ client/dist-lan/
 
 # Pyodide 핵심 파일은 빌드 때 npm 패키지에서 복사합니다(client/scripts/pyodide-assets.mjs)
 client/public/pyodide/
+
+# GlowScript 호환성 하네스 산출물 (재생성 가능)
+scripts/compat/out/preprocessed.json
+scripts/compat/out/merged.json
+scripts/compat/out/*.partial.json

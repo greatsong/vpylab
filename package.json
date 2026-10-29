@@ -16,7 +16,13 @@
     "test:classroom:github:live": "node scripts/classroom/live-github.mjs --run",
     "build:classroom": "npm --prefix client run build:classroom",
     "test:classroom": "node --test server/classroom/*.test.js scripts/classroom/*.test.mjs && npm --prefix client run test:run && node scripts/classroom/check-curriculum.mjs",
-    "classroom:lan": "node scripts/classroom/lan.mjs"
+    "classroom:lan": "node scripts/classroom/lan.mjs",
+    "compat:corpus": "node scripts/compat/build-corpus.mjs && node scripts/compat/preprocess.mjs",
+    "compat:static": "${PYTHON:-python3.12} -I scripts/compat/static-harness.py",
+    "compat:browser": "node scripts/compat/browser-harness.mjs",
+    "compat:summary": "node scripts/compat/summarize.mjs",
+    "compat:check": "npm run compat:corpus && npm run compat:static && npm run compat:summary",
+    "compat:check:all": "npm run compat:corpus && npm run compat:static && npm run compat:browser && npm run compat:summary"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
