@@ -2,7 +2,18 @@
   "buildCommand": "cd client && npm install && npx vite build",
   "outputDirectory": "client/dist",
   "framework": "vite",
+  "functions": {
+    "api/og.mjs": { "includeFiles": "client/dist/index.html" }
+  },
   "rewrites": [
+    {
+      "source": "/s/:id",
+      "destination": "/api/og?kind=share&id=:id"
+    },
+    {
+      "source": "/gallery/:id",
+      "destination": "/api/og?kind=gallery&id=:id"
+    },
     {
       "source": "/((?!api/|assets/|pyodide/|sw\\.js$|manifest\\.webmanifest$).*)",
       "destination": "/index.html"
