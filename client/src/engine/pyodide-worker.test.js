@@ -137,6 +137,52 @@ describe('실제 Worker 스크립트의 출력 제한과 샌드박스', () => {
     await self.onmessage({ data: { type: 'event', payload: { name: 'click' } } });
     expect(self.postMessage.mock.calls.map(([message]) => message.type)).toEqual(['event_start', 'event_done']);
   });
+
+  it('본문 종료 후 핸들러 태스크(rate·sleep·input)가 끝날 때까지 event_done을 미루고 그동안 들어온 run은 뒤에 실행한다', async () => {
+    const { self, python } = createWorkerContext();
+    await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
+    await self.onmessage({ data: { type: 'run', runId: 5, code: '학생 코드' } });
+    self.postMessage.mockClear();
+    let finishHandler;
+    const handlerDone = new Promise((resolve) => { finishHandler = resolve; });
+    python.runPythonAsync.mockImplementation(async (code) => {
+      if (code.includes('_process_pending_events()')) {
+        // 핸들러 안의 sleep()처럼 태스크가 남아 있으면 Python 쪽이 _wait_pending_tasks()로 기다린다
+        expect(code).toContain('await _wait_pending_tasks()');
+        self._popEvent();
+        await handlerDone;
+      }
+    });
+    const dispatching = self.onmessage({ data: { type: 'event', payload: { name: 'click' } } });
+    await Promise.resolve();
+    // 태스크가 도는 동안 새 실행 요청이 오면 멈춘 뒤 이어서 실행한다 (끼어들지 않는다)
+    await self.onmessage({ data: { type: 'run', runId: 6, code: '다음 코드' } });
+    expect(self._checkStopSignal()).toBe(true);
+    expect(python.runPythonAsync.mock.calls.some(([code]) => isStudentRun(code) && python.globals.get('__vpylab_source__') === '다음 코드')).toBe(false);
+    finishHandler();
+    await dispatching;
+    const types = self.postMessage.mock.calls.map(([message]) => message.type);
+    expect(types.slice(0, 2)).toEqual(['event_start', 'event_done']);
+    expect(types).toContain('done');
+    expect(python.globals.get('__vpylab_source__')).toBe('다음 코드');
+  });
+
+  it('이벤트 핸들러 태스크에서 난 오류는 구조화된 error 메시지로 전달한다', async () => {
+    const { self, python } = createWorkerContext();
+    await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
+    await self.onmessage({ data: { type: 'run', runId: 5, code: '학생 코드' } });
+    self.postMessage.mockClear();
+    python.runPythonAsync.mockImplementation(async (code) => {
+      if (!code.includes('_process_pending_events()')) return;
+      self._popEvent();
+      const error = new Error('Traceback (most recent call last):\n  File "<vpython-api>", line 9, in _wait_pending_tasks\n  File "<student>", line 3, in on_click\nZeroDivisionError: division by zero\n');
+      error.type = 'ZeroDivisionError';
+      throw error;
+    });
+    await self.onmessage({ data: { type: 'event', payload: { name: 'click' } } });
+    const message = self.postMessage.mock.calls.map(([entry]) => entry).find((entry) => entry.type === 'error');
+    expect(message.detail).toMatchObject({ type: 'ZeroDivisionError', line: 3, frames: [{ line: 3, name: 'on_click' }] });
+  });
 });
 
 describe('실제 Worker 스크립트의 트레이스백 구조화', () => {

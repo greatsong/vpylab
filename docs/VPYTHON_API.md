@@ -244,8 +244,13 @@ name = input('이름: ')           # 3D 화면 위 입력 위젯으로 받는다
 > 실행 직전에 Worker 안의 Python이 학생 코드를 `ast`로 변환합니다([engine/student-code-transform.py](../client/src/engine/student-code-transform.py)).
 > `rate()`·`sleep()`·`scene.pause()`·`scene.waitfor()`·`input()`·`악기()`를 부르는 함수는 `async def`가 되고 그 호출에 `await`가 붙습니다.
 > 호출 그래프를 따라 전파되므로 그런 함수를 부르는 함수도 함께 바뀝니다. 모듈 수준 호출은 최상위 `await`로 실행하고 코드를 함수로 감싸지 않습니다.
-> 제약: `lambda` 안, `yield`가 있는 함수 안, `__init__` 안에서는 대기 함수를 쓸 수 없습니다(경고를 내고 기다리지 않습니다).
-> 대기 함수가 든 이벤트 핸들러는 별도 태스크로 돌아 메인 루프와 나란히 진행합니다.
+> 정적으로 확정할 수 없는 호출(매개변수·첨자·호출 결과를 부르거나, 수신자를 모르는 메서드 이름이 async 메서드 이름과 겹치는 경우)은
+> 런타임 보조 `maybe_await`로 감싸 코루틴이면 기다리고 일반 값이면 그대로 돌려줍니다. 그래서 `for b in balls: b.update()`·`actions[k]()`·`fn()`이 동작합니다.
+> 제약: `lambda` 안, `yield`가 있는 함수 안, `__init__` 안, 클래스 본문, 제너레이터식 안에서는 대기 함수를 쓸 수 없습니다(경고를 내고 기다리지 않습니다).
+> 대기 함수가 든 이벤트 핸들러와 `rate(fps, callback)`의 콜백은 별도 태스크로 돌아 메인 루프와 나란히 진행합니다.
+> `rate(60, move)`는 콜백을 예약하고 바로 돌아오므로 `move()` 다음 줄이 애니메이션보다 먼저 실행됩니다(GlowScript와 같습니다).
+> 태스크 안의 오류는 다음 대기 지점에서 실행 오류로 올라오며, 본문이 끝나도 태스크가 남아 있으면 실행 상태를 유지해 정지 버튼이 듣습니다.
+> 실행마다 학생 전역을 새로 만들므로 이전 실행의 변수는 남지 않습니다.
 
 ---
 
@@ -425,7 +430,7 @@ v_curve.clear()
 ### 미지원 (현 시점)
 
 - `scene.width` / `scene.height`로 실제 화면 크기 바꾸기 (값은 받지만 화면은 그대로), 여러 개의 `canvas()`
-- `lambda`·생성기(`yield`)·`__init__` 안의 `rate()`/`sleep()` (경고 후 기다리지 않음)
+- `lambda`·생성기(`yield`)·`__init__`·클래스 본문·제너레이터식 안의 `rate()`/`sleep()` (경고 후 기다리지 않음)
 - 3D 입체 글자 `text()` (현재 2D 라벨로 대체), `shapes`·`paths` 라이브러리
 
 ### standalone HTML export 시 주의
@@ -435,8 +440,9 @@ v_curve.clear()
 - UI 위젯 (`slider`, `button`, ...) — Worker 채널 의존
 - 2D 그래프 (`graph`, `gcurve`, ...) — DOM 패널 의존
 - 이벤트 (`scene.bind`, `scene.mouse`) — 양방향 채널 의존
+- `scene.pause()`·`scene.waitfor()`·`input()` — 이벤트·입력 채널 의존
 
-3D 객체와 사운드는 export에서도 모두 동작합니다.
+3D 객체와 사운드는 export에서도 모두 동작합니다. 함수 안의 `rate()`·`sleep()`과 `global` 선언은 편집기와 같은 변환기를 함께 실어 동작합니다.
 
 ### VPyLab만의 추가 기능
 

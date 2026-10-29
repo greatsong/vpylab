@@ -2455,9 +2455,8 @@ class _Scene(_VectorOwner):
         try:
             ticks = 0
             while not received:
-                if _check_stop():
-                    _send_commands()
-                    raise _StopExecution("실행이 중지되었습니다")
+                _raise_if_stopped()
+                _raise_task_error()
                 _process_pending_events()
                 if received:
                     break
@@ -2562,8 +2561,9 @@ def _check_stop():
         return False
 
 
-class _StopExecution(Exception):
-    """사용자가 실행을 중지했을 때 발생하는 예외"""
+class _StopExecution(BaseException):
+    """사용자가 실행을 중지했을 때 발생하는 예외.
+    학생 코드의 `except Exception:`·`except:`가 정지 신호를 삼키지 못하도록 BaseException을 상속한다."""
     pass
 
 
@@ -2575,33 +2575,82 @@ def _heartbeat():
         js.postMessage(json.dumps({"type": "batch", "runId": _current_run_id(), "commands": []}))
 
 
+def _raise_if_stopped():
+    if _check_stop():
+        _send_commands()
+        raise _StopExecution("실행이 중지되었습니다")
+
+
+_HEARTBEAT_INTERVAL = 0.5
+
+
+async def _sleep_chunked(seconds):
+    """긴 대기를 0.5초 단위로 나눠 하트비트를 보내고 정지 버튼을 확인한다 (sleep(15)도 무응답으로 끊기지 않는다)."""
+    remaining = max(0.0, float(seconds))
+    while True:
+        chunk = min(_HEARTBEAT_INTERVAL, remaining)
+        await asyncio.sleep(chunk)
+        remaining -= chunk
+        if remaining <= 1e-9:
+            return
+        _raise_if_stopped()
+        _raise_task_error()
+        _heartbeat()
+
+
 # === 나란히 도는 태스크 (async 이벤트 핸들러, rate(fps, callback)) ===
 _pending_tasks = set()
+_task_errors = []           # 태스크 안에서 난 예외 — 메인 흐름이 다음 대기 지점에서 올린다
+_MAX_PENDING_CALLBACKS = 64  # while True: rate(60, tick) 같은 코드가 콜백을 무한히 쌓지 못하게
 
 
 def _spawn_task(coro, label):
-    """코루틴을 별도 태스크로 돌린다. 중단 예외는 조용히 끝내고, 다른 예외는 콘솔에 알린다."""
-    async def _runner():
-        try:
-            await coro
-        except _StopExecution:
-            pass
-        except Exception as e:
-            print(f"[{label} error] {e}")
-
-    task = asyncio.ensure_future(_runner())
+    """코루틴을 별도 태스크로 돌린다. 끝날 때 커맨드를 내보내고, 예외는 메인 흐름으로 넘긴다.
+    코루틴을 태스크에 직접 넣어야 시작 전에 취소돼도 'never awaited' 경고가 나지 않는다."""
+    task = asyncio.ensure_future(coro)
     _pending_tasks.add(task)
-    task.add_done_callback(_pending_tasks.discard)
+
+    def _done(finished):
+        _pending_tasks.discard(finished)
+        if finished.cancelled():
+            return
+        exc = finished.exception()
+        if exc is not None and not isinstance(exc, _StopExecution):
+            _task_errors.append(exc)
+        try:
+            _send_commands()
+        except Exception:
+            pass
+
+    task.add_done_callback(_done)
     return task
 
 
+def _raise_task_error():
+    """핸들러·콜백 태스크에서 난 예외를 트레이스백 그대로 메인 흐름에 올린다 (한국어 설명·줄 번호가 붙는다)."""
+    if _task_errors:
+        exc = _task_errors.pop(0)
+        raise exc
+
+
+async def _cancel_pending_tasks():
+    """실행이 끝나거나 멈출 때 남은 태스크를 취소하고 회수한다."""
+    tasks = list(_pending_tasks)
+    for task in tasks:
+        task.cancel()
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+    _pending_tasks.clear()
+    _task_errors.clear()
+
+
 async def _wait_pending_tasks():
-    """모듈 수준 코드가 끝난 뒤에도 돌고 있는 태스크가 있으면 기다린다. 그동안 중단 버튼이 동작한다."""
+    """모듈 수준 코드가 끝난 뒤에도 돌고 있는 태스크가 있으면 기다린다. 그동안 하트비트를 보내고 중단 버튼이 동작한다."""
     ticks = 0
-    while _pending_tasks:
+    while _pending_tasks or _task_errors:
+        _raise_task_error()
         if _check_stop():
-            for task in list(_pending_tasks):
-                task.cancel()
+            await _cancel_pending_tasks()
             _send_commands()
             raise _StopExecution("실행이 중지되었습니다")
         if ticks % 10 == 0:
@@ -2610,48 +2659,49 @@ async def _wait_pending_tasks():
         await asyncio.sleep(0.05)
 
 
-# === rate() 함수 ===
-async def rate(fps, callback=None):
-    """
-    프레임 레이트 제어 + 커맨드 버퍼 플러시 + 이벤트 디스패치
-    rate(100) = 초당 100회 루프, 각 반복 후 커맨드 배치 전송 및 등록된 핸들러 호출
-    rate(100, move) = GlowScript의 콜백 형식. 한 프레임 뒤에 move()를 부르고 바로 돌아온다.
-    """
-    if _check_stop():
-        _send_commands()
-        raise _StopExecution("실행이 중지되었습니다")
-    # 등록된 이벤트 핸들러 호출 (있을 때만)
+def _before_wait():
+    """rate()·sleep()이 기다리기 전에 하는 공통 일: 정지 확인, 태스크 오류, 이벤트 디스패치, 화살표 갱신, 커맨드 전송"""
+    _raise_if_stopped()
+    _raise_task_error()
     if _event_handlers:
         _process_pending_events()
     if _attached_arrows:
         _update_attached_arrows()
     _heartbeat()
+
+
+# === rate() 함수 ===
+async def rate(fps, callback=None):
+    """
+    프레임 레이트 제어 + 커맨드 버퍼 플러시 + 이벤트 디스패치
+    rate(100) = 초당 100회 루프, 각 반복 후 커맨드 배치 전송 및 등록된 핸들러 호출
+    rate(100, move) = GlowScript의 콜백 형식. 한 프레임 뒤에 move()를 별도 태스크로 부르고 바로 돌아온다.
+      그래서 move() 다음 줄은 애니메이션보다 먼저 실행된다 (GlowScript와 같다).
+    """
+    _before_wait()
     delay = 1.0 / fps
     if callback is not None:
         async def _later():
-            await asyncio.sleep(delay)
+            await _sleep_chunked(delay)
             result = callback()
             if asyncio.iscoroutine(result):
                 await result
         _spawn_task(_later(), 'rate callback')
+        # 양보해서 정지 메시지와 콜백 태스크가 처리될 기회를 준다
+        await asyncio.sleep(0)
+        # 미완료 콜백이 너무 많으면(while True: rate(60, tick)) 줄어들 때까지 기다린다
+        while len(_pending_tasks) > _MAX_PENDING_CALLBACKS:
+            _raise_if_stopped()
+            _raise_task_error()
+            await asyncio.sleep(delay)
         return
-    await asyncio.sleep(delay)
+    await _sleep_chunked(delay)
 
 
 async def sleep(seconds):
-    """비동기 sleep + 이벤트 디스패치"""
-    if _check_stop():
-        _send_commands()
-        raise _StopExecution("실행이 중지되었습니다")
-    if _event_handlers:
-        _process_pending_events()
-    if _attached_arrows:
-        _update_attached_arrows()
-    if _command_buffer:
-        _send_commands()
-    else:
-        js.postMessage(json.dumps({"type": "batch", "runId": _current_run_id(), "commands": []}))
-    await asyncio.sleep(seconds)
+    """비동기 sleep + 이벤트 디스패치. 긴 대기도 0.5초마다 하트비트·정지 확인을 한다."""
+    _before_wait()
+    await _sleep_chunked(seconds)
 
 
 # === 씬 제어 ===
@@ -3205,7 +3255,7 @@ async def 악기(instrument, name, duration=0.5, volume=None):
     """
     play_instrument(instrument, name, duration, volume)
     _send_commands()
-    await asyncio.sleep(duration)
+    await _sleep_chunked(duration)
 
 
 # === input() — 화면 입력 위젯으로 받는다 ===
@@ -3221,9 +3271,8 @@ async def input(prompt=''):
     try:
         ticks = 0
         while True:
-            if _check_stop():
-                _send_commands()
-                raise _StopExecution("실행이 중지되었습니다")
+            _raise_if_stopped()
+            _raise_task_error()
             raw = None
             try:
                 raw = js._getInputValue(request_id)
@@ -3250,21 +3299,38 @@ async def input(prompt=''):
 
 
 # === 학생 코드 실행기 ===
+def _new_student_namespace():
+    """실행마다 새로 만드는 학생 전역. API의 공개 이름(밑줄로 시작하지 않는 이름)을 미리 넣어
+    `from vpython import *`가 없어도 전과 같이 동작하고, 학생이 `_reset_runtime_state` 같은
+    내부 이름을 덮어써도 다음 실행이 깨지지 않는다."""
+    import builtins
+    namespace = {'__name__': '__main__', '__builtins__': builtins}
+    for name, value in globals().items():
+        if not name.startswith('_'):
+            namespace[name] = value
+    return namespace
+
+
 async def _vpylab_run(source, filename='<student>', namespace=None):
     """학생 코드를 변환(student-code-transform.py)해 모듈 수준에서 실행한다.
     함수로 감싸지 않으므로 global 선언이 동작하고, 줄 번호는 학생 코드 그대로다.
-    모듈 수준 코드가 끝난 뒤에는 남은 태스크(async 핸들러, rate 콜백)가 끝날 때까지 기다린다.
-    Worker·하네스가 sys.modules['_vpylab_transform']에 변환기를 등록해 둔다."""
+    모듈 수준 코드가 끝난 뒤에는 남은 태스크(async 핸들러, rate 콜백)가 끝날 때까지 기다리고,
+    예외·정지로 끝나도 finally에서 태스크를 취소·회수한다.
+    Worker·하네스가 API 전역 `_vpylab_transform`에 변환기 모듈을 넣어 둔다 (sys.modules에는 없다)."""
     import inspect
-    import _vpylab_transform
-    code, warnings = _vpylab_transform.compile_student_code(source, filename)
+    transform = globals()['_vpylab_transform']
+    code, warnings = transform.compile_student_code(source, filename)
     for text in warnings:
         js.postMessage(json.dumps({"type": "warning", "runId": _current_run_id(), "text": text}))
-    scope = globals() if namespace is None else namespace
-    result = eval(code, scope)
-    if inspect.iscoroutine(result):
-        await result
-    await _wait_pending_tasks()
+    scope = _new_student_namespace() if namespace is None else namespace
+    scope[transform.RUNTIME_NAME] = transform
+    try:
+        result = eval(code, scope)
+        if inspect.iscoroutine(result):
+            await result
+        await _wait_pending_tasks()
+    finally:
+        await _cancel_pending_tasks()
 
 
 def _reset_runtime_state():
@@ -3280,5 +3346,6 @@ def _reset_runtime_state():
     for task in list(_pending_tasks):
         task.cancel()
     _pending_tasks.clear()
+    _task_errors.clear()
     _scene_objects.clear()
     scene._reset()

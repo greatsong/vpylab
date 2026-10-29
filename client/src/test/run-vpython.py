@@ -27,6 +27,8 @@ TRANSFORM_PATH = Path(__file__).resolve().parents[1] / 'engine' / 'student-code-
 RATE_CALL_LIMIT = 20000  # 무한 루프 방지 — 이 횟수를 넘으면 실행 중지 신호를 보낸다
 
 collected_commands = []
+collected_warnings = []
+heartbeat_count = [0]   # batch 메시지 수 (빈 배치 = 하트비트)
 stop_requested = False
 
 
@@ -41,6 +43,9 @@ class FakeJs(types.ModuleType):
         message = json.loads(payload)
         if message.get('type') == 'batch':
             collected_commands.extend(message.get('commands', []))
+            heartbeat_count[0] += 1
+        elif message.get('type') == 'warning':
+            collected_warnings.append(message.get('text'))
 
     @staticmethod
     def _getCurrentRunId():
@@ -66,10 +71,9 @@ class FakeJs(types.ModuleType):
 
 sys.modules['js'] = FakeJs()
 
-# === 학생 코드 변환기 등록 (Worker의 _vpylab_transform 모듈과 같다) ===
+# === 학생 코드 변환기 (Worker와 같이 API 전역 `_vpylab_transform`에 모듈 객체로 둔다) ===
 transform_module = types.ModuleType('_vpylab_transform')
 exec(compile(TRANSFORM_PATH.read_text(encoding='utf-8'), str(TRANSFORM_PATH), 'exec'), transform_module.__dict__)
-sys.modules['_vpylab_transform'] = transform_module
 
 # === 가상 시계: time.time()/time.sleep()/asyncio.sleep()을 즉시 진행 ===
 virtual_clock = [0.0]
@@ -100,17 +104,19 @@ asyncio.sleep = fake_async_sleep
 # === vpython-api.py 로드 (Worker와 같은 방식으로 전역에 실행 후 모듈로 등록) ===
 api_namespace = {'__name__': '__vpylab_api__'}
 exec(compile(API_PATH.read_text(encoding='utf-8'), str(API_PATH), 'exec'), api_namespace)
+api_namespace['_vpylab_transform'] = transform_module
 
 original_rate = api_namespace['rate']
 rate_calls = [0]
+rate_limit = [RATE_CALL_LIMIT]   # 작업마다 "rateLimit" 으로 바꿀 수 있다 (정지 신호 테스트용)
 
 
-async def counted_rate(fps):
+async def counted_rate(fps, callback=None):
     global stop_requested
     rate_calls[0] += 1
-    if rate_calls[0] > RATE_CALL_LIMIT:
+    if rate_calls[0] > rate_limit[0]:
         stop_requested = True
-    return await original_rate(fps)
+    return await original_rate(fps, callback)
 
 
 api_namespace['rate'] = counted_rate
@@ -122,14 +128,15 @@ for name, value in api_namespace.items():
 sys.modules['vpython'] = vpython_module
 
 StopExecution = api_namespace['_StopExecution']
-# 학생 코드가 API 전역에 남긴 이름이 다음 코드에 새지 않도록 실행 전 상태를 보관한다
-baseline_namespace = dict(api_namespace)
 
 
-def run_one(code):
+def run_one(code, limit=RATE_CALL_LIMIT):
     """코드 한 편을 실행하고 수집된 커맨드를 돌려준다."""
     global stop_requested
+    rate_limit[0] = limit
     collected_commands.clear()
+    collected_warnings.clear()
+    heartbeat_count[0] = 0
     virtual_clock[0] = 0.0
     rate_calls[0] = 0
     stop_requested = False
@@ -141,8 +148,7 @@ def run_one(code):
     loop = asyncio.new_event_loop()
     try:
         with contextlib.redirect_stdout(stdout):
-            # Worker와 같은 경로: ast 변환 → 모듈 수준 실행(최상위 await) → 남은 태스크 대기.
-            # 학생 코드는 API 전역에서 실행된다 (Worker에서도 API와 같은 전역이다).
+            # Worker와 같은 경로: ast 변환 → 실행마다 새 학생 전역에서 모듈 수준 실행(최상위 await) → 남은 태스크 대기
             loop.run_until_complete(api_namespace['_vpylab_run'](code, '<mission>'))
     except StopExecution:
         stopped = True
@@ -157,12 +163,6 @@ def run_one(code):
     except Exception:  # noqa: BLE001
         pass
 
-    # 학생 코드가 만든 이름은 지우고 덮어쓴 API 이름은 되돌린다 (_로 시작하는 내부 상태는 _reset_runtime_state 가 맡는다)
-    for key in list(api_namespace):
-        if key not in baseline_namespace:
-            del api_namespace[key]
-        elif not key.startswith('_'):
-            api_namespace[key] = baseline_namespace[key]
 
     return {
         'ok': error is None,
@@ -170,6 +170,10 @@ def run_one(code):
         'error': error,
         'stdout': stdout.getvalue(),
         'commands': list(collected_commands),
+        'warnings': list(collected_warnings),
+        'heartbeats': heartbeat_count[0],
+        'pendingTasks': len(api_namespace['_pending_tasks']),
+        'rateCalls': rate_calls[0],
     }
 
 
@@ -177,7 +181,7 @@ def main():
     jobs = json.loads(sys.stdin.read() or '[]')
     results = []
     for job in jobs:
-        outcome = run_one(job.get('code', ''))
+        outcome = run_one(job.get('code', ''), int(job.get('rateLimit', RATE_CALL_LIMIT)))
         outcome['id'] = job.get('id')
         outcome['label'] = job.get('label')
         results.append(outcome)

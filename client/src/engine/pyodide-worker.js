@@ -153,8 +153,11 @@ async function dispatchQueuedEvents() {
   shouldStop = false;
   sendRunMessage(currentRunId, 'event_start');
   try {
+    // 핸들러가 rate()·sleep()·input()을 쓰면 별도 태스크로 돈다. 그 태스크가 끝날 때까지
+    // 실행 상태(event_start~event_done)를 유지해 하트비트·정지 버튼·입력 위젯이 동작하게 한다.
     await pyodide.runPythonAsync(`
 _process_pending_events()
+await _wait_pending_tasks()
 _send_commands()
 `);
     await flushOutputStreams();
@@ -170,7 +173,11 @@ _send_commands()
     }
   } finally {
     isDispatchingEvents = false;
-    if (_eventQueue.length > 0) {
+    if (queuedRun) {
+      const next = queuedRun;
+      queuedRun = null;
+      await runCode(next.code, next.runId);
+    } else if (_eventQueue.length > 0) {
       await dispatchQueuedEvents();
     }
   }
@@ -218,16 +225,15 @@ async function initPyodide() {
 
     sendProgress(70, 'VPython API 준비 중...');
 
-    // 3. 학생 코드 변환기를 '_vpylab_transform' 모듈로 등록 — 학생 전역과 섞이지 않게 별도 모듈에 둔다
+    // 3. 학생 코드 변환기를 API 전역 `_vpylab_transform`에 모듈 객체로 둔다.
+    //    sys.modules에 넣지 않으므로 학생 코드가 import해 바꿀 수 없고, 학생 전역(실행마다 새 딕셔너리)에는 보이지 않는다.
     if (transformSourceCode) {
       pyodide.globals.set('__vpylab_transform_source__', transformSourceCode);
       await pyodide.runPythonAsync(`
-import sys
-import types
-_vpylab_transform_module = types.ModuleType('_vpylab_transform')
-exec(compile(__vpylab_transform_source__, '${TRANSFORM_FILENAME}', 'exec'), _vpylab_transform_module.__dict__)
-sys.modules['_vpylab_transform'] = _vpylab_transform_module
-del _vpylab_transform_module, __vpylab_transform_source__
+import types as _vpylab_types
+_vpylab_transform = _vpylab_types.ModuleType('_vpylab_transform')
+exec(compile(__vpylab_transform_source__, '${TRANSFORM_FILENAME}', 'exec'), _vpylab_transform.__dict__)
+del _vpylab_types, __vpylab_transform_source__
 `);
     }
 
@@ -383,7 +389,8 @@ async function runCode(code, runId = currentRunId + 1) {
     return;
   }
 
-  if (isRunningCode) {
+  if (isRunningCode || isDispatchingEvents) {
+    // 실행 중이거나 본문 종료 뒤 이벤트 핸들러 태스크가 도는 중 — 멈춘 뒤 이어서 실행한다
     queuedRun = { code, runId };
     shouldStop = true;
     return;

@@ -263,8 +263,10 @@ export function createPauseNotice(cmd) {
   const wrap = document.createElement('div');
   wrap.dataset.widgetId = cmd.id;
   wrap.dataset.vpylabPause = '';
-  wrap.textContent = String(cmd.text ?? '') || '▶ 화면을 클릭하면 계속합니다';
-  wrap.style.cssText = 'color:#222;font-weight:600;white-space:pre-wrap;';
+  wrap.textContent = String(cmd.text ?? '') || '▶ 3D 화면을 클릭하면 계속합니다';
+  wrap.style.cssText = 'color:#222;font-weight:600;white-space:pre-wrap;cursor:pointer;';
+  // 안내 배너를 눌러도 화면 클릭과 같이 click 이벤트를 보낸다 (scene.pause는 click을 기다린다)
+  wrap.addEventListener('click', () => postEvent({ name: 'click', pos: [0, 0, 0], pick: null }));
   panel.appendChild(wrap);
   widgetRegistry.set(cmd.id, { el: wrap, input: null, kind: 'notice', value: null });
 }

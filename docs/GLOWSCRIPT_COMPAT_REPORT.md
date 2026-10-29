@@ -234,6 +234,8 @@ glowscript.org `GlowScriptDemos/Examples` 폴더의 Web VPython 프로그램 33�
 
 판정이 바뀐 항목은 모두 실패→통과이며 회귀는 없다. 바뀐 항목: `idiom:flow-rate-in-function`(D1), `idiom:flow-rate-in-method`(D1), `idiom:flow-global-called-in-loop`(D2), `idiom:flow-import-as`(D3), `idiom:event-waitfor-click`·`event-waitfor-keydown`(B3), `idiom:event-pause`(B2), `idiom:flow-input`(C3), `docs:mouse:line1`·`line5`, `docs:pause:line1`, `docs:userinput:pre1`·`line1`, `docs:textinput:pre1`·`line1`, `gsexample:Bounce-Callbacks-VPython`(D1, `rate(200, move)` 콜백 형식). 심 적용 시 `gsexample:Stars-VPython`과 `demos:Stars`(D2)도 통과한다. Stars는 심 없이는 여전히 B1(`scene.width` setter)에서 멈춘다.
 
+검토(Codex·Argon 3-way) 뒤 변환기를 스코프별 심볼 테이블로 다시 썼다. 확정할 수 없는 호출(매개변수·첨자·호출 결과를 부르거나 수신자를 모르는 메서드 이름이 async 메서드 이름과 겹치는 경우)은 런타임 보조 `maybe_await`로 감싸 코루틴이면 기다리고 아니면 그대로 돌려준다. 같은 이름의 중첩 함수·생성기·다른 클래스 메서드를 따로 판단하고, 대입·매개변수로 가린 이름은 대기 함수로 보지 않으며, 튜플 언패킹 인스턴스·기본 인수·제너레이터식·클래스 본문을 다룬다. 런타임은 실행마다 새 학생 전역을 만들고, 본문이 끝난 뒤 들어온 이벤트의 핸들러 태스크도 끝날 때까지 실행 상태를 유지하며(하트비트·정지·입력 위젯 동작), `_StopExecution`을 BaseException으로 바꿔 학생의 `except:`가 정지를 삼키지 못하게 했고, 긴 `sleep()`을 0.5초 단위로 나눠 하트비트를 보내며, `rate(fps, callback)`은 양보하고 미완료 콜백 수를 제한한다. 재측정 결과는 아래와 같다(변환기 재작성 전과 같은 수치).
+
 PR #11(즉시 수정 묶음: 수학 이름·`scene.width`·`length`·`size`·색 변환)이 `main`에 먼저 들어가 이 수정과 합친 뒤 다시 재면 정적 통과는 **414**(내장 211, 관용구 94, 공식 예제 14, 문서 조각 95, 데모 0)이고 심 적용 시 **452**다. 공식 예제 Stars와 Bounce-Callbacks는 심 없이 통과한다. 합치기 전 결과와 비교해 통과에서 실패로 바뀐 항목은 없다. `scripts/compat/out/static-results.json`·`static-shim-results.json`은 합친 뒤의 결과다.
 
 정적 하네스는 `scene.waitfor()`가 기다리는 이벤트를 js 스텁이 한 번 만들어 주고(`scene_bind` 커맨드의 `waiting` 표시로 구분), `input()`에는 `'42'`를 답한다.

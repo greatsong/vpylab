@@ -337,6 +337,22 @@ const RULES = [
   },
 
   // === TypeError ===
+  // === 코루틴(대기 함수) 관련 — rate()·sleep()·input() 등은 변환기가 await를 붙이는 코루틴이다 ===
+  {
+    type: 'TypeError', pattern: /^object (.+?) can't be used in 'await' expression/,
+    ko: (m) => ({ title: '기다릴 수 없는 값입니다', explanation: `${m[1]} 값을 기다리려(await) 했습니다. rate·sleep·input 같은 대기 함수 이름을 다른 값으로 덮어썼거나, 대기 함수가 아닌 것 앞에 await를 썼을 때 생깁니다.`, hint: 'rate, sleep, input 을 변수 이름으로 쓰지 않았는지 확인하고, 직접 쓴 await 가 있으면 지웁니다.' }),
+    en: (m) => ({ title: 'This value cannot be awaited', explanation: `Tried to await a ${m[1]} value. This happens when a waiting function name (rate, sleep, input) was reassigned, or await was written before something that is not a waiting function.`, hint: 'Do not reuse rate, sleep or input as variable names, and remove any await you wrote yourself.' }),
+  },
+  {
+    type: 'TypeError', pattern: /^'(coroutine|async_generator)' object is not (iterable|subscriptable|callable)|^unsupported operand type\(s\) for .*'coroutine'|^'<' not supported between instances of 'coroutine'/,
+    ko: () => ({ title: '대기 함수의 결과를 바로 썼습니다', explanation: 'rate()·sleep()·input()이나 그것을 부르는 함수는 기다린 뒤에 값이 나옵니다. 제너레이터식, lambda, yield가 있는 함수 안에서 대기 함수를 쓰거나, 그 결과를 바로 계산·순회하면 생깁니다.', hint: '제너레이터식은 for 문이나 리스트 컴프리헨션으로, lambda 안의 rate()는 def 함수로 바꿉니다.' }),
+    en: () => ({ title: 'Used a waiting function result directly', explanation: 'rate(), sleep(), input() and functions that call them produce a value only after waiting. This happens when a waiting function is used inside a generator expression, a lambda or a function with yield, or its result is used right away.', hint: 'Turn generator expressions into for loops or list comprehensions, and lambdas with rate() into def functions.' }),
+  },
+  {
+    type: 'EOFError', pattern: /입력이 취소되었습니다|EOF when reading a line/,
+    ko: () => ({ title: 'input() 입력을 받지 못했습니다', explanation: 'input()이 띄운 입력창이 답을 받기 전에 닫혔거나 실행이 멈췄습니다.', hint: '다시 실행하고 3D 화면 위 입력창에 값을 넣은 뒤 Enter 를 누릅니다.' }),
+    en: () => ({ title: 'input() received no answer', explanation: 'The input box opened by input() was closed or the program stopped before an answer was entered.', hint: 'Run again and type a value in the input box above the 3D view, then press Enter.' }),
+  },
   {
     type: 'TypeError', pattern: /^unsupported operand type\(s\) for ([^:]+): '(vector)' and '(tuple|list)'|^unsupported operand type\(s\) for ([^:]+): '(tuple|list)' and '(vector)'/,
     ko: () => ({ title: 'vector 대신 튜플을 사용했습니다', explanation: '(1, 2, 3) 같은 튜플은 vector와 계산할 수 없습니다. 위치·속도·색은 vector(1, 2, 3)으로 만들어야 더하기와 곱하기가 됩니다.', hint: '괄호 앞에 vector를 붙여 vector(1, 2, 3) 형태로 바꿉니다.' }),

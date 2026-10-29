@@ -134,16 +134,16 @@ def main():
     # input() 은 워커에 표준 입력이 없다 — 어떤 예외가 나는지 그대로 보고하기 위해 빈 stdin 으로 둔다
     sys.stdin = io.StringIO('')
 
-    # 변환기를 Worker 와 같은 모듈 이름으로 등록
+    # 변환기를 Worker 와 같이 API 전역 `_vpylab_transform` 에 모듈 객체로 둔다
     transform_module = types.ModuleType('_vpylab_transform')
     exec(compile(open(spec['transform'], encoding='utf-8').read(), '<vpylab-transform>', 'exec'), transform_module.__dict__)
-    sys.modules['_vpylab_transform'] = transform_module
 
     g = {'__name__': '__main__', '__builtins__': builtins}
     result = {'status': 'pass', 'error': None, 'rateCalls': 0}
     phase = 'api'
     try:
         exec(compile(api_code, '<vpython-api>', 'exec'), g)
+        g['_vpylab_transform'] = transform_module
         exec(compile(spec['registration'], '<vpython-register>', 'exec'), g)
         if spec.get('shim'):
             phase = 'shim'

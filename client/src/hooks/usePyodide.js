@@ -6,10 +6,15 @@ const ACTIVITY_TIMEOUT = 10_000;
 const STOP_TIMEOUT = 750;
 
 function getTimeoutMessage(code) {
-  if (/while\s/.test(code) && !/rate\s*\(/.test(code)) {
-    return '실행 시간 초과 (10초 무응답). while 루프 안에 rate()를 넣어주세요.';
+  const hasLoop = /\b(while|for)\b/.test(code);
+  const hasRate = /(?<![\w.가-힣])(rate|sleep)\s*\(/.test(code);
+  if (hasLoop && !hasRate) {
+    return '실행 시간 초과 (10초 무응답). 반복문 안에 rate()를 넣어주세요.';
   }
-  return '실행 시간 초과 (10초 무응답). 반복문과 rate() 값을 확인하세요.';
+  if (hasLoop && hasRate) {
+    return '실행 시간 초과 (10초 무응답). rate()가 반복문 안에 있는지, rate() 없이 도는 반복문이나 아주 긴 계산이 없는지 확인하세요.';
+  }
+  return '실행 시간 초과 (10초 무응답). 끝나지 않는 재귀 호출이나 아주 긴 계산이 없는지 확인하세요.';
 }
 
 /**
