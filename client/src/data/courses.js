@@ -20,6 +20,123 @@
 
 const courses = [
   // ════════════════════════════════════════════════════════
+  // [입문 0] 처음 파이썬 — 소리와 빛으로 시작하기 (7단계, 1~2줄에서 시작)
+  // ════════════════════════════════════════════════════════
+  {
+    id: 'beg-first-steps',
+    track: 'beginner',
+    level: 1,
+    title: { ko: '처음 파이썬: 소리와 빛으로 시작', en: 'First Python: Start with Sound and Light' },
+    subject: '코딩',
+    description:
+      '2줄짜리 소리 내기에서 시작해 빛, 반복문, 조건문, 랜덤, 리스트까지 한 단계에 한 가지씩. 모든 코드는 15줄 이하.',
+    targetGrade: '중1~고1',
+    sessions: 7,
+    icon: '🔔',
+    color: 'amber',
+    starlightTheme: 'amber',
+    lessons: [
+      {
+        id: 'beg-first-steps-1',
+        title: { ko: '1단계 소리 내기', en: 'Step 1: Make a Sound' },
+        summary: '두 줄로 "도" 소리를 낸다. 음 이름을 바꿔 본다.',
+        code: `from vpython import *
+음표("도")
+`,
+      },
+      {
+        id: 'beg-first-steps-2',
+        title: { ko: '2단계 빛 켜기', en: 'Step 2: Turn on a Light' },
+        summary: '기본 조명을 끄고 빨간 빛 하나로 회색 공을 비춘다. 빛의 위치와 색을 바꿔 본다.',
+        code: `from vpython import *
+scene.lights = []
+sphere(color=색상['회색'])
+local_light(pos=vector(2, 2, 2), color=색상['빨강'], intensity=50)
+효과음("coin")
+`,
+      },
+      {
+        id: 'beg-first-steps-3',
+        title: { ko: '3단계 반복문: 무지개 계이름', en: 'Step 3: Loop the Rainbow Scale' },
+        summary: 'for 반복문으로 공 7개를 놓으며 도레미파솔라시를 차례로 낸다.',
+        code: `from vpython import *
+for i in range(7):
+    sphere(pos=vector(i - 3, 0, 0), radius=0.4, color=무지개[i])
+    음표("도레미파솔라시"[i], 0.3)
+효과음("levelup")
+`,
+      },
+      {
+        id: 'beg-first-steps-4',
+        title: { ko: '4단계 조건문: 튀는 공', en: 'Step 4: If the Ball Hits the Floor' },
+        summary: 'while로 공을 떨어뜨리고, if로 바닥에 닿으면 튀어 오르며 소리를 낸다.',
+        code: `from vpython import *
+scene.range = 4
+box(pos=vector(0, -3, 0), size=vector(6, 0.2, 3), color=색상['회색'])
+공 = sphere(pos=vector(0, 3, 0), radius=0.5, color=색상['노랑'])
+속도 = 0
+while True:
+    rate(60)
+    속도 = 속도 - 0.01
+    공.pos.y = 공.pos.y + 속도
+    if 공.pos.y < -2.4:
+        속도 = 0.3
+        효과음("jump")
+`,
+      },
+      {
+        id: 'beg-first-steps-5',
+        title: { ko: '5단계 랜덤: 별과 소리', en: 'Step 5: Random Stars and Sounds' },
+        summary: 'random으로 위치·색·높낮이를 정해 별 30개를 뿌린다.',
+        code: `from vpython import *
+import random
+for i in range(30):
+    x = random.uniform(-5, 5)
+    y = random.uniform(-3, 3)
+    sphere(pos=vector(x, y, 0), radius=0.2, color=무지개[random.randint(0, 6)])
+    소리(random.randint(300, 900), 0.1)
+    sleep(0.1)
+`,
+      },
+      {
+        id: 'beg-first-steps-6',
+        title: { ko: '6단계 리스트: 멜로디 건반', en: 'Step 6: A Melody List on Keys' },
+        summary: '멜로디 리스트와 건반 리스트를 만들어 한 음씩 연주하며 건반 색을 바꾼다.',
+        code: `from vpython import *
+멜로디 = ["도", "미", "솔", "도5", "솔", "미", "도"]
+건반들 = []
+for i in range(7):
+    건반 = box(pos=vector(i - 3, 0, 0), size=vector(0.9, 0.3, 2), color=색상['흰색'])
+    건반들.append(건반)
+for i in range(7):
+    건반들[i].color = 무지개[i]
+    음표(멜로디[i], 0.4)
+    건반들[i].color = 색상['흰색']
+`,
+      },
+      {
+        id: 'beg-first-steps-7',
+        title: { ko: '7단계 빛과 소리 쇼', en: 'Step 7: Light and Sound Show' },
+        summary: '반 초마다 랜덤 음을 내고, 그때 빛 색이 바뀌며 공이 커졌다 줄어든다.',
+        code: `from vpython import *
+import random
+scene.lights = []
+공 = sphere(radius=1, color=색상['회색'])
+빛 = local_light(pos=vector(0, 2, 2), color=색상['보라'], intensity=60)
+멜로디 = ["도", "미", "솔", "도5"]
+for 프레임 in range(1, 601):
+    rate(60)
+    if 프레임 % 30 == 0:
+        번 = random.randint(0, 3)
+        play_note(멜로디[번], 0.4)
+        빛.color = 무지개[번 * 2]
+        공.radius = 1.4
+    공.radius = 공.radius - (공.radius - 1) * 0.1
+`,
+      },
+    ],
+  },
+  // ════════════════════════════════════════════════════════
   // [입문 1] 도형 친구들 만나기 — 첫 3D 객체와 좌표
   // ════════════════════════════════════════════════════════
   {
