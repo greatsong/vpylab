@@ -1824,6 +1824,139 @@ for i, n in enumerate(names):
     label(pos=vector(x, y - 0.95, 0), text=n, height=10)`,
     tags: ['texture', 'preset', 'wood', 'metal', 'galaxy', 'nebula', 'water', 'lava', 'ice', 'fire', '프리셋'],
   },
+  {
+    id: 'math_functions',
+    category: 'vectors',
+    title: { ko: '수학 함수와 난수 (sin, pi, random)', en: 'Math functions & random' },
+    description: {
+      ko: 'from vpython import * 를 하면 GlowScript처럼 sin, cos, sqrt, pi 등 math 모듈의 이름을 바로 사용할 수 있습니다. random()은 0 이상 1 미만의 난수이고, random.randint(1, 6)처럼 random 모듈의 함수도 그대로 됩니다. arange, sign, combin, clock, msclock, print_options도 제공합니다.',
+      en: 'After from vpython import *, math names such as sin, cos, sqrt and pi are available directly, as in GlowScript. random() returns a number in [0, 1), and random.randint(1, 6) also works. arange, sign, combin, clock, msclock and print_options are provided too.',
+    },
+    signature: "sin(x), cos(x), sqrt(x), pi, random(), arange(start, stop, step), sign(x), combin(n, k), clock(), print_options(digits=3)",
+    params: [
+      { name: 'random()', type: 'function', default: '-', desc: { ko: '0 이상 1 미만 난수', en: 'Random number in [0, 1)' } },
+      { name: 'arange(start, stop, step)', type: 'function', default: '-', desc: { ko: 'start부터 stop 전까지 step 간격 목록', en: 'List from start to stop by step' } },
+      { name: 'print_options(digits=n)', type: 'function', default: '4', desc: { ko: '벡터 출력 자릿수', en: 'Digits when printing vectors' } },
+    ],
+    code: `from vpython import *
+
+for i in range(12):
+    각 = 2 * pi * i / 12
+    sphere(pos=vector(3 * cos(각), 3 * sin(각), 0), radius=0.3,
+           color=color.hsv_to_rgb(vector(i / 12, 1, 1)))
+
+for t in arange(0, 1, 0.25):
+    box(pos=vector(t * 4 - 2, -3, 0), size=vector(0.5, 0.5, 0.5))
+
+print(sqrt(16), sign(-2), combin(5, 2))
+print(random(), random.randint(1, 6))`,
+    tags: ['math', 'sin', 'cos', 'pi', 'sqrt', 'random', 'arange', 'sign', 'combin', 'clock', 'print_options', '수학', '난수'],
+  },
+  {
+    id: 'vector_functions',
+    category: 'vectors',
+    title: { ko: '벡터 함수형 (proj, comp, diff_angle, rotate)', en: 'proj / comp / diff_angle / rotate' },
+    description: {
+      ko: 'GlowScript의 함수형 벡터 연산입니다. 메서드(a.proj(b))와 같은 결과를 냅니다. rotate(v, angle=, axis=)는 회전한 새 벡터를 돌려주고, rotate(obj, angle=, axis=)는 3D 객체를 그 자리에서 회전시킵니다. v.norm()은 v.hat, v.equals(w)는 v == w와 같고, vector.random()은 각 성분이 -1~1인 난수 벡터입니다.',
+      en: 'GlowScript-style vector functions, equal to the methods (a.proj(b)). rotate(v, angle=, axis=) returns a rotated vector; rotate(obj, ...) rotates a 3D object in place. v.norm() equals v.hat, v.equals(w) equals v == w, and vector.random() gives a vector with components in -1..1.',
+    },
+    signature: "proj(a, b); comp(a, b); diff_angle(a, b); rotate(v, angle=, axis=); v.norm(); v.equals(w); vector.random()",
+    params: [
+      { name: 'a, b', type: 'vector', default: '-', desc: { ko: '벡터', en: 'Vectors' } },
+      { name: 'angle', type: 'number', default: '0', desc: { ko: '회전각 (라디안)', en: 'Angle in radians' } },
+      { name: 'axis', type: 'vector', default: 'vector(0,0,1)', desc: { ko: '회전축', en: 'Rotation axis' } },
+    ],
+    code: `from vpython import *
+
+a = vector(1, 1, 0)
+b = vector(1, 0, 0)
+print(proj(a, b))        # <1, 0, 0>
+print(comp(a, b))        # 1.0
+print(diff_angle(a, b))  # 0.785... (45도)
+
+v = rotate(b, angle=pi / 2, axis=vector(0, 0, 1))
+print(v)                 # <0, 1, 0>
+
+bar = cylinder(axis=vector(2, 0, 0), radius=0.2)
+rotate(bar, angle=pi / 4, axis=vector(0, 0, 1))
+print(vector.random())`,
+    tags: ['vector', 'proj', 'comp', 'diff_angle', 'rotate', 'norm', 'equals', 'random', '투영', '회전'],
+  },
+  {
+    id: 'color_hsv',
+    category: 'colors',
+    title: { ko: '색 변환 (hsv_to_rgb, rgb_to_hsv)', en: 'color.hsv_to_rgb / rgb_to_hsv' },
+    description: {
+      ko: '색상(h)·채도(s)·명도(v)를 RGB로, 또는 그 반대로 바꿉니다. 각 성분은 0~1입니다. h를 0에서 1까지 돌리면 무지개 순서로 색이 바뀌므로 색 애니메이션에 사용합니다.',
+      en: 'Converts hue, saturation and value to RGB and back. Each component is in 0..1. Sweeping h from 0 to 1 walks through the rainbow, which is handy for color animation.',
+    },
+    signature: "color.hsv_to_rgb(vector(h, s, v)); color.rgb_to_hsv(vector(r, g, b))",
+    params: [
+      { name: 'h', type: 'number', default: '-', desc: { ko: '색상 0~1 (0 빨강, 1/3 초록, 2/3 파랑)', en: 'Hue 0..1 (0 red, 1/3 green, 2/3 blue)' } },
+      { name: 's', type: 'number', default: '-', desc: { ko: '채도 0~1', en: 'Saturation 0..1' } },
+      { name: 'v', type: 'number', default: '-', desc: { ko: '명도 0~1', en: 'Value 0..1' } },
+    ],
+    code: `from vpython import *
+
+ball = sphere(radius=1)
+h = 0
+while True:
+    rate(60)
+    h = (h + 0.005) % 1
+    ball.color = color.hsv_to_rgb(vector(h, 1, 1))`,
+    tags: ['color', 'hsv', 'rgb', 'hsv_to_rgb', 'rgb_to_hsv', '색상', '무지개', 'rainbow'],
+  },
+  {
+    id: 'object_length_size',
+    category: 'objects',
+    title: { ko: '길이와 크기 (length, size)', en: 'length / size' },
+    description: {
+      ko: 'cylinder, cone, arrow, helix의 length는 axis의 길이와 연동됩니다. length를 바꾸면 axis가 같은 방향으로 늘어나거나 줄어듭니다. cylinder와 cone의 size는 vector(length, 2*radius, 2*radius)이고, sphere의 size는 지름 벡터입니다. ellipsoid는 size 대신 length, height, width로도 만들 수 있습니다. 생성할 때 length=를 주면 axis 방향으로 그 길이가 됩니다.',
+      en: 'length of cylinder, cone, arrow and helix is tied to the axis magnitude. size of cylinder and cone is vector(length, 2*radius, 2*radius); sphere.size is the diameter vector. ellipsoid also accepts length, height and width. Passing length= at creation sets the axis length.',
+    },
+    signature: "obj.length = 3; cylinder(length=2, radius=0.5); sphere().size; ellipsoid(length=2, height=1, width=3)",
+    params: [
+      { name: 'length', type: 'number', default: 'axis의 길이', desc: { ko: 'axis 방향 길이', en: 'Length along axis' } },
+      { name: 'size', type: 'vector', default: '-', desc: { ko: '(길이, 높이, 폭)', en: '(length, height, width)' } },
+    ],
+    code: `from vpython import *
+
+봉 = cylinder(pos=vector(-2, 0, 0), axis=vector(1, 0, 0), radius=0.2, length=1)
+공 = sphere(pos=vector(2, 0, 0), radius=0.5)
+print(공.size)      # <1, 1, 1>
+
+while True:
+    rate(60)
+    봉.length = 1 + abs(sin(clock()))   # 축 방향으로 늘었다 줄었다`,
+    tags: ['length', 'size', 'axis', 'cylinder', 'cone', 'arrow', 'helix', 'ellipsoid', '길이', '크기'],
+  },
+  {
+    id: 'scene_size_objects',
+    category: 'scene',
+    title: { ko: '화면 크기와 객체 목록 (scene.width, scene.objects)', en: 'scene.width / scene.objects' },
+    description: {
+      ko: 'scene.width = 800처럼 GlowScript 코드가 그대로 실행되도록 값을 받습니다. 다만 3D 화면 크기는 화면 배치가 정하므로 실제 크기는 바뀌지 않습니다. scene.objects는 현재 보이는 3D 객체 목록이며, 모두 숨기거나 개수를 셀 때 사용합니다. scene.align, scene.resizable, scene.caption_anchor도 받기만 합니다.',
+      en: 'scene.width = 800 is accepted so GlowScript code runs unchanged, but the viewport size is set by the layout and does not change. scene.objects lists the visible 3D objects, useful for hiding everything or counting. scene.align, scene.resizable and scene.caption_anchor are accepted and ignored.',
+    },
+    signature: "scene.width = 800; scene.height = 500; for obj in scene.objects: obj.visible = False",
+    params: [
+      { name: 'scene.width / height', type: 'number', default: '화면 크기', desc: { ko: '값만 기억 (화면은 그대로)', en: 'Stored only (viewport unchanged)' } },
+      { name: 'scene.objects', type: 'list', default: '[]', desc: { ko: '보이는 3D 객체 목록', en: 'Visible 3D objects' } },
+    ],
+    code: `from vpython import *
+
+scene.width = 800
+scene.height = 500
+
+for i in range(5):
+    sphere(pos=vector(i - 2, 0, 0), radius=0.3, color=무지개[i])
+
+print(len(scene.objects), '개')
+sleep(1)
+for obj in scene.objects:
+    obj.visible = False`,
+    tags: ['scene', 'width', 'height', 'objects', 'align', '화면', '크기', '목록'],
+  },
 ];
 
 // ─── 유틸리티 함수 ──────────────────────────────────────────
