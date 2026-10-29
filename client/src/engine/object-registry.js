@@ -9,6 +9,8 @@ const registry = new Map();
 
 // 음표 기록 (음악 미션 채점용)
 let noteHistory = [];
+// 효과음·배경음악 기록 (음악 미션 채점용)
+let soundHistory = [];
 
 /**
  * 새 객체를 레지스트리에 등록
@@ -92,19 +94,38 @@ export function removeObject(id) {
 
 /**
  * 재생된 음표 기록 (음악 미션 채점용)
- * @param {string} name - 노트 이름 (예: 'G4', 'C4')
+ * @param {string} name - 노트 이름 (예: 'G4', 'C4'), 화음은 'C4+E4+G4'
  * @param {number} duration - 길이 (초)
+ * @param {string} [type] - 파형(음색) 이름 (sine, triangle, square, sawtooth)
  */
-export function registerNote(name, duration) {
-  noteHistory.push({ name: name.toUpperCase(), duration, t: performance.now() });
+export function registerNote(name, duration, type = 'sine') {
+  noteHistory.push({ name: name.toUpperCase(), duration, type, t: performance.now() });
 }
 
 /**
  * 기록된 음표 시퀀스 반환
- * @returns {{ name: string, duration: number }[]}
+ * @returns {{ name: string, duration: number, type: string }[]}
  */
 export function getNoteHistory() {
   return [...noteHistory];
+}
+
+/**
+ * 효과음·배경음악 재생 기록 (음악 미션 채점용)
+ * @param {'sfx'|'bgm'} kind
+ * @param {string} name - 효과음/배경음악 이름 (예: 'jump', 'peaceful')
+ */
+export function registerSound(kind, name) {
+  soundHistory.push({ kind, name: String(name ?? '').toLowerCase(), t: performance.now() });
+}
+
+/**
+ * 기록된 효과음·배경음악 목록
+ * @param {'sfx'|'bgm'} [kind] - 지정하면 해당 종류만
+ * @returns {{ kind: string, name: string }[]}
+ */
+export function getSoundHistory(kind) {
+  return kind ? soundHistory.filter(s => s.kind === kind) : [...soundHistory];
 }
 
 /**
@@ -113,6 +134,7 @@ export function getNoteHistory() {
 export function clearRegistry() {
   registry.clear();
   noteHistory = [];
+  soundHistory = [];
   nextId = 0;
 }
 
@@ -142,5 +164,6 @@ export function getSnapshot() {
     type: obj.type,
     props: { ...obj.props },
     historyLength: obj.history.length,
+    history: obj.history,
   }));
 }
