@@ -23,6 +23,26 @@ class ViewportBoundary extends Component {
   }
 }
 
+/**
+ * 오류 안내 — 파이썬 오류는 한국어 설명을 먼저, 원문 한 줄과 줄 번호를 아래에 작게 보여 줍니다.
+ * 보안: 모든 문자열은 React 텍스트 노드(textContent)로만 렌더링합니다.
+ */
+function ErrorNotice({ error }) {
+  const explanation = error.details?.explanation;
+  if (!explanation) return <p className="runtime-error" role="alert">{error.message}</p>;
+  const { title, explanation: body, hint, line } = explanation;
+  const lineLabel = Number.isInteger(line) ? `${line}번 줄` : '';
+  return (
+    <div className="runtime-error runtime-error--explained" role="alert">
+      <strong>{title}</strong>
+      <p>{body}</p>
+      {hint && <p className="runtime-error-hint">→ {hint}</p>}
+      {error.details.codeLine && lineLabel && <code className="runtime-error-code">{lineLabel}: {error.details.codeLine.trim()}</code>}
+      <code className="runtime-error-original">{lineLabel ? `${lineLabel} · ` : ''}{error.message}</code>
+    </div>
+  );
+}
+
 /** 수업의 AI 사용 정책과 관계없이 같은 Python·3D 실행 환경을 제공합니다. */
 export default function RuntimePanel({ code, onRunResult, initialCameraPosition, preserveDirectionOnCenter = false }) {
   const sceneRef = useRef(null);
@@ -32,7 +52,7 @@ export default function RuntimePanel({ code, onRunResult, initialCameraPosition,
   const outputIdRef = useRef(0);
   const startCancelRef = useRef(null);
   const [outputs, setOutputs] = useState([]);
-  const [lastError, setLastError] = useState('');
+  const [lastError, setLastError] = useState(null);
   const [sceneReady, setSceneReady] = useState(false);
   const [audio, setAudio] = useState(getAudioState);
   const [audioMessage, setAudioMessage] = useState('');
@@ -79,13 +99,15 @@ export default function RuntimePanel({ code, onRunResult, initialCameraPosition,
       if (sceneRef.current) processBatch(commands, sceneRef.current);
     },
     onReady: () => {
-      setLastError('');
+      setLastError(null);
       addOutput('Python 실행 환경이 준비되었습니다.', 'success');
     },
-    onError: (error) => {
+    onError: (error, details) => {
       stopAllSounds();
-      setLastError(error);
-      addOutput(error, 'error');
+      // 파이썬 오류는 입문자용 설명과 함께, 그 외(초기화·Worker)는 문자열 그대로 보여 준다.
+      setLastError(details ? { message: error, details } : { message: error });
+      const lineLabel = Number.isInteger(details?.line) ? `${details.line}번 줄 · ` : '';
+      addOutput(`${lineLabel}${error}`, 'error');
       finishRun('error', error);
     },
     onDone: ({ stopped } = {}) => {
@@ -130,7 +152,7 @@ export default function RuntimePanel({ code, onRunResult, initialCameraPosition,
       sceneRef.current?._cameraSystem?.onCodeStart();
       outputRef.current = [];
       setOutputs([]);
-      setLastError('');
+      setLastError(null);
       activeRunRef.current = { code, startedAt: Date.now() };
       const runId = runCode(code);
       if (!runId) activeRunRef.current = null;
@@ -166,7 +188,7 @@ export default function RuntimePanel({ code, onRunResult, initialCameraPosition,
         <div className="runtime-actions">
           <button type="button" className="primary" onClick={handleRun} disabled={!isReady || !sceneReady || isStarting}>▶ 실행</button>
           <button type="button" onClick={handleStop} disabled={!isRunning && !audio.playing && !isStarting}>■ 정지</button>
-          {(status === 'error' || status === 'idle') && <button type="button" onClick={() => { setLastError(''); void initWorker(); }}>엔진 다시 준비</button>}
+          {(status === 'error' || status === 'idle') && <button type="button" onClick={() => { setLastError(null); void initWorker(); }}>엔진 다시 준비</button>}
           <div className="runtime-audio" ref={audioRef}>
             <button type="button" aria-expanded={audioOpen} aria-controls="runtime-audio-popover" title={audioLabel} onClick={() => setAudioOpen((open) => !open)}>{audio.muted ? '🔇' : '♪'} 소리</button>
             {audioOpen && <div className="runtime-audio-popover" id="runtime-audio-popover" role="group" aria-label="소리 설정">
@@ -182,7 +204,7 @@ export default function RuntimePanel({ code, onRunResult, initialCameraPosition,
       </div>
       {status === 'loading' && <div className="runtime-progress"><progress value={progress} max="100" aria-label="Python 준비 진행률" /><span>{progressMessage}</span></div>}
       {isStopping && <p className="runtime-progress">반복문이 응답하지 않으면 실행 환경을 새로 준비합니다.</p>}
-      {lastError && <p className="runtime-error" role="alert">{lastError}</p>}
+      {lastError && <ErrorNotice error={lastError} />}
       <div className="runtime-viewport" style={{ minHeight: 320 }}>
         <ViewportBoundary><Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} initialCameraPosition={initialCameraPosition} /></ViewportBoundary>
       </div>

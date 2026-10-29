@@ -82,7 +82,8 @@
   "console": {
     "title": "콘솔 출력",
     "clear": "지우기",
-    "noOutput": "출력이 없습니다. 코드를 실행해보세요."
+    "noOutput": "출력이 없습니다. 코드를 실행해보세요.",
+    "errorLine": "{{line}}번 줄"
   },
   "grading": {
     "title": "채점 결과",
