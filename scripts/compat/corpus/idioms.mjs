@@ -810,6 +810,10 @@ g.pos.x = 5
 assert g.pos.x == 5 and b.pos.x == 1
 g.rotate(angle=pi / 2, axis=vector(0, 1, 0))
 assert abs(g.axis.z + 1) < 1e-9
+assert abs(b.pos.z + 1) < 1e-9 and abs(b.pos.x) < 1e-9   # GlowScript처럼 하위 객체의 상대 pos가 돈다
+assert g.group_to_world(b.pos) == b.pos + g.pos
+g.color = color.green
+assert s.color == color.green
 g.rotate(angle=0.1, axis=vector(0, 1, 0), origin=vector(0, 0, 0))
 g.visible = False
 b.color = color.blue
@@ -895,7 +899,7 @@ q.size = 12
 marker = sphere(radius=0.1)   # 생성기만 쓰는 코드라 하네스의 무반응 판정을 피하기 위한 객체
 r = shapes.rectangle(width=2, height=1)
 assert len(r) == 5 and r[0] == r[-1]
-assert r[1] == [1, -0.5]
+assert r[0] == [1, -0.5] and r[1] == [1, 0.5]   # vpython-jupyter shapespaths와 같은 순서
 rr = shapes.rectangle(width=2, height=1, thickness=0.1, roundness=0.3)
 assert len(rr) == 2 and len(rr[0]) > 5
 c = shapes.circle(radius=1, thickness=0.2)
@@ -910,8 +914,8 @@ shapes.trapezoid(width=1.6, height=1, top=0.6)
 shapes.arc(radius=1, angle2=pi)
 shapes.ellipse(width=2, height=1)
 shapes.line(start=[0, 0], end=[1, 1])
-shapes.points(pos=[[0, 0], [1, 0], [1, 1]])
-shapes.gear(n=9, radius=0.455, addendum=0.04, dedendum=0.06, fradius=0.01)
+assert shapes.points(pos=[[0, 0], [1, 0], [1, 1]])[-1] == [0, 0]
+assert len(shapes.gear(n=9, radius=0.455, addendum=0.04, dedendum=0.06, fradius=0.01)) > 9
 shapes.rackgear()
 ` },
   { id: 'paths-basic', title: 'paths.circle/arc/rectangle/line — xz 평면 vector 경로', doc: 'shapes_and_paths', code: `from vpython import *
@@ -925,10 +929,13 @@ pr = paths.rectangle(width=5, height=2)
 assert len(pr) == 5
 pl = paths.line(start=vector(0, 0, 0), end=vector(0, 0, -2), np=5)
 assert len(pl) == 5 and pl[-1] == vector(0, 0, -2)
+assert len(paths.circle(radius=3)) == 33   # np 기본값 32 (vpython-jupyter)
+pt = paths.pointlist(pos=[[0, 0], [1, 0], [1, 1]])
+assert isinstance(pt[0], vector) and pt[0] == pt[-1]
 pp = paths.pentagon(length=1, pos=vector(1, 2, 3), up=vector(1, 0, 0))
 assert abs((pp[0] - vector(1, 2, 3)).x) < 1e-9
 paths.cross(width=4, thickness=1)
-paths.triangle(length=1); paths.hexagon(length=1); paths.octagon(length=1); paths.star(radius=1); paths.ellipse(width=2)
+paths.triangle(length=1); paths.hexagon(length=1); paths.star(radius=1); paths.ellipse(width=2)   # 원본 paths에는 octagon이 없다
 ` },
   { id: 'extrusion-shapes-paths', title: 'extrusion(path=paths.*, shape=shapes.*) — 구멍·여러 고체·색 목록', doc: 'extrusion', code: `from vpython import *
 E1 = extrusion(path=[vector(0, 0, 0), vector(0, 0, -0.7)],
@@ -955,6 +962,8 @@ assert t.start.x < 0 < t.end.x
 t4 = text(text='Regular', pos=vector(-4, -1, 0), depth=0.5, start_face_color=color.red, end_face_color=color.green)
 box(pos=t4.start, size=0.1 * vector(1, 1, 1))
 assert t4.start == vector(-4, -1, 0)
+assert t4.upper_left == vector(-4, 0, 0) and t4.end.x > t4.start.x and t4.lower_left.y < t4.start.y
+assert t4.vertical_spacing == 1.5 and t4.font == 'sans'
 t.text = 'Bye'
 t.length = 3
 assert t.length == 3
@@ -982,6 +991,7 @@ f.stop()
 b = sphere(pos=vector(1, 0, 0), color=color.magenta, emissive=True)
 L = attach_light(b, offset=vector(0, 1, 0), color=color.green)
 assert L.light.pos == vector(1, 1, 0)
+assert attach_light(b).color == b.color   # color 기본값은 객체의 색 (vpython-jupyter)
 L.offset = vector(0, 2, 0)
 assert L.light.pos == vector(1, 2, 0)
 L.color = color.red

@@ -49,7 +49,8 @@ const trailRegistry = new Map();
 const curveRegistry = new Map();
 
 // axis·up 기준 좌표계(basis)로 방향을 정하는 객체 종류 — box와 같은 방식으로 회전한다
-const BASIS_TYPES = new Set(['box', 'compound', 'group', 'extrusion', 'text', 'curve', 'points']);
+// group은 GlowScript 명세대로 Python이 하위 객체를 하나씩 돌리므로 여기 없다 (그룹 자체는 위치만 갖는다)
+const BASIS_TYPES = new Set(['box', 'compound', 'extrusion', 'text', 'curve', 'points']);
 
 // 기본 재질 설정
 const DEFAULT_MATERIAL_PARAMS = {
@@ -571,15 +572,11 @@ function createObject(cmd, scene) {
     }
 
     case 'group': {
-      // 묶음 — 하위 객체는 create 커맨드의 group 필드로 이 그룹 안에 들어온다
+      // 묶음 — 하위 객체는 create 커맨드의 group 필드로 이 그룹 안에 들어온다.
+      // GlowScript 명세대로 그룹은 위치(g.pos)만 더하고, 회전은 Python이 하위 객체를 하나씩 돌린다.
       material.dispose();
       mesh = new THREE.Group();
-      mesh.userData = {
-        vpType: 'group',
-        boxAxis: asVectorArray(cmd.axis, [1, 0, 0]),
-        boxUp: asVectorArray(cmd.up, [0, 1, 0]),
-      };
-      applyBoxOrientation(mesh, mesh.userData.boxAxis, mesh.userData.boxUp);
+      mesh.userData = { vpType: 'group' };
       break;
     }
 

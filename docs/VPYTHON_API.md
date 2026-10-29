@@ -158,7 +158,7 @@ obj.clear_trail()
 | `helix` | `pos`, `axis`, `radius`, `length`, `coils`, `thickness` | 나선/스프링 |
 | `label` | `pos`, `text`, `color`, `height`(픽셀), `background`, `border` | 항상 카메라를 향하는 2D 텍스트 라벨 |
 | `text` | `pos`, `text`, `height`, `depth`, `align`, `billboard`, `axis`, `up`, `color` | 두께가 있는 3D 입체 글자 (아래 절) |
-| `compound` / `frame` | `[obj, obj, ...]`, `pos`, `axis`, `up`, `color`, ... | 여러 객체를 하나로 묶기. `pos` 기본값은 부품들의 중심이고 지정하면 중심이 그 자리로 옮겨진다. `length`·`size`·`axis` 길이로 크기 조절, `rotate()`·`clone()` |
+| `compound` / `frame` | `[obj, obj, ...]`, `pos`, `axis`, `up`, `color`, ... | 여러 객체를 하나로 묶기. `pos` 기본값은 부품들의 중심이고 지정하면 중심이 그 자리로 옮겨진다. `length`·`size`·`axis` 길이로 크기 조절, `rotate()`·`clone()`, `origin`(읽기 전용)·`world_to_compound()`·`compound_to_world()` |
 | `group` | `pos`, `axis`, `up`, `visible` + `box(group=g)` | 하위 객체를 나중에 따로 바꿀 수 있는 묶음 (아래 절) |
 | `extrusion` | `path`, `shape`, `pos`, `axis`, `color`, ... | 2D 단면을 경로를 따라 쓸어 만든 입체 (`shapes`·`paths` 절) |
 
@@ -171,11 +171,13 @@ head = sphere(group=g, pos=vector(2.5, 0.5, 0), radius=0.5)   # pos는 g.pos 기
 car = compound([...]).clone(pos=vector(0, 2, 0), group=g)    # compound·text·curve도 들어간다
 
 g.pos = vector(-10, 0, 0)                     # 묶음 전체 이동 (g.pos.x += 0.1 도 된다)
-g.rotate(angle=0.1, axis=vector(0, 1, 0))     # g.pos를 중심으로 회전 (origin= 으로 중심 지정)
-g.visible = False
+g.rotate(angle=0.1, axis=vector(0, 1, 0))     # g.pos를 중심으로 회전 (origin= 으로 중심 지정). 하위 객체의 상대 pos·axis가 함께 돈다
+g.visible = False                             # g.color·g.up도 하위 객체 모두에 적용된다
 head.color = color.blue                       # compound와 달리 하위 객체를 나중에 바꿀 수 있다
-print(len(g.objects))
+print(len(g.objects)); g.group_to_world(head.pos); g.world_to_group(vector(0, 0, 0))
 ```
+
+동작은 GlowScript `lib/glow/primitives.js`의 group을 따릅니다. 묶음은 위치만 가지며 회전은 하위 객체를 하나씩 world 좌표에서 돌린 뒤 상대 좌표로 되돌리는 방식이고, `g.axis`를 바꾸면 옛 axis에서 새 axis로 가는 회전을 같은 방식으로 적용합니다.
 
 ---
 
@@ -358,34 +360,35 @@ extrusion(path=[vector(t, 0, 0) for t in range(-3, 4)], shape=star, color=color.
 
 ### shapes / paths — 단면과 경로 생성기
 
-GlowScript의 [shapes_and_paths](https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html)와 같은 인자 이름과 기본값입니다. `shapes.*`는 `[x, y]` 점 목록(닫힌 외곽선은 첫 점을 끝에 반복)을, `paths.*`는 xz 평면에 놓인 `vector` 목록을 돌려줍니다.
+[vpython-jupyter](https://github.com/vpython/vpython-jupyter)의 `shapespaths.py`(MIT)를 그대로 가져왔으므로 인자 이름·기본값·결과가 VPython 7과 같습니다 ([shapes_and_paths 문서](https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html)). `shapes.*`는 `[x, y]` 점 목록(닫힌 외곽선은 첫 점을 끝에 반복)을, `paths.*`는 xz 평면에 놓인 `vector` 목록을 돌려줍니다.
 
 ```python
 shapes.rectangle(pos=[0,0], width=1, height=None, rotate=0, thickness=0, roundness=0, invert=False, scale=1, xscale=1, yscale=1)
 shapes.circle(radius=0.5, np=64, angle1=0, angle2=2*pi, thickness=0)       # 부분 원은 부채꼴
 shapes.arc(radius=0.5, angle1=0, angle2=2*pi, thickness=None)              # 띠 모양
-shapes.ellipse(width=1, height=None)   shapes.line(start=[0,0], end=[0,1], np=2, thickness=None)
+shapes.ellipse(width=1, height=None)   shapes.line(pos=[0,0], width=1, height=None, np=2, thickness=None)
 shapes.triangle(length=1)  shapes.pentagon(length=1)  shapes.hexagon(length=1)  shapes.octagon(length=1)
-shapes.ngon(np=3, length=1, radius=None)   shapes.star(radius=1, n=5, iradius=None)
+shapes.ngon(np=None, length=1)   shapes.star(radius=1, n=5, iradius=None)
 shapes.cross(width=1, thickness=0.2)   shapes.trapezoid(width=2, height=1, top=None)
-shapes.points(pos=[[x, y], ...])   shapes.gear(n=20, radius=1, addendum=, dedendum=)   shapes.rackgear(...)
-# thickness를 주면 [바깥, 구멍]을 돌려준다 (rectangle·circle·ngon·star·trapezoid). roundness(0~0.5)는 모서리를 둥글게.
+shapes.points(pos=[[x, y], ...])   shapes.gear(n=20, radius=1, phi=20, addendum=None, dedendum=None, fradius=None, bevel=0)
+shapes.rackgear(n=30, radius=5, length=10*pi, ...)
+# thickness를 주면 [바깥, 구멍]을 돌려준다 (rectangle·circle·ngon·star·trapezoid 등). roundness는 모서리를 둥글게.
 
-paths.circle(radius=0.5, pos=vector(0,0,0), up=vector(0,1,0))   # 닫힌 경로 (첫 점 반복)
-paths.arc(radius=0.5, angle2=pi)                                  # 열린 경로
-paths.rectangle(width=5, height=2)  paths.pentagon(length=1)  paths.star(radius=1)  paths.cross(width=4, thickness=1)
-paths.line(start=vector(0,0,0), end=vector(0,0,-0.1), np=2)      # 직선 경로
-paths.points(pos=[vector, ...])
+paths.circle(pos=vector(0,0,0), radius=3, np=32, up=vector(0,1,0))   # 닫힌 경로 (첫 점 반복). VPython 7 기본값(radius=3, np=32)
+paths.arc(radius=3, angle1=0, angle2=pi)                           # 열린 경로
+paths.rectangle(width=6, height=None)  paths.pentagon(length=6)  paths.star(radius=3)  paths.cross(width=5, thickness=2)
+paths.line(start=vector(0,0,0), end=vector(0,0,-1), np=2)         # 직선 경로
+paths.pointlist(pos=[[x, y], ...])                                 # 직접 준 2D 점 목록을 xz 평면 경로로
 ```
 
-`shapes.gear`·`rackgear`는 사다리꼴 톱니로 단순화한 모양이고, `shapes.text`(글자 단면)는 지원하지 않습니다(입체 글자는 `text()`).
+`shapes.gear`는 원본의 인벌류트 톱니 생성기(ToothOutline·RackOutline)입니다. `shapes.text`(글자 단면)는 원본에도 없으므로 입체 글자는 `text()`를 사용합니다.
 
 ### text — 3D 입체 글자
 
 ```python
 t = text(text='Hello', pos=vector(0, 0, 0), height=1, depth=0.2, align='center', color=color.yellow)
-t.length, t.start, t.end, t.descender, t.vertical_spacing
-t.length = 3                 # 가로로 늘리거나 줄인다
+t.length, t.start, t.end, t.upper_left, t.upper_right, t.lower_left, t.lower_right, t.descender, t.vertical_spacing
+t.length = 3                 # 가로로 늘리거나 줄인다 (만들 때는 지정할 수 없다)
 t.text = 'Bye'; t.height = 2; t.depth = 0.5; t.billboard = True   # billboard: 항상 카메라를 향함
 t.rotate(angle=0.3, axis=vector(0, 1, 0)); t.clone(pos=vector(0, 2, 0))
 text(text='Car', group=g, depth=1, start_face_color=color.red)
@@ -393,6 +396,7 @@ text(text='Car', group=g, depth=1, start_face_color=color.red)
 
 - `pos`는 기준선 위치입니다(`align='left'`면 왼쪽 끝, `'center'`면 가운데, `'right'`면 오른쪽 끝). `axis` 방향으로 글이 흐르고 `up`이 글자의 위쪽입니다.
 - 번들 글꼴(helvetiker)은 라틴 문자만 담고 있습니다. 한글 등 글꼴에 없는 글자가 있으면 콘솔에 안내를 한 번 출력하고 카메라를 향하는 2D 라벨로 표시합니다.
+- 속성 이름·기본값·검사(`text` 필수, `size` 없음, `font`는 `'sans'`/`'serif'`만, 얇은 `depth`는 높이의 1%로)는 VPython 7(vpython-jupyter `vpython.py`, MIT)과 같고 `upper_left`·`start`·`end`·`vertical_spacing` 계산식도 거기서 가져왔습니다.
 - `length`는 평균 글자 폭으로 어림한 값이며, `font='serif'`는 받아 두기만 합니다. `start_face_color`는 앞·뒷면에 함께 적용됩니다.
 - 2D 화면 라벨은 `label()`입니다(`text`는 더 이상 `label`의 별칭이 아닙니다).
 

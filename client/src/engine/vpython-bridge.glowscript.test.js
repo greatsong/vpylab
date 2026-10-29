@@ -69,14 +69,16 @@ describe('GlowScript 호환 객체 브릿지', () => {
       expect(b.position.x).toBe(1);
     });
 
-    it('g.pos와 g.rotate()가 그룹의 위치·방향을 바꾸고 하위 객체는 상대 좌표를 유지한다', () => {
+    it('g.pos는 그룹을 옮기고 하위 객체는 상대 좌표를 유지한다 (회전은 Python이 하위 객체마다 보낸다)', () => {
       const g = create(scene, { id: 'g1', type: 'group', pos: [0, 0, 0] });
       const b = create(scene, { id: 'b1', type: 'box', pos: [1, 0, 0], size: [1, 1, 1], group: 'g1' });
       processBatch([{ action: 'update', id: 'g1', pos: [5, 0, 0] }], scene);
       expect(g.position.x).toBe(5);
       expect(b.position.x).toBe(1);
-      // axis=(0,0,-1): x축이 -z를 향하도록 회전 → 하위 box의 월드 위치는 (5, 0, -1)
-      processBatch([{ action: 'update', id: 'g1', axis: [0, 0, -1], up: [0, 1, 0] }], scene);
+      g.updateMatrixWorld(true);
+      expect(b.getWorldPosition(new THREE.Vector3()).x).toBeCloseTo(6, 6);
+      // GlowScript group.rotate: 하위 객체의 상대 pos·axis가 바뀐 값으로 update가 온다
+      processBatch([{ action: 'update', id: 'b1', pos: [0, 0, -1], axis: [0, 0, -1], up: [0, 1, 0] }], scene);
       g.updateMatrixWorld(true);
       const world = b.getWorldPosition(new THREE.Vector3());
       expect(world.x).toBeCloseTo(5, 6);

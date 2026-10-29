@@ -614,13 +614,13 @@ tube2 = tube.clone(pos=vector(0, 4, 0))`,
     category: 'meshes',
     title: { ko: '단면·경로 생성기 (shapes / paths)', en: 'shapes / paths' },
     description: {
-      ko: 'extrusion용 2D 단면(shapes.*)과 3D 경로(paths.*) 생성기. GlowScript와 같은 인자 이름·기본값. thickness를 주면 [바깥, 구멍]을 돌려줍니다.',
-      en: '2D cross-sections (shapes.*) and 3D paths (paths.*) for extrusion, with GlowScript argument names and defaults. thickness returns [outer, hole].',
+      ko: 'extrusion용 2D 단면(shapes.*)과 3D 경로(paths.*) 생성기. VPython 7(vpython-jupyter)의 shapespaths.py를 그대로 가져와 인자 이름·기본값·결과가 같습니다. thickness를 주면 [바깥, 구멍]을 돌려줍니다.',
+      en: '2D cross-sections (shapes.*) and 3D paths (paths.*) for extrusion, taken verbatim from VPython 7 (vpython-jupyter shapespaths.py), so names, defaults and results match. thickness returns [outer, hole].',
     },
-    signature: "shapes.rectangle(width=1, height=None, thickness=0, roundness=0)  shapes.circle(radius=0.5, np=64, thickness=0)\npaths.circle(radius=0.5, pos=vector(0,0,0), up=vector(0,1,0))  paths.arc(radius=0.5, angle2=pi)",
+    signature: "shapes.rectangle(width=1, height=None, thickness=0, roundness=0)  shapes.circle(radius=0.5, np=64, thickness=0)\npaths.circle(pos=vector(0,0,0), radius=3, np=32, up=vector(0,1,0))  paths.arc(radius=3, angle2=pi)",
     params: [
       { name: 'shapes.*', type: '', default: '', desc: { ko: 'rectangle, circle, arc, ellipse, line, triangle, pentagon, hexagon, octagon, ngon, star, cross, trapezoid, points, gear, rackgear', en: 'rectangle, circle, arc, ellipse, line, triangle, pentagon, hexagon, octagon, ngon, star, cross, trapezoid, points, gear, rackgear' } },
-      { name: 'paths.*', type: '', default: '', desc: { ko: 'circle, arc(열린 경로), rectangle, ellipse, line, triangle, pentagon, hexagon, octagon, ngon, star, cross, trapezoid, points', en: 'circle, arc (open), rectangle, ellipse, line, triangle, pentagon, hexagon, octagon, ngon, star, cross, trapezoid, points' } },
+      { name: 'paths.*', type: '', default: '', desc: { ko: 'circle, arc(열린 경로), rectangle, ellipse, line, triangle, pentagon, hexagon, ngon, star, cross, trapezoid, pointlist', en: 'circle, arc (open), rectangle, ellipse, line, triangle, pentagon, hexagon, ngon, star, cross, trapezoid, pointlist' } },
       { name: '공통 인자', type: '', default: '', desc: { ko: 'pos, rotate(라디안), scale, xscale, yscale, roundness(0~0.5), invert, thickness', en: 'pos, rotate (radians), scale, xscale, yscale, roundness (0–0.5), invert, thickness' } },
     ],
     code: `from vpython import *

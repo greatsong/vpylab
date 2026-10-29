@@ -2861,7 +2861,7 @@
   "kind": "program",
   "title": "group()과 box(group=g), g.pos·g.rotate()·g.visible",
   "origin": "https://www.glowscript.org/docs/VPythonDocs/group.html",
-  "code": "from vpython import *\ng = group()\nb = box(group=g, pos=vector(1, 0, 0), color=color.red)\ns = sphere(group=g, pos=vector(-1, 0, 0))\nassert len(g.objects) == 2\ng.pos = vector(3, 0, 0)\ng.pos.x = 5\nassert g.pos.x == 5 and b.pos.x == 1\ng.rotate(angle=pi / 2, axis=vector(0, 1, 0))\nassert abs(g.axis.z + 1) < 1e-9\ng.rotate(angle=0.1, axis=vector(0, 1, 0), origin=vector(0, 0, 0))\ng.visible = False\nb.color = color.blue\n",
+  "code": "from vpython import *\ng = group()\nb = box(group=g, pos=vector(1, 0, 0), color=color.red)\ns = sphere(group=g, pos=vector(-1, 0, 0))\nassert len(g.objects) == 2\ng.pos = vector(3, 0, 0)\ng.pos.x = 5\nassert g.pos.x == 5 and b.pos.x == 1\ng.rotate(angle=pi / 2, axis=vector(0, 1, 0))\nassert abs(g.axis.z + 1) < 1e-9\nassert abs(b.pos.z + 1) < 1e-9 and abs(b.pos.x) < 1e-9   # GlowScript처럼 하위 객체의 상대 pos가 돈다\nassert g.group_to_world(b.pos) == b.pos + g.pos\ng.color = color.green\nassert s.color == color.green\ng.rotate(angle=0.1, axis=vector(0, 1, 0), origin=vector(0, 0, 0))\ng.visible = False\nb.color = color.blue\n",
   "tags": [],
   "progress": false
  },
@@ -2931,7 +2931,7 @@
   "kind": "program",
   "title": "shapes.rectangle/circle/triangle/star 등 2D 단면",
   "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
-  "code": "from vpython import *\nmarker = sphere(radius=0.1)   # 생성기만 쓰는 코드라 하네스의 무반응 판정을 피하기 위한 객체\nr = shapes.rectangle(width=2, height=1)\nassert len(r) == 5 and r[0] == r[-1]\nassert r[1] == [1, -0.5]\nrr = shapes.rectangle(width=2, height=1, thickness=0.1, roundness=0.3)\nassert len(rr) == 2 and len(rr[0]) > 5\nc = shapes.circle(radius=1, thickness=0.2)\nassert len(c) == 2 and len(c[0]) == 65\nassert len(shapes.triangle(length=1)) == 4\nassert len(shapes.star(n=5, radius=1)) == 11\nfor f in (shapes.pentagon, shapes.hexagon, shapes.octagon):\n    assert f(length=0.3)[0] == f(length=0.3)[-1]\nassert len(shapes.ngon(np=7, length=1)) == 8\nshapes.cross(width=4, thickness=1)\nshapes.trapezoid(width=1.6, height=1, top=0.6)\nshapes.arc(radius=1, angle2=pi)\nshapes.ellipse(width=2, height=1)\nshapes.line(start=[0, 0], end=[1, 1])\nshapes.points(pos=[[0, 0], [1, 0], [1, 1]])\nshapes.gear(n=9, radius=0.455, addendum=0.04, dedendum=0.06, fradius=0.01)\nshapes.rackgear()\n",
+  "code": "from vpython import *\nmarker = sphere(radius=0.1)   # 생성기만 쓰는 코드라 하네스의 무반응 판정을 피하기 위한 객체\nr = shapes.rectangle(width=2, height=1)\nassert len(r) == 5 and r[0] == r[-1]\nassert r[0] == [1, -0.5] and r[1] == [1, 0.5]   # vpython-jupyter shapespaths와 같은 순서\nrr = shapes.rectangle(width=2, height=1, thickness=0.1, roundness=0.3)\nassert len(rr) == 2 and len(rr[0]) > 5\nc = shapes.circle(radius=1, thickness=0.2)\nassert len(c) == 2 and len(c[0]) == 65\nassert len(shapes.triangle(length=1)) == 4\nassert len(shapes.star(n=5, radius=1)) == 11\nfor f in (shapes.pentagon, shapes.hexagon, shapes.octagon):\n    assert f(length=0.3)[0] == f(length=0.3)[-1]\nassert len(shapes.ngon(np=7, length=1)) == 8\nshapes.cross(width=4, thickness=1)\nshapes.trapezoid(width=1.6, height=1, top=0.6)\nshapes.arc(radius=1, angle2=pi)\nshapes.ellipse(width=2, height=1)\nshapes.line(start=[0, 0], end=[1, 1])\nassert shapes.points(pos=[[0, 0], [1, 0], [1, 1]])[-1] == [0, 0]\nassert len(shapes.gear(n=9, radius=0.455, addendum=0.04, dedendum=0.06, fradius=0.01)) > 9\nshapes.rackgear()\n",
   "tags": [],
   "progress": false
  },
@@ -2941,7 +2941,7 @@
   "kind": "program",
   "title": "paths.circle/arc/rectangle/line — xz 평면 vector 경로",
   "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
-  "code": "from vpython import *\nmarker = sphere(radius=0.1)   # 생성기만 쓰는 코드라 하네스의 무반응 판정을 피하기 위한 객체\npc = paths.circle(radius=2)\nassert isinstance(pc[0], vector) and abs(pc[0].y) < 1e-9 and pc[0] == pc[-1]\nassert abs(pc[0].x - 2) < 1e-9\npa = paths.arc(radius=1.7, angle2=pi)\nassert pa[0] != pa[-1]\npr = paths.rectangle(width=5, height=2)\nassert len(pr) == 5\npl = paths.line(start=vector(0, 0, 0), end=vector(0, 0, -2), np=5)\nassert len(pl) == 5 and pl[-1] == vector(0, 0, -2)\npp = paths.pentagon(length=1, pos=vector(1, 2, 3), up=vector(1, 0, 0))\nassert abs((pp[0] - vector(1, 2, 3)).x) < 1e-9\npaths.cross(width=4, thickness=1)\npaths.triangle(length=1); paths.hexagon(length=1); paths.octagon(length=1); paths.star(radius=1); paths.ellipse(width=2)\n",
+  "code": "from vpython import *\nmarker = sphere(radius=0.1)   # 생성기만 쓰는 코드라 하네스의 무반응 판정을 피하기 위한 객체\npc = paths.circle(radius=2)\nassert isinstance(pc[0], vector) and abs(pc[0].y) < 1e-9 and pc[0] == pc[-1]\nassert abs(pc[0].x - 2) < 1e-9\npa = paths.arc(radius=1.7, angle2=pi)\nassert pa[0] != pa[-1]\npr = paths.rectangle(width=5, height=2)\nassert len(pr) == 5\npl = paths.line(start=vector(0, 0, 0), end=vector(0, 0, -2), np=5)\nassert len(pl) == 5 and pl[-1] == vector(0, 0, -2)\nassert len(paths.circle(radius=3)) == 33   # np 기본값 32 (vpython-jupyter)\npt = paths.pointlist(pos=[[0, 0], [1, 0], [1, 1]])\nassert isinstance(pt[0], vector) and pt[0] == pt[-1]\npp = paths.pentagon(length=1, pos=vector(1, 2, 3), up=vector(1, 0, 0))\nassert abs((pp[0] - vector(1, 2, 3)).x) < 1e-9\npaths.cross(width=4, thickness=1)\npaths.triangle(length=1); paths.hexagon(length=1); paths.star(radius=1); paths.ellipse(width=2)   # 원본 paths에는 octagon이 없다\n",
   "tags": [],
   "progress": false
  },
@@ -2961,7 +2961,7 @@
   "kind": "program",
   "title": "text(text=, depth=, align=, height=)·length·start·billboard",
   "origin": "https://www.glowscript.org/docs/VPythonDocs/text.html",
-  "code": "from vpython import *\nt = text(text='Hello', pos=vector(0, 0, 0), height=0.5, depth=0.2, align='center', color=color.yellow, billboard=True, emissive=True)\nassert t.height == 0.5 and t.depth == 0.2 and t.align == 'center'\nassert t.start.x < 0 < t.end.x\nt4 = text(text='Regular', pos=vector(-4, -1, 0), depth=0.5, start_face_color=color.red, end_face_color=color.green)\nbox(pos=t4.start, size=0.1 * vector(1, 1, 1))\nassert t4.start == vector(-4, -1, 0)\nt.text = 'Bye'\nt.length = 3\nassert t.length == 3\nt.rotate(angle=0.3, axis=vector(0, 1, 0))\nt2 = t.clone(pos=vector(1, 1, 1))\nassert t2.text == 'Bye'\nk = text(text='안녕', depth=0.3)\nL = label(pos=vector(0, 1, 0), text='2D 라벨')\n",
+  "code": "from vpython import *\nt = text(text='Hello', pos=vector(0, 0, 0), height=0.5, depth=0.2, align='center', color=color.yellow, billboard=True, emissive=True)\nassert t.height == 0.5 and t.depth == 0.2 and t.align == 'center'\nassert t.start.x < 0 < t.end.x\nt4 = text(text='Regular', pos=vector(-4, -1, 0), depth=0.5, start_face_color=color.red, end_face_color=color.green)\nbox(pos=t4.start, size=0.1 * vector(1, 1, 1))\nassert t4.start == vector(-4, -1, 0)\nassert t4.upper_left == vector(-4, 0, 0) and t4.end.x > t4.start.x and t4.lower_left.y < t4.start.y\nassert t4.vertical_spacing == 1.5 and t4.font == 'sans'\nt.text = 'Bye'\nt.length = 3\nassert t.length == 3\nt.rotate(angle=0.3, axis=vector(0, 1, 0))\nt2 = t.clone(pos=vector(1, 1, 1))\nassert t2.text == 'Bye'\nk = text(text='안녕', depth=0.3)\nL = label(pos=vector(0, 1, 0), text='2D 라벨')\n",
   "tags": [],
   "progress": false
  },
@@ -2981,7 +2981,7 @@
   "kind": "program",
   "title": "attach_light(obj, offset=, color=) — 객체를 따라다니는 광원",
   "origin": "https://www.glowscript.org/docs/VPythonDocs/attach_light.html",
-  "code": "from vpython import *\nb = sphere(pos=vector(1, 0, 0), color=color.magenta, emissive=True)\nL = attach_light(b, offset=vector(0, 1, 0), color=color.green)\nassert L.light.pos == vector(1, 1, 0)\nL.offset = vector(0, 2, 0)\nassert L.light.pos == vector(1, 2, 0)\nL.color = color.red\nL.visible = False\nL.visible = True\nfor i in range(2):\n    rate(100)\n    b.pos = vector(i, 0, 0)\nassert L.light.pos == vector(0, 2, 0)   # 마지막 rate() 시점의 b.pos + offset\n",
+  "code": "from vpython import *\nb = sphere(pos=vector(1, 0, 0), color=color.magenta, emissive=True)\nL = attach_light(b, offset=vector(0, 1, 0), color=color.green)\nassert L.light.pos == vector(1, 1, 0)\nassert attach_light(b).color == b.color   # color 기본값은 객체의 색 (vpython-jupyter)\nL.offset = vector(0, 2, 0)\nassert L.light.pos == vector(1, 2, 0)\nL.color = color.red\nL.visible = False\nL.visible = True\nfor i in range(2):\n    rate(100)\n    b.pos = vector(i, 0, 0)\nassert L.light.pos == vector(0, 2, 0)   # 마지막 rate() 시점의 b.pos + offset\n",
   "tags": [],
   "progress": false
  },

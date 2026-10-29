@@ -66,6 +66,9 @@ class vector:
         if isinstance(x, vector):
             # vector(v) — GlowScript처럼 복사본을 만든다
             x, y, z = x._x, x._y, x._z
+        elif isinstance(x, (list, tuple)) and len(x) == 3:
+            # vector((x, y, z)) — 튜플·리스트도 받는다 (vpython-jupyter의 shapespaths가 사용)
+            x, y, z = x
         self._x = float(x)
         self._y = float(y)
         self._z = float(z)
@@ -693,13 +696,19 @@ class _GObject(_VectorOwner):
             "interval": int(interval or 1),
             "trail_radius": float(radius or 0),
         })
-        return _TrailHandle(self)
+        return _TrailHandle(self, color=color, radius=radius, retain=retain, type=type, pps=pps)
 
 
 class _TrailHandle:
-    """attach_trail()이 돌려주는 손잡이 — stop()으로 멈추고 start()로 다시 잇고 clear()로 지운다."""
-    def __init__(self, obj):
+    """attach_trail()이 돌려주는 손잡이 — stop()으로 멈추고 start()로 다시 잇고 clear()로 지운다.
+    속성 이름(radius·retain·pps·type)은 vpython-jupyter의 attach_trail과 같다 (값은 만들 때 정해진다)."""
+    def __init__(self, obj, color=None, radius=0, retain=-1, type='curve', pps=0):
         self.obj = obj
+        self.color = color
+        self.radius = radius
+        self.retain = retain
+        self.type = type
+        self.pps = pps
 
     def stop(self):
         self.obj._make_trail = False
@@ -1277,20 +1286,35 @@ class text(_GObject):
     번들 글꼴은 라틴 문자만 담고 있어 한글 등은 카메라를 향하는 2D 라벨로 대체된다. 2D 화면 라벨은 label()을 사용한다."""
     _vector_attrs = _GObject._vector_attrs + ('start_face_color', 'end_face_color')
 
+    # 속성 이름·기본값·검사는 vpython-jupyter vpython.py의 class text(MIT)를 따른다:
+    # height=1, depth=0.2*height, align='left', font='sans'|'serif', billboard=False, size 없음, text 필수,
+    # start/end_face_color 기본값은 color, upper_left·lower_right·start·end·vertical_spacing 계산식 이식.
     def __init__(self, **kwargs):
-        self._text = str(kwargs.pop('text', ''))
+        if 'size' in kwargs:
+            raise AttributeError("The text object has no size attribute.")
+        if 'text' not in kwargs:
+            raise AttributeError('A text object must have a text attribute')
+        if 'length' in kwargs:
+            raise AttributeError("text length can't be set when creating a text object")
+        self._text = str(kwargs.pop('text'))
         self._height = float(kwargs.pop('height', 1.0))
         depth = kwargs.pop('depth', None)
         self._depth = float(depth) if depth is not None else 0.2 * self._height
         self._align = str(kwargs.pop('align', 'left'))
-        self._font = str(kwargs.pop('font', 'sans'))
+        font = str(kwargs.pop('font', 'sans'))
+        if font not in ('sans', 'serif'):
+            raise AttributeError("text font must be either 'sans' or 'serif' ")
+        self._font = font
         self._billboard = bool(kwargs.pop('billboard', False))
         self._axis = _coerce_vector(kwargs.pop('axis', None), vector(1, 0, 0))
         self._up = _coerce_vector(kwargs.pop('up', None), vector(0, 1, 0))
-        self._start_face_color = _coerce_vector(kwargs.pop('start_face_color', None), None)
-        self._end_face_color = _coerce_vector(kwargs.pop('end_face_color', None), None)
-        length = kwargs.pop('length', None)
-        self._length_override = float(length) if length is not None else None
+        base_color = _coerce_vector(kwargs.get('color'), vector(1, 1, 1))
+        self._start_face_color = _coerce_vector(kwargs.pop('start_face_color', None), base_color)
+        self._end_face_color = _coerce_vector(kwargs.pop('end_face_color', None), base_color)
+        self._show_start_face = bool(kwargs.pop('show_start_face', True))
+        self._show_end_face = bool(kwargs.pop('show_end_face', True))
+        self._lines = len(self._text.split('\n'))
+        self._length_override = None
         self._latin = _text_is_latin(self._text)
         if not self._latin:
             _notice_once('text-latin', "[text] 번들 글꼴에 없는 글자(한글 등)가 있어 입체 글자 대신 카메라를 향하는 2D 라벨로 표시합니다.")
@@ -1299,7 +1323,6 @@ class text(_GObject):
             text=self._text, height=self._height, depth=self._depth, align=self._align, font=self._font,
             billboard=self._billboard, axis=self._axis, up=self._up, latin=self._latin,
             start_face_color=self._start_face_color, end_face_color=self._end_face_color,
-            length=self._length_override,
             **kwargs,
         )
 
@@ -1313,6 +1336,7 @@ class text(_GObject):
     @text.setter
     def text(self, value):
         self._text = str(value)
+        self._lines = len(self._text.split('\n'))
         latin = _text_is_latin(self._text)
         if not latin:
             _notice_once('text-latin', "[text] 번들 글꼴에 없는 글자(한글 등)가 있어 입체 글자 대신 카메라를 향하는 2D 라벨로 표시합니다.")
@@ -1334,7 +1358,11 @@ class text(_GObject):
 
     @depth.setter
     def depth(self, value):
-        self._depth = float(value)
+        val = float(value)
+        # 너무 얇은 두께는 글자 높이의 1%로 (vpython-jupyter와 같음)
+        if abs(val) < 0.01 * self._height:
+            val = -0.01 * self._height if val < 0 else 0.01 * self._height
+        self._depth = val
         self._update(depth=self._depth)
 
     @property
@@ -1358,6 +1386,28 @@ class text(_GObject):
     @property
     def font(self):
         return self._font
+
+    @font.setter
+    def font(self, value):
+        if value not in ('sans', 'serif'):
+            raise AttributeError("text font must be either 'sans' or 'serif' ")
+        self._font = value   # 번들 글꼴은 하나라 모양은 바뀌지 않는다
+
+    @property
+    def start_face_color(self):
+        return self._start_face_color
+
+    @property
+    def end_face_color(self):
+        return self._end_face_color
+
+    @property
+    def show_start_face(self):
+        return self._show_start_face
+
+    @property
+    def show_end_face(self):
+        return self._show_end_face
 
     @property
     def axis(self):
@@ -1394,32 +1444,49 @@ class text(_GObject):
         self._length_override = float(value)
         self._update(length=self._length_override)
 
+    # --- 아래 계산식은 vpython-jupyter vpython.py의 class text에서 이식 (MIT) ---
+    @property
+    def descender(self):
+        """기준선 아래로 내려가는 글자(g, p 등)의 깊이 (높이의 0.3배 어림값)"""
+        return 0.3 * self._height
+
+    @property
+    def upper_left(self):
+        if self.align == "right":
+            dx = -self.length
+        elif self.align == "center":
+            dx = -self.length/2
+        else:
+            dx = 0
+        ul = self.pos + (self.height * norm(self.up)) + dx*norm(self.axis)
+        return ul
+
+    @property
+    def upper_right(self):
+        return self.upper_left + norm(self.axis)*self.length
+
+    @property
+    def lower_left(self):
+        return self.upper_left + norm(self.up)*(-self.height -self.descender - 1.5*self.height*(self._lines-1) )
+
+    @property
+    def lower_right(self):
+        return self.lower_left + norm(self.axis)*self.length
+
     @property
     def start(self):
         """글의 왼쪽 끝 위치 (기준선 위)"""
-        direction = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
-        length = self.length
-        if self._align == 'center':
-            return self._pos - direction * (length / 2)
-        if self._align == 'right':
-            return self._pos - direction * length
-        return self._pos.clone()
+        return self.upper_left - norm(self.up)*self.height
 
     @property
     def end(self):
         """글의 오른쪽 끝 위치 (기준선 위)"""
-        direction = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
-        return self.start + direction * self.length
-
-    @property
-    def descender(self):
-        """기준선 아래로 내려가는 글자(g, p 등)의 깊이 어림값"""
-        return 0.2 * self._height
+        return self.upper_right - norm(self.up)*self.height
 
     @property
     def vertical_spacing(self):
         """여러 줄일 때 줄 사이 간격"""
-        return 1.4 * self._height
+        return 1.5*self.height
 
     def _clone_kwargs(self):
         return {
@@ -1434,7 +1501,6 @@ class text(_GObject):
             'up': self._up.clone(),
             'start_face_color': self._start_face_color.clone() if isinstance(self._start_face_color, vector) else None,
             'end_face_color': self._end_face_color.clone() if isinstance(self._end_face_color, vector) else None,
-            'length': self._length_override,
         }
 
 
@@ -2083,6 +2149,38 @@ class compound(_VectorOwner):
         """origin(기본: 자기 위치)을 지나는 axis(기본: 자기 axis) 축으로 angle(라디안)만큼 전체를 회전"""
         _rotate_object(self, angle, axis, origin)
 
+    # --- 좌표 변환: vpython-jupyter vpython.py의 compound.world_to_compound / compound_to_world 이식 (MIT) ---
+    # 원본: https://github.com/vpython/vpython-jupyter/blob/master/vpython/vpython.py
+    # Copyright (C) 2015 by John Coady, Ruth Chabay, and Bruce Sherwood — MIT License (전문은 shapes/paths 절 참조)
+    @property
+    def origin(self):
+        """compound 좌표계의 원점(부품 중심). 읽기 전용이며 위치는 pos로 바꾼다."""
+        return self._center0.clone()
+
+    @origin.setter
+    def origin(self, value):
+        raise AttributeError('The compound "origin" attribute is read-only; change "pos" instead.')
+
+    def world_to_compound(self, v):
+            v = v-self._pos
+            x_axis = self._axis.hat
+            y_axis = self._up.hat
+            z_axis = x_axis.cross(y_axis)
+            ox = self._size0.x/self.size.x # _size0 is the original size
+            oy = self._size0.y/self.size.y
+            oz = self._size0.z/self.size.z
+            return self.origin + vector(v.dot(x_axis)*ox, v.dot(y_axis)*oy, v.dot(z_axis)*oz)
+
+    def compound_to_world(self, v):
+            v = v-self.origin
+            x_axis = self._axis.hat
+            y_axis = self._up.hat
+            z_axis = x_axis.cross(y_axis)
+            ox = self.size.x/self._size0.x # _size0 is the original size
+            oy = self.size.y/self._size0.y
+            oz = self.size.z/self._size0.z
+            return self._pos + v.x*ox*x_axis + v.y*oy*y_axis + v.z*oz*z_axis
+
     def clear_trail(self):
         _add_command({"action": "trail_clear", "id": self._id})
 
@@ -2120,11 +2218,16 @@ class compound(_VectorOwner):
 
 
 # === group (객체 묶음 — 하위 객체를 나중에 따로 바꿀 수 있다) ===
+# 명세: GlowScript lib/glow/primitives.js의 group (MIT, Copyright (C) 2011 by David Scherer and Bruce Sherwood,
+#       https://github.com/vpython/glowscript/blob/master/lib/glow/primitives.js)
+# - 하위 객체의 pos는 묶음 기준 상대 좌표이고 화면 위치는 g.pos를 더한 값이다 (group_to_world / world_to_group)
+# - g.rotate(angle=, axis=, origin=)는 하위 객체를 하나씩 world 좌표에서 돌린 뒤 다시 상대 좌표로 바꾼다
+# - g.axis를 바꾸면 옛 axis → 새 axis 각도만큼 같은 회전을 한다. g.up·g.color·g.visible은 하위 객체 모두에 전파된다
 class group(_VectorOwner):
     """객체 묶음. g = group(); box(group=g, pos=vector(1, 0, 0))
-    하위 객체의 pos는 묶음 기준(g.pos가 원점)의 상대 위치다. g.pos·g.rotate()·g.visible로 한꺼번에 움직이고,
-    compound와 달리 하위 객체의 색·위치를 나중에 따로 바꿀 수 있다."""
-    _vector_attrs = ('pos', 'axis', 'up')
+    하위 객체의 pos는 묶음 기준(g.pos가 원점)의 상대 위치다. g.pos·g.rotate()·g.visible·g.color·g.up이 모든 하위 객체에
+    적용되고, compound와 달리 하위 객체를 나중에 따로 바꿀 수 있다."""
+    _vector_attrs = ('pos', 'axis', 'up', 'color')
 
     def __init__(self, **kwargs):
         self._id = _new_id()
@@ -2133,14 +2236,13 @@ class group(_VectorOwner):
         self._pos = _coerce_vector(kwargs.get('pos'), vector(0, 0, 0))
         self._axis = _coerce_vector(kwargs.get('axis'), vector(1, 0, 0))
         self._up = _coerce_vector(kwargs.get('up'), vector(0, 1, 0))
+        self._color = _coerce_vector(kwargs.get('color'), vector(1, 1, 1))
         self._visible = bool(kwargs.get('visible', True))
         cmd = {
             "action": "create",
             "id": self._id,
             "type": "group",
             "pos": self._pos.to_list(),
-            "axis": self._axis.to_list(),
-            "up": self._up.to_list(),
             "visible": self._visible,
         }
         if self._parent is not None:
@@ -2150,7 +2252,7 @@ class group(_VectorOwner):
 
     @property
     def objects(self):
-        """묶음에 든 객체 목록 (복사본)"""
+        """묶음에 든 객체 목록 (복사본). 객체는 box(group=g)처럼 만들 때 넣는다."""
         return list(self._objects)
 
     def __len__(self):
@@ -2158,6 +2260,14 @@ class group(_VectorOwner):
 
     def __getitem__(self, index):
         return self._objects[index]
+
+    def group_to_world(self, v):
+        """묶음 기준 좌표 → 화면 좌표"""
+        return _coerce_vector(v, vector(0, 0, 0)) + self._pos
+
+    def world_to_group(self, v):
+        """화면 좌표 → 묶음 기준 좌표"""
+        return _coerce_vector(v, vector(0, 0, 0)) - self._pos
 
     @property
     def pos(self):
@@ -2174,8 +2284,16 @@ class group(_VectorOwner):
 
     @axis.setter
     def axis(self, value):
-        self._axis = _coerce_vector(value, vector(1, 0, 0))
-        _add_command({"action": "update", "id": self._id, "axis": self._axis.to_list(), "up": self._up.to_list()})
+        """옛 axis에서 새 axis로 가는 회전을 하위 객체에 적용한다 (GlowScript axis_changed)"""
+        new_axis = _coerce_vector(value, vector(1, 0, 0))
+        old_axis = self._axis
+        if old_axis.mag > 0 and new_axis.mag > 0:
+            ang = old_axis.diff_angle(new_axis)
+            ax = old_axis.cross(new_axis)
+            if ang > 1e-12 and ax.mag > 1e-12:
+                self._rotate_children(ang, ax, self._pos)
+                self._up = self._up.rotate(ang, axis=ax)
+        self._axis = new_axis
 
     @property
     def up(self):
@@ -2183,8 +2301,23 @@ class group(_VectorOwner):
 
     @up.setter
     def up(self, value):
+        """하위 객체의 up을 모두 이 값으로 (GlowScript와 같음)"""
         self._up = _coerce_vector(value, vector(0, 1, 0))
-        _add_command({"action": "update", "id": self._id, "axis": self._axis.to_list(), "up": self._up.to_list()})
+        for obj in self._objects:
+            if isinstance(getattr(obj, '_up', None), vector):
+                obj.up = self._up.clone()
+
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, value):
+        """하위 객체의 색을 모두 이 색으로"""
+        self._color = _coerce_vector(value, vector(1, 1, 1))
+        for obj in self._objects:
+            if hasattr(obj, 'color'):
+                obj.color = self._color.clone()
 
     @property
     def visible(self):
@@ -2193,11 +2326,27 @@ class group(_VectorOwner):
     @visible.setter
     def visible(self, value):
         self._visible = bool(value)
+        for obj in self._objects:
+            if hasattr(obj, 'visible'):
+                obj.visible = self._visible
         _add_command({"action": "update", "id": self._id, "visible": self._visible})
 
+    def _rotate_children(self, angle, axis, origin):
+        """origin(화면 좌표)을 지나는 axis 축으로 하위 객체를 하나씩 돌린다. 상대 좌표이므로 origin에서 g.pos를 뺀다."""
+        rel_origin = _coerce_vector(origin, self._pos) - self._pos
+        for obj in self._objects:
+            if hasattr(obj, 'rotate'):
+                obj.rotate(angle, axis=axis, origin=rel_origin)
+
     def rotate(self, angle, axis=None, origin=None):
-        """origin(기본: g.pos)을 지나는 axis 축으로 묶음 전체를 회전"""
-        _rotate_object(self, angle, axis, origin)
+        """origin(기본: g.pos)을 지나는 axis(기본: g.axis) 축으로 묶음 전체를 회전. 하위 객체를 하나씩 돌리고 g.axis·g.up도 돌린다."""
+        if axis is None:
+            axis = self._axis.clone() if self._axis.mag > 0 else vector(0, 1, 0)
+        axis = _coerce_vector(axis, vector(0, 1, 0))
+        origin = self._pos if origin is None else _coerce_vector(origin, self._pos)
+        self._rotate_children(angle, axis, origin)
+        self._axis = self._axis.rotate(angle, axis=axis)
+        self._up = self._up.rotate(angle, axis=axis)
 
 
 # === 조명 객체 ===
@@ -2443,9 +2592,22 @@ class extrusion(_GObject):
     - color: 색 하나 또는 경로 점마다의 색 목록. scale: 숫자 또는 경로 점마다의 배율 목록
     - start_face_color / end_face_color: 열린 경로 양 끝면의 색
     - rotate()·clone()·axis·up은 다른 객체와 같다"""
+    # 인자 검사와 오류 문구는 vpython-jupyter vpython.py의 class extrusion(MIT)을 따른다.
+    # (열리지 않은 단면은 원본과 달리 오류 대신 첫 점을 끝에 더해 닫는다 — VPyLab 기존 예제 호환)
     def __init__(self, path=None, shape=None, **kwargs):
+        if path is None:
+            raise AttributeError("An extrusion must have a path.")
+        if shape is None:
+            raise AttributeError("An extrusion must have a shape.")
         self._path = _normalize_path(path)
         self._shape = _normalize_shape(shape)
+        pathlength = len(self._path)
+        for attr in ['scale', 'xscale', 'yscale', 'twist', 'color']:
+            value = kwargs.get(attr)
+            if isinstance(value, (list, tuple)) and attr != 'color' and len(value) != pathlength:
+                raise AttributeError("The "+attr+" list must be the same length as the list of points on the path ("+str(pathlength)+").")
+            if attr == 'color' and isinstance(value, (list, tuple)) and value and isinstance(value[0], vector) and len(value) != pathlength:
+                raise AttributeError("The color list must be the same length as the list of points on the path ("+str(pathlength)+").")
         self._axis = _coerce_vector(kwargs.pop('axis', None), vector(1, 0, 0))
         self._up = _coerce_vector(kwargs.pop('up', None), vector(0, 1, 0))
         scale = kwargs.pop('scale', 1.0)
@@ -3267,13 +3429,38 @@ class _Scene(_VectorOwner):
 
     @property
     def caption_anchor(self):
-        """wtext(pos=scene.caption_anchor) 위치 표시 (GlowScript 호환). 위젯은 항상 전용 패널에 놓이므로 위젯에서는 무시된다."""
-        return _CAPTION_ANCHOR
+        """wtext(pos=scene.caption_anchor) 위치 표시 — vpython-jupyter처럼 [캔버스 번호, 2]. 위젯은 전용 패널에 놓이므로 위젯에서는 무시된다."""
+        return list(_CAPTION_ANCHOR)
 
     @property
     def title_anchor(self):
-        """wtext(pos=scene.title_anchor)면 글자가 제목 영역에 놓인다."""
-        return _TITLE_ANCHOR
+        """wtext(pos=scene.title_anchor)면 글자가 제목 영역에 놓인다 — [캔버스 번호, 1]"""
+        return list(_TITLE_ANCHOR)
+
+    # vpython-jupyter canvas의 userzoom·userspin·userpan — 값만 기억한다 (VPyLab의 카메라 조작은 뷰포트 설정이 정한다)
+    @property
+    def userzoom(self):
+        return getattr(self, '_userzoom', True)
+
+    @userzoom.setter
+    def userzoom(self, value):
+        object.__setattr__(self, '_userzoom', bool(value))
+
+    @property
+    def userspin(self):
+        return getattr(self, '_userspin', True)
+
+    @userspin.setter
+    def userspin(self, value):
+        object.__setattr__(self, '_userspin', bool(value))
+
+    @property
+    def userpan(self):
+        return getattr(self, '_userpan', True)
+
+    @userpan.setter
+    def userpan(self, value):
+        object.__setattr__(self, '_userpan', bool(value))
 
     @property
     def objects(self):
@@ -3561,12 +3748,17 @@ def attach_trail(obj, color=None, radius=0, retain=-1, type='curve', pps=0, inte
 class attach_light:
     """attach_light(obj, offset=vector(0,0,0), color=color.white) — 객체를 따라다니는 점광원.
     rate()·sleep()마다 광원 위치를 obj.pos + offset으로 옮긴다. .color·.offset·.visible을 바꿀 수 있다."""
+    # 인자 이름·기본값은 vpython-jupyter의 attach_light(MIT)와 같다: color 기본값은 객체의 색, offset 기본값은 vector(0,0,0)
     def __init__(self, obj, offset=None, color=None, intensity=1.0):
-        if not hasattr(obj, 'pos'):
-            raise TypeError("attach_light의 첫 인자는 pos가 있는 3D 객체여야 합니다")
+        if not isinstance(getattr(obj, 'pos', None), vector):
+            raise AttributeError("Cannot attach a light to an object that has no pos attribute.")
+        if color is not None and not isinstance(color, vector):
+            raise AttributeError("The color attribute must be a vector.")
+        if offset is not None and not isinstance(offset, vector):
+            raise AttributeError('The attach_light attribute "offset" must be a vector.')
         self.obj = obj
         self._offset = _coerce_vector(offset, vector(0, 0, 0))
-        light_color = _coerce_vector(color, vector(1, 1, 1))
+        light_color = _coerce_vector(color, _coerce_vector(getattr(obj, 'color', None), vector(1, 1, 1)))
         self.light = local_light(pos=obj.pos + self._offset, color=light_color, intensity=intensity)
         self._visible = True
         self._last = None
@@ -3614,28 +3806,24 @@ class attach_light:
 
 
 # === wtext — 캡션(또는 제목) 영역의 글자 ===
-class _Anchor:
-    """scene.caption_anchor / scene.title_anchor — wtext와 위젯의 위치 표시"""
-    def __init__(self, name):
-        self.name = name
-
-    def __repr__(self):
-        return f"<scene.{self.name}_anchor>"
-
-
-_CAPTION_ANCHOR = _Anchor('caption')
-_TITLE_ANCHOR = _Anchor('title')
+# vpython-jupyter와 같은 표현: title_anchor = [canvas 번호, 1], caption_anchor = [canvas 번호, 2], print_anchor = 3
+_TITLE_ANCHOR = [0, 1]
+_CAPTION_ANCHOR = [0, 2]
+print_anchor = 3
 
 
 class wtext:
     """캡션 영역에 글자를 표시하고 나중에 바꾼다 — 슬라이더 값 표시에 쓴다.
     w = wtext(text='0.0')
     w.text = f'{s.value:.1f}'
-    pos=scene.title_anchor면 제목 영역에 표시한다."""
+    pos=scene.title_anchor면 제목 영역에 표시한다. (인자 이름은 vpython-jupyter의 wtext와 같다)"""
     def __init__(self, text='', pos=None, **kwargs):
         self._id = _new_id()
         self._text = str(text)
-        self._anchor = 'title' if pos is _TITLE_ANCHOR else 'caption'
+        if pos == print_anchor:
+            raise AttributeError('wtext: Cannot specify "print_anchor" in VPython 7.')
+        self.location = pos
+        self._anchor = 'title' if (isinstance(pos, (list, tuple)) and len(pos) == 2 and pos[1] == 1) else 'caption'
         _add_command({"action": "wtext_create", "id": self._id, "text": self._text, "anchor": self._anchor})
 
     @property
@@ -3651,433 +3839,1118 @@ class wtext:
         _add_command({"action": "wtext_delete", "id": self._id})
 
 
-# === shapes / paths — extrusion용 2D 단면과 3D 경로 생성기 (GlowScript shapes_and_paths 호환) ===
-_TWO_PI = 2 * math.pi
+# === shapes / paths — vpython-jupyter의 shapespaths.py를 그대로 이식 (MIT) ===
+# 원본: https://github.com/vpython/vpython-jupyter/blob/master/vpython/shapespaths.py
+#       (https://raw.githubusercontent.com/vpython/vpython-jupyter/master/vpython/shapespaths.py)
+# 이식 방식: 상대 import 한 줄을 VPyLab의 vector로 바꾸고 __all__ 선언만 뺐다. 나머지 코드는 손대지 않았다.
+# 결과(2D 단면은 [x, y] 목록, 경로는 vector 목록)는 extrusion이 그대로 받는다. 끝의 pointlist 별칭만 VPyLab이 덧붙였다.
+#
+# Copyright (C) 2015 by John Coady, Ruth Chabay, and Bruce Sherwood
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# === 이식 코드 시작 ===
+from math import sqrt, sin, cos, tan, asin, acos, atan, floor, pi
+
+# (VPyLab) vec·vector·mag·norm은 이 파일 앞부분의 VPyLab 구현을 그대로 사용한다
 
 
-def _shape_finish(cp, pos=(0, 0), rotate=0, scale=1, xscale=1, yscale=1, roundness=0, invert=False):
-    """원점 기준 외곽선 cp([x, y] 목록)를 rotate(라디안)·xscale/yscale로 바꾸고 pos로 옮긴 뒤 roundness를 적용한다."""
-    if scale != 1:
-        xscale = yscale = scale
-    px, py = float(pos[0]), float(pos[1])
-    c, s = math.cos(rotate), math.sin(rotate)
-    out = []
-    for x, y in cp:
-        if rotate:
-            x, y = x * c - y * s, x * s + y * c
-        out.append([x * xscale + px, y * yscale + py])
-    if roundness > 0:
-        out = _round_corners(out, roundness, invert)
-    return out
+ # The path and shape objects were designed and implemented by Kadir Haldenbilen
+ # for Classic VPython 5. Modified by Bruce Sherwood for GlowScript/Jupyter VPython,
+ # eliminating dependency on Polygon library.
 
+ # GlowScript API:
+ # shape = [2Ds], hole = [2Ds] or shape = [ [shape 2Ds], [hole 2Ds] ]
+ # Another option for hole is [ [hole1], [hole2], ..... ]
+ # If hole represents multiple holes, len([hole[0]]) > 1
 
-def _round_corners(cp, roundness, invert=False, nseg=16):
-    """각 꼭짓점을 호로 바꾼다. 꼭짓점에서 접점까지의 거리는 가장 짧은 변 길이 × roundness(0~0.5)."""
-    closed = len(cp) > 1 and cp[0] == cp[-1]
-    pts = cp[:-1] if closed else list(cp)
-    n = len(pts)
-    if n < 3:
-        return cp
-    shortest = min(
-        math.hypot(pts[(i + 1) % n][0] - pts[i][0], pts[(i + 1) % n][1] - pts[i][1]) for i in range(n)
-    )
-    r = shortest * min(max(roundness, 0), 0.5)
-    if r <= 0:
-        return cp
-    out = []
-    for i in range(n):
-        ax, ay = pts[i - 1]
-        vx, vy = pts[i]
-        bx, by = pts[(i + 1) % n]
-        d1 = math.hypot(ax - vx, ay - vy)
-        d2 = math.hypot(bx - vx, by - vy)
-        if d1 == 0 or d2 == 0:
-            out.append([vx, vy])
-            continue
-        u1 = ((ax - vx) / d1, (ay - vy) / d1)
-        u2 = ((bx - vx) / d2, (by - vy) / d2)
-        cos_phi = max(-1.0, min(1.0, u1[0] * u2[0] + u1[1] * u2[1]))
-        phi = math.acos(cos_phi)
-        if phi < 1e-6 or abs(phi - math.pi) < 1e-6:
-            out.append([vx, vy])
-            continue
-        t1 = (vx + u1[0] * r, vy + u1[1] * r)
-        t2 = (vx + u2[0] * r, vy + u2[1] * r)
-        bx_, by_ = u1[0] + u2[0], u1[1] + u2[1]
-        bl = math.hypot(bx_, by_) or 1.0
-        dist = r / math.cos(phi / 2)
-        cx, cy = vx + bx_ / bl * dist, vy + by_ / bl * dist
-        rho = r * math.tan(phi / 2)
-        a1 = math.atan2(t1[1] - cy, t1[0] - cx)
-        a2 = math.atan2(t2[1] - cy, t2[0] - cx)
-        sweep = a2 - a1
-        while sweep > math.pi:
-            sweep -= _TWO_PI
-        while sweep < -math.pi:
-            sweep += _TWO_PI
-        mx, my = (t1[0] + t2[0]) / 2, (t1[1] + t2[1]) / 2
-        chord_len = math.hypot(t2[0] - t1[0], t2[1] - t1[1]) or 1.0
-        nx, ny = -(t2[1] - t1[1]) / chord_len, (t2[0] - t1[0]) / chord_len
-        for k in range(nseg + 1):
-            a = a1 + sweep * k / nseg
-            x, y = cx + rho * math.cos(a), cy + rho * math.sin(a)
-            if invert:
-                # 접점을 잇는 선에 대해 호를 뒤집어 안으로 파인 모서리를 만든다
-                dn = (x - mx) * nx + (y - my) * ny
-                x, y = x - 2 * dn * nx, y - 2 * dn * ny
-            out.append([x, y])
-    out.append(list(out[0]))
-    return out
+   ##################################
+   ## ----------- shapes ------------
+   ##################################
 
+npdefault = 64 # default number of points for a circle. ellipse, and arc
 
-def _arc_points(radius, angle1, angle2, np):
-    """angle1에서 angle2까지 호 위의 점 — 둘레 전체에 np개 기준"""
-    sweep = angle2 - angle1
-    segments = max(1, int(round(abs(sweep) / (_TWO_PI / np))))
-    return [[radius * math.cos(angle1 + sweep * i / segments), radius * math.sin(angle1 + sweep * i / segments)]
-            for i in range(segments + 1)]
+def roundc(cps, roundness=0.1, invert=False, nseg=16):
+    cp = []
+    for i in range(len(cps)): cp.append(vec(cps[i][0], cps[i][1], 0)) # convert [x,y] => vec(x,y,0), so can use vector functions
 
+    # If points are ordered counterclockwise, vord will be > 0
+    vord = 0
+    cp.pop() # remove the final point, which is equal to the initial point
+    lcp = len(cp)
+    for i in range(lcp):
+        i1 = (i + 1) % lcp
+        i2 = (i + 2) % lcp
+        v1 = cp[i1] - cp[i]
+        v2 = cp[i2] - cp[i1]
+        dv = v1.cross(v2).z
+        vord += dv
 
-def _ngon_points(np, radius, rotate=0):
-    return [[radius * math.cos(rotate + _TWO_PI * i / np), radius * math.sin(rotate + _TWO_PI * i / np)] for i in range(np)]
+    if vord < 0: cp.reverse() # force points to be in counterclockwise order
 
+    # Determine shortest side
+    L = 1e200
+    for i in range(lcp):
+        p1 = cp[i]
+        p2 = cp[(i + 1) % lcp]
+        lm = mag(p2 - p1)
+        if (lm < L):
+            L = lm
 
-class _Shapes:
-    """shapes.* — extrusion 단면용 2D 점 목록 생성기. 닫힌 외곽선은 첫 점을 끝에 한 번 더 둔다.
-    공통 인자: pos=[0,0], rotate=0(라디안), scale=1, xscale=1, yscale=1, roundness=0(0~0.5), invert=False.
-    thickness를 주면 [바깥 외곽선, 안쪽 구멍]을 돌려준다 (rectangle·circle·ngon·star·trapezoid)."""
+    r = L * roundness # radius of rounded curve connecting adjacent sides
 
-    @staticmethod
-    def rectangle(pos=(0, 0), width=1, height=None, rotate=0, thickness=0, roundness=0, invert=False,
-                  scale=1, xscale=1, yscale=1):
+    ncp = [[0,0]] # starting point will be modified later
+    for i in range(lcp):
+        v1 = cp[(i+1) % lcp] - cp[i % lcp]   # first side
+        v2 = cp[(i+2) % lcp] - cp[(i+1) % lcp] # next side
+        theta = v1.diff_angle(v2)   # angle of change of direction from first side to next side
+        d = r*tan(theta/2)         # how much to shorten the end of a side and the start of the next
+        p1 = cp[i] + v1 - d*norm(v1)   # end of first side, start of bend
+        p2 = cp[(i+1) % lcp] + d*norm(v2) # start of next side, end of bend
+        ncp.append([p1.x, p1.y])
+        N = norm(v1).cross(norm(v2))
+        center = p1 + r*norm(N.cross(v1)) # center of circular arc
+        v = p1 - center
+        dtheta = theta/(nseg+1)
+        if N.z < 0: dtheta = -dtheta
+        if invert:
+            c = 0.5*(p1 + p2) # midpoint along line connecting p1 and p2
+            center = c + (c-center)    # move center to other side of corner
+            v = p1 - center
+            dtheta = -dtheta
+
+        for j in range(1,nseg): # don't repeat the starting point of this arc
+            v1 = center + v.rotate(j*dtheta)
+            ncp.append([v1.x, v1.y])
+
+        ncp.append([p2.x, p2.y])
+
+    v1 = cp[1] - cp[0]
+    v1 = cp[0] + d*norm(v1) # start of first side, at end of preceding bend
+    ncp[0] = [v1.x, v1.y]
+    return ncp
+
+def rotatecp(cp, pos=[0,0], rotate=0):
+    sinr = sin(rotate)
+    cosr = cos(rotate)
+    xRel = pos[0]
+    yRel = pos[1]
+    cpr = []
+    for i in range(len(cp)):
+        p = cp[i]
+        x = p[0]
+        y = p[1]
+        newx = x * cosr - y * sinr - xRel * cosr + yRel * sinr + xRel
+        newy = x * sinr + y * cosr - xRel * sinr - yRel * cosr + yRel
+        cpr.append([ newx, newy ])
+    return cpr
+
+def scalecp(cp, xscale=1, yscale=1):
+    cpr = []
+    for i in range(len(cp)):
+        p = cp[i]
+        cpr.append([ xscale * p[0], yscale * p[1] ])
+    return cpr
+
+def addpos(cp, pos=[0,0]):
+    for i in range(len(cp)):
+        p = cp[i]
+        p[0] += pos[0]
+        p[1] += pos[1]
+    return cp
+
+##The following script has been developed and based on the
+##Blender 235 script "Blender Mechanical Gears"
+##developed in 2004 by Stefano <S68> Selleri,
+##released under the Blender Artistic License (BAL).
+##See www.blender.org.
+
+####################################################################
+#CREATES THE BASE INVOLUTE PROFILE
+####################################################################
+def ToothOutline(n=30, res=1, phi=20, radius=50, addendum=0.4, dedendum=0.5, fradius=0.1, bevel=0.05):
+    TOOTHGEO = {
+        'PitchRadius' : radius,
+        'TeethN'      : n,
+        'PressureAng' : phi,
+        'Addendum'    : addendum,
+        'Dedendum'    : dedendum,
+        'Fillet'      : fradius,
+        'Bevel'       : bevel,
+        'Resolution'  : res,
+        }
+    ####################################################################
+    #Basic Math computations: Radii
+    #
+    R = {
+        'Bottom'  : TOOTHGEO['PitchRadius'] - TOOTHGEO['Dedendum'] - TOOTHGEO['Fillet'],
+        'Ded'     : TOOTHGEO['PitchRadius'] - TOOTHGEO['Dedendum'],
+        'Base'    : TOOTHGEO['PitchRadius'] * cos(TOOTHGEO['PressureAng']*pi/180.0),
+        'Bevel'   : TOOTHGEO['PitchRadius'] + TOOTHGEO['Addendum'] - TOOTHGEO['Bevel'],
+        'Add'     : TOOTHGEO['PitchRadius'] + TOOTHGEO['Addendum']
+    }
+
+    ####################################################################
+    #Basic Math computations: Angles
+    #
+    DiametralPitch = TOOTHGEO['TeethN']/(2*TOOTHGEO['PitchRadius'])
+    ToothThickness = 1.5708/DiametralPitch
+    CircularPitch  = pi / DiametralPitch
+
+    U1 = sqrt((1-cos(TOOTHGEO['PressureAng']*pi/180.0))/
+                   cos(TOOTHGEO['PressureAng']*pi/180.0))
+    U2 = sqrt(R['Bevel']*R['Bevel']/(R['Ded']*R['Ded'])-1)
+
+    ThetaA1 = atan((sin(U1)-U1*cos(U1))/(cos(U1)+U1*sin(U1)))
+    ThetaA2 = atan((sin(U2)-U2*cos(U2))/(cos(U2)+U2*sin(U2)))
+    ThetaA3 = ThetaA1 + ToothThickness/(TOOTHGEO['PitchRadius']*2.0)
+
+    A = {
+        'Theta0' : CircularPitch/(TOOTHGEO['PitchRadius']*2.0),
+        'Theta1' : ThetaA3 + TOOTHGEO['Fillet']/R['Ded'],
+        'Theta2' : ThetaA3,
+        'Theta3' : ThetaA3 - ThetaA2,
+        'Theta4' : ThetaA3 - ThetaA2 - TOOTHGEO['Bevel']/R['Add']
+    }
+
+    ####################################################################
+    # Profiling
+    #
+    N = TOOTHGEO['Resolution']
+    points  = []
+    normals = []
+    # Top half bottom of tooth
+    for i in range(2*N):
+        th = (A['Theta1'] - A['Theta0'])*i/(2*N-1) + A['Theta0']
+        points.append ([R['Bottom']*cos(th),
+                        R['Bottom']*sin(th)])
+        normals.append([-cos(th),
+                        -sin(th)])
+
+    # Bottom Fillet
+    xc = R['Ded']*cos(A['Theta1'])
+    yc = R['Ded']*sin(A['Theta1'])
+    Aw = pi/2.0 + A['Theta2'] - A['Theta1']
+    for i in range(N):
+        th = (Aw)*(i+1)/(N) + pi + A['Theta1']
+        points.append ([xc + TOOTHGEO['Fillet']*cos(th),
+                        yc + TOOTHGEO['Fillet']*sin(th)])
+        normals.append([cos(th),
+                        sin(th)])
+
+    # Straight part
+    for i in range(N):
+        r = (R['Base']-R['Ded'])*(i+1)/(N) + R['Ded']
+        points.append ([r*cos(A['Theta2']),
+                        r*sin(A['Theta2'])])
+        normals.append([cos(A['Theta2']-pi/2.0),
+                        sin(A['Theta2']-pi/2.0)])
+
+    # Tooth Involute
+    for i in range(3*N):
+        r = (R['Bevel'] - R['Base'])*(i+1)/(3*N) + R['Base']
+        u = sqrt(r*r/(R['Base']*R['Base'])-1)
+        xp = R['Base']*(cos(u)+u*sin(u))
+        yp = - R['Base']*(sin(u)-u*cos(u))
+        points.append ([xp*cos(A['Theta2'])-yp*sin(A['Theta2']),
+                        +xp*sin(A['Theta2'])+yp*cos(A['Theta2'])])
+        normals.append([-sin(u),
+                        -cos(u)])
+
+    # Tooth Bevel
+    auxth = -u
+    auxth = auxth + ThetaA3 + pi/2.0
+    m     = tan(auxth)
+    P0    = points[len(points)-1]
+    rA    = TOOTHGEO['Bevel']/(1-cos(auxth-A['Theta4']))
+    xc    = P0[0] - rA*cos(auxth)
+    yc    = P0[1] - rA*sin(auxth)
+    for i in range(N):
+        th = (A['Theta4'] - auxth)*(i+1)/(N) + auxth
+        points.append ([xc + rA*cos(th),
+                        yc +rA*sin(th)])
+        normals.append([-cos(th),
+                        -sin(th)])
+
+    # Tooth Top
+    P0    = points[len(points)-1]
+    A['Theta4'] = atan (P0[1]/P0[0])
+    Ra = sqrt(P0[0]*P0[0]+P0[1]*P0[1])
+    for i in range(N):
+        th = (-A['Theta4'])*(i+1)/(N) + A['Theta4']
+        points.append ([Ra*cos(th),
+                        Ra*sin(th)])
+        normals.append([-cos(th),
+                        -sin(th)])
+
+    # Mirrors this!
+    N = len(points)
+    for i in range(N-1):
+        P = points[N-2-i]
+        points.append([P[0],-P[1]])
+        V = normals[N-2-i]
+        normals.append([V[0],-V[1]])
+
+    return points               # ,normals
+
+####################################################################
+#CREATES THE BASE RACK PROFILE
+####################################################################
+def RackOutline(n=30, res=1, phi=20, radius=5, addendum=0.4, dedendum=0.5, fradius=0.1, bevel=0.05):
+    TOOTHGEO = {
+        'PitchRadius' : radius,
+        'TeethN'      : n,
+        'PressureAng' : phi,
+        'Addendum'    : addendum,
+        'Dedendum'    : dedendum,
+        'Fillet'      : fradius,
+        'Bevel'       : bevel,
+        'Resolution'  : res,
+        }
+    ####################################################################
+    #Basic Math computations: QUotes
+    #
+    X = {
+        'Bottom'  :  - TOOTHGEO['Dedendum'] - TOOTHGEO['Fillet'],
+        'Ded'     :  - TOOTHGEO['Dedendum'],
+        'Bevel'   : TOOTHGEO['Addendum'] - TOOTHGEO['Bevel'],
+        'Add'     : TOOTHGEO['Addendum']
+    }
+
+    ####################################################################
+    #Basic Math computations: Angles
+    #
+    DiametralPitch = TOOTHGEO['TeethN']/(2*TOOTHGEO['PitchRadius'])
+    ToothThickness = 1.5708/DiametralPitch
+    CircularPitch  = pi / DiametralPitch
+
+    Pa = TOOTHGEO['PressureAng']*pi/180.0
+
+    yA1 = ToothThickness/2.0
+    yA2 = (-X['Ded']+TOOTHGEO['Fillet']*sin(Pa))*tan(Pa)
+    yA3 = TOOTHGEO['Fillet']*cos(Pa)
+
+    A = {
+        'y0' : CircularPitch/2.0,
+        'y1' : yA1+yA2+yA3,
+        'y2' : yA1+yA2,
+        'y3' : yA1 -(X['Add']-TOOTHGEO['Bevel'])*tan(Pa),
+        'y4' : yA1 -(X['Add']-TOOTHGEO['Bevel'])*tan(Pa)
+                - cos(Pa)/(1-sin(Pa))*TOOTHGEO['Bevel']
+    }
+
+    ####################################################################
+    # Profiling
+    #
+    N = TOOTHGEO['Resolution']
+    points  = []
+    normals = []
+    ist = 0
+    if fradius: ist = 1
+    # Top half bottom of tooth
+    for i in range(ist, 2*N):
+        y = (A['y1'] - A['y0'])*i/(2*N-1) + A['y0']
+        points.append ([X['Bottom'],
+                        y])
+        normals.append([-1.0,
+                        -0.0])
+
+    # Bottom Fillet
+    xc = X['Ded']
+    yc = A['y1']
+    Aw = pi/2.0 - Pa
+
+    for i in range(N):
+        th = (Aw)*(i+1)/(N) + pi
+        points.append ([xc + TOOTHGEO['Fillet']*cos(th),
+                        yc + TOOTHGEO['Fillet']*sin(th)])
+        normals.append([cos(th),
+                        sin(th)])
+
+    # Straight part
+    Xded = X['Ded'] - TOOTHGEO['Fillet']*sin(Pa)
+    for i in range(4*N):
+        x = (X['Bevel']-Xded)*(i+1)/(4*N) + Xded
+        points.append ([x,
+                        yA1-tan(Pa)*x])
+        normals.append([-sin(Pa),
+                        -cos(Pa)])
+
+    # Tooth Bevel
+    rA    = TOOTHGEO['Bevel']/(1-sin(Pa))
+    xc    =  X['Add'] - rA
+    yc    =  A['y4']
+    for i in range(N):
+        th = (-pi/2.0+Pa)*(i+1)/(N) + pi/2.0-Pa
+        points.append ([xc + rA*cos(th),
+                        yc + rA*sin(th)])
+        normals.append([-cos(th),
+                        -sin(th)])
+
+    # Tooth Top
+    for i in range(N):
+        y = -A['y4']*(i+1)/(N) + A['y4']
+        points.append ([X['Add'],
+                        y])
+        normals.append([-1.0,
+                        0.0])
+
+    # Mirrors this!
+    N = len(points)
+    for i in range(N-1):
+        P = points[N-2-i]
+        points.append([P[0],-P[1]])
+        V = normals[N-2-i]
+        normals.append([V[0],-V[1]])
+
+    return points               # ,normals
+
+####################################################################
+## CREATES THE BASE CROWN INVOLUTE -- NOT CURRENTLY IMPLEMENTED IN GLOWSCRIPT -- GAVE ERRORS
+####################################################################
+# def CrownOutline(n=30, res=1, phi=20., radius=5.0, addendum=0.4, dedendum=0.5, fradius=0.1, bevel=0.05):
+    # TOOTHGEO = {
+        # 'PitchRadius' : radius,
+        # 'TeethN'      : n,
+        # 'PressureAng' : phi,
+        # 'Addendum'    : addendum,
+        # 'Dedendum'    : dedendum,
+        # 'Fillet'      : fradius,
+        # 'Bevel'       : bevel,
+        # 'Resolution'  : res,
+        # }
+    ###################################################################
+    ## Basic Math computations: Radii
+
+    # R = {
+        # 'Bottom'  : TOOTHGEO['PitchRadius'] * cos(TOOTHGEO['PressureAng']*pi/180.0) ,
+        # 'Base'    : TOOTHGEO['PitchRadius'] * cos(TOOTHGEO['PressureAng']*pi/180.0) + TOOTHGEO['Fillet'],
+        # 'Ded'     : TOOTHGEO['PitchRadius'] + TOOTHGEO['Dedendum']
+    # }
+
+    ###################################################################
+    ## Basic Math computations: Angles
+
+    # DiametralPitch = TOOTHGEO['TeethN']/(2*TOOTHGEO['PitchRadius'])
+    # ToothThickness = 1.5708/DiametralPitch
+    # CircularPitch  = pi / DiametralPitch
+
+    # U1 = sqrt((1-cos(TOOTHGEO['PressureAng']*pi/180.0))/
+                   # cos(TOOTHGEO['PressureAng']*pi/180.0))
+    # U2 = sqrt(R['Ded']*R['Ded']/(R['Base']*R['Base'])-1)
+
+    # ThetaA1 = atan((sin(U1)-U1*cos(U1))/(cos(U1)+U1*sin(U1)))
+    # ThetaA2 = atan((sin(U2)-U2*cos(U2))/(cos(U2)+U2*sin(U2)))
+    # ThetaA3 = ThetaA1 + ToothThickness/(TOOTHGEO['PitchRadius']*2.0)
+
+    # A = {
+        # 'Theta0' : CircularPitch/(TOOTHGEO['PitchRadius']*2.0),
+        # 'Theta1' : (ThetaA3 + TOOTHGEO['Fillet']/R['Base']),
+        # 'Theta2' : ThetaA3,
+        # 'Theta3' : ThetaA3 - ThetaA2,
+        # 'Theta4' : ThetaA3 - ThetaA2 - TOOTHGEO['Bevel']/R['Ded']
+    # }
+
+    # M = A['Theta0']
+    # A['Theta0'] = 0
+    # A['Theta1'] = A['Theta1']-M
+    # A['Theta2'] = A['Theta2']-M
+    # A['Theta3'] = A['Theta3']-M
+    # A['Theta4'] = A['Theta4']-M
+
+    ###################################################################
+    ## Profiling
+
+    # N = TOOTHGEO['Resolution']
+    # apoints  = []
+    # anormals = []
+
+    ## Top half top of tooth
+    # for i in range(2*N):
+        # th = (A['Theta1'] - A['Theta0'])*i/(2*N-1) + A['Theta0']
+        # apoints.append ([R['Bottom']*cos(th),
+                        # R['Bottom']*sin(th)])
+        # anormals.append([cos(th),
+                        # sin(th)])
+
+    ## Bottom Bevel
+    # xc = R['Base']*cos(A['Theta1'])
+    # yc = R['Base']*sin(A['Theta1'])
+    # Aw = pi/2.0 + A['Theta2'] - A['Theta1']
+    # for i in range(N):
+        # th = (Aw)*(i+1)/(N) + pi + A['Theta1']
+        # apoints.append ([xc + TOOTHGEO['Fillet']*cos(th),
+                        # yc + TOOTHGEO['Fillet']*sin(th)])
+        # anormals.append([-cos(th),
+                        # -sin(th)])
+
+    ## Tooth Involute
+    # for i in range(4*N):
+        # r = (R['Ded'] - R['Base'])*(i+1)/(4*N) + R['Base']
+        # u = sqrt(r*r/(R['Base']*R['Base'])-1)
+        # xp = R['Base']*(cos(u)+u*sin(u))
+        # yp = - R['Base']*(sin(u)-u*cos(u))
+        # apoints.append ([xp*cos(A['Theta2'])-yp*sin(A['Theta2']),
+                        # +xp*sin(A['Theta2'])+yp*cos(A['Theta2'])])
+        # anormals.append([sin(u),
+                        # cos(u)])
+
+    ## Tooth Bevel
+    # auxth = -u
+    # auxth = auxth + ThetaA3 + pi/2.0
+    # m     = tan(auxth)
+    # P0    = apoints[len(apoints)-1]
+    # rA    = TOOTHGEO['Bevel']/(1-cos(auxth-A['Theta4']))
+    # xc    = P0[0] - rA*cos(auxth)
+    # yc    = P0[1] - rA*sin(auxth)
+    # for i in range(N):
+        # th = (A['Theta4'] - auxth)*(i+1)/(N) + auxth
+        # apoints.append ([xc + rA*cos(th),
+                        # yc +rA*sin(th)])
+        # anormals.append([cos(th),
+                        # sin(th)])
+
+    ## Tooth Top
+    # P0    = apoints[len(apoints)-1]
+    # A['Theta4'] = atan (P0[1]/P0[0])
+    # Ra = sqrt(P0[0]*P0[0]+P0[1]*P0[1])
+    # for i in range(N):
+        # th = (-M - A['Theta4'])*(i+1)/(N) + A['Theta4']
+        # apoints.append ([Ra*cos(th),
+                        # Ra*sin(th)])
+        # anormals.append([cos(th),
+                        # sin(th)])
+    # points = []
+    # normals = []
+    # N = len(apoints)
+    # for i in range(N):
+        # points.append(apoints[N-1-i])
+        # normals.append(anormals[N-1-i])
+
+    ## Mirrors this!
+    # N = len(points)
+    # for i in range(N-1):
+        # P = points[N-2-i]
+        # points.append([P[0],-P[1]])
+        # V = normals[N-2-i]
+        # normals.append([V[0],-V[1]])
+
+    # return points           #,normals       process nromals later
+
+class shape_object(object):
+
+    def rframe(self, pos=[0,0], width=1, height=None, rotate=0, thickness=None,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
         if height is None:
             height = width
-        w, h = width / 2, height / 2
-        style = dict(pos=pos, rotate=rotate, scale=scale, xscale=xscale, yscale=yscale, roundness=roundness, invert=invert)
-        outer = _shape_finish([[-w, -h], [w, -h], [w, h], [-w, h], [-w, -h]], **style)
-        if not thickness:
-            return outer
-        wall = min(width, height) * thickness
-        iw, ih = max(w - wall, 1e-6), max(h - wall, 1e-6)
-        inner = _shape_finish([[-iw, -ih], [iw, -ih], [iw, ih], [-iw, ih], [-iw, -ih]], **style)
-        return [outer, inner]
+        if thickness is None: thickness = min(height, width) * .2
+        else: thickness = min(height, width) * thickness * 2
+        outer = self.rectangle(pos=pos, width=width, height=height)
+        inner = self.rectangle(pos=pos, width=width - thickness, height=height - thickness)
+        if rotate != 0:
+            outer = rotatecp(outer, pos=pos, rotate=rotate)
+            inner = rotatecp(inner, pos=pos, rotate=rotate)
+        if xscale != 1 or yscale != 1:
+            outer = scalecp(outer, xscale=xscale, yscale=yscale)
+            inner = scalecp(inner, xscale=xscale, yscale=yscale)
+        if roundness > 0:
+            outer = roundc(outer, roundness=roundness, invert=invert)
+            inner = roundc(inner, roundness=roundness, invert=invert)
+        return [ outer, inner ]
 
-    @staticmethod
-    def cross(pos=(0, 0), width=1, thickness=0.2, rotate=0, roundness=0, invert=False, scale=1, xscale=1, yscale=1):
-        w, t = width / 2, thickness / 2
-        cp = [[-t, -w], [t, -w], [t, -t], [w, -t], [w, t], [t, t], [t, w], [-t, w], [-t, t], [-w, t], [-w, -t], [-t, -t], [-t, -w]]
-        return _shape_finish(cp, pos=pos, rotate=rotate, scale=scale, xscale=xscale, yscale=yscale, roundness=roundness, invert=invert)
-
-    @staticmethod
-    def trapezoid(pos=(0, 0), width=2, height=1, top=None, rotate=0, thickness=0, roundness=0, invert=False,
-                  scale=1, xscale=1, yscale=1):
-        if top is None:
-            top = width / 2
-        w, h, t = width / 2, height / 2, top / 2
-        style = dict(pos=pos, rotate=rotate, scale=scale, xscale=xscale, yscale=yscale, roundness=roundness, invert=invert)
-        outer = _shape_finish([[-w, -h], [w, -h], [t, h], [-t, h], [-w, -h]], **style)
-        if not thickness:
-            return outer
-        wall = min(height, top) * thickness
-        inner = _shape_finish([[-(w - wall), -(h - wall)], [w - wall, -(h - wall)], [t - wall, h - wall], [-(t - wall), h - wall], [-(w - wall), -(h - wall)]], **style)
-        return [outer, inner]
-
-    @staticmethod
-    def circle(pos=(0, 0), radius=0.5, np=64, angle1=0, angle2=_TWO_PI, thickness=0, rotate=0,
-               scale=1, xscale=1, yscale=1):
-        style = dict(pos=pos, rotate=rotate, scale=scale, xscale=xscale, yscale=yscale)
-        full = abs((angle2 - angle1) - _TWO_PI) < 1e-9
-        if full:
-            outer = _ngon_points(np, radius, angle1)
-            outer.append(list(outer[0]))
-            if not thickness:
-                return _shape_finish(outer, **style)
-            inner = _ngon_points(np, radius * (1 - thickness), angle1)
-            inner.append(list(inner[0]))
-            return [_shape_finish(outer, **style), _shape_finish(inner, **style)]
-        arc = _arc_points(radius, angle1, angle2, np)
-        if not thickness:
-            # 부채꼴 — 중심점을 포함한다
-            return _shape_finish([[0, 0]] + arc + [[0, 0]], **style)
-        inner = _arc_points(radius * (1 - thickness), angle1, angle2, np)
-        inner.reverse()
-        return _shape_finish(arc + inner + [list(arc[0])], **style)
-
-    @staticmethod
-    def arc(pos=(0, 0), radius=0.5, np=64, angle1=0, angle2=_TWO_PI, thickness=None, rotate=0,
-            scale=1, xscale=1, yscale=1, path=False):
-        style = dict(pos=pos, rotate=rotate, scale=scale, xscale=xscale, yscale=yscale)
-        outer = _arc_points(radius, angle1, angle2, np)
-        if path:
-            return _shape_finish(outer, **style)   # 열린 경로
-        if thickness is None:
-            thickness = 0.01 * radius
-        inner = _arc_points(max(radius - thickness, 1e-6), angle1, angle2, np)
-        inner.reverse()
-        return _shape_finish(outer + inner + [list(outer[0])], **style)
-
-    @staticmethod
-    def ellipse(pos=(0, 0), width=1, height=None, np=64, thickness=0, angle1=0, angle2=_TWO_PI, rotate=0,
-                scale=1, xscale=1, yscale=1):
+    def rectangle(self, pos=[0,0], width=1, height=None, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
         if height is None:
-            height = width / 2
-        return _Shapes.circle(pos=pos, radius=width / 2, np=np, angle1=angle1, angle2=angle2, thickness=thickness,
-                              rotate=rotate, scale=scale, xscale=xscale, yscale=yscale * (height / width))
-
-    @staticmethod
-    def line(pos=(0, 0), start=(0, 0), end=(0, 1), np=2, thickness=None, rotate=0, scale=1, xscale=1, yscale=1):
-        sx, sy = float(start[0]), float(start[1])
-        ex, ey = float(end[0]), float(end[1])
-        length = math.hypot(ex - sx, ey - sy) or 1.0
-        if thickness is None:
-            thickness = 0.01 * length
-        nx, ny = -(ey - sy) / length * thickness, (ex - sx) / length * thickness
-        np = max(2, int(np))
-        side = [[sx + (ex - sx) * i / (np - 1), sy + (ey - sy) * i / (np - 1)] for i in range(np)]
-        back = [[x + nx, y + ny] for x, y in reversed(side)]
-        return _shape_finish(side + back + [list(side[0])], pos=pos, rotate=rotate, scale=scale, xscale=xscale, yscale=yscale)
-
-    @staticmethod
-    def ngon(pos=(0, 0), np=3, length=1, radius=None, rotate=0, thickness=0, roundness=0, invert=False,
-             scale=1, xscale=1, yscale=1):
-        np = int(np)
-        if np < 3:
-            raise ValueError("ngon의 np는 3 이상이어야 합니다")
-        if radius is None:
-            radius = length / (2 * math.sin(math.pi / np))
-        else:
-            length = 2 * radius * math.sin(math.pi / np)
-        style = dict(pos=pos, rotate=rotate, scale=scale, xscale=xscale, yscale=yscale, roundness=roundness, invert=invert)
-        outer = _ngon_points(np, radius)
-        outer.append(list(outer[0]))
-        if not thickness:
-            return _shape_finish(outer, **style)
-        wall = length * thickness
-        inner = _ngon_points(np, max(radius - wall / math.cos(math.pi / np), 1e-6))
-        inner.append(list(inner[0]))
-        return [_shape_finish(outer, **style), _shape_finish(inner, **style)]
-
-    @staticmethod
-    def triangle(pos=(0, 0), length=1, radius=None, rotate=0, thickness=0, roundness=0, invert=False, scale=1, xscale=1, yscale=1):
-        return _Shapes.ngon(pos=pos, np=3, length=length, radius=radius, rotate=rotate - math.pi / 6, thickness=thickness,
-                            roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
-
-    @staticmethod
-    def pentagon(pos=(0, 0), length=1, radius=None, rotate=0, thickness=0, roundness=0, invert=False, scale=1, xscale=1, yscale=1):
-        return _Shapes.ngon(pos=pos, np=5, length=length, radius=radius, rotate=rotate + math.pi / 10, thickness=thickness,
-                            roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
-
-    @staticmethod
-    def hexagon(pos=(0, 0), length=1, radius=None, rotate=0, thickness=0, roundness=0, invert=False, scale=1, xscale=1, yscale=1):
-        return _Shapes.ngon(pos=pos, np=6, length=length, radius=radius, rotate=rotate, thickness=thickness,
-                            roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
-
-    @staticmethod
-    def octagon(pos=(0, 0), length=1, radius=None, rotate=0, thickness=0, roundness=0, invert=False, scale=1, xscale=1, yscale=1):
-        return _Shapes.ngon(pos=pos, np=8, length=length, radius=radius, rotate=rotate + math.pi / 8, thickness=thickness,
-                            roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
-
-    @staticmethod
-    def star(pos=(0, 0), radius=1, n=5, iradius=None, rotate=0, thickness=0, roundness=0, invert=False,
-             scale=1, xscale=1, yscale=1):
-        n = int(n)
-        if iradius is None:
-            iradius = radius / 2
-        style = dict(pos=pos, rotate=rotate, scale=scale, xscale=xscale, yscale=yscale, roundness=roundness, invert=invert)
-
-        def build(r_out, r_in):
+            height = width
+        if thickness == 0:
             cp = []
-            for i in range(2 * n):
-                r = r_out if i % 2 == 0 else r_in
-                a = math.pi / 2 + math.pi * i / n
-                cp.append([r * math.cos(a), r * math.sin(a)])
-            cp.append(list(cp[0]))
-            return cp
+            w2 = width / 2
+            h2 = height / 2
+            cp = [ [ w2, -h2 ], [ w2, h2 ], [ -w2, h2 ], [ -w2, -h2 ], [ w2, -h2 ] ]
+            cp = addpos(cp, pos=pos)
+            if rotate != 0: cp = rotatecp(cp, pos, rotate)
+            if scale != 1: xscale = yscale = scale
+            if xscale != 1 or yscale != 1: cp = scalecp(cp, xscale, yscale)
+            if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        else:
+            cp = self.rframe(pos=pos, width=width, height=height, rotate=rotate, thickness=thickness,
+                    roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+        return cp
 
-        outer = _shape_finish(build(radius, iradius), **style)
-        if not thickness:
-            return outer
-        wall = radius * thickness
-        inner = _shape_finish(build(max(radius - wall, 1e-6), max(iradius - wall, 1e-6)), **style)
-        return [outer, inner]
+    def cross(self, pos=[0,0], width=1, rotate=0, thickness=0.2,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        wtp = (width + thickness) / 2
+        w2 = width / 2
+        t2 = thickness / 2
+        cp = [ [ w2, -t2 ], [ w2, t2 ], [ t2, t2 ], [ t2, w2 ], [ -t2, w2 ], [ -t2, t2 ], [ -w2, t2 ],
+               [ -w2, -t2 ], [ -t2, -t2 ], [ -t2, -w2 ], [ t2, -w2 ], [ t2, -t2 ], [ w2, -t2 ] ]
+        cp = addpos(cp, pos=pos)
+        if rotate != 0: cp = rotatecp(cp, pos=pos, rotate=rotate)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1: cp = scalecp(cp, xscale=xscale, yscale=yscale)
+        if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        return cp
 
-    @staticmethod
-    def points(pos=None, rotate=0, scale=1, xscale=1, yscale=1, roundness=0, invert=False, path=False):
-        """직접 준 [x, y] 점 목록을 단면으로. 닫혀 있지 않으면 첫 점을 끝에 더한다 (path=True면 열어 둔다)."""
-        cp = _contour_points(pos or [])
-        if not cp:
-            raise ValueError("shapes.points에는 pos=[[x, y], ...] 점 목록이 필요합니다")
-        if not path and cp[0] != cp[-1]:
-            cp.append(list(cp[0]))
-        ox, oy = cp[0]
-        local = [[x - ox, y - oy] for x, y in cp]   # 첫 점을 중심으로 회전·확대
-        return _shape_finish(local, pos=(ox, oy), rotate=rotate, scale=scale, xscale=xscale, yscale=yscale, roundness=roundness, invert=invert)
+    def trframe(self, pos=[0,0], width=2, height=1, top=None, rotate=0, thickness=None,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        if top is None: top = width / 2
+        if thickness is None:
+            thickness = min(height, top) * .2
+        else:
+            thickness = min(height, top) * thickness * 2
 
-    @staticmethod
-    def gear(pos=(0, 0), n=20, radius=1, phi=20, addendum=None, dedendum=None, fradius=None, bevel=0, rotate=0,
-             scale=1, xscale=1, yscale=1, res=1):
-        """톱니바퀴 단면 (사다리꼴 톱니로 단순화한 모양). n: 톱니 수, radius: 피치 반지름"""
-        n = int(n)
-        if addendum is None:
-            addendum = 0.08 * radius
-        if dedendum is None:
-            dedendum = 0.1 * radius
-        r_tip, r_root = radius + addendum, radius - dedendum
-        half_pitch = math.pi / (2 * n)
-        spread = math.tan(math.radians(phi))
-        h_tip = half_pitch * max(0.3, 1 - spread * addendum / radius * 2.5)
-        h_root = min(half_pitch * (1 + spread * dedendum / radius * 2.5), math.pi / n * 0.95)
+        outer = self.trapezoid(pos=pos, width=width, height=height, top=top)
+        angle = atan((width - top) / 2 / height)
+        db = thickness / cos(angle)
+        inner = self.trapezoid(pos=pos, width=width - db - thickness * tan(angle),
+                                height=height - thickness, top=top - (db - thickness * tan(angle)))
+        outer = addpos(outer, pos=pos)
+        inner = addpos(inner, pos=pos)
+        if rotate != 0:
+            outer = rotatecp(outer, pos=pos, rotate=rotate)
+            inner = rotatecp(inner, pos=pos, rotate=rotate)
+
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1:
+            outer = scalecp(outer, xscale=xscale, yscale=yscale)
+            inner = scalecp(inner, xscale=xscale, yscale=yscale)
+
+        if roundness > 0:
+            outer = roundc(outer, roundness=roundness, invert=invert)
+            inner = roundc(inner, roundness=roundness, invert=invert)
+
+        return [ outer, inner ]
+
+    def trapezoid(self, pos=[0,0], width=2, height=1, top=None, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        w2 = width / 2
+        h2 = height / 2
+        if top is None: top = w2
+        t2 = top / 2
+        if thickness == 0:
+            cp = [ [ w2, -h2 ], [ t2, h2 ], [ -t2, h2 ], [ -w2, -h2 ], [ w2, -h2 ] ]
+            cp = addpos(cp, pos=pos)
+            if rotate != 0: cp = rotatecp(cp, pos=pos, rotate=rotate)
+            if scale != 1: xscale = yscale = scale
+            if xscale != 1 or yscale != 1: cp = scalecp(cp, xscale=xscale, yscale=yscale)
+            if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        else:
+            cp = self.trframe(pos=pos, width=width, height=height, top=top, rotate=rotate, thickness=thickness,
+                    roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+        return cp
+
+    def circframe(self, pos=[0,0], radius=0.5, np=npdefault, rotate=0, iradius=None,
+                    angle1=0, angle2=2*pi, scale=1, xscale=1, yscale=1):
+        thickness = 0
+        if iradius is None: iradius = radius * .8
+        outer = self.circle(pos=pos, radius=radius, np=np, rotate=rotate, iradius=iradius,
+                       angle1=angle1, angle2=angle2, scale=scale, xscale=xscale, yscale=yscale)
+        if angle1 == 0 and angle2 == 2*pi:
+            radius = iradius
+            inner = self.circle(pos=pos, radius=radius, np=np, rotate=rotate, thickness=thickness,
+                       angle1=angle1, angle2=angle2, scale=scale, xscale=xscale, yscale=yscale)
+        else:
+            t = radius - iradius
+            angle = (angle1 + angle2)/2 # pos and center lie on this line
+            offset = t/sin((angle2-angle1)/2)
+            corner = [pos[0]+offset*cos(angle), pos[1]+offset*sin(angle)]
+            dangle = asin(t/iradius)
+            angle1 = angle1 + dangle
+            angle2 = angle2 - dangle
+            radius = iradius
+            inner = self.circle(pos=pos, radius=radius, np=np, rotate=rotate, thickness=thickness, corner=corner,
+                       angle1=angle1, angle2=angle2, scale=scale, xscale=xscale, yscale=yscale)
+        if rotate != 0:
+            outer = rotatecp(outer, pos=pos, rotate=rotate)
+            inner = rotatecp(inner, pos=pos, rotate=rotate)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1:
+            outer = scalecp(outer, xscale=xscale, yscale=yscale)
+            inner = scale(inner, xscale=xscale, yscale=yscale)
+        return [ outer, inner ]
+
+    def circle(self, pos=[0,0], radius=0.5, np=npdefault, rotate=0, thickness=0, corner=None, iradius=None,
+                    angle1=0, angle2=2*pi, scale=1, xscale=1, yscale=1):
+        if corner is None: corner = pos # where the two straight edges meet
         cp = []
-        for i in range(n):
-            theta = _TWO_PI * i / n
-            for r, da in ((r_root, -h_root), (radius, -half_pitch), (r_tip, -h_tip), (r_tip, h_tip), (radius, half_pitch), (r_root, h_root)):
-                cp.append([r * math.cos(theta + da), r * math.sin(theta + da)])
-        cp.append(list(cp[0]))
-        return _shape_finish(cp, pos=pos, rotate=rotate, scale=scale, xscale=xscale, yscale=yscale)
+        if thickness > 0:
+            iradius = radius - radius*thickness
+            cp = self.circframe(pos=pos, radius=radius, np=np, rotate=rotate, iradius=iradius,
+                    angle1=angle1, angle2=angle2, scale=scale, xscale=xscale, yscale=yscale)
+        else:
+            if angle1 != 0 or angle2 != 2 *pi:
+                cp.append([ corner[0], corner[1] ])
+            seg = 2 * pi / np
+            nseg = int(floor(abs((angle2 - angle1) / seg + .5)))
+            seg = (angle2 - angle1) / nseg
+            if angle1 != 0 or angle2 != 2 * pi: nseg += 1
+            c = radius * cos(angle1)
+            s = radius * sin(angle1)
+            dc = cos(seg)
+            ds = sin(seg)
+            x0 = pos[0]
+            y0 = pos[1]
+            cp.append([ x0 + c, y0 + s ])
+            for i in range(nseg-1):
+                c2 = c * dc - s * ds
+                s2 = s * dc + c * ds
+                cp.append([ x0 + c2, y0 + s2 ])
+                c = c2
+                s = s2
+            cp.append(cp[0])
+            if rotate != 0: cp = rotatecp(cp, pos=pos, rotate=rotate)
+            if scale != 1: xscale = yscale = scale
+            if xscale != 1 or yscale != 1: cp = scalecp(cp, xscale=xscale, yscale=yscale)
+        return cp
 
-    @staticmethod
-    def rackgear(pos=(0, 0), n=30, radius=5, length=None, phi=20, addendum=None, dedendum=None, fradius=None,
-                 bevel=0.05, depth=1.1, rotate=0, scale=1, xscale=1, yscale=1, res=1):
-        """직선 톱니(랙) 단면. 톱니는 y 방향으로 늘어서고 받침판은 -x 쪽에 있다."""
-        n = int(n)
-        if addendum is None:
-            addendum = 0.08 * radius
-        if dedendum is None:
-            dedendum = 0.1 * radius
-        pitch = _TWO_PI * radius / n
-        if length is None:
-            length = 10 * math.pi
-        teeth = max(1, int(length / pitch))
-        total = teeth * pitch
-        spread = math.tan(math.radians(phi))
-        half_tip = max(pitch * 0.05, pitch / 4 - addendum * spread)
-        half_root = min(pitch * 0.45, pitch / 4 + dedendum * spread)
-        back = -(dedendum + depth)
-        cp = [[back, -total / 2], [-dedendum, -total / 2]]
-        for i in range(teeth):
-            yc = -total / 2 + pitch * (i + 0.5)
-            cp += [[-dedendum, yc - half_root], [addendum, yc - half_tip], [addendum, yc + half_tip], [-dedendum, yc + half_root]]
-        cp += [[-dedendum, total / 2], [back, total / 2], [back, -total / 2]]
-        return _shape_finish(cp, pos=pos, rotate=rotate, scale=scale, xscale=xscale, yscale=yscale)
+    def arc(self, pos=[0,0], radius=0.5, np=npdefault, rotate=0, thickness=None,
+                    angle1=0, angle2=2*pi, scale=1, xscale=1, yscale=1, path=False):
+        if thickness is None: thickness = .01 * radius
+        cp = []  # outer arc
+        cpi = [] # inner arc
+        seg = 2 * pi / np
+        nseg = int(floor(abs(angle2 - angle1) / seg) + 1)
+        seg = (angle2 - angle1) / nseg
+        for i in range(nseg+1):
+            x = cos(angle1 + i * seg)
+            y = sin(angle1 + i * seg)
+            cp.append([radius * x + pos[0], radius * y + pos[1]])
+            if not path: cpi.append([(radius - thickness) * x + pos[0],
+                                      (radius - thickness) * y + pos[1]])
+        if not path:
+            cpi.reverse()
+            for i in range(len(cpi)): cp.append(cpi[i])
+            cp.append(cp[0])
+        if rotate != 0: cp = rotatecp(cp, pos, rotate)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1: scalecp(cp, xscale, yscale)
+        return cp
 
-    @staticmethod
-    def text(**kwargs):
-        raise NotImplementedError("shapes.text는 VPyLab에서 지원하지 않습니다. 입체 글자는 text(text='...', depth=...) 객체를 사용하세요.")
+    def ellipse(self, pos=[0,0], width=1, height=None, np=npdefault, rotate=0, thickness=0,
+                    angle1=0, angle2=2*pi, scale=1, xscale=1, yscale=1):
+        if height is None: height = .5 * width
+        yscale *= height/width
+        radius = width
+        return self.circle(pos=pos, radius=radius, np=np, rotate=rotate,
+                    angle1=angle1, angle2=angle2, scale=scale, xscale=xscale, yscale=yscale)
 
-    def __repr__(self):
-        return "<shapes: rectangle, circle, triangle, pentagon, hexagon, octagon, ngon, star, arc, ellipse, cross, trapezoid, line, points, gear, rackgear>"
+    # line is not called by paths.line()
+    def line(self, pos=[0,0], width=1, height=None, np=2, rotate=0, thickness=None,
+                    start=[0,0], end=[0,1], scale=1, xscale=1, yscale=1):
+        v = vec(end[0] - start[0], end[1] - start[1], 0)
+        if thickness is None: thickness = .01 * mag(v)
+        dv = thickness * norm(vec(0, 0, 1).cross(v))
+        dx = dv.x
+        dy = dv.y
+        cp = []   # outer line
+        cpi = []  # inner line
+        vstart = vec(start[0], start[1], 0)
+        v = vec(end[0]-start[0], end[1]-start[1], 0)
+        vline = v/(floor(np-1))
+        for i in range(np):
+            v = i*vline
+            x = start[0] + v.x
+            y = start[1] + v.y
+            cp.append([x + pos[0], y + pos[1]])
+            cpi.append([x + pos[0] + dx, y + pos[1] + dy])
 
+        cpi.reverse()
+        for i in range(len(cpi)): cp.append(cpi[i])
+        cp.append(cp[0])
+        if rotate != 0: cp = rotatecp(cp, pos, rotate)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1: scalecp(cp, xscale, yscale)
+        return cp
 
-shapes = _Shapes()
+    def nframe(self, pos=[0,0], length=1, rotate=0, thickness=None, np=3,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        if thickness is None:
+            thickness = length * .1
+        else:
+            thickness = length * thickness
 
+        outer = self.ngon(pos=pos, np=np, length=length)
+        angle = pi * (.5 - 1 / np)
+        length2 = length - 2 * thickness / tan(angle)
+        inner = self.ngon(pos=pos, np=np, length=length2)
+        if rotate != 0:
+            outer = rotatecp(outer, pos, rotate)
+            inner = rotatecp(inner, pos, rotate)
 
-class _Paths:
-    """paths.* — extrusion 경로용 3D 점(vector) 목록 생성기. shapes.*와 같은 인자를 받되 pos·up은 vector다.
-    기본으로 xz 평면에 놓이며(up=vector(0,1,0)) 2D의 (x, y)가 (x, 0, -y)로 간다. 닫힌 경로는 첫 점을 끝에 반복한다.
-    arc와 line만 열린 경로다. 경로에는 구멍이 없으므로 thickness는 받지 않는다."""
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1:
+            outer = scale(outer, xscale, yscale)
+            inner = scale(inner, xscale, yscale)
 
-    @staticmethod
-    def _convert(cp, pos=None, up=None):
-        pos = _coerce_vector(pos, vector(0, 0, 0))
-        up = _coerce_vector(up, vector(0, 1, 0))
-        pts = [vector(x, 0, -y) for x, y in cp]
-        y_axis = vector(0, 1, 0)
-        if up.mag > 0 and (up.hat - y_axis).mag > 1e-9:
-            axis = y_axis.cross(up)
-            if axis.mag < 1e-9:
-                axis = vector(1, 0, 0)   # up이 정반대 방향이면 x축으로 뒤집는다
-            angle = y_axis.diff_angle(up)
-            pts = [p.rotate(angle, axis=axis) for p in pts]
-        return [p + pos for p in pts]
+        if roundness > 0:
+            outer = roundc(outer, roundness=roundness, invert=invert)
+            inner = roundc(inner, roundness=roundness, invert=invert)
 
-    @staticmethod
-    def _check(kw):
-        if kw.get('thickness'):
-            raise ValueError("paths.*는 thickness를 받지 않습니다 (경로에는 구멍이 없습니다). 단면 쪽 shapes.*에 주세요.")
+        return [ outer, inner ]
 
-    @staticmethod
-    def rectangle(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        return _Paths._convert(_Shapes.rectangle(**kw), pos, up)
+    def ngon(self, pos=[0,0], length=1, rotate=0, thickness=0, np=None,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        cp = []
+        if np is None:  raise AttributeError("must specify np for ngon shape")
+        if np < 3: raise AttributeError("number of sides can not be less than 3")
+        angle = 2 * pi / np
+        radius = length / 2 / sin(angle / 2)
+        if thickness == 0:
+            seg = 2 * pi / np
+            angle = 0
+            for i in range(np):
+                x = radius * cos(angle) + pos[0]
+                y = radius * sin(angle) + pos[1]
+                cp.append([ x, y ])
+                angle += seg
+            cp.append(cp[0])
+            if rotate != 0: cp = rotatecp(cp, pos, rotate)
+            if scale != 1: xscale = yscale = scale
+            if xscale != 1 or yscale != 1: scalecp(cp, xscale, yscale)
+            if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        else:
+            cp = self.nframe(pos=pos, length=length, rotate=rotate, thickness=thickness, np=np,
+                    roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+        return cp
 
-    @staticmethod
-    def cross(pos=None, up=None, **kw):
-        return _Paths._convert(_Shapes.cross(**kw), pos, up)
+    def triangle(self, pos=[0,0], length=1, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        return self.ngon(pos=pos, np=3, length=length, rotate=rotate-pi/6,
+                   roundness=roundness, invert=invert, scale=scale,
+                   xscale=xscale, yscale=yscale, thickness=thickness)
 
-    @staticmethod
-    def trapezoid(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        return _Paths._convert(_Shapes.trapezoid(**kw), pos, up)
+    def pentagon(self, pos=[0,0], length=1, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        return self.ngon(pos=pos, np=5, length=length, rotate=rotate-pi/10,
+                   roundness=roundness, invert=invert, scale=scale,
+                   xscale=xscale, yscale=yscale, thickness=thickness)
 
-    @staticmethod
-    def circle(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        return _Paths._convert(_Shapes.circle(**kw), pos, up)
+    def hexagon(self, pos=[0,0], length=1, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        return self.ngon(pos=pos, np=6, length=length, rotate=rotate,
+                   roundness=roundness, invert=invert, scale=scale,
+                   xscale=xscale, yscale=yscale, thickness=thickness)
 
-    @staticmethod
-    def ellipse(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        return _Paths._convert(_Shapes.ellipse(**kw), pos, up)
+    def octagon(self, pos=[0,0], length=1, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        return self.ngon(pos=pos, np=8, length=length, rotate=rotate+pi/8,
+                   roundness=roundness, invert=invert, scale=scale,
+                   xscale=xscale, yscale=yscale, thickness=thickness)
 
-    @staticmethod
-    def arc(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        kw['path'] = True
-        return _Paths._convert(_Shapes.arc(**kw), pos, up)
+    def sframe(self, pos=[0,0], rotate=0, thickness=None, radius=1, n=5, iradius=None,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        if iradius is None:
+            iradius = .5 * radius
+        if thickness is None:
+            thickness = .2 * radius
+        else:
+            thickness = thickness * 2 * iradius
 
-    @staticmethod
-    def ngon(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        return _Paths._convert(_Shapes.ngon(**kw), pos, up)
+        outer = self.star(pos=pos, n=n, radius=radius, iradius=iradius)
+        inner = self.star(pos=pos, n=n, radius=radius - thickness, iradius=(radius - thickness) * iradius / radius)
+        if rotate != 0:
+            outer = rotatecp(outer, pos, rotate)
+            inner = rotatecp(inner, pos, rotate)
 
-    @staticmethod
-    def triangle(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        return _Paths._convert(_Shapes.triangle(**kw), pos, up)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1:
+            outer = scale(outer, xscale, yscale)
+            inner = scale(inner, xscale, yscale)
 
-    @staticmethod
-    def pentagon(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        return _Paths._convert(_Shapes.pentagon(**kw), pos, up)
+        if roundness > 0:
+            outer = roundc(outer, roundness=roundness, invert=invert)
+            inner = roundc(inner, roundness=roundness, invert=invert)
 
-    @staticmethod
-    def hexagon(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        return _Paths._convert(_Shapes.hexagon(**kw), pos, up)
+        return [ outer, inner ]
 
-    @staticmethod
-    def octagon(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        return _Paths._convert(_Shapes.octagon(**kw), pos, up)
+    def star(self, pos=[0,0], rotate=0, thickness=0, radius=1, n=5, iradius=None,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        ## radius is from center to outer point of the star
+        ## iradius is from center to inner corners of the star
+        if iradius is None: iradius = radius * .5
+        if thickness == 0:
+            cp = []
+            dtheta = pi / n
+            theta = 0
+            for i in range(2*n+1):
+                if i % 2 == 0:
+                    cp.append([ -radius * sin(theta), radius * cos(theta) ])
+                else:
+                    cp.append([ -iradius * sin(theta), iradius * cos(theta) ])
+                theta += dtheta
+            cp = addpos(cp, pos)
+            cp[-1] = cp[0] # take care of possible rounding errors
+            if rotate != 0: cp = rotatecp(cp, pos, rotate)
+            if scale != 1: xscale = yscale = scale
+            if xscale != 1 or yscale != 1: scalecp(cp, xscale, yscale)
+            if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        else:
+            cp = self.sframe(pos=pos, rotate=rotate, thickness=thickness, radius=radius, iradius=iradius,
+                    n=n, roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+        return cp
 
-    @staticmethod
-    def star(pos=None, up=None, **kw):
-        _Paths._check(kw)
-        return _Paths._convert(_Shapes.star(**kw), pos, up)
+    def points(self, pos=[], rotate=0, path=False, roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        cp = pos
+        closed = cp[-1][0] == cp[0][0] and cp[-1][1] == cp[0][1]
+        if not closed and not path: cp.append(cp[0])
+        if len(cp) > 0 and rotate != 0: cp = rotatecp(cp, [0,0], rotate)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1: scalecp(cp, xscale, yscale)
+        if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        return cp
 
-    @staticmethod
-    def points(pos=None, up=None, **kw):
-        """paths.points(pos=[vector, ...]) — 직접 준 점 목록. 닫혀 있지 않으면 첫 점을 끝에 더한다 (path=True면 열어 둔다)."""
-        pts = [_as_point(p) for p in (pos or [])]
-        if not pts:
-            raise ValueError("paths.points에는 pos=[vector, ...] 점 목록이 필요합니다")
-        if not kw.get('path') and pts[0] != pts[-1]:
-            pts.append(pts[0].clone())
+    def gear(self, pos=[0,0], n=20, radius=1, phi=20, addendum=None, dedendum=None,
+                fradius=None, rotate=0, scale=1, res=1, bevel=0):
+            if addendum is None: addendum = 0.08*radius
+            if dedendum is None: dedendum = 0.1*radius
+            if fradius is None: fradius = 0.02*radius
+            tooth = ToothOutline(n=n, res=res, phi=phi, radius=radius,
+                        addendum=addendum, dedendum=dedendum, fradius=fradius, bevel=0)
+            g = []
+            for i in range(n):
+                rotan = -i * 2 * pi / n
+                rtooth = []
+                for j in range(len(tooth)):
+                    p = tooth[j]
+                    x = p[0]
+                    y = p[1]
+                    rx = x * cos(rotan) - y * sin(rotan) +  pos[0]
+                    ry = x * sin(rotan) + y * cos(rotan) +  pos[1]
+                    rtooth.append([rx, ry])
+                g.extend(rtooth)
+            if scale != 1: g = scalecp(g, scale, scale)
+            if rotate != 0: g = rotatecp(g, pos, rotate)
+            pts = []
+            i = 0
+            while i < len(g):
+                ### must eliminate neighboring repeated points and collinear points; poly2tri.js chokes on them
+                g1 = g[i]
+                pts.append(g1)
+                if i == len(g)-1: break
+                g2 = g[i+1]
+                if i < len(g)-2:
+                    g3 = g[i+2]
+                    # check for a-b-a instance of collinear points
+                    if abs(g3[0]-g1[0]) < .001*radius and abs(g3[1]-g1[1]) < .001*radius: i += 2
+                    g2 = g[i]
+                    if abs(g1[0] - g2[0]) < .001*radius and abs(g1[1] - g2[1]) < .001*radius:
+                        i += 1
+                if abs(g1[0] - g2[0]) < .001*radius and abs(g1[1] - g2[1]) < .001*radius:
+                    i += 1
+                i += 1
+            g1 = pts[0]
+            g2 = pts[-1]
+            if not (g1[0] == g2[0] and g1[1] == g2[1]): pts.append(g1)
+            return pts
+
+    def rackgear(self, pos=(0,0), n=30, radius=5., phi=20., addendum=0.4, dedendum=0.5,
+             fradius=0.1, rotate=0, scale=1.0, length=10*pi, res=1, bevel=0.05, depth=(0.4+0.6+0.1)):
+            if addendum is None: addendum = 0.08*radius
+            if dedendum is None: dedendum = 0.1*radius
+            if fradius is None: fradius = 0.02*radius
+            tooth = RackOutline(n=n, res=res, phi=phi, radius=radius,
+                        addendum=addendum, dedendum=dedendum, fradius=fradius, bevel=bevel)
+            toothl = tooth[0][1] - tooth[-1][1]
+            nt = int(floor(length / toothl))
+            flength = nt * toothl
+            g = []
+            lastx = lasty = 1e9
+            for i in range(nt):
+                ntooth = []
+                for j in range(len(tooth)):
+                    p = tooth[j]
+                    x = p[0]
+                    y = p[1]
+                    if x == lastx or y == lasty: continue
+                    nx = x + pos[0]
+                    ny = -i * toothl + y + pos[1]
+                    ntooth.append([nx, ny])
+                    lastx = x
+                    lasty = y
+                g.extend(ntooth)
+
+            g.append([g[-1][0] - depth, g[-1][1]])
+            g.append([g[0][0] - depth, g[0][1]])
+            g.append(g[0])
+            left = 1e9
+            right = -1e9
+            bottom = 1e9
+            top = -1e9
+            for i in range(len(g)):
+                g1 = g[i]
+                x = g1[0]
+                y = g1[1]
+                if x < left: left = x
+                if x > right: right = x
+                if y < bottom: bottom = y
+                if y > top: top = y
+
+            center = [ (left + right) / 2, (bottom + top) / 2 ]
+            dx = pos[0] - center[0]
+            dy = pos[1] - center[1]
+            g2 = []
+            for i in range(len(g)):
+                temp = g[i]
+                g2.append([ temp[0] + dx, temp[1] + dy ])
+            if scale != 1: g2 = scalecp(g2, scale, scale)
+            if rotate != 0: g2 = rotatecp(g2, pos, rotate)
+            a1 = g2[0]
+            a2 = g2[-1]
+            if not a1[0] == a2[0] and a1[1] == a2[1]: g2.append(a1)
+            return g2
+
+def convert(pos=(0,0,0), up=(0,1,0), points=None, closed=True):
+        pos = vector(pos)
+        up = norm(vector(up))
+        up0 = vector(0,1,0)
+        angle = acos(up.dot(up0))
+        reorient = (angle > 0.0)
+        axis = up0.cross(up)
+        pts = []
+        for pt in points:
+            newpt = vector(pt[0],0,-pt[1])
+            if reorient: newpt = newpt.rotate(angle=angle, axis=axis)
+            pts.append(pos+newpt)
+        if closed and not pts[-1].equals(pts[0]): pts.append(pts[0])
         return pts
 
-    @staticmethod
-    def line(start=None, end=None, np=2, **kw):
-        """start에서 end까지 np개 점의 직선 경로 (열린 경로)"""
-        start = _coerce_vector(start, vector(0, 0, 0))
-        end = _coerce_vector(end, vector(0, 0, -0.1))
-        np = max(2, int(np))
-        return [start + (end - start) * (i / (np - 1)) for i in range(np)]
+class path_object(object):
 
-    def __repr__(self):
-        return "<paths: rectangle, circle, arc, line, ellipse, triangle, pentagon, hexagon, octagon, ngon, star, cross, trapezoid, points>"
+    def rectangle(self, pos=vec(0,0,0), width=6, height=None, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if height == None: height = width
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a rectangular path")
+            c = shapes.rectangle(width=width, height=height, rotate=rotate, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
 
+    def cross(self, pos=vec(0,0,0), width=5, thickness=2, rotate=0.0,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            c = shapes.cross(width=width, rotate=rotate, thickness=thickness,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
 
-paths = _Paths()
+    def trapezoid(self, pos=vec(0,0,0), width=6, height=3, top=None, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if height == None: height = width
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a trapezoidal path")
+            c = shapes.trapezoid(width=width, height=height, top=top, rotate=rotate, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def circle(self, pos=vec(0,0,0), radius=3, np=32, thickness=None,
+                      scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a circular path")
+            c = shapes.circle(radius=radius, np=np, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def line(self, start=vec(0,0,0), end=vec(0,0,-1), np=2):
+            if np < 2:
+                raise AttributeError("The minimum value of np is 2 (one segment)")
+            start = vector(start)
+            end = vector(end)
+            vline = (end-start)/(np-1)
+            pos = []
+            for i in range(np):
+                pos.append(start + i*vline)
+            return pos
+
+    def arc(self, pos=vec(0,0,0), radius=3, np=32, rotate=0.0, angle1=0, angle2=pi, thickness=None,
+                      scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a circular path")
+            c = shapes.arc(radius=radius, angle1=angle1, angle2=angle2, rotate=rotate, np=np,
+                       scale=scale, xscale=xscale, yscale=yscale, path=True)
+            return convert(pos=pos, up=up, points=c, closed=False)
+
+    def ellipse(self, pos=vec(0,0,0), width=6, height=None, np=32, thickness=None,
+                      scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in an elliptical path")
+            c = shapes.ellipse(width=width, height=height, np=np, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def ngon(self, pos=vec(0,0,0), np=3, length=6, radius=3.0, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in an ngon path")
+            c = shapes.ngon(np=np, length=length, radius=radius, rotate=rotate, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def triangle(self, pos=vec(0,0,0), np=3, length=6, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a triangular path")
+            c = shapes.ngon(np=np, length=length, rotate=rotate-pi/6.0, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def pentagon(self, pos=vec(0,0,0), np=5, length=6, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a pentagonal path")
+            c = shapes.ngon(np=np, length=length, rotate=rotate+pi/10, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def hexagon(self, pos=vec(0,0,0), np=6, length=6, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a hexagonal path")
+            c = shapes.ngon(np=np, length=length, rotate=rotate, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def star(self, pos=vec(0,0,0), radius=3, n=5, iradius=None, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a star path")
+            c = shapes.star(n=n, radius=radius, iradius=iradius, rotate=rotate,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def pointlist(self, pos=[], rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a pointlist path")
+            # pos may be either a list of points or a Polygon object
+            try:
+                points = pos.contour(0)
+                if len(pos) > 1:
+                    raise AttributeError("pointlist can deal with only a single contour.")
+            except:
+                points = pos[:]
+            closed = (points[-1] == points[0])
+            if not closed:
+                points.append(points[0])
+            c = shapes.pointlist(pos=points, rotate=rotate, roundness=roundness, invert=invert,
+                             scale=scale, xscale=xscale, yscale=yscale, path=True)
+            return convert(pos=(0,0,0), up=up, points=c, closed=closed)
+
+shapes = shape_object()
+paths = path_object()
+# === 이식 코드 끝 ===
+# 원본의 paths.pointlist는 존재하지 않는 shapes.pointlist를 부른다 — shapes.points와 같은 뜻이므로 별칭을 둔다 (VPyLab 보정)
+shape_object.pointlist = shape_object.points
 
 
 # === frame 별칭 (compound와 동일) ===
