@@ -14,7 +14,7 @@ VPyLab은 설치 없이 브라우저에서 실행되고 링크 하나로 공유�
 
 - `/s/:id`(공유 코드)와 `/gallery/:id`(갤러리 작품)는 Vercel 서버리스 함수 `api/og.mjs`가 응답합니다. 빌드된 `index.html`의 `<head>`에 `og:title`·`og:description`·`og:image`·`og:url`·`twitter:card`만 주입하므로, 카카오톡·구글 클래스룸·Slack에는 카드가 보이고 사람에게는 앱이 그대로 뜹니다.
 - 갤러리 썸네일이 data URI(JPEG·PNG·WebP)로 저장된 작품은 `api/og-image.mjs?id=<uuid>`가 디코드해 저장된 MIME 그대로 돌려줍니다(하루 캐시). URL 썸네일은 그 주소로 보냅니다. 공유 코드와 썸네일이 없는 작품은 기본 카드 `client/public/brand/og-default.png`(1200×630)를 씁니다.
-- 함수는 Supabase 공개 anon 키로 읽기만 합니다(환경변수 `VITE_SUPABASE_URL`·`VITE_SUPABASE_ANON_KEY`를 함수에서도 읽음). 비공개·삭제된 작품, 형식이 틀린 id, 네트워크 실패는 모두 기본 카드로 응답하고 내용을 노출하지 않습니다.
+- 함수는 Supabase 공개 anon 키로 읽기만 합니다. Vercel 프로젝트 환경변수(`VITE_SUPABASE_URL`·`VITE_SUPABASE_ANON_KEY` 또는 `SUPABASE_URL`·`SUPABASE_ANON_KEY`)를 먼저 쓰고, 없으면 함수 번들에 포함한 `client/.env.production`(커밋된 공개 값)을 읽습니다. 비공개·삭제된 작품, 형식이 틀린 id, 네트워크 실패는 모두 기본 카드로 응답하고 내용을 노출하지 않습니다.
 - 그 밖의 페이지(홈 등)는 `client/index.html`의 기본 og 메타로 카드가 보입니다.
 - 확인 방법: 메신저 봇처럼 요청해 메타를 봅니다.
 
