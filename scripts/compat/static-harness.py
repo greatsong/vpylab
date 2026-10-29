@@ -107,6 +107,7 @@ def run_one(spec, timeout):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--api', default=str(ROOT / 'client/src/engine/vpython-api.py'))
+    ap.add_argument('--transform', default=str(ROOT / 'client/src/engine/student-code-transform.py'))
     ap.add_argument('--filter', default='')
     ap.add_argument('--jobs', type=int, default=max(2, (os.cpu_count() or 4) // 2))
     ap.add_argument('--timeout', type=float, default=12.0)
@@ -124,18 +125,18 @@ def main():
     print(f'정적 하네스: {len(items)}개 실행 (api={os.path.relpath(args.api, ROOT)}, jobs={args.jobs})')
 
     def work(it):
-        spec = {'api': args.api, 'registration': pre['registration'], 'code': it['code'], 'rateLimit': 240, 'wallLimit': 3.0, 'shim': shim_code}
+        spec = {'api': args.api, 'transform': args.transform, 'registration': pre['registration'], 'code': it['code'], 'rateLimit': 240, 'wallLimit': 3.0, 'shim': shim_code}
         res, timed_out, elapsed = run_one(spec, args.timeout)
         corpus_item = corpus[it['id']]
         if res is None:
-            res = {'status': 'timeout', 'error': None, 'rateCalls': 0, 'commands': {'total': 0, 'actions': {}, 'createTypes': {}, 'sceneProps': {}}, 'stdout': '', 'stderr': '', 'stubMissing': []}
+            res = {'status': 'timeout', 'error': None, 'rateCalls': 0, 'commands': {'total': 0, 'actions': {}, 'createTypes': {}, 'sceneProps': {}}, 'stdout': '', 'stderr': '', 'stubMissing': [], 'warnings': []}
         category, detail = classify(it, corpus_item, res, timed_out, bridge_labels)
         return {
             'id': it['id'], 'source': corpus_item['source'], 'kind': corpus_item.get('kind', 'program'),
             'title': corpus_item['title'], 'origin': corpus_item['origin'], 'progress': corpus_item.get('progress', False),
             'category': category, 'detail': detail, 'status': res['status'], 'error': res.get('error'),
             'commands': res['commands'], 'stdout': res['stdout'], 'stderr': res['stderr'], 'stubMissing': res['stubMissing'],
-            'preprocessWarnings': it['warnings'], 'elapsed': elapsed,
+            'preprocessWarnings': res.get('warnings', []), 'elapsed': elapsed,
         }
 
     results = []

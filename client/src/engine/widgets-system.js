@@ -8,7 +8,7 @@
  * - 위젯 ID는 신뢰된 워커에서 생성됨 (sanitize 불필요)
  */
 
-import { postEvent, postWidgetValue } from './pyodide-singleton';
+import { postEvent, postWidgetValue, postInputValue } from './pyodide-singleton';
 
 // 위젯 패널 DOM 컨테이너
 let panelEl = null;
@@ -207,6 +207,70 @@ export function createWidget(cmd) {
   widgetRegistry.set(cmd.id, { el: wrap, input: inputEl, kind: cmd.kind, value: cmd.value });
 }
 
+/**
+ * input() 입력 위젯 — Python의 input()이 기다리는 동안 3D 화면 위에 띄운다.
+ * 한 번 답하면 입력창을 잠그고, Python 쪽이 widget_delete로 지운다.
+ */
+export function createInputPrompt(cmd) {
+  const panel = ensurePanel();
+  const wrap = document.createElement('div');
+  wrap.dataset.widgetId = cmd.id;
+  wrap.dataset.vpylabInput = '';
+  wrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+  const promptEl = document.createElement('span');
+  promptEl.textContent = String(cmd.prompt ?? '') || '입력:';
+  promptEl.style.cssText = 'color:#222;font-weight:600;white-space:pre-wrap;';
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:6px;';
+  const inputEl = document.createElement('input');
+  inputEl.type = 'text';
+  inputEl.setAttribute('aria-label', String(cmd.prompt ?? '') || '입력');
+  inputEl.style.cssText = 'flex:1;min-width:120px;padding:4px 6px;border-radius:6px;border:1px solid #999;background:#fff;';
+  const submitEl = document.createElement('button');
+  submitEl.type = 'button';
+  submitEl.textContent = '입력';
+  submitEl.style.cssText = 'padding:4px 10px;border-radius:6px;border:1px solid #999;background:#f5f5f5;cursor:pointer;';
+
+  let answered = false;
+  const submit = () => {
+    if (answered) return;
+    answered = true;
+    inputEl.disabled = true;
+    submitEl.disabled = true;
+    postInputValue(cmd.id, inputEl.value);
+  };
+  submitEl.addEventListener('click', submit);
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submit();
+  });
+
+  row.appendChild(inputEl);
+  row.appendChild(submitEl);
+  wrap.appendChild(promptEl);
+  wrap.appendChild(row);
+  panel.appendChild(wrap);
+  widgetRegistry.set(cmd.id, { el: wrap, input: inputEl, kind: 'input', value: null });
+  inputEl.focus();
+}
+
+/**
+ * scene.pause() 안내 — 클릭을 기다리는 동안 보여 주고, Python 쪽이 widget_delete로 지운다.
+ */
+export function createPauseNotice(cmd) {
+  const panel = ensurePanel();
+  const wrap = document.createElement('div');
+  wrap.dataset.widgetId = cmd.id;
+  wrap.dataset.vpylabPause = '';
+  wrap.textContent = String(cmd.text ?? '') || '▶ 3D 화면을 클릭하면 계속합니다';
+  wrap.style.cssText = 'color:#222;font-weight:600;white-space:pre-wrap;cursor:pointer;';
+  // 안내 배너를 눌러도 화면 클릭과 같이 click 이벤트를 보낸다 (scene.pause는 click을 기다린다)
+  wrap.addEventListener('click', () => postEvent({ name: 'click', pos: [0, 0, 0], pick: null }));
+  panel.appendChild(wrap);
+  widgetRegistry.set(cmd.id, { el: wrap, input: null, kind: 'notice', value: null });
+}
+
 export function updateWidget(cmd) {
   const w = widgetRegistry.get(cmd.id);
   if (!w) return;
@@ -243,6 +307,10 @@ export function deleteWidget(cmd) {
 }
 
 export function clearWidgets() {
+  // 답을 받지 못한 input()은 취소로 알린다 (Worker가 살아 있으면 Python 쪽 EOFError)
+  for (const [id, w] of widgetRegistry) {
+    if (w.kind === 'input' && w.input && !w.input.disabled) postInputValue(id, null);
+  }
   for (const [, w] of widgetRegistry) w.el.remove();
   widgetRegistry.clear();
   if (panelEl) {

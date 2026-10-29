@@ -290,11 +290,39 @@ scene.camera.rotate(angle=0.1, axis=vector(0, 1, 0))   # 중심을 보는 채로
 ## 시뮬레이션 제어
 
 ```python
-await rate(60)        # 초당 60프레임. 코드 전처리기가 await를 자동 삽입
-await sleep(0.5)      # 비동기 sleep
+rate(60)              # 초당 60프레임 (GlowScript와 같이 평범한 함수처럼 쓴다)
+sleep(0.5)            # 0.5초 대기
+rate(60, move)        # GlowScript 콜백 형식: 한 프레임 뒤 move()를 부르고 바로 돌아온다
+
+def step(n):          # 함수·메서드 안에서도 쓸 수 있다
+    for i in range(n):
+        rate(60)
+        ball.pos += v * dt
+step(100)
+
+score = 0
+def hit():
+    global score      # 모듈 전역이 진짜 전역이므로 global이 동작한다
+    score += 1
+
+ev = scene.waitfor('click')     # 클릭할 때까지 기다렸다가 이벤트 객체(ev.pos, ev.pick)를 돌려준다
+ev = scene.waitfor('keydown')   # ev.key
+scene.waitfor('redraw')         # 한 프레임 그리기
+scene.pause()                   # 화면을 클릭할 때까지 멈춘다 (안내문: scene.pause('계속하려면 클릭'))
+name = input('이름: ')           # 3D 화면 위 입력 위젯으로 받는다. 문자열을 돌려준다
 ```
 
-> 학생 코드의 `rate(...)` / `sleep(...)`은 자동으로 `await`가 붙도록 전처리됩니다.
+> 실행 직전에 Worker 안의 Python이 학생 코드를 `ast`로 변환합니다([engine/student-code-transform.py](../client/src/engine/student-code-transform.py)).
+> `rate()`·`sleep()`·`scene.pause()`·`scene.waitfor()`·`input()`·`악기()`·`음표()`·`화음()`을 부르는 함수는 `async def`가 되고 그 호출에 `await`가 붙습니다.
+> 호출 그래프를 따라 전파되므로 그런 함수를 부르는 함수도 함께 바뀝니다. 모듈 수준 호출은 최상위 `await`로 실행하고 코드를 함수로 감싸지 않습니다.
+> 정적으로 확정할 수 없는 호출(매개변수·첨자·호출 결과를 부르거나, 수신자를 모르는 메서드 이름이 async 메서드 이름과 겹치는 경우)은
+> 런타임 보조 `maybe_await`로 감싸 코루틴이면 기다리고 일반 값이면 그대로 돌려줍니다. 그래서 `for b in balls: b.update()`·`actions[k]()`·`fn()`이 동작합니다.
+> 제약: `lambda` 안, `yield`가 있는 함수 안, `__init__` 안, 클래스 본문, 제너레이터식 안에서는 대기 함수를 쓸 수 없습니다(경고를 내고 기다리지 않습니다).
+> 대기 함수가 든 이벤트 핸들러와 `rate(fps, callback)`의 콜백은 별도 태스크로 돌아 메인 루프와 나란히 진행합니다.
+> `rate(60, move)`는 콜백을 예약하고 바로 돌아오므로 `move()` 다음 줄이 애니메이션보다 먼저 실행됩니다(GlowScript와 같습니다).
+> 태스크 안의 오류는 다음 대기 지점에서 실행 오류로 올라오며, 본문이 끝나도 태스크가 남아 있으면 실행 상태를 유지해 정지 버튼이 듣습니다.
+> 실행마다 학생 전역을 새로 만들므로 이전 실행의 변수는 남지 않습니다.
+> 정지 버튼은 `rate()`·`sleep()` 같은 대기 지점에서 정지 예외(`BaseException`)를 올립니다. 학생 코드의 `except Exception:`은 지나가지만, 종류 없는 `except:`는 이것도 잡아 정지를 삼킵니다. 그때는 0.75초 뒤 엔진을 강제로 재시작합니다. `except Exception:`을 권장합니다.
 
 ---
 
@@ -546,8 +574,9 @@ v_curve.clear()
 ### 미지원 (현 시점)
 
 - `scene.width` / `scene.height`로 실제 화면 크기 바꾸기 (값은 받지만 화면은 그대로), 여러 개의 `canvas()` (두 번째부터는 같은 `scene`)
+- `lambda`·생성기(`yield`)·`__init__`·클래스 본문·제너레이터식 안의 `rate()`/`sleep()` (경고 후 기다리지 않음)
 - `text()`의 한글 글꼴 (라틴 문자만 입체, 그 밖은 2D 라벨로 대체), `shapes.text`
-- `curve`의 `radius` 굵기 (선은 1픽셀), `compound.length`·`size`로 크기 바꾸기, `scene.mouse.alt/ctrl/shift`(항상 False)
+- `curve`의 `radius` 굵기 (선은 1픽셀), `scene.mouse.alt/ctrl/shift`(항상 False)
 - `extrusion`의 `twist`·`smooth`, 범프맵(`bumpmaps.*`는 받기만 함)
 
 ### standalone HTML export 시 주의
@@ -557,9 +586,10 @@ v_curve.clear()
 - UI 위젯 (`slider`, `button`, `wtext`, ...) — Worker 채널 의존
 - 2D 그래프 (`graph`, `gcurve`, ...) — DOM 패널 의존
 - 이벤트 (`scene.bind`, `scene.mouse`) — 양방향 채널 의존
+- `scene.pause()`·`scene.waitfor()`·`input()` — 이벤트·입력 채널 의존
 - `group`, 3D `text`, 단면이 있는 `extrusion`, 점별 색 `curve` — 내보내기용 간이 렌더러가 아직 모른다
 
-3D 객체와 사운드는 export에서도 모두 동작합니다.
+3D 객체와 사운드는 export에서도 모두 동작합니다. 함수 안의 `rate()`·`sleep()`과 `global` 선언은 편집기와 같은 변환기를 함께 실어 동작합니다.
 
 ### VPyLab만의 추가 기능
 

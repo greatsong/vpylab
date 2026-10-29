@@ -1,48 +1,48 @@
 # GlowScript 호환성 점검 요약 (자동 생성)
 
-- 생성: 2026-10-29T23:24:27.854Z
-- 정적 하네스: 2026-10-30T07:55:37, CPython 3.12.4, API client/src/engine/vpython-api.py, 579개
+- 생성: 2026-10-29T23:56:17.849Z
+- 정적 하네스: 2026-10-30T08:56:17, CPython 3.12.4, API client/src/engine/vpython-api.py, 579개
 - 브라우저 하네스: 2026-10-29T22:57:28.687Z, http://127.0.0.1:4095, 579개, 씬 접근 가능
-- 심 적용 정적 하네스(즉시 수정 가능 항목을 shim-quickfixes.py 로 덧씌운 what-if): 2026-10-29T11:25:29, 562개
+- 심 적용 정적 하네스(즉시 수정 가능 항목을 shim-quickfixes.py 로 덧씌운 what-if): 2026-10-30T08:36:03, 562개
 
 ## 출처별 결과
 
 | 출처 | 개수 | 정적 통과 | 정적 실패 | 제외(문서 조각 미정의 등) | 브라우저 통과 | 브라우저 실패 | 즉시 수정 적용 시 통과 |
 |---|---|---|---|---|---|---|---|
-| VPyLab 내장(예제·코스·미션) | 211 | 211 | 0 | 0 | 211 | 0 | 209 |
-| 수업 관용구 | 131 | 119 | 12 | 0 | 121 | 10 | 90 |
-| GlowScript 공식 예제 | 33 | 25 | 6 | 2 | 24 | 7 | 16 |
-| GlowScript 문서 조각 | 169 | 124 | 23 | 22 | 128 | 19 | 95 |
-| VPython 7 데모(vpython-jupyter) | 35 | 24 | 11 | 0 | 24 | 11 | 16 |
-| **합계** | 579 | 503 | 52 | 24 | 508 | 47 | 426 |
+| VPyLab 내장(예제·코스·미션) | 211 | 211 | 0 | 0 | 211 | 0 | 211 |
+| 수업 관용구 | 131 | 128 | 3 | 0 | 121 | 10 | 101 |
+| GlowScript 공식 예제 | 33 | 28 | 3 | 2 | 24 | 7 | 19 |
+| GlowScript 문서 조각 | 169 | 131 | 16 | 22 | 128 | 19 | 103 |
+| VPython 7 데모(vpython-jupyter) | 35 | 27 | 8 | 0 | 24 | 11 | 18 |
+| **합계** | 579 | 525 | 30 | 24 | 508 | 47 | 452 |
 
 ## 범주별 건수
 
 | 범주 | 정적 | 브라우저 |
 |---|---|---|
-| 통과 (`pass`) | 503 | 508 |
+| 통과 (`pass`) | 525 | 508 |
 | 미지원 인자·호출 형식 (`unsupported-arg`) | 11 | 11 |
-| 미지원 속성·메서드 (`unsupported-attr`) | 12 | 11 |
-| 실행 오류 (`error`) | 13 | 13 |
 | 시간 초과(정지 불가) (`timeout`) | 1 | 0 |
-| 경고 (`warning`) | 5 | 0 |
-| input() 불가 (`input`) | 1 | 1 |
 | 미지원 API(이름 없음) (`unsupported-api`) | 4 | 4 |
+| 실행 오류 (`error`) | 2 | 13 |
 | Web VPython 전용(제외) (`glowscript-only`) | 2 | 2 |
 | 문서 조각 미정의(제외) (`fragment-undefined`) | 22 | 22 |
+| 미지원 속성·메서드 (`unsupported-attr`) | 3 | 11 |
+| 경고 (`warning`) | 4 | 0 |
 | 미지원 모듈 (`unsupported-module`) | 5 | 5 |
 | 무응답 뒤 강제 종료 (`hang`) | 0 | 2 |
+| input() 불가 (`input`) | 0 | 1 |
 
 ## GlowScript 공식 예제 (glowscript.org Examples)
 
-정적 33개 중 통과 25개, 브라우저 33개 중 통과 24개, 즉시 수정 적용 시 통과 16개.
+정적 33개 중 통과 28개, 브라우저 33개 중 통과 24개, 즉시 수정 적용 시 통과 19개.
 
 | 예제 | 정적 결과 | 브라우저 결과 | 메시 수 | 첫 오류 | 즉시 수정 적용 시 (다음 오류) |
 |---|---|---|---|---|---|
 | [AtomicSolid-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/AtomicSolid-VPython) | 통과 | 통과 | 216 |  | 통과 |
 | [BillboardingText](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/BillboardingText) | 통과 | 통과 | 10 |  | 미지원 속성·메서드: 'label' object has no attribute 'start' |
 | [BinaryStar-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/BinaryStar-VPython) | 통과 | 통과 | 2 |  | 통과 |
-| [Bounce-Callbacks-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Bounce-Callbacks-VPython) | 실행 오류 | 실행 오류 | 0 | SyntaxError: 'await' outside async function (<student>, line 30) | 실행 오류: 'await' outside async function (<student>, line 30) |
+| [Bounce-Callbacks-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Bounce-Callbacks-VPython) | 통과 | 실행 오류 | 0 |  | 통과 |
 | [Bounce-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Bounce-VPython) | 통과 | 통과 | 6 |  | 통과 |
 | [BoxLightTest](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/BoxLightTest) | 통과 | 통과 | 7 |  | 통과 |
 | [Bumpmaps-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Bumpmaps-VPython) | 통과 | 통과 | 1 |  | 통과 |
@@ -52,11 +52,11 @@
 | [Color-RGB-HSV-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Color-RGB-HSV-VPython) | 통과 | 통과 | 1 |  | 통과 |
 | [Conch](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Conch) | 통과 | 통과 | 1 |  | 미지원 API(이름 없음): name 'shapes' is not defined |
 | [DipoleElectricField](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/DipoleElectricField) | 통과 | 통과 | 2 |  | 통과 |
-| [DoublePendulum-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/DoublePendulum-VPython) | 통과 | 통과 | 7 |  | 미지원 속성·메서드: 'cylinder' object has no attribute 'size' |
+| [DoublePendulum-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/DoublePendulum-VPython) | 통과 | 통과 | 7 |  | 통과 |
 | [ElectricMotor](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/ElectricMotor) | 통과 | 통과 | 381 |  | 미지원 속성·메서드: 'extrusion' object has no attribute 'clone' |
 | [Extrusions](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Extrusions) | 통과 | 통과 | 7 |  | 미지원 API(이름 없음): name 'shapes' is not defined |
 | [GraphTest](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/GraphTest) | 통과 | 통과 | 0 |  | 통과 |
-| [Gyroscope-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Gyroscope-VPython) | 실행 오류 | 실행 오류 | 7 | ZeroDivisionError: float division by zero | 미지원 속성·메서드: 'compound' object has no attribute 'length' |
+| [Gyroscope-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Gyroscope-VPython) | 통과 | 실행 오류 | 7 |  | 미지원 속성·메서드: 'compound' object has no attribute 'length' |
 | [HardSphereGas-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/HardSphereGas-VPython) | 통과 | 통과 | 200 |  | 통과 |
 | [LaTexMathDisplay](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/LaTexMathDisplay) | 실행 오류 | 실행 오류 | 1 | NameError: name 'MathJax' is not defined | 실행 오류: name 'MathJax' is not defined |
 | [MatterAndInteractions](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/MatterAndInteractions) | Web VPython 전용(제외) | Web VPython 전용(제외) | 0 | SyntaxError: invalid syntax (<student>, line 114) | Web VPython 전용(제외): invalid syntax (<student>, line 114) |
@@ -67,7 +67,7 @@
 | [RotatingPoints](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/RotatingPoints) | 통과 | 통과 | 0 |  | 실행 오류: could not convert string to float: 'pos' |
 | [Rug](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Rug) | 미지원 인자·호출 형식 | 미지원 인자·호출 형식 | 0 | TypeError: vertex.__init__() got an unexpected keyword argument 'texpos' | 미지원 인자·호출 형식: vertex.__init__() got an unexpected keyword argument 'texpos' |
 | [ScrollingText](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/ScrollingText) | Web VPython 전용(제외) | Web VPython 전용(제외) | 0 | SyntaxError: invalid syntax (<student>, line 10) | Web VPython 전용(제외): invalid syntax (<student>, line 10) |
-| [Stars-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Stars-VPython) | 실행 오류 | 실행 오류 | 20 | NameError: name 'Stars' is not defined | 실행 오류: name 'Stars' is not defined |
+| [Stars-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Stars-VPython) | 통과 | 실행 오류 | 20 |  | 통과 |
 | [Stonehenge-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Stonehenge-VPython) | 실행 오류 | 실행 오류 | 40 | NameError: name 'Date' is not defined | 미지원 API(이름 없음): name 'shapes' is not defined |
 | [Textures-VPython](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Textures-VPython) | 통과 | 통과 | 12 |  | 통과 |
 | [Transparency](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Transparency) | 통과 | 통과 | 6 |  | 통과 |
@@ -78,25 +78,13 @@
 | id | 출처 | 범주 | 상세 | 줄 | 브라우저 | 근거 |
 |---|---|---|---|---|---|---|
 | `idiom:graph-gcurve` | idiom | unsupported-arg | _GSeriesBase.plot() got an unexpected keyword argument 'pos' | 6 | unsupported-arg: TypeError: _GSeriesBase.plot() got an unexpected keyword argument 'pos' | [문서](https://www.glowscript.org/docs/VPythonDocs/graph.html) |
-| `idiom:event-waitfor-click` | idiom | unsupported-attr | 'NoneType' object has no attribute 'pos' | 4 | unsupported-attr: AttributeError: 'NoneType' object has no attribute 'pos' | [문서](https://www.glowscript.org/docs/VPythonDocs/mouse.html) |
-| `idiom:event-waitfor-keydown` | idiom | unsupported-attr | 'NoneType' object has no attribute 'key' | 3 | unsupported-attr: AttributeError: 'NoneType' object has no attribute 'key' | [문서](https://www.glowscript.org/docs/VPythonDocs/key.html) |
-| `idiom:event-pause` | idiom | unsupported-attr | '_Scene' object has no attribute 'pause' | 3 | unsupported-attr: AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? | [문서](https://www.glowscript.org/docs/VPythonDocs/pause.html) |
-| `idiom:flow-rate-in-function` | idiom | error | SyntaxError: 'await' outside async function (<student>, line 7) |  | error: SyntaxError: 'await' outside async function | [문서](https://www.glowscript.org/docs/VPythonDocs/rate.html) |
-| `idiom:flow-rate-in-method` | idiom | error | SyntaxError: 'await' outside async function (<student>, line 10) |  | error: SyntaxError: 'await' outside async function | [문서](https://www.glowscript.org/docs/VPythonDocs/rate.html) |
 | `idiom:flow-while-no-rate` | idiom | timeout | rate 가 없는 반복문이거나 매우 무거운 코드 — 브라우저에서는 10초 무응답 뒤 강제 종료 |  | hang | [문서](https://www.glowscript.org/docs/VPythonDocs/rate.html) |
-| `idiom:flow-import-as` | idiom | warning | <student>:3: RuntimeWarning: coroutine 'rate' was never awaited RuntimeWarning: Enable tracemalloc to get the object allocation traceback |  | pass | [문서](https://www.glowscript.org/docs/VPythonDocs/package.html) |
-| `idiom:flow-input` | idiom | input | EOFError: EOF when reading a line | 2 | error: OSError: [Errno 29] I/O error | [문서](https://www.glowscript.org/docs/VPythonDocs/textinput.html) |
-| `idiom:flow-global-called-in-loop` | idiom | error | NameError: name 'score' is not defined | 7 | error: NameError: name 'score' is not defined. Did you mean: 'cone'? | [문서](https://www.glowscript.org/docs/VPythonDocs/rate.html) |
 | `idiom:flow-get-library` | idiom | unsupported-api | GlowScript 전역 이름 `get_library` 없음 | 2 | unsupported-api: NameError: name 'get_library' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/file.html) |
-| `idiom:paths-basic` | idiom | unsupported-attr | 'path_object' object has no attribute 'octagon' | 18 | pass | [문서](https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html) |
-| `gsexample:Bounce-Callbacks-VPython` | gsexample | error | SyntaxError: 'await' outside async function (<student>, line 30) |  | error: SyntaxError: 'await' outside async function | [문서](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Bounce-Callbacks-VPython) |
-| `gsexample:Gyroscope-VPython` | gsexample | error | ZeroDivisionError: float division by zero | 93 | error: ZeroDivisionError: float division by zero | [문서](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Gyroscope-VPython) |
 | `gsexample:LaTexMathDisplay` | gsexample | error | NameError: name 'MathJax' is not defined | 7 | error: NameError: name 'MathJax' is not defined | [문서](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/LaTexMathDisplay) |
 | `gsexample:MatterAndInteractions` | gsexample | glowscript-only | Web VPython 전용: JavaScript(jQuery) 혼용 코드 |  | glowscript-only: SyntaxError: invalid syntax | [문서](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/MatterAndInteractions) |
 | `gsexample:Rug` | gsexample | unsupported-arg | vertex.__init__() got an unexpected keyword argument 'texpos' | 33 | unsupported-arg: TypeError: vertex.__init__() got an unexpected keyword argument 'texpos' | [문서](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Rug) |
 | `gsexample:ScrollingText` | gsexample | glowscript-only | Web VPython 전용: JavaScript(jQuery) 혼용 코드 |  | glowscript-only: SyntaxError: invalid syntax | [문서](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/ScrollingText) |
-| `gsexample:Stars-VPython` | gsexample | error | NameError: name 'Stars' is not defined | 70 | error: NameError: name 'Stars' is not defined. Did you mean: 'vars'? | [문서](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Stars-VPython) |
-| `gsexample:Stonehenge-VPython` | gsexample | error | NameError: name 'Date' is not defined | 27 | error: NameError: name 'Date' is not defined. Did you mean: 'rate'? | [문서](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Stonehenge-VPython) |
+| `gsexample:Stonehenge-VPython` | gsexample | error | NameError: name 'Date' is not defined | 25 | error: NameError: name 'Date' is not defined. Did you mean: 'rate'? | [문서](https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Stonehenge-VPython) |
 | `docs:attach_light:line1` | docs | unsupported-arg | attach_light.__init__() missing 1 required positional argument: 'obj' | 14 | unsupported-arg: TypeError: attach_light.__init__() missing 1 required positional argument: 'obj' | [문서](https://www.glowscript.org/docs/VPythonDocs/attach_light.html) |
 | `docs:attacharrow:line1` | docs | unsupported-arg | attach_arrow.__init__() missing 2 required positional arguments: 'obj' and 'attr' | 14 | unsupported-arg: TypeError: attach_arrow.__init__() missing 2 required positional arguments: 'obj' and 'attr' | [문서](https://www.glowscript.org/docs/VPythonDocs/attacharrow.html) |
 | `docs:color:pre1` | docs | fragment-undefined | 문서 조각이 가정한 이름 `hsv` 미정의 (VPyLab 문제 아님) | 16 | fragment-undefined: NameError: name 'hsv' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/color.html) |
@@ -116,25 +104,18 @@
 | `docs:latexmath:pre1` | docs | fragment-undefined | 문서 조각이 가정한 이름 `MathJax` 미정의 (VPyLab 문제 아님) | 17 | fragment-undefined: NameError: name 'MathJax' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/latexmath.html) |
 | `docs:latexmath:pre2` | docs | fragment-undefined | 문서 조각이 가정한 이름 `MathJax` 미정의 (VPyLab 문제 아님) | 15 | fragment-undefined: NameError: name 'MathJax' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/latexmath.html) |
 | `docs:menu:pre1` | docs | warning | <student>:20: SyntaxWarning: "is" with 'int' literal. Did you mean "=="? <student>:22: SyntaxWarning: "is" with 'int' literal. Did you mean  |  | pass | [문서](https://www.glowscript.org/docs/VPythonDocs/menu.html) |
-| `docs:mouse:line1` | docs | unsupported-attr | '_Scene' object has no attribute 'pause' | 14 | unsupported-attr: AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? | [문서](https://www.glowscript.org/docs/VPythonDocs/mouse.html) |
-| `docs:mouse:line2` | docs | unsupported-arg | _Scene.waitfor() missing 1 required positional argument: 'event_name' | 14 | unsupported-arg: TypeError: _Scene.waitfor() missing 1 required positional argument: 'event_name' | [문서](https://www.glowscript.org/docs/VPythonDocs/mouse.html) |
+| `docs:mouse:line2` | docs | unsupported-arg | _Scene.waitfor() missing 1 required positional argument: 'event_names' | 14 | unsupported-arg: TypeError: _Scene.waitfor() missing 1 required positional argument: 'event_name' | [문서](https://www.glowscript.org/docs/VPythonDocs/mouse.html) |
 | `docs:mouse:line3` | docs | unsupported-arg | '_MouseState' object is not callable | 14 | unsupported-arg: TypeError: '_MouseState' object is not callable | [문서](https://www.glowscript.org/docs/VPythonDocs/mouse.html) |
-| `docs:mouse:line5` | docs | unsupported-attr | '_Scene' object has no attribute 'pause' | 14 | unsupported-attr: AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? | [문서](https://www.glowscript.org/docs/VPythonDocs/mouse.html) |
 | `docs:mouse:line7` | docs | unsupported-arg | '_MouseState' object is not callable | 14 | unsupported-arg: TypeError: '_MouseState' object is not callable | [문서](https://www.glowscript.org/docs/VPythonDocs/mouse.html) |
 | `docs:mouse:line9` | docs | fragment-undefined | 문서 조각이 가정한 이름 `newcolor` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'newcolor' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/mouse.html) |
-| `docs:pause:line1` | docs | unsupported-attr | '_Scene' object has no attribute 'pause' | 14 | unsupported-attr: AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? | [문서](https://www.glowscript.org/docs/VPythonDocs/pause.html) |
 | `docs:radiobutton:pre1` | docs | warning | <student>:17: SyntaxWarning: "is" with 'str' literal. Did you mean "=="? <student>:19: SyntaxWarning: "is" with 'str' literal. Did you mean  |  | pass | [문서](https://www.glowscript.org/docs/VPythonDocs/radiobutton.html) |
-| `docs:rate:line1` | docs | unsupported-arg | rate() missing 1 required positional argument: 'fps' | 16 | unsupported-arg: TypeError: rate() missing 1 required positional argument: 'fps' | [문서](https://www.glowscript.org/docs/VPythonDocs/rate.html) |
-| `docs:rate:line3` | docs | fragment-undefined | 문서 조각이 가정한 이름 `make_trail` 미정의 (VPyLab 문제 아님) | 16 | fragment-undefined: NameError: name 'make_trail' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/rate.html) |
+| `docs:rate:line1` | docs | unsupported-arg | rate() missing 1 required positional argument: 'fps' | 14 | unsupported-arg: TypeError: rate() missing 1 required positional argument: 'fps' | [문서](https://www.glowscript.org/docs/VPythonDocs/rate.html) |
+| `docs:rate:line3` | docs | fragment-undefined | 문서 조각이 가정한 이름 `make_trail` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'make_trail' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/rate.html) |
 | `docs:shapes_and_paths:line1` | docs | fragment-undefined | 문서 조각이 가정한 이름 `x0` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'x0' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html) |
 | `docs:shapes_and_paths:line2` | docs | fragment-undefined | 문서 조각이 가정한 이름 `x0` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'x0' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html) |
 | `docs:shapes_and_paths:line21` | docs | fragment-undefined | 문서 조각이 가정한 이름 `outer` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'outer' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html) |
 | `docs:slider:pre1` | docs | warning | <student>:18: SyntaxWarning: "is" with 'str' literal. Did you mean "=="? |  | pass | [문서](https://www.glowscript.org/docs/VPythonDocs/slider.html) |
-| `docs:speed:line1` | docs | unsupported-arg | rate() missing 1 required positional argument: 'fps' | 16 | unsupported-arg: TypeError: rate() missing 1 required positional argument: 'fps' | [문서](https://www.glowscript.org/docs/VPythonDocs/speed.html) |
-| `docs:textinput:pre1` | docs | error | EOFError: EOF when reading a line | 14 | error: OSError: [Errno 29] I/O error | [문서](https://www.glowscript.org/docs/VPythonDocs/textinput.html) |
-| `docs:textinput:line1` | docs | error | TypeError: input() takes no keyword arguments | 14 | input: TypeError: input() takes no keyword arguments | [문서](https://www.glowscript.org/docs/VPythonDocs/textinput.html) |
-| `docs:userinput:pre1` | docs | unsupported-attr | '_Scene' object has no attribute 'pause' | 15 | unsupported-attr: AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? | [문서](https://www.glowscript.org/docs/VPythonDocs/userinput.html) |
-| `docs:userinput:line1` | docs | unsupported-attr | '_Scene' object has no attribute 'pause' | 14 | unsupported-attr: AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? | [문서](https://www.glowscript.org/docs/VPythonDocs/userinput.html) |
+| `docs:speed:line1` | docs | unsupported-arg | rate() missing 1 required positional argument: 'fps' | 14 | unsupported-arg: TypeError: rate() missing 1 required positional argument: 'fps' | [문서](https://www.glowscript.org/docs/VPythonDocs/speed.html) |
 | `docs:userinput:line3` | docs | fragment-undefined | 문서 조각이 가정한 이름 `key_pressed` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'key_pressed' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/userinput.html) |
 | `docs:vector:line1` | docs | fragment-undefined | 문서 조각이 가정한 이름 `myvec1` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'myvec1' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/vector.html) |
 | `docs:vertex:line2` | docs | fragment-undefined | 문서 조각이 가정한 이름 `myvertex0` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'myvertex0' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/vertex.html) |
@@ -142,20 +123,37 @@
 | `docs:vertex:line4` | docs | fragment-undefined | 문서 조각이 가정한 이름 `c` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'c' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/vertex.html) |
 | `docs:vertex:line5` | docs | fragment-undefined | 문서 조각이 가정한 이름 `c` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'c' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/vertex.html) |
 | `docs:wtext:line1` | docs | fragment-undefined | 문서 조각이 가정한 이름 `vslider` 미정의 (VPyLab 문제 아님) | 14 | fragment-undefined: NameError: name 'vslider' is not defined | [문서](https://www.glowscript.org/docs/VPythonDocs/wtext.html) |
-| `demos:ButtonsSlidersMenus1-async` | demos | unsupported-module | No module named 'ipywidgets' | 2 | unsupported-module: ModuleNotFoundError: No module named 'ipywidgets' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/ButtonsSlidersMenus1-async.ipynb) |
-| `demos:ButtonsSlidersMenus1` | demos | unsupported-module | No module named 'ipywidgets' | 2 | unsupported-module: ModuleNotFoundError: No module named 'ipywidgets' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/ButtonsSlidersMenus1.ipynb) |
+| `demos:ButtonsSlidersMenus1-async` | demos | unsupported-module | No module named 'ipywidgets' | 1 | unsupported-module: ModuleNotFoundError: No module named 'ipywidgets' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/ButtonsSlidersMenus1-async.ipynb) |
+| `demos:ButtonsSlidersMenus1` | demos | unsupported-module | No module named 'ipywidgets' | 1 | unsupported-module: ModuleNotFoundError: No module named 'ipywidgets' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/ButtonsSlidersMenus1.ipynb) |
 | `demos:Color-RGB-HSV1` | demos | unsupported-module | No module named 'ipywidgets' | 1 | unsupported-module: ModuleNotFoundError: No module named 'ipywidgets' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Color-RGB-HSV1.ipynb) |
-| `demos:Graphs` | demos | unsupported-attr | '_Scene' object has no attribute 'pause' | 20 | unsupported-attr: AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Graphs.ipynb) |
-| `demos:Gyroscope-Suspended` | demos | error | NameError: name 'Lrot' is not defined | 129 | error: NameError: name 'Lrot' is not defined | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Gyroscope-Suspended.ipynb) |
-| `demos:Gyroscope` | demos | error | ZeroDivisionError: float division by zero | 89 | error: ZeroDivisionError: float division by zero | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Gyroscope.ipynb) |
-| `demos:Rug` | demos | unsupported-arg | vertex.__init__() got an unexpected keyword argument 'texpos' | 39 | unsupported-arg: TypeError: vertex.__init__() got an unexpected keyword argument 'texpos' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Rug.ipynb) |
-| `demos:Stars` | demos | error | NameError: name 'Stars' is not defined | 68 | error: NameError: name 'Stars' is not defined. Did you mean: 'vars'? | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Stars.ipynb) |
-| `demos:Stonehenge` | demos | unsupported-attr | 'helix' object has no attribute 'size' | 312 | unsupported-attr: AttributeError: 'helix' object has no attribute 'size' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Stonehenge.ipynb) |
-| `demos:Textures1-async` | demos | unsupported-module | No module named 'ipywidgets' | 2 | unsupported-module: ModuleNotFoundError: No module named 'ipywidgets' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Textures1-async.ipynb) |
-| `demos:Textures1` | demos | unsupported-module | No module named 'ipywidgets' | 2 | unsupported-module: ModuleNotFoundError: No module named 'ipywidgets' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Textures1.ipynb) |
+| `demos:Graphs` | demos | unsupported-attr | 'gdots' object has no attribute 'radius' | 33 | unsupported-attr: AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Graphs.ipynb) |
+| `demos:Rug` | demos | unsupported-arg | vertex.__init__() got an unexpected keyword argument 'texpos' | 37 | unsupported-arg: TypeError: vertex.__init__() got an unexpected keyword argument 'texpos' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Rug.ipynb) |
+| `demos:Stonehenge` | demos | unsupported-attr | 'helix' object has no attribute 'size' | 310 | unsupported-attr: AttributeError: 'helix' object has no attribute 'size' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Stonehenge.ipynb) |
+| `demos:Textures1-async` | demos | unsupported-module | No module named 'ipywidgets' | 1 | unsupported-module: ModuleNotFoundError: No module named 'ipywidgets' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Textures1-async.ipynb) |
+| `demos:Textures1` | demos | unsupported-module | No module named 'ipywidgets' | 1 | unsupported-module: ModuleNotFoundError: No module named 'ipywidgets' | [문서](https://github.com/vpython/vpython-jupyter/blob/master/Demos/Textures1.ipynb) |
 
 ## 정적 통과 · 브라우저 실패 (실행 경로·브릿지 쪽 문제)
 
 | id | 브라우저 범주 | 상태 | 오류 | 브릿지 경고 |
 |---|---|---|---|---|
+| `idiom:event-waitfor-click` | unsupported-attr | error | AttributeError: 'NoneType' object has no attribute 'pos' |  |
+| `idiom:event-waitfor-keydown` | unsupported-attr | error | AttributeError: 'NoneType' object has no attribute 'key' |  |
+| `idiom:event-pause` | unsupported-attr | error | AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? |  |
+| `idiom:flow-rate-in-function` | error | error | SyntaxError: 'await' outside async function |  |
+| `idiom:flow-rate-in-method` | error | error | SyntaxError: 'await' outside async function |  |
+| `idiom:flow-input` | error | error | OSError: [Errno 29] I/O error |  |
+| `idiom:flow-global-called-in-loop` | error | error | NameError: name 'score' is not defined. Did you mean: 'cone'? |  |
+| `gsexample:Bounce-Callbacks-VPython` | error | error | SyntaxError: 'await' outside async function |  |
+| `gsexample:Gyroscope-VPython` | error | error | ZeroDivisionError: float division by zero |  |
 | `gsexample:RotatingCubes-VPython` | hang | lost |  |  |
+| `gsexample:Stars-VPython` | error | error | NameError: name 'Stars' is not defined. Did you mean: 'vars'? |  |
+| `docs:mouse:line1` | unsupported-attr | error | AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? |  |
+| `docs:mouse:line5` | unsupported-attr | error | AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? |  |
+| `docs:pause:line1` | unsupported-attr | error | AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? |  |
+| `docs:textinput:pre1` | error | error | OSError: [Errno 29] I/O error |  |
+| `docs:textinput:line1` | input | error | TypeError: input() takes no keyword arguments |  |
+| `docs:userinput:pre1` | unsupported-attr | error | AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? |  |
+| `docs:userinput:line1` | unsupported-attr | error | AttributeError: '_Scene' object has no attribute 'pause'. Did you mean: 'mouse'? |  |
+| `demos:Gyroscope-Suspended` | error | error | NameError: name 'Lrot' is not defined |  |
+| `demos:Gyroscope` | error | error | ZeroDivisionError: float division by zero |  |
+| `demos:Stars` | error | error | NameError: name 'Stars' is not defined. Did you mean: 'vars'? |  |

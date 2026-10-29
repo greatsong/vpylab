@@ -1,19 +1,18 @@
 {
- "generatedAt": "2026-10-30T07:55:37",
+ "generatedAt": "2026-10-30T08:56:17",
  "python": "3.12.4",
  "api": "client/src/engine/vpython-api.py",
  "count": 579,
  "summary": {
-  "pass": 503,
+  "pass": 525,
   "unsupported-arg": 11,
-  "unsupported-attr": 12,
-  "error": 13,
   "timeout": 1,
-  "warning": 5,
-  "input": 1,
   "unsupported-api": 4,
+  "error": 2,
   "glowscript-only": 2,
   "fragment-undefined": 22,
+  "unsupported-attr": 3,
+  "warning": 4,
   "unsupported-module": 5
  },
  "shim": false,
@@ -49,7 +48,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.18
   },
   {
    "id": "internal:example:shooting-stars",
@@ -63,13 +62,13 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 1168,
+    "total": 1183,
     "actions": {
      "scene": 1,
      "create": 106,
      "sound": 6,
-     "update": 635,
-     "trail_update": 420
+     "update": 644,
+     "trail_update": 426
     },
     "createTypes": {
      "sphere": 106
@@ -82,7 +81,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.16
   },
   {
    "id": "internal:example:dna-helix",
@@ -113,7 +112,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.16
   },
   {
    "id": "internal:example:galaxy",
@@ -145,7 +144,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.59
+   "elapsed": 0.63
   },
   {
    "id": "internal:example:rain",
@@ -159,12 +158,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 7395,
+    "total": 7408,
     "actions": {
      "scene": 1,
      "create": 31,
-     "update": 7328,
-     "sound": 35
+     "update": 7336,
+     "sound": 40
     },
     "createTypes": {
      "box": 1,
@@ -178,7 +177,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.23
   },
   {
    "id": "internal:example:music-box",
@@ -192,12 +191,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 489,
+    "total": 249,
     "actions": {
      "scene": 1,
      "create": 8,
-     "update": 360,
-     "sound": 120
+     "update": 180,
+     "sound": 60
     },
     "createTypes": {
      "box": 7,
@@ -211,7 +210,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.19
   },
   {
    "id": "internal:example:rainbow-xylophone",
@@ -225,12 +224,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 489,
+    "total": 249,
     "actions": {
      "scene": 1,
      "create": 8,
-     "update": 360,
-     "sound": 120
+     "update": 180,
+     "sound": 60
     },
     "createTypes": {
      "box": 7,
@@ -244,7 +243,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.18
   },
   {
    "id": "internal:example:fireflies",
@@ -258,12 +257,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 11640,
+    "total": 11627,
     "actions": {
      "scene": 1,
      "create": 24,
      "update": 11520,
-     "sound": 95
+     "sound": 82
     },
     "createTypes": {
      "sphere": 12,
@@ -277,7 +276,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.19
   },
   {
    "id": "internal:example:rhythm-viz",
@@ -310,7 +309,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.14
   },
   {
    "id": "internal:example:space-bgm",
@@ -345,7 +344,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:cannon",
@@ -381,7 +380,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.13
   },
   {
    "id": "internal:example:wave-sim",
@@ -412,7 +411,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.73
+   "elapsed": 0.74
   },
   {
    "id": "internal:example:surface-plot",
@@ -437,7 +436,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.16
+   "elapsed": 0.13
   },
   {
    "id": "internal:example:pendulum",
@@ -473,7 +472,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.14
   },
   {
    "id": "internal:example:fireworks",
@@ -487,13 +486,13 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 28537,
+    "total": 27337,
     "actions": {
      "scene": 1,
      "sound": 6,
      "create": 180,
-     "update": 21300,
-     "trail_update": 7050
+     "update": 20400,
+     "trail_update": 6750
     },
     "createTypes": {
      "sphere": 180
@@ -506,7 +505,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.26
   },
   {
    "id": "internal:example:christmas-tree",
@@ -541,7 +540,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.16
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:kaleidoscope",
@@ -572,7 +571,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.2
   },
   {
    "id": "internal:example:neon-city",
@@ -586,13 +585,13 @@
    "status": "pass",
    "error": null,
    "commands": {
-    "total": 107,
+    "total": 105,
     "actions": {
      "scene": 1,
-     "create": 106
+     "create": 104
     },
     "createTypes": {
-     "box": 76,
+     "box": 74,
      "local_light": 30
     },
     "sceneProps": {
@@ -603,7 +602,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.13
   },
   {
    "id": "internal:example:bounce-ball",
@@ -637,7 +636,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:planet-collision",
@@ -670,7 +669,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.16
+   "elapsed": 0.17
   },
   {
    "id": "internal:example:showcase-shapes",
@@ -705,7 +704,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:showcase-curve",
@@ -770,7 +769,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.13
+   "elapsed": 0.12
   },
   {
    "id": "internal:example:showcase-event-click",
@@ -869,7 +868,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.13
   },
   {
    "id": "internal:example:showcase-vertex-rainbow",
@@ -932,7 +931,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.13
   },
   {
    "id": "internal:example:showcase-extrusion-tube",
@@ -963,7 +962,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.13
   },
   {
    "id": "internal:example:showcase-keysdown-spaceship",
@@ -997,7 +996,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.14
   },
   {
    "id": "internal:example:showcase-mouse-follow",
@@ -1033,7 +1032,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.16
+   "elapsed": 0.14
   },
   {
    "id": "internal:example:showcase-graph-functions",
@@ -1065,7 +1064,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.14
   },
   {
    "id": "internal:example:showcase-scatter-regression",
@@ -1088,7 +1087,7 @@
     "createTypes": {},
     "sceneProps": {}
    },
-   "stdout": "회귀식: y = 2.157 · x + 3.699\n빨간 점 = 데이터, 파란 선 = 회귀, 회색 선 = 진짜 식\n",
+   "stdout": "회귀식: y = 2.292 · x + 3.115\n빨간 점 = 데이터, 파란 선 = 회귀, 회색 선 = 진짜 식\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
@@ -1128,7 +1127,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.16
   },
   {
    "id": "internal:example:music-frequency-tower",
@@ -1160,7 +1159,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.13
+   "elapsed": 0.14
   },
   {
    "id": "internal:example:music-sine-wave",
@@ -1194,7 +1193,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.16
   },
   {
    "id": "internal:example:music-fibonacci-rhythm",
@@ -1208,12 +1207,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 717,
+    "total": 684,
     "actions": {
      "scene": 1,
      "create": 15,
-     "update": 467,
-     "sound": 234
+     "update": 445,
+     "sound": 223
     },
     "createTypes": {
      "box": 7,
@@ -1227,7 +1226,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.17
   },
   {
    "id": "internal:example:music-doppler",
@@ -1241,14 +1240,14 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 732,
+    "total": 726,
     "actions": {
      "scene": 1,
      "create": 5,
-     "update": 242,
-     "trail_update": 242,
+     "update": 240,
+     "trail_update": 240,
      "trail_clear": 3,
-     "sound": 239
+     "sound": 237
     },
     "createTypes": {
      "box": 2,
@@ -1263,7 +1262,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.17
   },
   {
    "id": "internal:example:music-wave-interference",
@@ -1296,7 +1295,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:music-planet-orchestra",
@@ -1366,7 +1365,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.16
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:music-note-fireworks",
@@ -1399,7 +1398,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:music-mario-dance",
@@ -1413,12 +1412,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 303,
+    "total": 273,
     "actions": {
      "scene": 3,
      "create": 7,
-     "sound": 98,
-     "update": 195
+     "sound": 88,
+     "update": 175
     },
     "createTypes": {
      "sphere": 1,
@@ -1439,7 +1438,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:music-childrens-songs",
@@ -1472,7 +1471,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:music-game-themes",
@@ -1504,7 +1503,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:music-piano-recorder",
@@ -1539,7 +1538,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:music-endless-cosmos",
@@ -1553,16 +1552,15 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 527,
+    "total": 252,
     "actions": {
      "scene": 3,
-     "create": 242,
-     "sound": 241,
-     "update": 41
+     "create": 125,
+     "sound": 124
     },
     "createTypes": {
      "label": 1,
-     "sphere": 241
+     "sphere": 124
     },
     "sceneProps": {
      "background": 1,
@@ -1574,7 +1572,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.15
   },
   {
    "id": "internal:example:lightshow-aurora-symphony",
@@ -1610,7 +1608,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.49
+   "elapsed": 0.51
   },
   {
    "id": "internal:example:lightshow-piano-fountain",
@@ -1646,7 +1644,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.24
   },
   {
    "id": "internal:example:lightshow-galaxy-disco",
@@ -1684,7 +1682,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.29
   },
   {
    "id": "internal:example:synesthesia-color-piano",
@@ -1720,7 +1718,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.18
   },
   {
    "id": "internal:example:synesthesia-pitch-painter",
@@ -1755,7 +1753,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.16
   },
   {
    "id": "internal:example:synesthesia-aurora-orchestra",
@@ -1794,7 +1792,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.29
   },
   {
    "id": "internal:example:cosmic-aurora-veil",
@@ -1804,15 +1802,16 @@
    "origin": "client/src/data/examples.js#cosmic-aurora-veil",
    "progress": false,
    "category": "pass",
-   "detail": "rate 69회 뒤 정지",
+   "detail": "rate 179회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 246124,
+    "total": 642126,
     "actions": {
      "scene": 2,
      "create": 1322,
-     "update": 244800
+     "update": 640800,
+     "sound": 2
     },
     "createTypes": {
      "label": 1,
@@ -1828,7 +1827,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.79
+   "elapsed": 3.96
   },
   {
    "id": "internal:example:cosmic-firefly-choir",
@@ -1842,12 +1841,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 48277,
+    "total": 48284,
     "actions": {
      "scene": 2,
      "create": 103,
      "update": 48001,
-     "sound": 171
+     "sound": 178
     },
     "createTypes": {
      "label": 1,
@@ -1864,7 +1863,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.05
+   "elapsed": 0.44
   },
   {
    "id": "internal:example:cosmic-galaxy-grow",
@@ -1878,16 +1877,16 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 7176,
+    "total": 7082,
     "actions": {
      "scene": 2,
-     "create": 30,
-     "update": 7110,
-     "sound": 34
+     "create": 31,
+     "update": 7016,
+     "sound": 33
     },
     "createTypes": {
      "label": 1,
-     "sphere": 28,
+     "sphere": 29,
      "local_light": 1
     },
     "sceneProps": {
@@ -1899,7 +1898,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.19
   },
   {
    "id": "internal:example:texture-showcase",
@@ -1931,7 +1930,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-shapes:beg-shapes-1",
@@ -1961,7 +1960,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.42
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-shapes:beg-shapes-2",
@@ -1992,7 +1991,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-shapes:beg-shapes-3",
@@ -2023,7 +2022,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:beg-shapes:beg-shapes-4",
@@ -2054,7 +2053,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-shapes:beg-shapes-5",
@@ -2086,7 +2085,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-1",
@@ -2116,7 +2115,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.4
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-2",
@@ -2146,7 +2145,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-3",
@@ -2177,7 +2176,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-4",
@@ -2207,7 +2206,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-5",
@@ -2237,7 +2236,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.13
   },
   {
    "id": "internal:course:beg-patterns:beg-patterns-6",
@@ -2268,7 +2267,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.52
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-melody:beg-melody-1",
@@ -2293,7 +2292,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.99
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:beg-melody:beg-melody-2",
@@ -2318,7 +2317,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.81
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:beg-melody:beg-melody-3",
@@ -2328,8 +2327,8 @@
    "origin": "client/src/data/courses.js#beg-melody/beg-melody-3",
    "progress": false,
    "category": "pass",
-   "detail": "rate 60회 뒤 정지",
-   "status": "stopped",
+   "detail": "",
+   "status": "pass",
    "error": null,
    "commands": {
     "total": 7,
@@ -2343,7 +2342,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.26
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:beg-melody:beg-melody-4",
@@ -2353,13 +2352,13 @@
    "origin": "client/src/data/courses.js#beg-melody/beg-melody-4",
    "progress": false,
    "category": "pass",
-   "detail": "rate 64회 뒤 정지",
-   "status": "stopped",
+   "detail": "",
+   "status": "pass",
    "error": null,
    "commands": {
-    "total": 11,
+    "total": 12,
     "actions": {
-     "sound": 11
+     "sound": 12
     },
     "createTypes": {},
     "sceneProps": {}
@@ -2368,7 +2367,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.24
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:beg-melody:beg-melody-5",
@@ -2378,18 +2377,18 @@
    "origin": "client/src/data/courses.js#beg-melody/beg-melody-5",
    "progress": false,
    "category": "pass",
-   "detail": "rate 61회 뒤 정지",
-   "status": "stopped",
+   "detail": "",
+   "status": "pass",
    "error": null,
    "commands": {
-    "total": 15,
+    "total": 17,
     "actions": {
      "scene": 1,
-     "create": 7,
-     "sound": 7
+     "create": 8,
+     "sound": 8
     },
     "createTypes": {
-     "box": 7
+     "box": 8
     },
     "sceneProps": {
      "background": 1
@@ -2399,7 +2398,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.23
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:fus-math-functions:fus-math-1",
@@ -2426,7 +2425,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:fus-math-functions:fus-math-2",
@@ -2455,7 +2454,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:fus-math-functions:fus-math-3",
@@ -2484,7 +2483,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:fus-math-functions:fus-math-4",
@@ -2511,7 +2510,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:fus-math-functions:fus-math-5",
@@ -2540,7 +2539,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:fus-math-functions:fus-math-6",
@@ -2571,7 +2570,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-1",
@@ -2603,7 +2602,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-2",
@@ -2636,7 +2635,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-3",
@@ -2669,7 +2668,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-4",
@@ -2702,7 +2701,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-5",
@@ -2737,7 +2736,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-6",
@@ -2769,7 +2768,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:fus-sci-newton:fus-sci-7",
@@ -2796,7 +2795,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.13
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-1",
@@ -2826,7 +2825,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.13
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-2",
@@ -2858,7 +2857,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.13
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-3",
@@ -2888,7 +2887,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-4",
@@ -2918,7 +2917,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.19
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-5",
@@ -2948,7 +2947,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.2
   },
   {
    "id": "internal:course:fus-art-generative:fus-art-6",
@@ -2958,16 +2957,16 @@
    "origin": "client/src/data/courses.js#fus-art-generative/fus-art-6",
    "progress": false,
    "category": "pass",
-   "detail": "rate 60회 뒤 정지",
-   "status": "stopped",
+   "detail": "",
+   "status": "pass",
    "error": null,
    "commands": {
-    "total": 42,
+    "total": 50,
     "actions": {
      "scene": 1,
      "create": 7,
-     "update": 28,
-     "sound": 6
+     "update": 35,
+     "sound": 7
     },
     "createTypes": {
      "box": 7
@@ -2980,7 +2979,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.19
+   "elapsed": 0.19
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-1",
@@ -3009,7 +3008,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.15
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-2",
@@ -3041,7 +3040,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-3",
@@ -3073,7 +3072,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-4",
@@ -3105,7 +3104,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.13
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-5",
@@ -3137,7 +3136,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.57
+   "elapsed": 0.14
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-6",
@@ -3169,7 +3168,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.13
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-7",
@@ -3202,7 +3201,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.12
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-8",
@@ -3229,7 +3228,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.13
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-9",
@@ -3257,7 +3256,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.13
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-10",
@@ -3282,7 +3281,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.56
+   "elapsed": 0.13
   },
   {
    "id": "internal:course:pro-toolkit:pro-toolkit-11",
@@ -3314,7 +3313,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-1:starter",
@@ -3341,7 +3340,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-1:solution",
@@ -3371,7 +3370,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-2:starter",
@@ -3400,7 +3399,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-2:solution",
@@ -3429,7 +3428,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.67
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-3:starter",
@@ -3457,7 +3456,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.51
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-3:solution",
@@ -3485,7 +3484,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-4:starter",
@@ -3508,7 +3507,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-4:solution",
@@ -3535,7 +3534,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-5:starter",
@@ -3562,7 +3561,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-5:solution",
@@ -3591,7 +3590,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-6:starter",
@@ -3621,7 +3620,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-6:solution",
@@ -3651,7 +3650,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-7:starter",
@@ -3681,7 +3680,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.63
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-7:solution",
@@ -3711,7 +3710,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.62
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-8:starter",
@@ -3738,7 +3737,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.59
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-8:solution",
@@ -3765,7 +3764,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-9:starter",
@@ -3792,7 +3791,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-9:solution",
@@ -3819,7 +3818,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-10:starter",
@@ -3846,7 +3845,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-10:solution",
@@ -3874,7 +3873,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:CT-11:starter",
@@ -3901,7 +3900,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-11:solution",
@@ -3928,7 +3927,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:CT-12:starter",
@@ -3955,7 +3954,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-12:solution",
@@ -3983,7 +3982,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-13:starter",
@@ -4010,7 +4009,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-13:solution",
@@ -4038,7 +4037,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.12
   },
   {
    "id": "internal:mission:CT-14:starter",
@@ -4066,7 +4065,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-14:solution",
@@ -4094,7 +4093,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.16
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-15:starter",
@@ -4122,7 +4121,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:CT-15:solution",
@@ -4150,7 +4149,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:CT-16:starter",
@@ -4205,7 +4204,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:CT-17:starter",
@@ -4235,7 +4234,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:CT-17:solution",
@@ -4265,7 +4264,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.19
   },
   {
    "id": "internal:mission:CR-1:starter",
@@ -4297,7 +4296,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.18
   },
   {
    "id": "internal:mission:CR-1:solution",
@@ -4329,7 +4328,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:CR-2:starter",
@@ -4359,7 +4358,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:CR-2:solution",
@@ -4389,7 +4388,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:CR-3:starter",
@@ -4420,7 +4419,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.18
   },
   {
    "id": "internal:mission:CR-3:solution",
@@ -4451,7 +4450,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:CR-4:starter",
@@ -4484,7 +4483,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.13
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:CR-4:solution",
@@ -4548,7 +4547,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:CR-5:solution",
@@ -4579,7 +4578,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:MA-1:starter",
@@ -4610,7 +4609,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:MA-1:solution",
@@ -4641,7 +4640,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:MA-2:starter",
@@ -4668,7 +4667,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.17
   },
   {
    "id": "internal:mission:MA-2:solution",
@@ -4695,7 +4694,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:MA-3:starter",
@@ -4722,7 +4721,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.13
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:MA-3:solution",
@@ -4749,7 +4748,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.13
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:MA-4:starter",
@@ -4776,7 +4775,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.13
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:MA-4:solution",
@@ -4830,7 +4829,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.13
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:MA-5:solution",
@@ -4857,7 +4856,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.13
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:SC-1:starter",
@@ -4915,7 +4914,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:SC-2:starter",
@@ -4944,7 +4943,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:SC-2:solution",
@@ -4973,7 +4972,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:SC-3:starter",
@@ -5004,7 +5003,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:SC-3:solution",
@@ -5035,7 +5034,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.22
   },
   {
    "id": "internal:mission:SC-4:starter",
@@ -5065,7 +5064,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:SC-4:solution",
@@ -5095,7 +5094,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.22
   },
   {
    "id": "internal:mission:SC-5:starter",
@@ -5127,7 +5126,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.24
   },
   {
    "id": "internal:mission:SC-5:solution",
@@ -5159,7 +5158,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.32
   },
   {
    "id": "internal:mission:AR-1:starter",
@@ -5190,7 +5189,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.26
   },
   {
    "id": "internal:mission:AR-1:solution",
@@ -5221,7 +5220,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.16
+   "elapsed": 0.31
   },
   {
    "id": "internal:mission:AR-2:starter",
@@ -5249,7 +5248,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.3
   },
   {
    "id": "internal:mission:AR-2:solution",
@@ -5277,7 +5276,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.3
   },
   {
    "id": "internal:mission:AR-3:starter",
@@ -5307,7 +5306,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:AR-3:solution",
@@ -5337,7 +5336,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.2
   },
   {
    "id": "internal:mission:AR-4:starter",
@@ -5405,7 +5404,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:AR-5:starter",
@@ -5436,7 +5435,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.23
   },
   {
    "id": "internal:mission:AR-5:solution",
@@ -5467,7 +5466,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.24
   },
   {
    "id": "internal:mission:SN-1:starter",
@@ -5496,7 +5495,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.22
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:SN-1:solution",
@@ -5525,7 +5524,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.21
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:SN-2:starter",
@@ -5553,7 +5552,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.13
+   "elapsed": 0.28
   },
   {
    "id": "internal:mission:SN-2:solution",
@@ -5581,7 +5580,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.12
+   "elapsed": 0.27
   },
   {
    "id": "internal:mission:SN-3:starter",
@@ -5612,7 +5611,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.13
+   "elapsed": 0.27
   },
   {
    "id": "internal:mission:SN-3:solution",
@@ -5622,8 +5621,8 @@
    "origin": "client/src/data/missions.js#SN-3",
    "progress": false,
    "category": "pass",
-   "detail": "rate 60회 뒤 정지",
-   "status": "stopped",
+   "detail": "",
+   "status": "pass",
    "error": null,
    "commands": {
     "total": 7,
@@ -5639,11 +5638,11 @@
      "background": 1
     }
    },
-   "stdout": "",
+   "stdout": "화음 비교 완료\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.15
+   "elapsed": 0.27
   },
   {
    "id": "internal:mission:SN-4:starter",
@@ -5674,7 +5673,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:SN-4:solution",
@@ -5705,7 +5704,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:SN-5:starter",
@@ -5737,7 +5736,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.46
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:SN-5:solution",
@@ -5769,7 +5768,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.44
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:AR-6:starter",
@@ -5799,7 +5798,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.11
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:AR-6:solution",
@@ -5829,7 +5828,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.11
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:AR-7:starter",
@@ -5861,7 +5860,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.14
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:AR-7:solution",
@@ -5893,7 +5892,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.13
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:AR-8:starter",
@@ -5923,7 +5922,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.11
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:AR-8:solution",
@@ -5953,7 +5952,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:AR-9:starter",
@@ -5986,7 +5985,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:AR-9:solution",
@@ -6019,7 +6018,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:MA-6:starter",
@@ -6046,7 +6045,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:MA-6:solution",
@@ -6073,7 +6072,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:MA-7:starter",
@@ -6103,7 +6102,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:MA-7:solution",
@@ -6133,7 +6132,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:SC-6:starter",
@@ -6161,7 +6160,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:SC-6:solution",
@@ -6189,7 +6188,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:SN-6:starter",
@@ -6217,7 +6216,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:SN-6:solution",
@@ -6245,7 +6244,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:SN-7:starter",
@@ -6273,7 +6272,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.77
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:SN-7:solution",
@@ -6301,7 +6300,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.76
+   "elapsed": 0.15
   },
   {
    "id": "internal:mission:SN-8:starter",
@@ -6329,7 +6328,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:SN-8:solution",
@@ -6357,7 +6356,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.16
   },
   {
    "id": "internal:mission:SN-9:starter",
@@ -6385,7 +6384,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.24
+   "elapsed": 0.14
   },
   {
    "id": "internal:mission:SN-9:solution",
@@ -6413,7 +6412,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 2.27
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:SN-10:starter",
@@ -6445,7 +6444,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.05
+   "elapsed": 0.13
   },
   {
    "id": "internal:mission:SN-10:solution",
@@ -6477,7 +6476,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.1
+   "elapsed": 0.15
   },
   {
    "id": "idiom:vec-component-add",
@@ -6505,7 +6504,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.47
+   "elapsed": 0.22
   },
   {
    "id": "idiom:vec-pos-plus-vdt",
@@ -6533,7 +6532,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.22
   },
   {
    "id": "idiom:vec-size-component",
@@ -6561,7 +6560,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.23
   },
   {
    "id": "idiom:vec-mag-hat-norm",
@@ -6584,7 +6583,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.23
   },
   {
    "id": "idiom:vec-dot-cross",
@@ -6607,7 +6606,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.52
+   "elapsed": 0.16
   },
   {
    "id": "idiom:vec-proj-comp-diff-angle",
@@ -6630,7 +6629,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.48
+   "elapsed": 0.15
   },
   {
    "id": "idiom:vec-rotate-function",
@@ -6653,7 +6652,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.6
+   "elapsed": 0.14
   },
   {
    "id": "idiom:vec-arith",
@@ -6676,7 +6675,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.51
+   "elapsed": 0.15
   },
   {
    "id": "idiom:vec-random",
@@ -6699,7 +6698,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.38
+   "elapsed": 0.17
   },
   {
    "id": "idiom:vec-alias",
@@ -6726,7 +6725,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.41
+   "elapsed": 0.16
   },
   {
    "id": "idiom:vec-tuple-pos",
@@ -6749,7 +6748,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.16
   },
   {
    "id": "idiom:vec-int-mul-rhs",
@@ -6772,7 +6771,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.16
   },
   {
    "id": "idiom:vec-value-copy",
@@ -6799,7 +6798,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.13
   },
   {
    "id": "idiom:obj-box-lhw",
@@ -6827,7 +6826,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.14
   },
   {
    "id": "idiom:obj-box-axis-up",
@@ -6855,7 +6854,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.14
   },
   {
    "id": "idiom:obj-sphere-size",
@@ -6882,7 +6881,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.14
   },
   {
    "id": "idiom:obj-cylinder",
@@ -6910,7 +6909,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.53
+   "elapsed": 0.14
   },
   {
    "id": "idiom:obj-cone-pyramid",
@@ -6938,7 +6937,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.54
+   "elapsed": 0.14
   },
   {
    "id": "idiom:obj-ellipsoid",
@@ -6966,7 +6965,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.62
+   "elapsed": 0.15
   },
   {
    "id": "idiom:obj-ring",
@@ -6994,7 +6993,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.6
+   "elapsed": 0.15
   },
   {
    "id": "idiom:obj-helix",
@@ -7022,7 +7021,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.16
   },
   {
    "id": "idiom:obj-arrow",
@@ -7050,7 +7049,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.15
   },
   {
    "id": "idiom:obj-label",
@@ -7078,7 +7077,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.15
   },
   {
    "id": "idiom:obj-text",
@@ -7106,7 +7105,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.15
   },
   {
    "id": "idiom:obj-curve-pos-list",
@@ -7136,7 +7135,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.13
   },
   {
    "id": "idiom:obj-curve-dict-points",
@@ -7164,7 +7163,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.13
   },
   {
    "id": "idiom:obj-points",
@@ -7192,7 +7191,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.13
   },
   {
    "id": "idiom:obj-compound",
@@ -7222,7 +7221,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.13
   },
   {
    "id": "idiom:obj-compound-origin",
@@ -7251,7 +7250,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.14
   },
   {
    "id": "idiom:obj-extrusion",
@@ -7278,7 +7277,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.15
   },
   {
    "id": "idiom:obj-shapes-paths",
@@ -7301,7 +7300,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.14
   },
   {
    "id": "idiom:obj-vertex-triangle-quad",
@@ -7329,7 +7328,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.17
   },
   {
    "id": "idiom:obj-simple-sphere",
@@ -7356,7 +7355,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.17
   },
   {
    "id": "idiom:obj-group",
@@ -7386,7 +7385,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.17
   },
   {
    "id": "idiom:attr-color-gray",
@@ -7413,7 +7412,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.17
   },
   {
    "id": "idiom:attr-color-hsv",
@@ -7436,7 +7435,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.15
   },
   {
    "id": "idiom:attr-color-names",
@@ -7459,7 +7458,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.14
   },
   {
    "id": "idiom:attr-opacity-emissive-shininess",
@@ -7487,7 +7486,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.14
   },
   {
    "id": "idiom:attr-texture-preset",
@@ -7516,7 +7515,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.13
   },
   {
    "id": "idiom:attr-texture-url",
@@ -7543,7 +7542,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.13
   },
   {
    "id": "idiom:attr-visible-false",
@@ -7571,7 +7570,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.13
   },
   {
    "id": "idiom:attr-up-axis",
@@ -7600,7 +7599,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.13
   },
   {
    "id": "idiom:attr-axis-mag",
@@ -7627,7 +7626,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.13
   },
   {
    "id": "idiom:attr-user-attributes",
@@ -7654,7 +7653,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "idiom:attr-clone",
@@ -7682,7 +7681,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.14
   },
   {
    "id": "idiom:attr-del-object",
@@ -7711,7 +7710,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.14
   },
   {
    "id": "idiom:attr-rotate-method",
@@ -7739,7 +7738,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.14
   },
   {
    "id": "idiom:attr-rotate-sphere-default-axis",
@@ -7767,7 +7766,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.14
   },
   {
    "id": "idiom:attr-dynamic-size-from-length",
@@ -7795,7 +7794,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.14
   },
   {
    "id": "idiom:trail-basic",
@@ -7825,7 +7824,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.14
   },
   {
    "id": "idiom:trail-points-interval",
@@ -7854,7 +7853,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.14
   },
   {
    "id": "idiom:trail-attach-trail",
@@ -7885,7 +7884,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.13
   },
   {
    "id": "idiom:trail-attach-trail-function",
@@ -7912,7 +7911,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.14
   },
   {
    "id": "idiom:attach-arrow",
@@ -7941,7 +7940,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.15
   },
   {
    "id": "idiom:attach-light",
@@ -7969,7 +7968,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.14
   },
   {
    "id": "idiom:scene-camera",
@@ -8001,7 +8000,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.15
   },
   {
    "id": "idiom:scene-forward-range-center",
@@ -8033,7 +8032,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "idiom:scene-ambient-lights",
@@ -8065,7 +8064,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.13
   },
   {
    "id": "idiom:scene-title-caption",
@@ -8095,7 +8094,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.14
   },
   {
    "id": "idiom:scene-size",
@@ -8123,7 +8122,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.14
   },
   {
    "id": "idiom:scene-userzoom",
@@ -8146,7 +8145,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.13
   },
   {
    "id": "idiom:scene-objects-delete",
@@ -8178,7 +8177,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "idiom:scene-canvas-new",
@@ -8210,7 +8209,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.14
   },
   {
    "id": "idiom:scene-align",
@@ -8235,7 +8234,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.13
   },
   {
    "id": "idiom:scene-pixel-to-world",
@@ -8258,7 +8257,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.13
   },
   {
    "id": "idiom:graph-gcurve",
@@ -8275,7 +8274,7 @@
     "type": "TypeError",
     "message": "_GSeriesBase.plot() got an unexpected keyword argument 'pos'",
     "studentLine": 6,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -8288,7 +8287,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "idiom:graph-gdots-gvbars",
@@ -8316,7 +8315,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.14
   },
   {
    "id": "idiom:graph-fast-false",
@@ -8345,7 +8344,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.14
   },
   {
    "id": "idiom:event-bind-keydown",
@@ -8370,7 +8369,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.14
   },
   {
    "id": "idiom:event-bind-click-pos",
@@ -8395,7 +8394,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.14
   },
   {
    "id": "idiom:event-bind-decorator",
@@ -8420,7 +8419,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "idiom:event-mouse-pos-pick",
@@ -8447,7 +8446,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "idiom:event-keysdown",
@@ -8470,7 +8469,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "idiom:event-waitfor-click",
@@ -8479,28 +8478,27 @@
    "title": "scene.waitfor('click')",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
    "progress": false,
-   "category": "unsupported-attr",
-   "detail": "'NoneType' object has no attribute 'pos'",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "AttributeError",
-    "message": "'NoneType' object has no attribute 'pos'",
-    "studentLine": 4,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 3,
+    "actions": {
+     "create": 1,
+     "scene_bind": 1,
+     "scene_unbind": 1
+    },
+    "createTypes": {
+     "box": 1
+    },
     "sceneProps": {}
    },
-   "stdout": "[scene.waitfor] click — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "clicked <1, 2, 0>\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.14
   },
   {
    "id": "idiom:event-waitfor-keydown",
@@ -8509,28 +8507,24 @@
    "title": "scene.waitfor('keydown') 로 키 대기",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/key.html",
    "progress": false,
-   "category": "unsupported-attr",
-   "detail": "'NoneType' object has no attribute 'key'",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "AttributeError",
-    "message": "'NoneType' object has no attribute 'key'",
-    "studentLine": 3,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
+    "total": 2,
+    "actions": {
+     "scene_bind": 1,
+     "scene_unbind": 1
+    },
     "createTypes": {},
     "sceneProps": {}
    },
-   "stdout": "[scene.waitfor] keydown — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "a\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.16
   },
   {
    "id": "idiom:event-pause",
@@ -8539,28 +8533,29 @@
    "title": "scene.pause()",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/pause.html",
    "progress": false,
-   "category": "unsupported-attr",
-   "detail": "'_Scene' object has no attribute 'pause'",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "AttributeError",
-    "message": "'_Scene' object has no attribute 'pause'",
-    "studentLine": 3,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 5,
+    "actions": {
+     "create": 1,
+     "pause_notice": 1,
+     "scene_bind": 1,
+     "scene_unbind": 1,
+     "widget_delete": 1
+    },
+    "createTypes": {
+     "box": 1
+    },
     "sceneProps": {}
    },
-   "stdout": "",
+   "stdout": "resumed\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.16
   },
   {
    "id": "idiom:event-waitfor-redraw",
@@ -8583,11 +8578,11 @@
     },
     "sceneProps": {}
    },
-   "stdout": "[scene.waitfor] redraw — VPyLab은 scene.bind 콜백 사용을 권장\n[scene.waitfor] draw_complete — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.17
   },
   {
    "id": "idiom:widget-slider",
@@ -8614,7 +8609,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.16
   },
   {
    "id": "idiom:widget-button",
@@ -8640,7 +8635,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.16
   },
   {
    "id": "idiom:widget-wtext",
@@ -8669,7 +8664,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.14
   },
   {
    "id": "idiom:widget-winput",
@@ -8694,7 +8689,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.15
+   "elapsed": 0.13
   },
   {
    "id": "idiom:widget-checkbox-radio-menu",
@@ -8721,7 +8716,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.16
+   "elapsed": 0.13
   },
   {
    "id": "idiom:widget-caption-placement",
@@ -8749,7 +8744,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.13
   },
   {
    "id": "idiom:flow-rate-loop",
@@ -8777,7 +8772,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.14
   },
   {
    "id": "idiom:flow-rate-in-function",
@@ -8786,28 +8781,26 @@
    "title": "함수 안에서 rate() 호출",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/rate.html",
    "progress": false,
-   "category": "error",
-   "detail": "SyntaxError: 'await' outside async function (<student>, line 7)",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "SyntaxError",
-    "message": "'await' outside async function (<student>, line 7)",
-    "studentLine": null,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 21,
+    "actions": {
+     "create": 1,
+     "update": 20
+    },
+    "createTypes": {
+     "sphere": 1
+    },
     "sceneProps": {}
    },
-   "stdout": "",
+   "stdout": "done 0.20000000000000004\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.13
   },
   {
    "id": "idiom:flow-rate-in-method",
@@ -8816,28 +8809,26 @@
    "title": "클래스 메서드 안에서 rate()",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/rate.html",
    "progress": false,
-   "category": "error",
-   "detail": "SyntaxError: 'await' outside async function (<student>, line 10)",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "SyntaxError",
-    "message": "'await' outside async function (<student>, line 10)",
-    "studentLine": null,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 11,
+    "actions": {
+     "create": 1,
+     "update": 10
+    },
+    "createTypes": {
+     "sphere": 1
+    },
     "sceneProps": {}
    },
-   "stdout": "",
+   "stdout": "<0.1, 0, 0>\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.13
   },
   {
    "id": "idiom:flow-sleep",
@@ -8864,7 +8855,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.13
   },
   {
    "id": "idiom:flow-while-no-rate",
@@ -8887,7 +8878,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 12.04
+   "elapsed": 12.11
   },
   {
    "id": "idiom:flow-for-no-rate",
@@ -8915,7 +8906,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.14
   },
   {
    "id": "idiom:flow-import-vpython",
@@ -8942,7 +8933,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.13
   },
   {
    "id": "idiom:flow-import-as",
@@ -8951,8 +8942,8 @@
    "title": "import vpython as vp",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/package.html",
    "progress": false,
-   "category": "warning",
-   "detail": "<student>:3: RuntimeWarning: coroutine 'rate' was never awaited\nRuntimeWarning: Enable tracemalloc to get the object allocation traceback",
+   "category": "pass",
+   "detail": "",
    "status": "pass",
    "error": null,
    "commands": {
@@ -8966,10 +8957,10 @@
     "sceneProps": {}
    },
    "stdout": "",
-   "stderr": "<student>:3: RuntimeWarning: coroutine 'rate' was never awaited\nRuntimeWarning: Enable tracemalloc to get the object allocation traceback\n",
+   "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.15
   },
   {
    "id": "idiom:flow-from-import-names",
@@ -8996,7 +8987,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.17
   },
   {
    "id": "idiom:flow-math-bare",
@@ -9019,7 +9010,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-random-bare",
@@ -9042,7 +9033,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.18
   },
   {
    "id": "idiom:flow-random-module",
@@ -9061,11 +9052,11 @@
     "createTypes": {},
     "sceneProps": {}
    },
-   "stdout": "0.2409479239780562 3 0.6710604657962435 6\n1 0.7757200844375639\n",
+   "stdout": "0.6367184043330121 2 0.31040755704211365 1\n3 0.2709692054523334\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.18
   },
   {
    "id": "idiom:flow-math-module",
@@ -9088,7 +9079,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.18
   },
   {
    "id": "idiom:flow-arange-clock",
@@ -9107,11 +9098,11 @@
     "createTypes": {},
     "sceneProps": {}
    },
-   "stdout": "1793314509307.442 -1 10\n",
+   "stdout": "1793318156936.9119 -1 10\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-print-formats",
@@ -9134,7 +9125,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.14
   },
   {
    "id": "idiom:flow-input",
@@ -9143,28 +9134,24 @@
    "title": "input() 사용",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/textinput.html",
    "progress": false,
-   "category": "input",
-   "detail": "EOFError: EOF when reading a line",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "EOFError",
-    "message": "EOF when reading a line",
-    "studentLine": 2,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
+    "total": 2,
+    "actions": {
+     "input_request": 1,
+     "widget_delete": 1
+    },
     "createTypes": {},
     "sceneProps": {}
    },
-   "stdout": "이름을 입력하세요: ",
+   "stdout": "이름을 입력하세요: 42\n안녕 42\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.15
   },
   {
    "id": "idiom:flow-comprehension",
@@ -9192,7 +9179,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-class-with-objects",
@@ -9221,7 +9208,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "idiom:flow-global-in-handler",
@@ -9250,7 +9237,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-global-called-in-loop",
@@ -9259,17 +9246,10 @@
    "title": "rate 루프 안에서 global 변수를 바꾸는 함수 호출",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/rate.html",
    "progress": false,
-   "category": "error",
-   "detail": "NameError: name 'score' is not defined",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "NameError",
-    "message": "name 'score' is not defined",
-    "studentLine": 7,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
     "total": 1,
     "actions": {
@@ -9284,7 +9264,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.17
   },
   {
    "id": "idiom:flow-global-no-rate",
@@ -9307,7 +9287,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.18
   },
   {
    "id": "idiom:flow-lambda-rate-warning",
@@ -9330,9 +9310,9 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [
-    "2번 줄: lambda 내부의 rate()은 await로 변환할 수 없습니다."
+    "2번 줄: lambda 안의 rate()은 기다릴 수 없습니다. def로 바꾸세요."
    ],
-   "elapsed": 0.2
+   "elapsed": 0.18
   },
   {
    "id": "idiom:flow-scene-visible-false",
@@ -9362,7 +9342,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.16
   },
   {
    "id": "idiom:flow-rotate-keyword-only",
@@ -9441,7 +9421,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.2
   },
   {
    "id": "idiom:flow-two-objects-same-var",
@@ -9468,7 +9448,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.19
   },
   {
    "id": "idiom:flow-local-light-attrs",
@@ -9497,7 +9477,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.19
   },
   {
    "id": "idiom:flow-canvas-events-on-other",
@@ -9522,7 +9502,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.21
   },
   {
    "id": "idiom:flow-compound-clone",
@@ -9551,7 +9531,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.17
   },
   {
    "id": "idiom:flow-get-library",
@@ -9568,7 +9548,7 @@
     "type": "NameError",
     "message": "name 'get_library' is not defined",
     "studentLine": 2,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -9581,7 +9561,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.17
   },
   {
    "id": "idiom:canvas-single",
@@ -9611,7 +9591,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.17
   },
   {
    "id": "idiom:canvas-visible-delete",
@@ -9643,7 +9623,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.16
   },
   {
    "id": "idiom:group-basic",
@@ -9673,7 +9653,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.17
   },
   {
    "id": "idiom:group-compound-clone",
@@ -9705,7 +9685,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "idiom:compound-rotate-clone",
@@ -9735,7 +9715,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.17
   },
   {
    "id": "idiom:extrusion-clone-rotate",
@@ -9763,7 +9743,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.16
   },
   {
    "id": "idiom:curve-forms",
@@ -9791,7 +9771,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.17
   },
   {
    "id": "idiom:curve-modify-point",
@@ -9820,7 +9800,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.16
   },
   {
    "id": "idiom:points-forms",
@@ -9849,7 +9829,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.16
   },
   {
    "id": "idiom:shapes-basic",
@@ -9876,7 +9856,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.15
   },
   {
    "id": "idiom:paths-basic",
@@ -9885,28 +9865,25 @@
    "title": "paths.circle/arc/rectangle/line — xz 평면 vector 경로",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
    "progress": false,
-   "category": "unsupported-attr",
-   "detail": "'path_object' object has no attribute 'octagon'",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "AttributeError",
-    "message": "'path_object' object has no attribute 'octagon'",
-    "studentLine": 18,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 1,
+    "actions": {
+     "create": 1
+    },
+    "createTypes": {
+     "sphere": 1
+    },
     "sceneProps": {}
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.14
   },
   {
    "id": "idiom:extrusion-shapes-paths",
@@ -9934,7 +9911,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.15
   },
   {
    "id": "idiom:text-3d",
@@ -9964,7 +9941,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.16
   },
   {
    "id": "idiom:attach-trail-function",
@@ -9998,7 +9975,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.15
   },
   {
    "id": "idiom:attach-light-follow",
@@ -10027,7 +10004,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.16
   },
   {
    "id": "idiom:mouse-ray-project",
@@ -10050,7 +10027,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.14
   },
   {
    "id": "idiom:wtext-basic",
@@ -10081,7 +10058,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "gsexample:AtomicSolid-VPython",
@@ -10114,7 +10091,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.94
+   "elapsed": 3.04
   },
   {
    "id": "gsexample:BillboardingText",
@@ -10147,7 +10124,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "gsexample:BinaryStar-VPython",
@@ -10180,7 +10157,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.18
   },
   {
    "id": "gsexample:Bounce-Callbacks-VPython",
@@ -10189,28 +10166,31 @@
    "title": "GlowScript 공식 예제 Bounce-Callbacks-VPython",
    "origin": "https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Bounce-Callbacks-VPython",
    "progress": false,
-   "category": "error",
-   "detail": "SyntaxError: 'await' outside async function (<student>, line 30)",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "SyntaxError",
-    "message": "'await' outside async function (<student>, line 30)",
-    "studentLine": null,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "rate 241회 뒤 정지",
+   "status": "stopped",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
-    "sceneProps": {}
+    "total": 167,
+    "actions": {
+     "scene": 1,
+     "create": 6,
+     "update": 80,
+     "trail_update": 80
+    },
+    "createTypes": {
+     "box": 5,
+     "sphere": 1
+    },
+    "sceneProps": {
+     "caption": 1
+    }
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.18
   },
   {
    "id": "gsexample:Bounce-VPython",
@@ -10243,7 +10223,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.18
   },
   {
    "id": "gsexample:BoxLightTest",
@@ -10279,7 +10259,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:Bumpmaps-VPython",
@@ -10314,7 +10294,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.14
   },
   {
    "id": "gsexample:ButtonsSlidersMenus-VPython",
@@ -10353,7 +10333,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:CORS",
@@ -10386,7 +10366,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.14
   },
   {
    "id": "gsexample:Car",
@@ -10426,7 +10406,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.27
   },
   {
    "id": "gsexample:Color-RGB-HSV-VPython",
@@ -10465,7 +10445,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "gsexample:Conch",
@@ -10500,7 +10480,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:DipoleElectricField",
@@ -10532,7 +10512,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.18
   },
   {
    "id": "gsexample:DoublePendulum-VPython",
@@ -10607,7 +10587,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.73
+   "elapsed": 0.6
   },
   {
    "id": "gsexample:Extrusions",
@@ -10621,12 +10601,14 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 1934,
+    "total": 1928,
     "actions": {
      "scene": 5,
      "create": 7,
-     "update": 1921,
-     "widget_create": 1
+     "update": 1913,
+     "widget_create": 1,
+     "scene_bind": 1,
+     "scene_unbind": 1
     },
     "createTypes": {
      "extrusion": 5,
@@ -10641,11 +10623,11 @@
      "caption": 1
     }
    },
-   "stdout": "[scene.waitfor] textures — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.27
   },
   {
    "id": "gsexample:GraphTest",
@@ -10672,7 +10654,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.15
   },
   {
    "id": "gsexample:Gyroscope-VPython",
@@ -10681,26 +10663,21 @@
    "title": "GlowScript 공식 예제 Gyroscope-VPython",
    "origin": "https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Gyroscope-VPython",
    "progress": false,
-   "category": "error",
-   "detail": "ZeroDivisionError: float division by zero",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "ZeroDivisionError",
-    "message": "float division by zero",
-    "studentLine": 93,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "rate 241회 뒤 정지",
+   "status": "stopped",
+   "error": null,
    "commands": {
-    "total": 17,
+    "total": 1692,
     "actions": {
      "scene": 3,
      "create": 7,
      "compound": 1,
-     "update": 4,
-     "trail_update": 1,
-     "trail_clear": 1
+     "update": 1438,
+     "trail_update": 240,
+     "trail_clear": 1,
+     "scene_bind": 1,
+     "scene_unbind": 1
     },
     "createTypes": {
      "cylinder": 2,
@@ -10713,11 +10690,11 @@
      "caption": 1
     }
    },
-   "stdout": "[scene.waitfor] textures — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.2
   },
   {
    "id": "gsexample:HardSphereGas-VPython",
@@ -10727,11 +10704,11 @@
    "origin": "https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/HardSphereGas-VPython",
    "progress": false,
    "category": "pass",
-   "detail": "rate 88회 뒤 정지",
+   "detail": "rate 148회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 18007,
+    "total": 30067,
     "actions": {
      "scene": 3,
      "create": 206,
@@ -10739,8 +10716,8 @@
      "graph_create": 1,
      "graph_series_create": 2,
      "graph_series_plot": 302,
-     "update": 17400,
-     "trail_update": 87
+     "update": 29400,
+     "trail_update": 147
     },
     "createTypes": {
      "curve": 6,
@@ -10756,7 +10733,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.25
+   "elapsed": 3.21
   },
   {
    "id": "gsexample:LaTexMathDisplay",
@@ -10773,7 +10750,7 @@
     "type": "NameError",
     "message": "name 'MathJax' is not defined",
     "studentLine": 7,
-    "apiLine": null,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -10786,7 +10763,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.16
   },
   {
    "id": "gsexample:MatterAndInteractions",
@@ -10803,8 +10780,8 @@
     "type": "SyntaxError",
     "message": "invalid syntax (<student>, line 114)",
     "studentLine": null,
-    "apiLine": null,
-    "inApi": false
+    "apiLine": 5771,
+    "inApi": true
    },
    "commands": {
     "total": 0,
@@ -10816,7 +10793,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "gsexample:MousePicking-VPython",
@@ -10858,7 +10835,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "gsexample:Plot3D",
@@ -10868,7 +10845,7 @@
    "origin": "https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Plot3D",
    "progress": false,
    "category": "pass",
-   "detail": "rate 240회 뒤 정지",
+   "detail": "rate 241회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
@@ -10894,7 +10871,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.28
+   "elapsed": 2.08
   },
   {
    "id": "gsexample:RotatingCubes-VPython",
@@ -10904,16 +10881,16 @@
    "origin": "https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/RotatingCubes-VPython",
    "progress": false,
    "category": "pass",
-   "detail": "rate 39회 뒤 정지",
+   "detail": "rate 61회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 153005,
+    "total": 241005,
     "actions": {
      "scene": 4,
      "create": 1000,
      "scene_bind": 1,
-     "update": 152000
+     "update": 240000
     },
     "createTypes": {
      "box": 1000
@@ -10929,7 +10906,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.96
+   "elapsed": 3.65
   },
   {
    "id": "gsexample:RotatingCurve",
@@ -10965,7 +10942,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.58
+   "elapsed": 0.43
   },
   {
    "id": "gsexample:RotatingPoints",
@@ -11001,7 +10978,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.67
+   "elapsed": 0.44
   },
   {
    "id": "gsexample:Rug",
@@ -11018,7 +10995,7 @@
     "type": "TypeError",
     "message": "vertex.__init__() got an unexpected keyword argument 'texpos'",
     "studentLine": 33,
-    "apiLine": null,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -11031,7 +11008,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.16
   },
   {
    "id": "gsexample:ScrollingText",
@@ -11048,8 +11025,8 @@
     "type": "SyntaxError",
     "message": "invalid syntax (<student>, line 10)",
     "studentLine": null,
-    "apiLine": null,
-    "inApi": false
+    "apiLine": 5771,
+    "inApi": true
    },
    "commands": {
     "total": 0,
@@ -11061,7 +11038,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:Stars-VPython",
@@ -11070,24 +11047,19 @@
    "title": "GlowScript 공식 예제 Stars-VPython",
    "origin": "https://www.glowscript.org/#/user/GlowScriptDemos/folder/Examples/program/Stars-VPython",
    "progress": false,
-   "category": "error",
-   "detail": "NameError: name 'Stars' is not defined",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "NameError",
-    "message": "name 'Stars' is not defined",
-    "studentLine": 70,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "rate 241회 뒤 정지",
+   "status": "stopped",
+   "error": null,
    "commands": {
-    "total": 73,
+    "total": 7400,
     "actions": {
      "scene": 4,
      "create": 23,
      "curve_append": 6,
-     "update": 40
+     "update": 3707,
+     "trail_update": 3646,
+     "trail_clear": 14
     },
     "createTypes": {
      "curve": 3,
@@ -11104,7 +11076,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.39
   },
   {
    "id": "gsexample:Stonehenge-VPython",
@@ -11120,8 +11092,8 @@
     "phase": "student",
     "type": "NameError",
     "message": "name 'Date' is not defined",
-    "studentLine": 27,
-    "apiLine": null,
+    "studentLine": 25,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -11134,7 +11106,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.15
   },
   {
    "id": "gsexample:Textures-VPython",
@@ -11148,13 +11120,14 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 49,
+    "total": 51,
     "actions": {
      "scene": 11,
      "create": 24,
      "update": 12,
-     "widget_create": 1,
-     "scene_bind": 1
+     "scene_bind": 2,
+     "scene_unbind": 1,
+     "widget_create": 1
     },
     "createTypes": {
      "box": 12,
@@ -11170,11 +11143,11 @@
      "append_caption": 1
     }
    },
-   "stdout": "[scene.waitfor] textures — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:Transparency",
@@ -11208,7 +11181,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.17
   },
   {
    "id": "gsexample:VPythonObjects-VPython",
@@ -11222,13 +11195,13 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 739,
+    "total": 731,
     "actions": {
      "create": 13,
      "scene_bind": 3,
-     "scene": 6,
+     "scene": 4,
      "curve_append": 239,
-     "update": 478
+     "update": 472
     },
     "createTypes": {
      "sphere": 2,
@@ -11247,16 +11220,14 @@
      "title": 1,
      "background": 1,
      "center": 1,
-     "forward": 1,
-     "autoscale": 1,
-     "append_caption": 1
+     "forward": 1
     }
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.18
   },
   {
    "id": "docs:arrow:line1",
@@ -11285,7 +11256,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.16
   },
   {
    "id": "docs:arrow:line2",
@@ -11314,7 +11285,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.15
   },
   {
    "id": "docs:attach_light:line1",
@@ -11331,7 +11302,7 @@
     "type": "TypeError",
     "message": "attach_light.__init__() missing 1 required positional argument: 'obj'",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -11344,7 +11315,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.14
   },
   {
    "id": "docs:attach_light:line2",
@@ -11373,7 +11344,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.14
   },
   {
    "id": "docs:attacharrow:pre1",
@@ -11403,7 +11374,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.14
   },
   {
    "id": "docs:attacharrow:line1",
@@ -11420,7 +11391,7 @@
     "type": "TypeError",
     "message": "attach_arrow.__init__() missing 2 required positional arguments: 'obj' and 'attr'",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -11433,7 +11404,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "docs:attacharrow:line2",
@@ -11462,7 +11433,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.15
   },
   {
    "id": "docs:box:line1",
@@ -11490,7 +11461,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.14
   },
   {
    "id": "docs:box:line2",
@@ -11518,7 +11489,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.15
   },
   {
    "id": "docs:button:pre1",
@@ -11547,7 +11518,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.15
   },
   {
    "id": "docs:button:line1",
@@ -11576,7 +11547,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.15
   },
   {
    "id": "docs:camera:line1",
@@ -11609,7 +11580,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.16
   },
   {
    "id": "docs:canvas:line1",
@@ -11640,7 +11611,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.16
   },
   {
    "id": "docs:canvas:line2",
@@ -11671,7 +11642,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.17
   },
   {
    "id": "docs:canvas:line3",
@@ -11699,7 +11670,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.14
   },
   {
    "id": "docs:canvas:line4",
@@ -11727,7 +11698,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.15
   },
   {
    "id": "docs:canvas:line5",
@@ -11759,7 +11730,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "docs:canvas:line6",
@@ -11790,7 +11761,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.15
   },
   {
    "id": "docs:canvas:line7",
@@ -11814,11 +11785,11 @@
     },
     "sceneProps": {}
    },
-   "stdout": "[scene.waitfor] redraw — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "docs:canvas:line8",
@@ -11842,11 +11813,11 @@
     },
     "sceneProps": {}
    },
-   "stdout": "[scene.waitfor] draw_complete — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "docs:checkbox:pre1",
@@ -11876,7 +11847,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.36
+   "elapsed": 0.18
   },
   {
    "id": "docs:checkbox:line1",
@@ -11905,7 +11876,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.15
   },
   {
    "id": "docs:clone:line1",
@@ -11933,7 +11904,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.15
   },
   {
    "id": "docs:color:pre1",
@@ -11950,7 +11921,7 @@
     "type": "NameError",
     "message": "name 'hsv' is not defined",
     "studentLine": 16,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -11963,7 +11934,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.14
   },
   {
    "id": "docs:color:line1",
@@ -11980,7 +11951,7 @@
     "type": "NameError",
     "message": "name 'c' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -11993,7 +11964,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.15
   },
   {
    "id": "docs:color:line2",
@@ -12010,7 +11981,7 @@
     "type": "NameError",
     "message": "name 'c' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -12023,7 +11994,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.15
   },
   {
    "id": "docs:compound:pre1",
@@ -12054,7 +12025,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.17
   },
   {
    "id": "docs:compound:line1",
@@ -12083,7 +12054,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.18
   },
   {
    "id": "docs:compound:line2",
@@ -12100,7 +12071,7 @@
     "type": "TypeError",
     "message": "compound.__init__() missing 1 required positional argument: 'objects'",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -12113,7 +12084,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.18
   },
   {
    "id": "docs:cone:line1",
@@ -12142,7 +12113,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.17
   },
   {
    "id": "docs:cone:line2",
@@ -12171,7 +12142,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.17
   },
   {
    "id": "docs:curve:pre1",
@@ -12201,7 +12172,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.17
   },
   {
    "id": "docs:curve:pre2",
@@ -12231,7 +12202,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.18
   },
   {
    "id": "docs:curve:line1",
@@ -12260,7 +12231,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.18
   },
   {
    "id": "docs:curve:line2",
@@ -12289,7 +12260,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.18
   },
   {
    "id": "docs:curve:line3",
@@ -12317,7 +12288,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:curve:line4",
@@ -12345,7 +12316,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "docs:cylinder:line1",
@@ -12374,7 +12345,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "docs:cylinder:line2",
@@ -12403,7 +12374,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.15
   },
   {
    "id": "docs:ellipsoid:line1",
@@ -12432,7 +12403,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.15
   },
   {
    "id": "docs:ellipsoid:line2",
@@ -12461,7 +12432,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.16
   },
   {
    "id": "docs:extrusion:pre1",
@@ -12490,7 +12461,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "docs:extrusion:pre2",
@@ -12519,7 +12490,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.15
   },
   {
    "id": "docs:extrusion:pre3",
@@ -12548,7 +12519,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.15
   },
   {
    "id": "docs:extrusion:pre4",
@@ -12577,7 +12548,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.15
   },
   {
    "id": "docs:extrusion:pre5",
@@ -12606,7 +12577,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.15
   },
   {
    "id": "docs:extrusion:line1",
@@ -12635,7 +12606,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:extrusion:line2",
@@ -12664,7 +12635,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "docs:extrusion:line3",
@@ -12693,7 +12664,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "docs:file:line1",
@@ -12710,7 +12681,7 @@
     "type": "NameError",
     "message": "name 'get_library' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -12723,7 +12694,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "docs:file:line2",
@@ -12740,7 +12711,7 @@
     "type": "NameError",
     "message": "name 'read_local_file' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -12753,7 +12724,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:file:line3",
@@ -12770,7 +12741,7 @@
     "type": "NameError",
     "message": "name 'download' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -12783,7 +12754,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.15
   },
   {
    "id": "docs:graph:pre1",
@@ -12814,7 +12785,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.16
   },
   {
    "id": "docs:graph:line1",
@@ -12843,7 +12814,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.16
   },
   {
    "id": "docs:graph:line2",
@@ -12860,7 +12831,7 @@
     "type": "NameError",
     "message": "name 'mygraph' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -12873,7 +12844,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.17
   },
   {
    "id": "docs:graph:line3",
@@ -12890,7 +12861,7 @@
     "type": "NameError",
     "message": "name 'mygraph' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -12903,7 +12874,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.18
   },
   {
    "id": "docs:graph:line4",
@@ -12920,7 +12891,7 @@
     "type": "AttributeError",
     "message": "type object 'graph' has no attribute 'get_selected'",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -12933,7 +12904,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.17
   },
   {
    "id": "docs:graph:line5",
@@ -12963,7 +12934,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.16
   },
   {
    "id": "docs:graph:line6",
@@ -12980,7 +12951,7 @@
     "type": "NameError",
     "message": "name 'gc' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -12993,7 +12964,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.16
   },
   {
    "id": "docs:graph:line7",
@@ -13010,7 +12981,7 @@
     "type": "NameError",
     "message": "name 'gc' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -13053,7 +13024,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.21
   },
   {
    "id": "docs:graph:line9",
@@ -13083,7 +13054,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.22
   },
   {
    "id": "docs:group:pre1",
@@ -13113,7 +13084,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.25
   },
   {
    "id": "docs:group:line1",
@@ -13142,7 +13113,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.31
   },
   {
    "id": "docs:group:line2",
@@ -13159,7 +13130,7 @@
     "type": "NameError",
     "message": "name 'mygroup' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -13172,7 +13143,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.35
   },
   {
    "id": "docs:helix:line1",
@@ -13201,7 +13172,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.27
   },
   {
    "id": "docs:helix:line2",
@@ -13230,7 +13201,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.21
   },
   {
    "id": "docs:key:pre1",
@@ -13260,7 +13231,7 @@
    "stderr": "<student>:20: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.18
   },
   {
    "id": "docs:label:line1",
@@ -13289,7 +13260,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.19
   },
   {
    "id": "docs:label:line2",
@@ -13318,7 +13289,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.17
   },
   {
    "id": "docs:latexmath:pre1",
@@ -13335,7 +13306,7 @@
     "type": "NameError",
     "message": "name 'MathJax' is not defined",
     "studentLine": 17,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -13348,7 +13319,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.17
   },
   {
    "id": "docs:latexmath:pre2",
@@ -13365,7 +13336,7 @@
     "type": "NameError",
     "message": "name 'MathJax' is not defined",
     "studentLine": 15,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -13378,7 +13349,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.17
   },
   {
    "id": "docs:light:pre1",
@@ -13406,7 +13377,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.15
   },
   {
    "id": "docs:light:line1",
@@ -13435,7 +13406,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.15
   },
   {
    "id": "docs:light:line2",
@@ -13464,7 +13435,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "docs:light:line3",
@@ -13492,7 +13463,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.14
   },
   {
    "id": "docs:light:line4",
@@ -13520,7 +13491,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.16
   },
   {
    "id": "docs:light:line5",
@@ -13551,7 +13522,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "docs:menu:pre1",
@@ -13581,7 +13552,7 @@
    "stderr": "<student>:20: SyntaxWarning: \"is\" with 'int' literal. Did you mean \"==\"?\n<student>:22: SyntaxWarning: \"is\" with 'int' literal. Did you mean \"==\"?\n<student>:24: SyntaxWarning: \"is\" with 'int' literal. Did you mean \"==\"?\n",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.16
   },
   {
    "id": "docs:menu:line1",
@@ -13610,7 +13581,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.16
   },
   {
    "id": "docs:mouse:pre2",
@@ -13639,7 +13610,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "docs:mouse:line1",
@@ -13648,28 +13619,26 @@
    "title": "mouse 문서 한 줄: scene.pause",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
    "progress": false,
-   "category": "unsupported-attr",
-   "detail": "'_Scene' object has no attribute 'pause'",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "AttributeError",
-    "message": "'_Scene' object has no attribute 'pause'",
-    "studentLine": 14,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 6,
+    "actions": {
+     "create": 6
+    },
+    "createTypes": {
+     "sphere": 2,
+     "box": 4
+    },
     "sceneProps": {}
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "docs:mouse:line2",
@@ -13679,14 +13648,14 @@
    "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
    "progress": false,
    "category": "unsupported-arg",
-   "detail": "_Scene.waitfor() missing 1 required positional argument: 'event_name'",
+   "detail": "_Scene.waitfor() missing 1 required positional argument: 'event_names'",
    "status": "error",
    "error": {
     "phase": "student",
     "type": "TypeError",
-    "message": "_Scene.waitfor() missing 1 required positional argument: 'event_name'",
+    "message": "_Scene.waitfor() missing 1 required positional argument: 'event_names'",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -13699,7 +13668,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "docs:mouse:line3",
@@ -13716,7 +13685,7 @@
     "type": "TypeError",
     "message": "'_MouseState' object is not callable",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -13729,7 +13698,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.14
   },
   {
    "id": "docs:mouse:line4",
@@ -13757,7 +13726,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "docs:mouse:line5",
@@ -13766,28 +13735,30 @@
    "title": "mouse 문서 한 줄: myevt = scene.pause()",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
    "progress": false,
-   "category": "unsupported-attr",
-   "detail": "'_Scene' object has no attribute 'pause'",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "AttributeError",
-    "message": "'_Scene' object has no attribute 'pause'",
-    "studentLine": 14,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 10,
+    "actions": {
+     "create": 6,
+     "pause_notice": 1,
+     "scene_bind": 1,
+     "scene_unbind": 1,
+     "widget_delete": 1
+    },
+    "createTypes": {
+     "sphere": 2,
+     "box": 4
+    },
     "sceneProps": {}
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.14
   },
   {
    "id": "docs:mouse:line6",
@@ -13801,9 +13772,11 @@
    "status": "pass",
    "error": null,
    "commands": {
-    "total": 6,
+    "total": 8,
     "actions": {
-     "create": 6
+     "create": 6,
+     "scene_bind": 1,
+     "scene_unbind": 1
     },
     "createTypes": {
      "sphere": 2,
@@ -13811,11 +13784,11 @@
     },
     "sceneProps": {}
    },
-   "stdout": "[scene.waitfor] click — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "docs:mouse:line7",
@@ -13832,7 +13805,7 @@
     "type": "TypeError",
     "message": "'_MouseState' object is not callable",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -13845,7 +13818,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "docs:mouse:line8",
@@ -13873,7 +13846,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "docs:mouse:line9",
@@ -13890,7 +13863,7 @@
     "type": "NameError",
     "message": "name 'newcolor' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -13903,7 +13876,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "docs:objects:line1",
@@ -13932,7 +13905,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "docs:pause:line1",
@@ -13941,28 +13914,30 @@
    "title": "pause 문서 한 줄: scene.pause()",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/pause.html",
    "progress": false,
-   "category": "unsupported-attr",
-   "detail": "'_Scene' object has no attribute 'pause'",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "AttributeError",
-    "message": "'_Scene' object has no attribute 'pause'",
-    "studentLine": 14,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 10,
+    "actions": {
+     "create": 6,
+     "pause_notice": 1,
+     "scene_bind": 1,
+     "scene_unbind": 1,
+     "widget_delete": 1
+    },
+    "createTypes": {
+     "sphere": 2,
+     "box": 4
+    },
     "sceneProps": {}
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.14
   },
   {
    "id": "docs:points:line1",
@@ -13991,7 +13966,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.14
   },
   {
    "id": "docs:points:line2",
@@ -14020,7 +13995,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "docs:print:line1",
@@ -14048,7 +14023,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "docs:print:line2",
@@ -14076,7 +14051,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "docs:print:line3",
@@ -14104,7 +14079,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.13
   },
   {
    "id": "docs:print:line4",
@@ -14132,7 +14107,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.13
   },
   {
    "id": "docs:pyramid:line1",
@@ -14161,7 +14136,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.14
   },
   {
    "id": "docs:pyramid:line2",
@@ -14190,7 +14165,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "docs:radiobutton:pre1",
@@ -14219,7 +14194,7 @@
    "stderr": "<student>:17: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n<student>:19: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n<student>:21: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.13
   },
   {
    "id": "docs:radiobutton:line1",
@@ -14248,7 +14223,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.13
   },
   {
    "id": "docs:rate:pre1",
@@ -14278,7 +14253,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.27
+   "elapsed": 0.14
   },
   {
    "id": "docs:rate:line1",
@@ -14294,8 +14269,8 @@
     "phase": "student",
     "type": "TypeError",
     "message": "rate() missing 1 required positional argument: 'fps'",
-    "studentLine": 16,
-    "apiLine": null,
+    "studentLine": 14,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -14308,7 +14283,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "docs:rate:line2",
@@ -14336,7 +14311,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.13
   },
   {
    "id": "docs:rate:line3",
@@ -14352,8 +14327,8 @@
     "phase": "student",
     "type": "NameError",
     "message": "name 'make_trail' is not defined",
-    "studentLine": 16,
-    "apiLine": null,
+    "studentLine": 14,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -14366,7 +14341,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.14
   },
   {
    "id": "docs:ring:line1",
@@ -14395,7 +14370,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.14
   },
   {
    "id": "docs:rotation:line1",
@@ -14424,7 +14399,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.14
   },
   {
    "id": "docs:rotation:line2",
@@ -14453,7 +14428,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.26
+   "elapsed": 0.14
   },
   {
    "id": "docs:shapes_and_paths:pre1",
@@ -14482,7 +14457,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.13
   },
   {
    "id": "docs:shapes_and_paths:pre2",
@@ -14511,7 +14486,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.14
   },
   {
    "id": "docs:shapes_and_paths:line1",
@@ -14528,7 +14503,7 @@
     "type": "NameError",
     "message": "name 'x0' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -14541,7 +14516,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.14
   },
   {
    "id": "docs:shapes_and_paths:line2",
@@ -14558,7 +14533,7 @@
     "type": "NameError",
     "message": "name 'x0' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -14571,7 +14546,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.17
+   "elapsed": 0.14
   },
   {
    "id": "docs:shapes_and_paths:line3",
@@ -14599,7 +14574,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.18
+   "elapsed": 0.14
   },
   {
    "id": "docs:shapes_and_paths:line4",
@@ -14627,7 +14602,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.16
   },
   {
    "id": "docs:shapes_and_paths:line5",
@@ -14655,7 +14630,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line6",
@@ -14683,7 +14658,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.16
   },
   {
    "id": "docs:shapes_and_paths:line7",
@@ -14711,7 +14686,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.16
   },
   {
    "id": "docs:shapes_and_paths:line8",
@@ -14739,7 +14714,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line9",
@@ -14767,7 +14742,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line10",
@@ -14795,7 +14770,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line11",
@@ -14823,7 +14798,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "docs:shapes_and_paths:line12",
@@ -14851,7 +14826,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line13",
@@ -14879,7 +14854,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line14",
@@ -14907,7 +14882,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.14
   },
   {
    "id": "docs:shapes_and_paths:line15",
@@ -14935,7 +14910,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "docs:shapes_and_paths:line16",
@@ -14963,7 +14938,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line17",
@@ -14991,7 +14966,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "docs:shapes_and_paths:line18",
@@ -15019,7 +14994,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line19",
@@ -15047,7 +15022,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line20",
@@ -15075,7 +15050,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "docs:shapes_and_paths:line21",
@@ -15092,7 +15067,7 @@
     "type": "NameError",
     "message": "name 'outer' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -15105,7 +15080,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.15
   },
   {
    "id": "docs:slider:pre1",
@@ -15135,7 +15110,7 @@
    "stderr": "<student>:18: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.14
   },
   {
    "id": "docs:slider:line1",
@@ -15164,7 +15139,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.14
   },
   {
    "id": "docs:speed:line1",
@@ -15180,8 +15155,8 @@
     "phase": "student",
     "type": "TypeError",
     "message": "rate() missing 1 required positional argument: 'fps'",
-    "studentLine": 16,
-    "apiLine": null,
+    "studentLine": 14,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -15194,7 +15169,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.15
   },
   {
    "id": "docs:sphere:line1",
@@ -15222,7 +15197,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.15
   },
   {
    "id": "docs:sphere:line2",
@@ -15250,7 +15225,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.14
   },
   {
    "id": "docs:text:line1",
@@ -15279,7 +15254,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.14
   },
   {
    "id": "docs:text:line2",
@@ -15308,7 +15283,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.15
   },
   {
    "id": "docs:textinput:pre1",
@@ -15317,28 +15292,28 @@
    "title": "textinput 문서 예제 블록 1",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/textinput.html",
    "progress": false,
-   "category": "error",
-   "detail": "EOFError: EOF when reading a line",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "EOFError",
-    "message": "EOF when reading a line",
-    "studentLine": 14,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 8,
+    "actions": {
+     "create": 6,
+     "input_request": 1,
+     "widget_delete": 1
+    },
+    "createTypes": {
+     "sphere": 2,
+     "box": 4
+    },
     "sceneProps": {}
    },
-   "stdout": "What is your name?",
+   "stdout": "What is your name?42\nHello 42\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.14
   },
   {
    "id": "docs:textinput:pre2",
@@ -15370,7 +15345,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "docs:textinput:line1",
@@ -15379,28 +15354,28 @@
    "title": "textinput 문서 한 줄: mytext = input(prompt='Enter a color:')",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/textinput.html",
    "progress": false,
-   "category": "error",
-   "detail": "TypeError: input() takes no keyword arguments",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "TypeError",
-    "message": "input() takes no keyword arguments",
-    "studentLine": 14,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 8,
+    "actions": {
+     "create": 6,
+     "input_request": 1,
+     "widget_delete": 1
+    },
+    "createTypes": {
+     "sphere": 2,
+     "box": 4
+    },
     "sceneProps": {}
    },
-   "stdout": "",
+   "stdout": "Enter a color:42\n",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:textinput:line2",
@@ -15429,7 +15404,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "docs:texture:pre1",
@@ -15443,10 +15418,12 @@
    "status": "pass",
    "error": null,
    "commands": {
-    "total": 8,
+    "total": 10,
     "actions": {
      "create": 6,
-     "scene": 2
+     "scene": 2,
+     "scene_bind": 1,
+     "scene_unbind": 1
     },
     "createTypes": {
      "sphere": 2,
@@ -15456,11 +15433,11 @@
      "visible": 2
     }
    },
-   "stdout": "[scene.waitfor] textures — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.14
   },
   {
    "id": "docs:texture:line1",
@@ -15488,7 +15465,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.14
   },
   {
    "id": "docs:texture:line2",
@@ -15502,9 +15479,11 @@
    "status": "pass",
    "error": null,
    "commands": {
-    "total": 6,
+    "total": 8,
     "actions": {
-     "create": 6
+     "create": 6,
+     "scene_bind": 1,
+     "scene_unbind": 1
     },
     "createTypes": {
      "sphere": 2,
@@ -15512,11 +15491,11 @@
     },
     "sceneProps": {}
    },
-   "stdout": "[scene.waitfor] textures — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "docs:trail:line1",
@@ -15544,7 +15523,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.15
   },
   {
    "id": "docs:userinput:pre1",
@@ -15553,28 +15532,30 @@
    "title": "userinput 문서 예제 블록 1",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/userinput.html",
    "progress": false,
-   "category": "unsupported-attr",
-   "detail": "'_Scene' object has no attribute 'pause'",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "AttributeError",
-    "message": "'_Scene' object has no attribute 'pause'",
-    "studentLine": 15,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 12,
+    "actions": {
+     "create": 8,
+     "pause_notice": 1,
+     "scene_bind": 1,
+     "scene_unbind": 1,
+     "widget_delete": 1
+    },
+    "createTypes": {
+     "sphere": 3,
+     "box": 5
+    },
     "sceneProps": {}
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.14
   },
   {
    "id": "docs:userinput:pre2",
@@ -15603,7 +15584,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.14
   },
   {
    "id": "docs:userinput:pre3",
@@ -15631,7 +15612,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "docs:userinput:line1",
@@ -15640,28 +15621,30 @@
    "title": "userinput 문서 한 줄: scene.pause()",
    "origin": "https://www.glowscript.org/docs/VPythonDocs/userinput.html",
    "progress": false,
-   "category": "unsupported-attr",
-   "detail": "'_Scene' object has no attribute 'pause'",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "AttributeError",
-    "message": "'_Scene' object has no attribute 'pause'",
-    "studentLine": 14,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "",
+   "status": "pass",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
+    "total": 10,
+    "actions": {
+     "create": 6,
+     "pause_notice": 1,
+     "scene_bind": 1,
+     "scene_unbind": 1,
+     "widget_delete": 1
+    },
+    "createTypes": {
+     "sphere": 2,
+     "box": 4
+    },
     "sceneProps": {}
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.19
+   "elapsed": 0.15
   },
   {
    "id": "docs:userinput:line2",
@@ -15675,9 +15658,11 @@
    "status": "pass",
    "error": null,
    "commands": {
-    "total": 6,
+    "total": 8,
     "actions": {
-     "create": 6
+     "create": 6,
+     "scene_bind": 1,
+     "scene_unbind": 1
     },
     "createTypes": {
      "sphere": 2,
@@ -15685,11 +15670,11 @@
     },
     "sceneProps": {}
    },
-   "stdout": "[scene.waitfor] click keydown — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:userinput:line3",
@@ -15706,7 +15691,7 @@
     "type": "NameError",
     "message": "name 'key_pressed' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -15719,7 +15704,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.15
   },
   {
    "id": "docs:vector:pre1",
@@ -15747,7 +15732,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.32
+   "elapsed": 0.14
   },
   {
    "id": "docs:vector:pre2",
@@ -15775,7 +15760,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.14
   },
   {
    "id": "docs:vector:pre3",
@@ -15803,7 +15788,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.14
   },
   {
    "id": "docs:vector:pre4",
@@ -15831,7 +15816,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.3
+   "elapsed": 0.15
   },
   {
    "id": "docs:vector:pre5",
@@ -15859,7 +15844,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.15
   },
   {
    "id": "docs:vector:pre6",
@@ -15887,7 +15872,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.29
+   "elapsed": 0.15
   },
   {
    "id": "docs:vector:pre7",
@@ -15915,7 +15900,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.15
   },
   {
    "id": "docs:vector:pre8",
@@ -15943,7 +15928,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.16
   },
   {
    "id": "docs:vector:line1",
@@ -15960,7 +15945,7 @@
     "type": "NameError",
     "message": "name 'myvec1' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -15973,7 +15958,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "docs:vertex:pre1",
@@ -16002,7 +15987,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.16
   },
   {
    "id": "docs:vertex:line1",
@@ -16030,7 +16015,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.15
   },
   {
    "id": "docs:vertex:line2",
@@ -16047,7 +16032,7 @@
     "type": "NameError",
     "message": "name 'myvertex0' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -16060,7 +16045,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.15
   },
   {
    "id": "docs:vertex:line3",
@@ -16077,7 +16062,7 @@
     "type": "NameError",
     "message": "name 'myvertexlist' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -16090,7 +16075,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.46
+   "elapsed": 0.16
   },
   {
    "id": "docs:vertex:line4",
@@ -16107,7 +16092,7 @@
     "type": "NameError",
     "message": "name 'c' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -16120,7 +16105,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.16
   },
   {
    "id": "docs:vertex:line5",
@@ -16137,7 +16122,7 @@
     "type": "NameError",
     "message": "name 'c' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -16150,7 +16135,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.15
   },
   {
    "id": "docs:wtext:line1",
@@ -16167,7 +16152,7 @@
     "type": "NameError",
     "message": "name 'vslider' is not defined",
     "studentLine": 14,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -16180,7 +16165,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.52
+   "elapsed": 0.15
   },
   {
    "id": "demos:AtomicSolid",
@@ -16213,7 +16198,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.31
+   "elapsed": 1.42
   },
   {
    "id": "demos:BillboardingText",
@@ -16246,7 +16231,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.15
   },
   {
    "id": "demos:BinaryStar",
@@ -16278,7 +16263,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.55
+   "elapsed": 0.17
   },
   {
    "id": "demos:Bounce-VPython",
@@ -16311,7 +16296,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.59
+   "elapsed": 0.16
   },
   {
    "id": "demos:BoxLightTest",
@@ -16346,7 +16331,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.67
+   "elapsed": 0.17
   },
   {
    "id": "demos:ButtonsSlidersMenus1-async",
@@ -16362,8 +16347,8 @@
     "phase": "student",
     "type": "ModuleNotFoundError",
     "message": "No module named 'ipywidgets'",
-    "studentLine": 2,
-    "apiLine": null,
+    "studentLine": 1,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -16376,7 +16361,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.39
+   "elapsed": 0.15
   },
   {
    "id": "demos:ButtonsSlidersMenus1",
@@ -16392,8 +16377,8 @@
     "phase": "student",
     "type": "ModuleNotFoundError",
     "message": "No module named 'ipywidgets'",
-    "studentLine": 2,
-    "apiLine": null,
+    "studentLine": 1,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -16406,7 +16391,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.35
+   "elapsed": 0.15
   },
   {
    "id": "demos:ButtonsSlidersMenus2",
@@ -16445,7 +16430,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.44
+   "elapsed": 0.18
   },
   {
    "id": "demos:CORS",
@@ -16478,7 +16463,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "demos:Color-RGB-HSV1",
@@ -16495,7 +16480,7 @@
     "type": "ModuleNotFoundError",
     "message": "No module named 'ipywidgets'",
     "studentLine": 1,
-    "apiLine": null,
+    "apiLine": 5779,
     "inApi": false
    },
    "commands": {
@@ -16508,7 +16493,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.15
   },
   {
    "id": "demos:Color-RGB-HSV2",
@@ -16545,7 +16530,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.16
   },
   {
    "id": "demos:Conch",
@@ -16580,7 +16565,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.16
   },
   {
    "id": "demos:DipoleElectricField",
@@ -16612,7 +16597,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.34
+   "elapsed": 0.16
   },
   {
    "id": "demos:DoublePendulum",
@@ -16646,7 +16631,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.57
+   "elapsed": 0.22
   },
   {
    "id": "demos:ElectricMotor",
@@ -16684,7 +16669,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.99
+   "elapsed": 0.51
   },
   {
    "id": "demos:Extrusions",
@@ -16722,7 +16707,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.33
+   "elapsed": 0.18
   },
   {
    "id": "demos:Graphs",
@@ -16732,31 +16717,38 @@
    "origin": "https://github.com/vpython/vpython-jupyter/blob/master/Demos/Graphs.ipynb",
    "progress": false,
    "category": "unsupported-attr",
-   "detail": "'_Scene' object has no attribute 'pause'",
+   "detail": "'gdots' object has no attribute 'radius'",
    "status": "error",
    "error": {
     "phase": "student",
     "type": "AttributeError",
-    "message": "'_Scene' object has no attribute 'pause'",
-    "studentLine": 20,
-    "apiLine": null,
+    "message": "'gdots' object has no attribute 'radius'",
+    "studentLine": 33,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
-    "total": 313,
+    "total": 337,
     "actions": {
      "graph_create": 1,
      "graph_series_create": 3,
-     "graph_series_plot": 309
+     "graph_series_plot": 312,
+     "create": 1,
+     "pause_notice": 5,
+     "scene_bind": 5,
+     "scene_unbind": 5,
+     "widget_delete": 5
     },
-    "createTypes": {},
+    "createTypes": {
+     "box": 1
+    },
     "sceneProps": {}
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.15
   },
   {
    "id": "demos:Gyroscope-Suspended",
@@ -16765,28 +16757,38 @@
    "title": "VPython 데모 Gyroscope-Suspended",
    "origin": "https://github.com/vpython/vpython-jupyter/blob/master/Demos/Gyroscope-Suspended.ipynb",
    "progress": false,
-   "category": "error",
-   "detail": "NameError: name 'Lrot' is not defined",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "NameError",
-    "message": "name 'Lrot' is not defined",
-    "studentLine": 129,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "rate 241회 뒤 정지",
+   "status": "stopped",
+   "error": null,
    "commands": {
-    "total": 0,
-    "actions": {},
-    "createTypes": {},
-    "sceneProps": {}
+    "total": 28,
+    "actions": {
+     "scene": 8,
+     "create": 7,
+     "compound": 1,
+     "update": 6,
+     "widget_create": 5,
+     "widget_update": 1
+    },
+    "createTypes": {
+     "box": 2,
+     "helix": 1,
+     "cylinder": 2,
+     "arrow": 2
+    },
+    "sceneProps": {
+     "title": 1,
+     "background": 1,
+     "range": 1,
+     "append_caption": 5
+    }
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.16
   },
   {
    "id": "demos:Gyroscope",
@@ -16795,25 +16797,18 @@
    "title": "VPython 데모 Gyroscope",
    "origin": "https://github.com/vpython/vpython-jupyter/blob/master/Demos/Gyroscope.ipynb",
    "progress": false,
-   "category": "error",
-   "detail": "ZeroDivisionError: float division by zero",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "ZeroDivisionError",
-    "message": "float division by zero",
-    "studentLine": 89,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "rate 241회 뒤 정지",
+   "status": "stopped",
+   "error": null,
    "commands": {
-    "total": 16,
+    "total": 1696,
     "actions": {
      "scene": 2,
      "create": 7,
      "compound": 1,
-     "update": 4,
-     "trail_update": 1,
+     "update": 1444,
+     "trail_update": 241,
      "trail_clear": 1
     },
     "createTypes": {
@@ -16830,7 +16825,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.25
+   "elapsed": 0.19
   },
   {
    "id": "demos:HardSphereGas",
@@ -16869,7 +16864,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 3.08
+   "elapsed": 1.58
   },
   {
    "id": "demos:Lorenz",
@@ -16906,7 +16901,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.43
+   "elapsed": 0.27
   },
   {
    "id": "demos:MouseDrag",
@@ -16938,7 +16933,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.14
   },
   {
    "id": "demos:MousePicking",
@@ -16980,7 +16975,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.21
+   "elapsed": 0.15
   },
   {
    "id": "demos:Plot3D",
@@ -17015,7 +17010,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.54
+   "elapsed": 0.62
   },
   {
    "id": "demos:RotatingBoxes",
@@ -17025,15 +17020,15 @@
    "origin": "https://github.com/vpython/vpython-jupyter/blob/master/Demos/RotatingBoxes.ipynb",
    "progress": false,
    "category": "pass",
-   "detail": "rate 70회 뒤 정지",
+   "detail": "rate 172회 뒤 정지",
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 139002,
+    "total": 343002,
     "actions": {
      "scene": 2,
      "create": 1000,
-     "update": 138000
+     "update": 342000
     },
     "createTypes": {
      "box": 1000
@@ -17047,7 +17042,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 4.55
+   "elapsed": 3.85
   },
   {
    "id": "demos:RotatingCurve",
@@ -17082,7 +17077,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 1.09
+   "elapsed": 0.42
   },
   {
    "id": "demos:RotatingPoints",
@@ -17116,7 +17111,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.77
+   "elapsed": 0.44
   },
   {
    "id": "demos:Rug",
@@ -17132,8 +17127,8 @@
     "phase": "student",
     "type": "TypeError",
     "message": "vertex.__init__() got an unexpected keyword argument 'texpos'",
-    "studentLine": 39,
-    "apiLine": null,
+    "studentLine": 37,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -17146,7 +17141,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.2
+   "elapsed": 0.15
   },
   {
    "id": "demos:Stars",
@@ -17155,24 +17150,19 @@
    "title": "VPython 데모 Stars",
    "origin": "https://github.com/vpython/vpython-jupyter/blob/master/Demos/Stars.ipynb",
    "progress": false,
-   "category": "error",
-   "detail": "NameError: name 'Stars' is not defined",
-   "status": "error",
-   "error": {
-    "phase": "student",
-    "type": "NameError",
-    "message": "name 'Stars' is not defined",
-    "studentLine": 68,
-    "apiLine": null,
-    "inApi": false
-   },
+   "category": "pass",
+   "detail": "rate 241회 뒤 정지",
+   "status": "stopped",
+   "error": null,
    "commands": {
-    "total": 73,
+    "total": 7389,
     "actions": {
      "scene": 4,
      "create": 23,
      "curve_append": 6,
-     "update": 40
+     "update": 3703,
+     "trail_update": 3633,
+     "trail_clear": 20
     },
     "createTypes": {
      "curve": 3,
@@ -17189,7 +17179,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.39
   },
   {
    "id": "demos:Stonehenge",
@@ -17205,18 +17195,19 @@
     "phase": "student",
     "type": "AttributeError",
     "message": "'helix' object has no attribute 'size'",
-    "studentLine": 312,
-    "apiLine": null,
+    "studentLine": 310,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
-    "total": 132,
+    "total": 134,
     "actions": {
      "scene": 7,
      "create": 108,
      "update": 15,
      "compound": 1,
-     "scene_bind": 1
+     "scene_bind": 2,
+     "scene_unbind": 1
     },
     "createTypes": {
      "box": 20,
@@ -17239,11 +17230,11 @@
      "visible": 2
     }
    },
-   "stdout": "[scene.waitfor] textures — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.23
+   "elapsed": 0.17
   },
   {
    "id": "demos:Textures1-async",
@@ -17259,8 +17250,8 @@
     "phase": "student",
     "type": "ModuleNotFoundError",
     "message": "No module named 'ipywidgets'",
-    "studentLine": 2,
-    "apiLine": null,
+    "studentLine": 1,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -17273,7 +17264,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.22
+   "elapsed": 0.2
   },
   {
    "id": "demos:Textures1",
@@ -17289,8 +17280,8 @@
     "phase": "student",
     "type": "ModuleNotFoundError",
     "message": "No module named 'ipywidgets'",
-    "studentLine": 2,
-    "apiLine": null,
+    "studentLine": 1,
+    "apiLine": 5781,
     "inApi": false
    },
    "commands": {
@@ -17303,7 +17294,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.24
+   "elapsed": 0.21
   },
   {
    "id": "demos:Textures2",
@@ -17317,13 +17308,14 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 48,
+    "total": 50,
     "actions": {
      "scene": 10,
      "create": 24,
      "update": 12,
-     "widget_create": 1,
-     "scene_bind": 1
+     "scene_bind": 2,
+     "scene_unbind": 1,
+     "widget_create": 1
     },
     "createTypes": {
      "box": 12,
@@ -17339,11 +17331,11 @@
      "append_caption": 1
     }
    },
-   "stdout": "[scene.waitfor] textures — VPyLab은 scene.bind 콜백 사용을 권장\n",
+   "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.31
+   "elapsed": 0.19
   },
   {
    "id": "demos:Transparency",
@@ -17377,7 +17369,7 @@
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.28
+   "elapsed": 0.16
   },
   {
    "id": "demos:VPythonObjects",
@@ -17391,12 +17383,12 @@
    "status": "stopped",
    "error": null,
    "commands": {
-    "total": 734,
+    "total": 727,
     "actions": {
-     "scene": 5,
+     "scene": 4,
      "create": 12,
      "curve_append": 239,
-     "update": 478
+     "update": 472
     },
     "createTypes": {
      "label": 1,
@@ -17415,15 +17407,14 @@
      "title": 1,
      "background": 1,
      "center": 1,
-     "forward": 1,
-     "autoscale": 1
+     "forward": 1
     }
    },
    "stdout": "",
    "stderr": "",
    "stubMissing": [],
    "preprocessWarnings": [],
-   "elapsed": 0.37
+   "elapsed": 0.16
   }
  ]
 }

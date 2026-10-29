@@ -12,15 +12,21 @@
  * - 30색 팔레트 + 한글 색상 이름
  * - 사운드/차트/한글 API/numpy 자동 설치 (이전 버전과 동일)
  *
+ * 학생 코드 실행: 편집기와 같은 변환기(engine/student-code-transform.py)를 함께 실어 함수 안의
+ *   rate()·sleep()과 global 선언이 편집기에서와 같이 동작한다.
+ *
  * 미지원 (브라우저 IDE에서만 동작):
  * - UI 위젯 (slider, button, checkbox, radio, menu, winput) — Worker 채널 필요
  * - 2D 그래프 (graph, gcurve, gdots, gvbars, ghbars) — DOM 패널 필요
  * - 이벤트 (scene.bind, scene.mouse) — 양방향 이벤트 채널 필요
+ * - scene.pause() / scene.waitfor() / input() — 이벤트·입력 채널 필요
  *   학생 코드가 위 기능을 사용하면 콘솔 경고 후 무시.
  *
  * TODO: vpython-api.py를 ?raw 임포트해 인라인 Python 중복을 제거하는 리팩터링이
  *       별도 세션에 예정되어 있음.
  */
+
+import transformSource from '../engine/student-code-transform.py?raw';
 
 const PYODIDE_VERSION = '0.27.0';
 const THREE_VERSION = '0.183.2';
@@ -47,6 +53,8 @@ function escapeHTML(str) {
 export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
   // Base64로 안전하게 코드 임베딩 (모든 특수문자 문제 해결)
   const base64Code = btoa(unescape(encodeURIComponent(code)));
+  // 편집기와 같은 변환기(rate() 등이 든 함수의 async 전환)를 내보낸 파일에도 싣는다
+  const base64Transform = btoa(unescape(encodeURIComponent(transformSource)));
 
   // 보안: 제목을 HTML 엔티티로 이스케이프 (저장형 XSS 방지)
   const safeTitle = escapeHTML(title);
@@ -931,34 +939,31 @@ def _send_commands():
 
     loading.classList.add('done');
 
-    // 학생 코드 전처리 + 실행
-    // vpython import 제거 (이미 글로벌 네임스페이스에 로드됨)
-    const filtered = code.split('\\n').filter(line => {
-      const trimmed = line.trimStart();
-      if (trimmed === 'from vpython import *') return false;
-      if (trimmed.startsWith('from vpython import ')) return false;
-      if (trimmed === 'import vpython') return false;
-      return true;
-    }).join('\\n');
+    // 학생 코드 실행 — vpython 모듈이 sys.modules에 등록돼 있으므로 import 줄을 그대로 둔다 (줄 번호도 유지된다)
+    const filtered = code;
 
-    const hasRate = /(?<![\\w.가-힣])(rate|sleep)\\s*\\(/.test(filtered);
-    let processed = filtered;
-    if (hasRate) {
-      const lines = filtered.split('\\n');
-      const imports = [];
-      const body = [];
-      for (const line of lines) {
-        if (line.trimStart().startsWith('import ') || (line.trimStart().startsWith('from ') && line.includes('import'))) {
-          imports.push(line);
-        } else {
-          body.push(line.replace(/(?<![\\w.가-힣])(rate|sleep)(\\s*\\()/g, 'await $1$2'));
-        }
-      }
-      processed = imports.join('\\n') + '\\nimport asyncio\\nasync def __main__():\\n' + body.map(l => l ? '    ' + l : l).join('\\n') + '\\n\\nawait __main__()';
-    }
+    // 편집기와 같은 변환기(student-code-transform.py)로 rate()·sleep()이 든 함수를 async def로 바꾸고
+    // 호출에 await를 붙인 뒤, 함수로 감싸지 않고 모듈 수준(최상위 await)에서 실행한다. global 선언이 동작한다.
+    const transformSrc = decodeURIComponent(escape(atob('${base64Transform}')));
+    pyodide.globals.set('__vpylab_source__', filtered);
+    pyodide.globals.set('__vpylab_transform_source__', transformSrc);
+    const runner = [
+      'import types as _vpylab_types, inspect as _vpylab_inspect',
+      '_vpylab_transform = _vpylab_types.ModuleType("_vpylab_transform")',
+      'exec(compile(__vpylab_transform_source__, "<vpylab-transform>", "exec"), _vpylab_transform.__dict__)',
+      '_vpylab_code, _vpylab_warnings = _vpylab_transform.compile_student_code(__vpylab_source__, "<student>")',
+      'for _vpylab_w in _vpylab_warnings:',
+      '    print("⚠️ " + _vpylab_w)',
+      '_vpylab_ns = {"__name__": "__main__"}',
+      '_vpylab_ns.update({_k: _v for _k, _v in globals().items() if not _k.startswith("_")})',
+      '_vpylab_ns[_vpylab_transform.RUNTIME_NAME] = _vpylab_transform',
+      '_vpylab_result = eval(_vpylab_code, _vpylab_ns)',
+      'if _vpylab_inspect.iscoroutine(_vpylab_result):',
+      '    await _vpylab_result',
+    ].join('\\n');
 
     try {
-      await pyodide.runPythonAsync(processed);
+      await pyodide.runPythonAsync(runner);
       await pyodide.runPythonAsync('_send_commands()');
     } catch (e) {
       console.error(e);
@@ -1619,8 +1624,18 @@ class distant_light:
 
 
 # === rate/sleep ===
-async def rate(fps):
+async def rate(fps, callback=None):
     _send_commands()
+    if callback is not None:
+        # GlowScript 콜백 형식 — 한 프레임 뒤 콜백을 별도 태스크로 부르고 바로 돌아온다
+        async def _later():
+            await asyncio.sleep(1.0/fps)
+            result = callback()
+            if asyncio.iscoroutine(result):
+                await result
+        asyncio.ensure_future(_later())
+        await asyncio.sleep(0)
+        return
     await asyncio.sleep(1.0/fps)
 
 async def sleep(seconds):
@@ -1732,7 +1747,10 @@ async def 음표(name, duration=0.5, type='sine', volume=0.4):
 def 효과음(name): play_sfx(name)
 def 배경음악(name, loop=True): start_bgm(name,loop)
 def 배경음악정지(): stop_bgm()
-def 화음(frequencies, duration=1.0, type='sine', volume=0.25): play_chord(frequencies,duration,type,volume)
+async def 화음(frequencies, duration=1.0, type='sine', volume=0.25):
+    play_chord(frequencies, duration, type, volume)
+    _send_commands()
+    await asyncio.sleep(duration)
 
 
 # === NamedList ===

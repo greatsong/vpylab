@@ -216,3 +216,39 @@ glowscript.org `GlowScriptDemos/Examples` 폴더의 Web VPython 프로그램 33�
 | B13·B14·B15 | `winput.text/number`, `menu.selected/index`, `scene.caption_anchor/title_anchor` | 3개 |
 | C1 | `curve.append(pos=, color=, radius=)`, dict·리스트 점 | 8개 |
 | F1·F2 | 코스 코드 두 곳 | 내장 코스 2개 |
+
+## 6. 실행 구조 수정 뒤 재측정 (2026-10-30)
+
+2.4절의 D1·D2·D3과 2.2절의 B2·B3, 2.3절의 C3을 고쳤다. 학생 코드 변환을 JS 정규식 전처리기 대신 Worker 안의 Python `ast`([client/src/engine/student-code-transform.py](../client/src/engine/student-code-transform.py))가 맡는다. 대기 함수(`rate`·`sleep`·`scene.pause`·`scene.waitfor`·`input`·`악기`)를 부르는 함수만 호출 그래프를 따라 `async def`로 바꾸고 호출에 `await`를 붙이며, 모듈 수준 코드는 함수로 감싸지 않고 최상위 `await`로 실행한다. 그래서 `global`이 동작하고 트레이스백 줄 번호가 학생 코드와 같다. 설계 비교와 남은 제약은 PR 본문과 [docs/VPYTHON_API.md](VPYTHON_API.md)의 "시뮬레이션 제어" 절에 있다.
+
+### 정적 하네스 (562개, 같은 코퍼스)
+
+| 출처 | 개수 | 정적 통과 (전 → 후) | 즉시 수정 적용 시 통과 (전 → 후) |
+|---|---|---|---|
+| VPyLab 내장 | 211 | 209 → 209 | 209 → 209 |
+| 수업 관용구 | 114 | 57 → 65 | 90 → 98 |
+| GlowScript 공식 예제 | 33 | 5 → 6 | 16 → 18 |
+| GlowScript 문서 조각 | 169 | 75 → 82 | 95 → 102 |
+| VPython 7 데모 | 35 | 0 → 0 | 16 → 17 |
+| **합계** | **562** | **346 → 362** | **426 → 444** |
+
+판정이 바뀐 항목은 모두 실패→통과이며 회귀는 없다. 바뀐 항목: `idiom:flow-rate-in-function`(D1), `idiom:flow-rate-in-method`(D1), `idiom:flow-global-called-in-loop`(D2), `idiom:flow-import-as`(D3), `idiom:event-waitfor-click`·`event-waitfor-keydown`(B3), `idiom:event-pause`(B2), `idiom:flow-input`(C3), `docs:mouse:line1`·`line5`, `docs:pause:line1`, `docs:userinput:pre1`·`line1`, `docs:textinput:pre1`·`line1`, `gsexample:Bounce-Callbacks-VPython`(D1, `rate(200, move)` 콜백 형식). 심 적용 시 `gsexample:Stars-VPython`과 `demos:Stars`(D2)도 통과한다. Stars는 심 없이는 여전히 B1(`scene.width` setter)에서 멈춘다.
+
+검토(Codex·Argon 3-way) 뒤 변환기를 스코프별 심볼 테이블로 다시 썼다. 확정할 수 없는 호출(매개변수·첨자·호출 결과를 부르거나 수신자를 모르는 메서드 이름이 async 메서드 이름과 겹치는 경우)은 런타임 보조 `maybe_await`로 감싸 코루틴이면 기다리고 아니면 그대로 돌려준다. 같은 이름의 중첩 함수·생성기·다른 클래스 메서드를 따로 판단하고, 대입·매개변수로 가린 이름은 대기 함수로 보지 않으며, 튜플 언패킹 인스턴스·기본 인수·제너레이터식·클래스 본문을 다룬다. 런타임은 실행마다 새 학생 전역을 만들고, 본문이 끝난 뒤 들어온 이벤트의 핸들러 태스크도 끝날 때까지 실행 상태를 유지하며(하트비트·정지·입력 위젯 동작), `_StopExecution`을 BaseException으로 바꿔 학생의 `except:`가 정지를 삼키지 못하게 했고, 긴 `sleep()`을 0.5초 단위로 나눠 하트비트를 보내며, `rate(fps, callback)`은 양보하고 미완료 콜백 수를 제한한다. 2차 검토 뒤에는 모듈 수준 `global` 선언의 이름 해석 무한 루프를 고치고, 특수 메서드·property를 async로 바꾸지 않으며, 부모 클래스 메서드의 자식 재정의를 `maybe_await`로 기다리고, 본문 종료 뒤 이벤트 처리와 새 실행 전 정리를 try/finally·await로 묶었으며, `음표`·`화음`을 코루틴으로 통일하고, 하트비트 간격을 0.2초로 줄였다. 재측정 결과는 아래와 같다(변환기 재작성 전과 같은 수치).
+
+PR #11(즉시 수정 묶음: 수학 이름·`scene.width`·`length`·`size`·색 변환)이 `main`에 먼저 들어가 이 수정과 합친 뒤 다시 재면 정적 통과는 **414**(내장 211, 관용구 94, 공식 예제 14, 문서 조각 95, 데모 0)이고 심 적용 시 **452**다. 공식 예제 Stars와 Bounce-Callbacks는 심 없이 통과한다. 합치기 전 결과와 비교해 통과에서 실패로 바뀐 항목은 없다. `scripts/compat/out/static-results.json`·`static-shim-results.json`은 합친 뒤의 결과다.
+
+정적 하네스는 `scene.waitfor()`가 기다리는 이벤트를 js 스텁이 한 번 만들어 주고(`scene_bind` 커맨드의 `waiting` 표시로 구분), `input()`에는 `'42'`를 답한다.
+
+### 브라우저 하네스 (공식 예제 33개 · 관용구 114개 부분 실행)
+
+개발 서버(`/sandbox`)에서 Playwright로 공식 예제 33개와 관용구 114개를 다시 실행했다(`--filter gsexample:`, `--filter idiom:`). `stopped`는 하네스가 실행 시간 초과 뒤 정지 버튼으로 끝낸 것이며 `rate()` 무한 루프와 같은 판정이다.
+
+| 출처 | 개수 | 통과 (전 → 후) | 판정이 바뀐 항목 |
+|---|---|---|---|
+| GlowScript 공식 예제 | 33 | 2 → 2 (+ `stopped` 3 → 4) | `Bounce-Callbacks-VPython`: error → stopped (메시 6개, `rate(200, move)` 콜백 애니메이션이 정지 버튼까지 돈다). `Stars-VPython`은 B1(`scene.width` setter)로 여전히 error |
+| 수업 관용구 | 114 | 58 → 61 (+ `stopped` 0 → 4) | `flow-rate-in-function`·`flow-rate-in-method`·`flow-global-called-in-loop`: error → pass. `event-waitfor-click`·`event-waitfor-keydown`·`event-pause`·`flow-input`: error → stopped (이벤트·입력을 기다리다 정지) |
+
+그 밖의 항목은 판정이 같다(회귀 없음).
+
+브라우저 하네스는 클릭·키·입력을 만들어 주지 않으므로 `waitfor`·`pause`·`input()` 코드는 실행 시간 초과 뒤 정지로 끝난다. 실제 화면에서는 샌드박스에서 함수 안 `rate()`와 `global` 점수, `scene.waitfor('click')`·`scene.pause()`, `input()` 위젯, 대기 중 정지 버튼, 함수 안 오류의 줄 번호를 직접 실행해 확인했다(PR 본문).

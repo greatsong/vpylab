@@ -24,7 +24,7 @@ setNotePlayCallback((name, duration, type) => registerNote(name, duration, type)
 setSoundEventCallback((kind, name) => registerSound(kind, name));
 import { renderChart, clearCharts } from './chart-system';
 import {
-  createWidget, updateWidget, deleteWidget, clearWidgets,
+  createWidget, updateWidget, deleteWidget, clearWidgets, createInputPrompt, createPauseNotice,
 } from './widgets-system';
 import {
   createGraph, deleteGraph,
@@ -1296,6 +1296,13 @@ export function processBatch(commands, scene) {
         break;
       case 'widget_delete':
         try { deleteWidget(cmd); } catch (e) { console.warn('[widget delete]', e); }
+        break;
+      case 'input_request':
+        // Python input() — 입력 위젯을 띄우고 답은 postInputValue로 Worker에 돌려준다
+        try { createInputPrompt(cmd); } catch (e) { console.warn('[input request]', e); }
+        break;
+      case 'pause_notice':
+        try { createPauseNotice(cmd); } catch (e) { console.warn('[pause notice]', e); }
         break;
 
       // === 2D 그래프 ===

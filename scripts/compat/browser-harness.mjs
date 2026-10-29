@@ -177,13 +177,11 @@ const COUNT_MESHES_FN = `() => {
 
 const CONSOLE_LINES_FN = `() => Array.from(document.querySelectorAll('.animate-slide-up')).map((el) => el.textContent.trim()).slice(-40)`;
 
-const SNAPSHOT_CODE = `__compat_snapshot = dict(globals())
-print('[compat] snapshot', len(__compat_snapshot))
+// 학생 코드는 실행마다 새 전역(_vpylab_run의 네임스페이스)에서 돌므로 전역 스냅샷·정리는 필요 없다.
+// 항목 사이에 짧은 프로그램을 한 번 돌려 Worker 가 응답하는지만 확인한다.
+const SNAPSHOT_CODE = `print('[compat] ready')
 `;
-const RESET_CODE = `for _n in list(globals()):
-    if _n not in __compat_snapshot and _n != '__compat_snapshot':
-        del globals()[_n]
-globals().update({_k: _v for _k, _v in __compat_snapshot.items() if not _k.startswith('__')})
+const RESET_CODE = `pass
 `;
 const DRAW_CALL = /(?<![\w.])(sphere|box|cylinder|arrow|cone|ring|helix|pyramid|ellipsoid|label|text|curve|points|compound|extrusion|local_light|distant_light|graph|gcurve|gdots|gvbars|ghbars|slider|button|checkbox|radio|menu|winput|triangle|quad)\s*\(/;
 
