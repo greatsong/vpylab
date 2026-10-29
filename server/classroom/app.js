@@ -6,6 +6,7 @@ import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { createStore, HttpError, DEMO_USERS, publicUser } from './store.js';
 import { createGitHubService, createGitHubRouter, createGitHubWebhookRouter } from './github.js';
+import { normalizePeerReviewText, PEER_REVIEW_MAX_LENGTH } from './peer-review.js';
 
 const DEFAULT_SESSION_COOKIE = 'vpylab_v2_session';
 const loopback = (value) => ['127.0.0.1','::1','::ffff:127.0.0.1'].includes(value);
@@ -19,6 +20,8 @@ function evidence(value={}) { if(!value || typeof value!=='object' || Array.isAr
 function source(value) { if(value===undefined||value===null)return null; if(!value||typeof value!=='object'||!['lesson','mission','example','reference'].includes(value.kind))throw new HttpError(422,'invalid_source','수업 자료의 출처를 확인해주세요.'); return {kind:value.kind,id:field(value.id,'자료 번호',{required:true,max:200}),title:field(value.title,'자료 제목',{required:true,max:300}),...(value.courseId?{courseId:field(value.courseId,'과정 번호',{max:200})}:{})}; }
 function canonical(value) { if(Array.isArray(value))return '['+value.map(canonical).join(',')+']'; if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+canonical(value[key])).join(',')+'}'; return JSON.stringify(value); }
 function clientId(req) { return field(req.body?.clientId??req.query.clientId??req.headers['x-client-id']??'default','편집 창 식별자',{required:true,max:200}); }
+function peerReviewText(value,label) { field(value??'',label,{max:PEER_REVIEW_MAX_LENGTH*4}); const result=normalizePeerReviewText(value,label); if(result.error)throw new HttpError(422,result.error,result.message); return result.text; }
+function projectIdList(value) { if(!Array.isArray(value)||value.length>200||value.some(item=>typeof item!=='string'||!item||item.length>200))throw new HttpError(422,'invalid_project_list','검토에 포함할 프로젝트 목록을 확인해주세요.'); return value; }
 
 export function createClassroomApp({store:providedStore,filename,localMode=false,allowedOrigins=['http://127.0.0.1:4043','http://localhost:4043'],verifyToken,githubConfig,fetchImpl,githubService:providedGithubService,sessionCookieName=DEFAULT_SESSION_COOKIE}={}) {
   if(typeof sessionCookieName!=='string'||! /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(sessionCookieName))throw new TypeError('세션 쿠키 이름은 영문·숫자로 시작하는 1~100자의 영문·숫자·밑줄·하이픈이어야 합니다.');
@@ -147,7 +150,16 @@ export function createClassroomApp({store:providedStore,filename,localMode=false
     for(const key of ['problem','experiment','reasoning','collaboration','nextStep'])if(req.body.criteria?.[key]!==undefined)criteria[key]=field(req.body.criteria[key],'평가 영역 의견',{max:2000});
     return {feedback:store.addFeedback(req.params.id,req.actor,{studentId:req.body.studentId==null||req.body.studentId===''?undefined:field(req.body.studentId,'학생 식별자',{required:true,max:200}),comment:field(req.body.comment,'교사 피드백',{required:true,max:2000}),criteria,visibility:optionalField(req.body.visibility,'공개 범위',{required:true,max:20}),evidenceIds:req.body.evidenceIds??[]})};
   }));
-  api.get('/projects/:id/export',requireActor,(req,res)=>{const detail=store.detail(req.params.id,req.actor);res.setHeader('Content-Disposition',`attachment; filename="vpylab-${req.params.id}.json"`);res.json({schemaVersion:2,exportedAt:new Date().toISOString(),...detail});});
+  api.get('/projects/:id/export',requireActor,(req,res)=>{const detail=store.detail(req.params.id,req.actor);res.setHeader('Content-Disposition',`attachment; filename="vpylab-${req.params.id}.json"`);res.json({schemaVersion:2,exportedAt:new Date().toISOString(),...detail,peerReviews:store.projectPeerReviews(req.params.id,req.actor)});});
+  // ── 팀 간 동료 리뷰 ── 교사가 라운드와 배정을 관리하고, 학생은 배정된 팀의 저장본을 읽고 I like / I wish 두 칸을 씁니다.
+  api.get('/peer-reviews/rounds',requireActor,(req,res)=>res.json({rounds:store.peerReviewRounds(req.actor)}));
+  api.post('/peer-reviews/rounds',requireActor,mutate(201,req=>({round:store.createPeerReviewRound(req.actor,{title:field(req.body.title,'라운드 제목',{required:true,max:120}).trim(),reviewsPerTeam:req.body.reviewsPerTeam,projectIds:projectIdList(req.body.projectIds)})})));
+  api.get('/peer-reviews/rounds/:roundId',requireActor,(req,res)=>res.json({round:store.peerReviewRoundDetail(req.params.roundId,req.actor)}));
+  api.patch('/peer-reviews/rounds/:roundId/assignments/:assignmentId',requireActor,mutate(200,req=>({round:store.replacePeerReviewAssignment(req.params.roundId,req.params.assignmentId,req.actor,field(req.body.targetProjectId,'검토 대상 프로젝트',{required:true,max:200}))})));
+  api.post('/peer-reviews/rounds/:roundId/close',requireActor,mutate(200,req=>({round:store.closePeerReviewRound(req.params.roundId,req.actor)})));
+  api.get('/projects/:id/peer-reviews',requireActor,(req,res)=>res.json(store.projectPeerReviews(req.params.id,req.actor)));
+  api.get('/peer-reviews/assignments/:assignmentId/target',requireActor,(req,res)=>res.json(store.peerReviewTarget(req.params.assignmentId,req.actor)));
+  api.put('/peer-reviews/assignments/:assignmentId/review',requireActor,mutate(200,req=>({review:store.writePeerReview(req.params.assignmentId,req.actor,{like:peerReviewText(req.body.like,'I like'),wish:peerReviewText(req.body.wish,'I wish')})})));
   api.get('/teacher',requireActor,(req,res)=>res.json(store.teacherOverview(req.actor)));
   app.use('/api/v2',api);
   app.use('/api/v2',createGitHubRouter({store,requireActor,localMode,service:githubService}));
