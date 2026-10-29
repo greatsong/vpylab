@@ -867,7 +867,7 @@ _vpython_names = [
     'sphere', 'box', 'cylinder', 'arrow', 'cone', 'ring', 'compound',
     'pyramid', 'ellipsoid', 'helix', 'label', 'text', 'curve', 'points', 'frame',
     'vertex', 'triangle', 'quad', 'extrusion',
-    'scene', 'keysdown',
+    'scene', 'keysdown', 'canvas', 'group', 'shapes', 'paths', 'wtext', 'attach_trail', 'attach_light',
     'local_light', 'distant_light',
     'rate', 'sleep', 'scene_background',
     'mag', 'mag2', 'hat', 'dot', 'cross', 'norm',

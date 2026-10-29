@@ -129,15 +129,19 @@ ball2 = ball.clone(pos=vector(2, 0, 0))
 obj.rotate(angle, axis=None, origin=None)
 # origin 중심으로 axis 축으로 angle(라디안)만큼 회전.
 # origin 미지정: 자기 위치(self.pos)
-# axis 미지정: vector(0, 1, 0)
+# axis 미지정: 객체 자신의 axis (GlowScript와 같음). axis가 없는 sphere·ring 등은 vector(0, 1, 0)
 # axis 속성을 가진 객체는 그 방향도 함께 회전.
 
-obj.attach_trail(color=None, retain=10000)
-# 객체에 궤적을 부착. 이미 있으면 색/길이만 갱신.
+obj.attach_trail(color=None, retain=10000, type='curve', pps=0, radius=0, interval=1)
+# 객체에 궤적을 부착. 이미 있으면 색/길이만 갱신. stop()/start()/clear()가 있는 손잡이를 돌려준다.
+# type='points'면 점 궤적, interval=n이면 n번 움직일 때마다 한 점, pps=k면 초당 k점까지만.
+# 함수형 attach_trail(obj, ...)과 attach_trail(함수, ...)도 있다 (아래 '부착물' 절).
 
 obj.clear_trail()
 # 누적된 궤적을 모두 지움.
 ```
+
+`compound`·`extrusion`·`text`·`group`에도 `rotate()`가 있고, `compound`·`extrusion`·`text`는 `clone()`도 된다.
 
 ### 프리미티브
 
@@ -152,8 +156,26 @@ obj.clear_trail()
 | `pyramid` | `pos`, `size=vector(L,H,W)`, `axis`, ... | 사각뿔 |
 | `ellipsoid` | `pos`, `size=vector(W,H,D)`, ... | 타원체 |
 | `helix` | `pos`, `axis`, `radius`, `length`, `coils`, `thickness` | 나선/스프링 |
-| `label` / `text` | `pos`, `text`, `color`, `height`, `background`, `border` | 항상 카메라를 향하는 텍스트 라벨 |
-| `compound` / `frame` | `[obj, obj, ...]`, `pos`, `color`, ... | 여러 객체를 하나로 묶기 |
+| `label` | `pos`, `text`, `color`, `height`(픽셀), `background`, `border` | 항상 카메라를 향하는 2D 텍스트 라벨 |
+| `text` | `pos`, `text`, `height`, `depth`, `align`, `billboard`, `axis`, `up`, `color` | 두께가 있는 3D 입체 글자 (아래 절) |
+| `compound` / `frame` | `[obj, obj, ...]`, `pos`, `axis`, `up`, `color`, ... | 여러 객체를 하나로 묶기. `pos` 기본값은 부품들의 중심이고 지정하면 중심이 그 자리로 옮겨진다. `length`·`size`·`axis` 길이로 크기 조절, `rotate()`·`clone()` |
+| `group` | `pos`, `axis`, `up`, `visible` + `box(group=g)` | 하위 객체를 나중에 따로 바꿀 수 있는 묶음 (아래 절) |
+| `extrusion` | `path`, `shape`, `pos`, `axis`, `color`, ... | 2D 단면을 경로를 따라 쓸어 만든 입체 (`shapes`·`paths` 절) |
+
+### group — 하위 객체를 따로 바꿀 수 있는 묶음
+
+```python
+g = group()                                   # pos=, axis=, up=, visible= 지정 가능
+body = box(group=g, pos=vector(0, 0, 0), size=vector(4, 1, 2), color=color.red)
+head = sphere(group=g, pos=vector(2.5, 0.5, 0), radius=0.5)   # pos는 g.pos 기준 상대 위치
+car = compound([...]).clone(pos=vector(0, 2, 0), group=g)    # compound·text·curve도 들어간다
+
+g.pos = vector(-10, 0, 0)                     # 묶음 전체 이동 (g.pos.x += 0.1 도 된다)
+g.rotate(angle=0.1, axis=vector(0, 1, 0))     # g.pos를 중심으로 회전 (origin= 으로 중심 지정)
+g.visible = False
+head.color = color.blue                       # compound와 달리 하위 객체를 나중에 바꿀 수 있다
+print(len(g.objects))
+```
 
 ---
 
@@ -161,23 +183,40 @@ obj.clear_trail()
 
 ### curve
 
-3D 폴리라인. 점을 누적해 선을 그립니다.
+3D 폴리라인. 점을 누적해 선을 그립니다. 점마다 색과 반지름을 줄 수 있습니다 (GlowScript와 같은 호출 형식).
 
 ```python
 c = curve(color=color.red)
 for i in range(100):
     c.append(vector(i*0.1, sin(i*0.1), 0))
+
+c = curve(vector(0, 0, 0), vector(1, 0, 0))                 # 위치 인자로 점 여러 개
+c = curve(pos=[vector(0, 0, 0), vector(1, 1, 0)], radius=0.05)
+c = curve([{'pos': vector(0, 0, 0), 'color': color.red, 'radius': 0.1}, {'pos': vector(1, 0, 0)}])
+
+c.append(pos=vector(2, 0, 0), color=color.cyan, radius=0.1)  # 점 하나에 색·반지름
+c.append([vector(3, 0, 0), vector(4, 0, 0)])                 # 여러 점
+c.npoints                                                    # 점 개수 (len(c)도 같다)
+c.point(2)                                                   # {'pos', 'color', 'radius', 'visible'}
+c.modify(2, pos=vector(9, 0, 0))                             # i번째 점 수정 (color=, radius=, x=, y=, z=)
+c.pop(); c.shift(); c.slice(0, 3); c.splice(1, 2, vector(5, 5, 5))
+c.rotate(angle=0.01, axis=vector(0, 1, 0))                   # 점 좌표는 두고 전체를 회전 (origin= 지정 가능)
+c.origin = vector(0, 1, 0)                                   # 전체 이동 (c.pos와 같다)
+c.color = color.green                                        # 모든 점의 색을 바꾼다
 c.clear()
 ```
 
+`radius`는 받아 두지만 현재 선은 1픽셀 굵기로 그립니다(점마다의 반지름은 `points`의 `size_units='world'`에서 크기로 쓰입니다).
+
 ### points
 
-3D 점 집합.
+3D 점 집합. 호출 형식은 `curve`와 같습니다.
 
 ```python
-p = points(color=color.yellow, size=8)
+p = points(color=color.yellow, size=8)          # size: 픽셀 크기
 for x in range(-5, 6):
     p.append(vector(x, 0, 0))
+p = points(pos=[{'pos': vector(0, 0, 0), 'radius': 0.05, 'color': color.red}], size_units='world')  # 월드 크기
 ```
 
 ---
@@ -187,6 +226,36 @@ for x in range(-5, 6):
 ```python
 local_light(pos=vector(2,3,1), color=color.white, intensity=1.0)
 distant_light(direction=vector(0,-1,0), color=color.white, intensity=0.8)
+```
+
+## 부착물 — attach_trail / attach_light / attach_arrow
+
+`rate()`·`sleep()`을 지날 때마다 갱신됩니다.
+
+```python
+h = attach_trail(ball, color=color.green, retain=100)     # 객체 궤적. h.stop() / h.start() / h.clear()
+f = attach_trail(lambda: ball.pos + vector(0, 1, 0))     # 함수 값이 궤적이 된다 (rate()마다 한 점)
+p = attach_trail(ball, type='points', pps=10, radius=0.05) # 점 궤적, 초당 10점까지
+ball = sphere(make_trail=True, trail_type='points', interval=10)   # 생성 시 지정도 된다
+
+L = attach_light(ball, offset=vector(0, 1, 0), color=color.green)  # 객체를 따라다니는 점광원
+L.offset = vector(1, 0, 0); L.color = color.red; L.visible = False
+
+attach_arrow(ball, 'velocity', scale=0.5)                 # 벡터 속성을 따라다니는 화살표
+```
+
+## canvas() — 캔버스 만들기
+
+VPyLab은 3D 화면이 하나입니다. `canvas(**kw)`는 인자를 `scene`에 적용하고 `scene`을 돌려줍니다. 두 번째 호출부터는 같은 `scene`을 돌려주고 콘솔에 안내를 한 번 출력합니다.
+
+```python
+scene = canvas(width=600, height=300, background=color.white, title='제목', center=vector(0, 1, 0), range=5)
+scene.width, scene.height         # 값은 기억하지만 화면 크기는 레이아웃이 정한다
+scene.visible = False             # 3D 화면 전체 숨기기 (객체는 남는다)
+for o in scene.objects: o.visible = False
+scene.delete()                    # 3D 객체 모두 지우기 (위젯·그래프는 남는다)
+canvas.get_selected() is scene    # True
+scene.select()                    # 할 일 없음 (캔버스가 하나)
 ```
 
 ---
@@ -261,18 +330,71 @@ triangle(v0=v0, v1=v1, v2=v2)        # 그라디언트 삼각형
 quad(vs=[v0, v1, v2, vertex(pos=vector(1, 1, 0))])
 ```
 
-### extrusion
+### extrusion — 단면을 경로를 따라 쓸기
 
-2D 단면을 path를 따라 압출.
+2D 단면(`shape`)을 3D 경로(`path`)를 따라 쓸어 입체를 만듭니다. 단면의 y축은 경로의 up(기본 `vector(0,1,0)`) 방향, x축은 `tangent × up` 방향(원 경로에서 바깥쪽)에 놓이고, 꺾이는 점에서는 각의 이등분면에 단면을 둡니다. 경로의 첫 점과 끝 점이 같으면 닫힌 고리로 잇고 끝면을 만들지 않습니다.
 
 ```python
-# 별 모양을 곡선 path를 따라 스윕
-shape = [(0, 0.5), (0.15, 0.15), (0.5, 0.15), (0.2, -0.05),
-         (0.3, -0.5), (0, -0.2), (-0.3, -0.5), (-0.2, -0.05),
-         (-0.5, 0.15), (-0.15, 0.15)]
-path = [vector(t, 0, 0) for t in range(-3, 4)]
-extrusion(path=path, shape=shape, color=color.gold)
+ring = extrusion(path=paths.circle(radius=2), shape=shapes.rectangle(width=0.4, height=0.2))
+tube = extrusion(path=[vector(0,0,0), vector(2,0,0)], shape=shapes.circle(radius=0.6, thickness=0.2),
+                 pos=vector(-1, 1.7, 0), axis=vector(0, 0, 2), color=color.yellow, end_face_color=color.blue)
+two = extrusion(path=paths.arc(radius=1.7, angle2=pi),
+                shape=[[shapes.triangle(length=2), shapes.circle(pos=[0, .5], radius=0.2)],   # 고체 1 = 바깥 + 구멍
+                       [shapes.rectangle(pos=[0, 1.8], width=1, height=0.3)]])                # 고체 2
+conch = extrusion(path=spiral, shape=shapes.circle(radius=0.7, thickness=0.01),
+                  color=[...점마다의 색...], scale=[...점마다의 배율...])
+tube.rotate(angle=0.1, axis=vector(0, 1, 0)); tube.clone(pos=vector(3, 0, 0))
+
+# 직접 만든 단면도 된다: [(x, y), ...]
+star = [(0, 0.5), (0.15, 0.15), (0.5, 0.15), (0.2, -0.05), (0.3, -0.5), (0, -0.2), (-0.3, -0.5), (-0.2, -0.05), (-0.5, 0.15), (-0.15, 0.15)]
+extrusion(path=[vector(t, 0, 0) for t in range(-3, 4)], shape=star, color=color.gold)
 ```
+
+- `pos`: 기본값은 경로의 중심(경계 상자 중심). 지정하면 입체 전체가 그 위치로 옮겨집니다.
+- `shape`: 점 목록 하나(외곽선), `[바깥, 구멍, ...]`(`shapes.circle(thickness=)`가 돌려주는 형식), 또는 고체 여러 개의 목록.
+- `color`: 색 하나 또는 경로 점마다의 색 목록. `scale`: 숫자 또는 경로 점마다의 배율 목록.
+- `start_face_color` / `end_face_color` / `show_start_face` / `show_end_face`: 열린 경로의 끝면.
+- `twist`·`smooth`·`xscale`·`yscale`은 받아 두기만 합니다.
+
+### shapes / paths — 단면과 경로 생성기
+
+GlowScript의 [shapes_and_paths](https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html)와 같은 인자 이름과 기본값입니다. `shapes.*`는 `[x, y]` 점 목록(닫힌 외곽선은 첫 점을 끝에 반복)을, `paths.*`는 xz 평면에 놓인 `vector` 목록을 돌려줍니다.
+
+```python
+shapes.rectangle(pos=[0,0], width=1, height=None, rotate=0, thickness=0, roundness=0, invert=False, scale=1, xscale=1, yscale=1)
+shapes.circle(radius=0.5, np=64, angle1=0, angle2=2*pi, thickness=0)       # 부분 원은 부채꼴
+shapes.arc(radius=0.5, angle1=0, angle2=2*pi, thickness=None)              # 띠 모양
+shapes.ellipse(width=1, height=None)   shapes.line(start=[0,0], end=[0,1], np=2, thickness=None)
+shapes.triangle(length=1)  shapes.pentagon(length=1)  shapes.hexagon(length=1)  shapes.octagon(length=1)
+shapes.ngon(np=3, length=1, radius=None)   shapes.star(radius=1, n=5, iradius=None)
+shapes.cross(width=1, thickness=0.2)   shapes.trapezoid(width=2, height=1, top=None)
+shapes.points(pos=[[x, y], ...])   shapes.gear(n=20, radius=1, addendum=, dedendum=)   shapes.rackgear(...)
+# thickness를 주면 [바깥, 구멍]을 돌려준다 (rectangle·circle·ngon·star·trapezoid). roundness(0~0.5)는 모서리를 둥글게.
+
+paths.circle(radius=0.5, pos=vector(0,0,0), up=vector(0,1,0))   # 닫힌 경로 (첫 점 반복)
+paths.arc(radius=0.5, angle2=pi)                                  # 열린 경로
+paths.rectangle(width=5, height=2)  paths.pentagon(length=1)  paths.star(radius=1)  paths.cross(width=4, thickness=1)
+paths.line(start=vector(0,0,0), end=vector(0,0,-0.1), np=2)      # 직선 경로
+paths.points(pos=[vector, ...])
+```
+
+`shapes.gear`·`rackgear`는 사다리꼴 톱니로 단순화한 모양이고, `shapes.text`(글자 단면)는 지원하지 않습니다(입체 글자는 `text()`).
+
+### text — 3D 입체 글자
+
+```python
+t = text(text='Hello', pos=vector(0, 0, 0), height=1, depth=0.2, align='center', color=color.yellow)
+t.length, t.start, t.end, t.descender, t.vertical_spacing
+t.length = 3                 # 가로로 늘리거나 줄인다
+t.text = 'Bye'; t.height = 2; t.depth = 0.5; t.billboard = True   # billboard: 항상 카메라를 향함
+t.rotate(angle=0.3, axis=vector(0, 1, 0)); t.clone(pos=vector(0, 2, 0))
+text(text='Car', group=g, depth=1, start_face_color=color.red)
+```
+
+- `pos`는 기준선 위치입니다(`align='left'`면 왼쪽 끝, `'center'`면 가운데, `'right'`면 오른쪽 끝). `axis` 방향으로 글이 흐르고 `up`이 글자의 위쪽입니다.
+- 번들 글꼴(helvetiker)은 라틴 문자만 담고 있습니다. 한글 등 글꼴에 없는 글자가 있으면 콘솔에 안내를 한 번 출력하고 카메라를 향하는 2D 라벨로 표시합니다.
+- `length`는 평균 글자 폭으로 어림한 값이며, `font='serif'`는 받아 두기만 합니다. `start_face_color`는 앞·뒷면에 함께 적용됩니다.
+- 2D 화면 라벨은 `label()`입니다(`text`는 더 이상 `label`의 별칭이 아닙니다).
 
 ---
 
@@ -309,6 +431,16 @@ while True:
 
 `scene.mouse.pos` — 현재 마우스 위치(vector)를 폴링.
 `scene.mouse.pick` — 현재 마우스 아래 객체 id 또는 `None`.
+`scene.mouse.ray` — 카메라에서 마우스가 가리키는 점을 향하는 단위 벡터. `scene.mouse.camera`는 카메라 위치.
+`scene.mouse.project(normal=vector(0,1,0), point=vector(0,0,0))` — 마우스 광선을 평면에 투영한 점(`d=`로 원점 거리 지정도 가능). 만나지 않으면 `None`.
+
+```python
+def drag(evt):
+    p = scene.mouse.project(normal=vector(0, 0, 1), d=0)   # z=0 평면 위의 마우스 위치
+    if p is not None:
+        ball.pos = p
+scene.bind('mousemove', drag)
+```
 
 ### keysdown() — 다중 키 동시 입력 폴링
 
@@ -356,6 +488,13 @@ winput(prompt='속도', type='numeric', bind=lambda e: print(e.value))
 # 모든 위젯은 .value로 현재값 읽기/쓰기 가능
 # .disabled = True/False, .delete()로 제거
 # menu: .selected, .index / winput: .text, .number (GlowScript 호환)
+
+# wtext — 캡션 영역의 글자 (슬라이더 값 표시용). 3D 화면 아래 scene.caption 옆에 놓인다
+w = wtext(text='0.50')
+def on_slide(evt):
+    w.text = f'{evt.value:.2f}'
+wtext(text='제목 옆 글자', pos=scene.title_anchor)   # 제목 영역에 놓기
+w.delete()
 ```
 
 ---
@@ -402,16 +541,19 @@ v_curve.clear()
 
 ### 미지원 (현 시점)
 
-- `scene.width` / `scene.height`로 실제 화면 크기 바꾸기 (값은 받지만 화면은 그대로), 여러 개의 `canvas()`
-- 3D 입체 글자 `text()` (현재 2D 라벨로 대체), `shapes`·`paths` 라이브러리
+- `scene.width` / `scene.height`로 실제 화면 크기 바꾸기 (값은 받지만 화면은 그대로), 여러 개의 `canvas()` (두 번째부터는 같은 `scene`)
+- `text()`의 한글 글꼴 (라틴 문자만 입체, 그 밖은 2D 라벨로 대체), `shapes.text`
+- `curve`의 `radius` 굵기 (선은 1픽셀), `compound.length`·`size`로 크기 바꾸기, `scene.mouse.alt/ctrl/shift`(항상 False)
+- `extrusion`의 `twist`·`smooth`, 범프맵(`bumpmaps.*`는 받기만 함)
 
 ### standalone HTML export 시 주의
 
 [utils/export-html.js](../client/src/utils/export-html.js)로 생성한 단일 HTML 파일에서는 다음이 동작하지 않습니다 (콘솔 경고 후 무시):
 
-- UI 위젯 (`slider`, `button`, ...) — Worker 채널 의존
+- UI 위젯 (`slider`, `button`, `wtext`, ...) — Worker 채널 의존
 - 2D 그래프 (`graph`, `gcurve`, ...) — DOM 패널 의존
 - 이벤트 (`scene.bind`, `scene.mouse`) — 양방향 채널 의존
+- `group`, 3D `text`, 단면이 있는 `extrusion`, 점별 색 `curve` — 내보내기용 간이 렌더러가 아직 모른다
 
 3D 객체와 사운드는 export에서도 모두 동작합니다.
 

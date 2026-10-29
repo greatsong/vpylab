@@ -246,6 +246,8 @@ _vpython_names = [
     # GlowScript 호환: 함수형 벡터 연산, 수학·난수·시간 함수, 별칭
     'simple_sphere', 'bumpmaps', 'proj', 'comp', 'diff_angle', 'rotate',
     'random', 'arange', 'clock', 'msclock', 'sign', 'combin', 'print_options',
+    # GlowScript 호환: 캔버스·묶음·단면/경로 생성기·캡션 글자·부착물
+    'canvas', 'group', 'shapes', 'paths', 'wtext', 'attach_trail', 'attach_light',
 ]
 # GlowScript처럼 from vpython import * 가 math의 공개 이름(sin, cos, pi, sqrt ...)도 제공한다
 import math as _math_for_export
@@ -440,6 +442,8 @@ sys.stderr = _VPLBoundedOutput('stderr')
     sendRunMessage(runId, 'done');
   } catch (err) {
     const msg = takePythonTraceback(err);
+    // 오류 전에 만든 객체는 화면에 보이도록 남은 커맨드를 먼저 보낸다 (GlowScript와 같음)
+    try { await pyodide.runPythonAsync('_send_commands()'); } catch { /* 플러시 실패는 무시 */ }
     await flushOutputStreams(runId);
     // 사용자 중지로 인한 예외는 에러가 아닌 정상 종료로 처리
     // shouldStop 플래그 또는 예외 메시지로 판별

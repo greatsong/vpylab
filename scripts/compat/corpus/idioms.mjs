@@ -780,6 +780,239 @@ c2 = c.clone(pos=vector(0, 3, 0))
   { id: 'flow-get-library', title: 'get_library / read_local_file (GlowScript 전용 함수)', doc: 'file', tags: ['glowscript-only'], code: `from vpython import *
 print(callable(get_library), callable(read_local_file))
 ` },
+
+  // === 중·대 난이도 항목 (canvas, group, shapes/paths, text, curve 형식, attach_trail/light, mouse.project, wtext) ===
+  { id: 'canvas-single', title: 'canvas(**kw)는 scene에 인자를 적용하고 같은 scene을 돌려준다', doc: 'canvas', code: `from vpython import *
+scene = canvas(width=600, height=300, background=color.white, title='제목', center=vector(0, 1, 0), range=5)
+assert scene.width == 600 and scene.height == 300 and scene.title == '제목'
+assert scene.center == vector(0, 1, 0)
+c2 = canvas(title='둘째')
+assert c2 is scene
+assert canvas.get_selected() is scene
+scene.select()
+` },
+  { id: 'canvas-visible-delete', title: 'scene.visible, scene.delete(), scene.objects', doc: 'canvas', code: `from vpython import *
+b = box()
+s = sphere()
+assert len(scene.objects) == 2
+scene.visible = False
+scene.visible = True
+scene.delete()
+assert len(scene.objects) == 0
+` },
+  { id: 'group-basic', title: 'group()과 box(group=g), g.pos·g.rotate()·g.visible', doc: 'group', code: `from vpython import *
+g = group()
+b = box(group=g, pos=vector(1, 0, 0), color=color.red)
+s = sphere(group=g, pos=vector(-1, 0, 0))
+assert len(g.objects) == 2
+g.pos = vector(3, 0, 0)
+g.pos.x = 5
+assert g.pos.x == 5 and b.pos.x == 1
+g.rotate(angle=pi / 2, axis=vector(0, 1, 0))
+assert abs(g.axis.z + 1) < 1e-9
+g.rotate(angle=0.1, axis=vector(0, 1, 0), origin=vector(0, 0, 0))
+g.visible = False
+b.color = color.blue
+` },
+  { id: 'group-compound-clone', title: 'compound.clone(pos=, group=)와 text(group=)', doc: 'group', code: `from vpython import *
+r = ring(radius=1, thickness=0.2, color=color.black, axis=vector(0, 0, 1))
+c1 = cylinder(pos=vector(-1, 0, 0), axis=vector(2, 0, 0), radius=0.1)
+w = compound([r, c1])
+g = group()
+w1 = w.clone(pos=vector(4, 0, 0), group=g)
+w2 = w.clone(pos=vector(-4, 0, 0), group=g)
+w.visible = False
+T = text(group=g, text='Car', pos=vector(0, 1, 0), depth=1, color=color.green)
+assert len(g.objects) == 3
+w1.rotate(angle=-0.1, axis=vector(0, 0, 1))
+` },
+  { id: 'compound-rotate-clone', title: 'compound.rotate(angle=, axis=, origin=)와 clone()', doc: 'compound', code: `from vpython import *
+c = compound([box(pos=vector(1, 0, 0)), sphere(pos=vector(-1, 0, 0))])
+c.rotate(angle=0.2, axis=vector(0, 0, 1))
+c.rotate(angle=pi / 2, axis=vector(0, 0, 1), origin=vector(0, 0, 0))
+assert abs(c.axis.hat.x - cos(0.2 + pi / 2)) < 1e-9
+assert abs(c.length - c.axis.mag) < 1e-9
+c.length = 5
+assert abs(c.axis.mag - 5) < 1e-9 and abs(c.size.x - 5) < 1e-9
+c.rotate(angle=0.3)   # 기본 축은 자기 axis
+c2 = c.clone(pos=vector(0, 3, 0), color=color.red)
+assert c2.pos == vector(0, 3, 0) and c2.color == color.red
+c2.texture = textures.metal
+c2.emissive = True
+assert len(scene.objects) == 2
+` },
+  { id: 'extrusion-clone-rotate', title: 'extrusion.clone()·rotate()·pos 기본값(경로 중심)', doc: 'extrusion', code: `from vpython import *
+e = extrusion(path=[vector(0, 0, 0), vector(2, 0, 0)], shape=shapes.circle(radius=0.5))
+assert e.pos == vector(1, 0, 0)
+e2 = e.clone(pos=vector(0, 3, 0))
+assert e2.pos == vector(0, 3, 0)
+e2.rotate(angle=pi / 2, axis=vector(0, 1, 0), origin=vector(0, 0, 0))
+assert abs(e2.axis.z + 1) < 1e-9
+e3 = extrusion(pos=vector(7, 0, 10), path=[vector(0, 0, 0), vector(0, 1, 0), vector(0, 1, 1)], shape=shapes.circle(radius=0.05))
+assert e3.pos == vector(7, 0, 10)
+` },
+  { id: 'curve-forms', title: 'curve 위치 인자·append(pos=, color=, radius=)·리스트·dict 점', doc: 'curve', code: `from vpython import *
+c = curve(vector(0, 0, 0), vector(1, 0, 0))
+assert c.npoints == 2
+c.append(pos=vector(2, 0, 0), color=color.red, radius=0.1)
+c.append([vector(3, 0, 0), vector(4, 0, 0)])
+c.append(vector(5, 0, 0), vector(6, 0, 0))
+c.append({'pos': vector(7, 0, 0), 'color': color.blue})
+c.append(pos=[vector(8, 0, 0), vector(9, 0, 0)])   # pos= 에 점 목록
+assert c.npoints == 10
+assert c.point(2)['color'] == color.red and c.point(2)['radius'] == 0.1
+d = curve(pos=[{'pos': vector(0, 0, 0), 'color': color.red}, {'pos': vector(1, 1, 0)}], radius=0.05)
+assert d.point(1)['color'] == color.white and d.point(1)['radius'] == 0.05
+` },
+  { id: 'curve-modify-point', title: 'curve.modify()·point()·pop()·shift()·rotate()·origin', doc: 'curve', code: `from vpython import *
+p = [{'pos': vector(i, 0, 0), 'radius': 0.01 * i, 'color': vec.random()} for i in range(5)]
+c = curve(p)
+assert len(c) == 5
+c.modify(0, pos=vector(9, 9, 9))
+c.modify(1, color=color.blue, x=5)
+c.modify(2, vector(1, 2, 3))
+assert c.point(0)['pos'] == vector(9, 9, 9) and c.point(1)['pos'].x == 5 and c.point(2)['pos'].z == 3
+last = c.pop()
+assert last['pos'] == vector(4, 0, 0)
+c.shift()
+assert c.npoints == 3
+c.rotate(angle=0.005, axis=vector(0, 1, 0))
+c.origin = vector(0, 1, 0)
+assert c.pos == vector(0, 1, 0)
+c.color = color.green
+assert c.point(0)['color'] == color.green
+` },
+  { id: 'points-forms', title: 'points(pos=[dict], size_units=world)와 append', doc: 'points', code: `from vpython import *
+p = points(pos=[{'pos': vector(0, 0, 0), 'radius': 0.02, 'color': color.red}], size_units='world')
+p.append(vector(1, 1, 1))
+p.append(pos=vector(2, 2, 2), color=color.blue)
+assert p.npoints == 3 and p.point(2)['color'] == color.blue
+q = points(vector(0, 0, 0), vector(1, 0, 0), size=8, color=color.yellow)
+assert q.npoints == 2
+q.size = 12
+` },
+  { id: 'shapes-basic', title: 'shapes.rectangle/circle/triangle/star 등 2D 단면', doc: 'shapes_and_paths', code: `from vpython import *
+marker = sphere(radius=0.1)   # 생성기만 쓰는 코드라 하네스의 무반응 판정을 피하기 위한 객체
+r = shapes.rectangle(width=2, height=1)
+assert len(r) == 5 and r[0] == r[-1]
+assert r[1] == [1, -0.5]
+rr = shapes.rectangle(width=2, height=1, thickness=0.1, roundness=0.3)
+assert len(rr) == 2 and len(rr[0]) > 5
+c = shapes.circle(radius=1, thickness=0.2)
+assert len(c) == 2 and len(c[0]) == 65
+assert len(shapes.triangle(length=1)) == 4
+assert len(shapes.star(n=5, radius=1)) == 11
+for f in (shapes.pentagon, shapes.hexagon, shapes.octagon):
+    assert f(length=0.3)[0] == f(length=0.3)[-1]
+assert len(shapes.ngon(np=7, length=1)) == 8
+shapes.cross(width=4, thickness=1)
+shapes.trapezoid(width=1.6, height=1, top=0.6)
+shapes.arc(radius=1, angle2=pi)
+shapes.ellipse(width=2, height=1)
+shapes.line(start=[0, 0], end=[1, 1])
+shapes.points(pos=[[0, 0], [1, 0], [1, 1]])
+shapes.gear(n=9, radius=0.455, addendum=0.04, dedendum=0.06, fradius=0.01)
+shapes.rackgear()
+` },
+  { id: 'paths-basic', title: 'paths.circle/arc/rectangle/line — xz 평면 vector 경로', doc: 'shapes_and_paths', code: `from vpython import *
+marker = sphere(radius=0.1)   # 생성기만 쓰는 코드라 하네스의 무반응 판정을 피하기 위한 객체
+pc = paths.circle(radius=2)
+assert isinstance(pc[0], vector) and abs(pc[0].y) < 1e-9 and pc[0] == pc[-1]
+assert abs(pc[0].x - 2) < 1e-9
+pa = paths.arc(radius=1.7, angle2=pi)
+assert pa[0] != pa[-1]
+pr = paths.rectangle(width=5, height=2)
+assert len(pr) == 5
+pl = paths.line(start=vector(0, 0, 0), end=vector(0, 0, -2), np=5)
+assert len(pl) == 5 and pl[-1] == vector(0, 0, -2)
+pp = paths.pentagon(length=1, pos=vector(1, 2, 3), up=vector(1, 0, 0))
+assert abs((pp[0] - vector(1, 2, 3)).x) < 1e-9
+paths.cross(width=4, thickness=1)
+paths.triangle(length=1); paths.hexagon(length=1); paths.octagon(length=1); paths.star(radius=1); paths.ellipse(width=2)
+` },
+  { id: 'extrusion-shapes-paths', title: 'extrusion(path=paths.*, shape=shapes.*) — 구멍·여러 고체·색 목록', doc: 'extrusion', code: `from vpython import *
+E1 = extrusion(path=[vector(0, 0, 0), vector(0, 0, -0.7)],
+    shape=[shapes.circle(radius=1.5), shapes.triangle(pos=[0, -0.6], length=1.2),
+           shapes.trapezoid(pos=[0, 0.6], width=1.6, height=1, top=0.6)], pos=vector(-4, 1.5, 0))
+E2 = extrusion(path=paths.arc(radius=1.7, angle2=pi),
+    shape=[[shapes.triangle(length=2), shapes.circle(pos=[0, .5], radius=0.2)],
+           [shapes.rectangle(pos=[0, 1.8], width=1, height=0.3)]],
+    start_face_color=color.red, end_face_color=color.red)
+E2.pos = vector(3, 2, 0)
+rect = extrusion(path=paths.rectangle(width=5, height=2), shape=shapes.hexagon(length=0.3), color=color.red)
+bottom = extrusion(path=paths.cross(width=4, thickness=1), shape=shapes.circle(radius=0.2), color=color.green)
+tube = extrusion(path=[vector(0, 0, 0), vector(2, 0, 0)], shape=shapes.circle(radius=0.6, thickness=0.2),
+                 pos=vector(-1, 1.7, 0), axis=vector(0, 0, 2), color=color.yellow, end_face_color=color.blue)
+path = [vector(t, 0, 0) for t in range(5)]
+conch = extrusion(shape=shapes.circle(radius=0.69, thickness=0.01), path=path, color=[vec.random() for _ in path], scale=[1, 2, 3, 4, 5], texture=textures.rock)
+conch.rotate(angle=pi / 2)
+old = extrusion(path=path, shape=[(0, 0.5), (0.15, 0.15), (0.5, 0.15)], color=color.gold)
+` },
+  { id: 'text-3d', title: 'text(text=, depth=, align=, height=)·length·start·billboard', doc: 'text', code: `from vpython import *
+t = text(text='Hello', pos=vector(0, 0, 0), height=0.5, depth=0.2, align='center', color=color.yellow, billboard=True, emissive=True)
+assert t.height == 0.5 and t.depth == 0.2 and t.align == 'center'
+assert t.start.x < 0 < t.end.x
+t4 = text(text='Regular', pos=vector(-4, -1, 0), depth=0.5, start_face_color=color.red, end_face_color=color.green)
+box(pos=t4.start, size=0.1 * vector(1, 1, 1))
+assert t4.start == vector(-4, -1, 0)
+t.text = 'Bye'
+t.length = 3
+assert t.length == 3
+t.rotate(angle=0.3, axis=vector(0, 1, 0))
+t2 = t.clone(pos=vector(1, 1, 1))
+assert t2.text == 'Bye'
+k = text(text='안녕', depth=0.3)
+L = label(pos=vector(0, 1, 0), text='2D 라벨')
+` },
+  { id: 'attach-trail-function', title: 'attach_trail(obj/함수, color=, retain=, type=, pps=)와 stop/start/clear', doc: 'trail', code: `from vpython import *
+b = sphere(make_trail=True, trail_type='points', interval=10, pps=15)
+h = attach_trail(b, color=color.green, retain=100)
+h.stop()
+h.start()
+h.clear()
+f = attach_trail(lambda: b.pos + vector(0, 1, 0), type='points', radius=0.05)
+g = attach_trail(lambda: b.pos * 2, color=color.cyan, pps=0)
+for i in range(3):
+    rate(100)
+    b.pos = vector(i, 0, 0)
+assert f.trail.npoints >= 2 and g.trail.npoints >= 2
+f.stop()
+` },
+  { id: 'attach-light-follow', title: 'attach_light(obj, offset=, color=) — 객체를 따라다니는 광원', doc: 'attach_light', code: `from vpython import *
+b = sphere(pos=vector(1, 0, 0), color=color.magenta, emissive=True)
+L = attach_light(b, offset=vector(0, 1, 0), color=color.green)
+assert L.light.pos == vector(1, 1, 0)
+L.offset = vector(0, 2, 0)
+assert L.light.pos == vector(1, 2, 0)
+L.color = color.red
+L.visible = False
+L.visible = True
+for i in range(2):
+    rate(100)
+    b.pos = vector(i, 0, 0)
+assert L.light.pos == vector(0, 2, 0)   # 마지막 rate() 시점의 b.pos + offset
+` },
+  { id: 'mouse-ray-project', title: 'scene.mouse.ray, scene.mouse.project(normal=, point=/d=)', doc: 'mouse', code: `from vpython import *
+r = scene.mouse.ray
+assert abs(r.mag - 1) < 1e-9
+p = scene.mouse.project(normal=vector(0, 0, 1), point=vector(0, 0, 0))
+assert p is not None and abs(p.z) < 1e-9
+p2 = scene.mouse.project(normal=vector(0, 0, 1), d=0)
+assert p2 == p
+assert scene.mouse.project(normal=vector(0, 0, 1), point=vector(0, 0, 100)) is None
+assert scene.mouse.camera == scene.camera.pos
+assert scene.mouse.alt is False
+` },
+  { id: 'wtext-basic', title: 'wtext(text=)와 .text 갱신, title_anchor', doc: 'wtext', code: `from vpython import *
+w = wtext(text='0.0')
+assert w.text == '0.0'
+w.text = '1.5'
+assert w.text == '1.5'
+w2 = wtext(text='제목', pos=scene.title_anchor)
+w2.delete()
+s = slider(min=0, max=1, pos=scene.caption_anchor)
+scene.append_to_caption(' m')
+` },
 ];
 
 export default IDIOMS.filter((item) => item.code);

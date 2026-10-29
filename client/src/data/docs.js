@@ -192,13 +192,14 @@ orbit = ring(pos=vector(0, 0, 0), radius=2, thickness=0.03, color=color.gray)`,
     category: 'objects',
     title: { ko: '복합 객체 (compound)', en: 'compound' },
     description: {
-      ko: '여러 객체를 하나로 합쳐 함께 움직이게 합니다. 로봇, 자동차 등 복잡한 모양을 만들 수 있습니다.',
-      en: 'Combines multiple objects into one so they move together. Build robots, cars, and complex shapes.',
+      ko: '여러 객체를 하나로 합쳐 함께 움직이게 합니다. pos 기본값은 부품들의 중심이고, 지정하면 중심이 그 자리로 옮겨집니다. rotate()·clone()·length·size를 지원합니다. 부품을 나중에 따로 바꾸려면 group().',
+      en: 'Combines objects into one that moves together. pos defaults to the center of the parts; setting it moves the center there. Supports rotate(), clone(), length, size. Use group() to keep parts editable.',
     },
-    signature: "compound(objects, pos=vector(0,0,0), color=color.white)",
+    signature: "compound(objects, pos=중심, axis=vector(1,0,0), color=None)",
     params: [
       { name: 'objects',    type: 'list',    default: '[]',            desc: { ko: '합칠 객체 리스트', en: 'List of objects to combine' } },
-      { name: 'pos',        type: 'vector',  default: 'vector(0,0,0)', desc: { ko: '위치', en: 'Position' } },
+      { name: 'pos',        type: 'vector',  default: '부품 중심',      desc: { ko: '중심 위치 (지정하면 그 자리로 이동)', en: 'Center position (moves the compound when given)' } },
+      { name: 'axis',       type: 'vector',  default: 'vector(1,0,0)', desc: { ko: '방향. 길이는 length가 됨', en: 'Orientation; its length becomes length' } },
       { name: 'color',      type: 'vector',  default: 'color.white',   desc: { ko: '색상 (전체 덮어쓰기)', en: 'Color (overrides all)' } },
       { name: 'opacity',    type: 'number',  default: '1.0',           desc: { ko: '불투명도 (0~1)', en: 'Opacity (0–1)' } },
       { name: 'emissive',   type: 'boolean', default: 'False',         desc: { ko: '색상으로 스스로 빛나게 표시', en: 'Glow using the object color' } },
@@ -276,10 +277,10 @@ spring = helix(pos=vector(0,0,0), axis=vector(1,0,0),
   {
     id: 'label',
     category: 'objects',
-    title: { ko: '라벨 (label / text)', en: 'label / text' },
+    title: { ko: '라벨 (label)', en: 'label' },
     description: {
-      ko: '3D 위치에 텍스트 표시. 항상 카메라를 향함(스프라이트). text도 같은 함수.',
-      en: 'Text label at a 3D position, always faces the camera. text() is an alias.',
+      ko: '3D 위치에 2D 텍스트 표시. 항상 카메라를 향함(스프라이트). 두께 있는 입체 글자는 text().',
+      en: 'Text label at a 3D position, always faces the camera. For 3D extruded letters use text().',
     },
     signature: "label(pos=vector(0,0,0), text='', color=color.white, height=16, background=None, border=0)",
     params: [
@@ -301,22 +302,28 @@ label(pos=vector(0, 1.2, 0), text="공", height=20,
     category: 'objects',
     title: { ko: '곡선 (curve)', en: 'curve' },
     description: {
-      ko: '점을 누적해 그리는 3D 폴리라인. .append(pos)로 점 추가, .clear()로 비움.',
-      en: '3D polyline that grows as you append points. .append(pos), .clear().',
+      ko: '점을 누적해 그리는 3D 폴리라인. 점마다 색·반지름을 줄 수 있고 .npoints, .point(i), .modify(i), .rotate()를 지원합니다.',
+      en: '3D polyline that grows as you append points. Per-point color/radius, .npoints, .point(i), .modify(i), .rotate().',
     },
-    signature: "curve(color=color.white, radius=0, pos=None, visible=True)",
+    signature: "curve(*points, pos=None, color=color.white, radius=0, retain=-1, origin=vector(0,0,0))",
     params: [
-      { name: 'color',  type: 'vector', default: 'color.white', desc: { ko: '선 색', en: 'Line color' } },
-      { name: 'radius', type: 'number', default: '0',           desc: { ko: '굵기 (0=얇은선)', en: 'Thickness (0=thin)' } },
-      { name: 'pos',    type: 'list',   default: 'None',        desc: { ko: '초기 점들 (선택)', en: 'Initial points (optional)' } },
+      { name: '*points / pos', type: 'list', default: 'None', desc: { ko: 'vector, (x,y,z), {"pos":v, "color":c, "radius":r} 또는 그 목록', en: 'vector, (x,y,z), {"pos":v, "color":c, "radius":r} or lists of them' } },
+      { name: 'color',  type: 'vector', default: 'color.white', desc: { ko: '기본 선 색 (점마다 다르게 줄 수 있음)', en: 'Default color (per-point colors allowed)' } },
+      { name: 'radius', type: 'number', default: '0',           desc: { ko: '굵기 (현재 선은 1픽셀로 그림)', en: 'Thickness (lines are drawn 1px for now)' } },
+      { name: 'retain', type: 'number', default: '-1',          desc: { ko: '남길 최대 점 수 (-1=제한 없음)', en: 'Max points to keep (-1=unlimited)' } },
+      { name: 'origin', type: 'vector', default: 'vector(0,0,0)', desc: { ko: '전체 이동 기준점 (.pos와 같음)', en: 'Translation origin (same as .pos)' } },
     ],
     code: `from vpython import *
-import math
 c = curve(color=color.red)
 for i in range(100):
-    c.append(vector(i*0.1, math.sin(i*0.2), 0))
+    c.append(vector(i*0.1, sin(i*0.2), 0))
+c.append(pos=vector(10, 0, 0), color=color.cyan, radius=0.1)   # 점마다 색·반지름
+c.modify(0, pos=vector(0, 1, 0))                                # i번째 점 수정
+print(c.npoints, c.point(0)['color'])
+c.rotate(angle=0.1, axis=vector(0, 1, 0))                       # 전체 회전
+d = curve([{'pos': vector(0, 0, 0), 'color': color.red}, {'pos': vector(1, 1, 0)}])
 c.clear()  # 모두 지우기`,
-    tags: ['curve', 'polyline', '곡선', 'append'],
+    tags: ['curve', 'polyline', '곡선', 'append', 'modify', 'npoints'],
   },
   {
     id: 'points',
@@ -381,13 +388,13 @@ ball3 = ball.clone(pos=vector(-2,0,0), color=color.blue)`,
     category: 'objects',
     title: { ko: '객체 회전 (.rotate())', en: '.rotate()' },
     description: {
-      ko: 'origin 중심으로 axis 축으로 angle(라디안) 회전. axis 속성 보유 시 함께 회전.',
-      en: 'Rotates the object around origin by angle (radians) on axis. Object axis property is rotated too.',
+      ko: 'origin 중심으로 axis 축으로 angle(라디안) 회전. axis를 생략하면 객체 자신의 axis(없으면 y축)를 중심으로 돕니다. compound·group·text·extrusion·curve도 같습니다.',
+      en: 'Rotates the object around origin by angle (radians) on axis. Without axis it spins about its own axis (y-axis if none). Works for compound, group, text, extrusion and curve too.',
     },
-    signature: "obj.rotate(angle, axis=vector(0,1,0), origin=obj.pos)",
+    signature: "obj.rotate(angle, axis=obj.axis, origin=obj.pos)",
     params: [
       { name: 'angle',  type: 'number', default: '—',            desc: { ko: '회전 각 (라디안)', en: 'Rotation angle (radians)' } },
-      { name: 'axis',   type: 'vector', default: 'vector(0,1,0)', desc: { ko: '회전축', en: 'Rotation axis' } },
+      { name: 'axis',   type: 'vector', default: 'obj.axis',      desc: { ko: '회전축 (없으면 자기 axis, sphere 등은 y축)', en: 'Rotation axis (own axis by default, y-axis for sphere etc.)' } },
       { name: 'origin', type: 'vector', default: 'self.pos',      desc: { ko: '회전 중심', en: 'Rotation center' } },
     ],
     code: `from vpython import *
@@ -430,6 +437,87 @@ ball = sphere(make_trail=True, trail_color=color.cyan)
 # ... 잠시 움직인 후
 ball.clear_trail()    # 궤적 초기화`,
     tags: ['trail', 'clear', '궤적', '지우기'],
+  },
+
+  {
+    id: 'group',
+    category: 'objects',
+    title: { ko: '묶음 (group)', en: 'group' },
+    description: {
+      ko: 'box(group=g)처럼 객체를 묶습니다. compound와 달리 하위 객체를 나중에 따로 바꿀 수 있고, g.pos·g.rotate()·g.visible로 한꺼번에 움직입니다. 하위 객체의 pos는 g.pos 기준 상대 위치입니다.',
+      en: 'Groups objects created with group=g. Unlike compound, children stay editable; move all with g.pos, g.rotate(), g.visible. Child pos is relative to g.pos.',
+    },
+    signature: "g = group(pos=vector(0,0,0), axis=vector(1,0,0), up=vector(0,1,0), visible=True)\nbox(group=g, ...)  g.objects  g.rotate(angle=, axis=, origin=)",
+    params: [
+      { name: 'pos',     type: 'vector',  default: 'vector(0,0,0)', desc: { ko: '묶음의 기준 위치', en: 'Group origin' } },
+      { name: 'axis',    type: 'vector',  default: 'vector(1,0,0)', desc: { ko: '묶음의 방향', en: 'Group orientation' } },
+      { name: 'visible', type: 'boolean', default: 'True',          desc: { ko: '묶음 전체 표시 여부', en: 'Visibility of the whole group' } },
+    ],
+    code: `from vpython import *
+g = group()
+body = box(group=g, pos=vector(0, 0, 0), size=vector(4, 1, 2), color=color.red)
+head = sphere(group=g, pos=vector(2.5, 0.5, 0), radius=0.5, color=color.yellow)
+g.pos = vector(-5, 0, 0)
+while True:
+    rate(60)
+    g.pos.x += 0.05
+    g.rotate(angle=0.01, axis=vector(0, 1, 0))
+    head.color = color.hsv_to_rgb(vector((g.pos.x % 10) / 10, 1, 1))   # 하위 객체는 따로 바꿀 수 있다`,
+    tags: ['group', '묶음', 'compound', 'car', 'robot'],
+  },
+  {
+    id: 'text',
+    category: 'objects',
+    title: { ko: '입체 글자 (text)', en: 'text' },
+    description: {
+      ko: '두께가 있는 3D 글자. pos는 기준선 위치(align에 따라 왼쪽·가운데·오른쪽), axis 방향으로 글이 흐릅니다. 번들 글꼴은 라틴 문자만 담고 있어 한글은 2D 라벨로 대체됩니다.',
+      en: 'Extruded 3D letters. pos is the baseline (left/center/right by align); text flows along axis. The bundled font covers Latin letters; other scripts fall back to a 2D label.',
+    },
+    signature: "text(text='', pos=vector(0,0,0), height=1, depth=0.2*height, align='left', billboard=False, axis=vector(1,0,0), up=vector(0,1,0), color=color.white)",
+    params: [
+      { name: 'text',      type: 'string',  default: "''",      desc: { ko: '표시할 문자열 (줄바꿈 가능)', en: 'Text (newlines allowed)' } },
+      { name: 'height',    type: 'number',  default: '1',       desc: { ko: '글자 높이 (월드 단위)', en: 'Letter height (world units)' } },
+      { name: 'depth',     type: 'number',  default: '0.2*height', desc: { ko: '두께', en: 'Depth' } },
+      { name: 'align',     type: 'string',  default: "'left'",  desc: { ko: "'left' | 'center' | 'right'", en: "'left' | 'center' | 'right'" } },
+      { name: 'billboard', type: 'boolean', default: 'False',   desc: { ko: '항상 카메라를 향함', en: 'Always face the camera' } },
+      { name: 'length',    type: 'number',  default: '자동',    desc: { ko: '가로 길이 읽기/쓰기 (.start, .end도 있음)', en: 'Read/set width (.start, .end available)' } },
+    ],
+    code: `from vpython import *
+t = text(text='VPyLab', pos=vector(0, 0, 0), height=1, depth=0.3, align='center', color=color.gold)
+box(pos=t.start, size=0.1*vector(1,1,1), color=color.red)
+tag = text(text='box', pos=vector(0, 2, 0), height=0.5, align='center', billboard=True, color=color.cyan, emissive=True)
+while True:
+    rate(60)
+    t.rotate(angle=0.01, axis=vector(0, 1, 0))`,
+    tags: ['text', '3d', '글자', 'extruded', 'font', 'billboard'],
+  },
+  {
+    id: 'attach-trail-function',
+    category: 'objects',
+    title: { ko: '궤적 함수형 (attach_trail)', en: 'attach_trail()' },
+    description: {
+      ko: 'attach_trail(obj 또는 함수, ...)가 stop()/start()/clear()가 있는 손잡이를 돌려줍니다. 함수를 주면 rate()마다 그 값이 궤적 점이 됩니다. type="points"면 점 궤적, pps로 초당 점 수를 제한합니다.',
+      en: 'attach_trail(obj or function, ...) returns a handle with stop()/start()/clear(). With a function, each rate() adds its value. type="points" draws dots; pps limits points per second.',
+    },
+    signature: "attach_trail(obj | fn, color=None, radius=0, retain=-1, type='curve', pps=0, interval=1) → handle",
+    params: [
+      { name: 'obj | fn', type: 'object | function', default: '—', desc: { ko: '궤적을 남길 객체, 또는 vector를 돌려주는 함수', en: 'Object to trail, or a function returning a vector' } },
+      { name: 'type',     type: 'string', default: "'curve'", desc: { ko: "'curve' 선 | 'points' 점", en: "'curve' line | 'points' dots" } },
+      { name: 'retain',   type: 'number', default: '-1',      desc: { ko: '남길 최대 점 수', en: 'Max points to keep' } },
+      { name: 'pps',      type: 'number', default: '0',       desc: { ko: '초당 최대 점 수 (0=제한 없음)', en: 'Max points per second (0=unlimited)' } },
+      { name: 'interval', type: 'number', default: '1',       desc: { ko: 'n번 움직일 때마다 한 점 (객체 궤적)', en: 'One point every n moves (object trails)' } },
+    ],
+    code: `from vpython import *
+ball = sphere(radius=0.2, color=color.red)
+h = attach_trail(ball, color=color.green, retain=200)
+shadow = attach_trail(lambda: vector(ball.pos.x, -1, ball.pos.z), type='points', color=color.gray(0.5))
+t = 0
+while t < 20:
+    rate(60)
+    ball.pos = vector(3*cos(t), sin(3*t), 3*sin(t))
+    t += 0.02
+h.stop()`,
+    tags: ['trail', 'attach_trail', '궤적', 'points', 'pps'],
   },
 
   // ━━━ meshes — vertex / triangle / quad / extrusion ━━━━━━━━━━━━━━
@@ -504,22 +592,43 @@ quad(vs=verts)`,
       ko: '2D 단면(shape)을 3D 경로(path)를 따라 압출. 휘어진 튜브, 별 모양 길 등.',
       en: 'Sweep a 2D shape along a 3D path. Curved tubes, star-shaped paths, etc.',
     },
-    signature: "extrusion(path=[vector...], shape=[(x,y)...], color=color.white)",
+    signature: "extrusion(path=paths.circle(radius=2), shape=shapes.rectangle(width=0.4, height=0.2), pos=None, axis=vector(1,0,0), color=color.white)",
     params: [
-      { name: 'path',  type: 'list', default: '—',            desc: { ko: '3D 점 리스트 (vector)', en: 'List of 3D vectors' } },
-      { name: 'shape', type: 'list', default: 'square',       desc: { ko: '2D 외곽선 [(x,y), ...]', en: '2D outline [(x,y), ...]' } },
-      { name: 'color', type: 'vector', default: 'color.white', desc: { ko: '색상', en: 'Color' } },
+      { name: 'path',  type: 'list', default: '—',            desc: { ko: '3D 점 리스트 (vector) 또는 paths.* 결과. 첫 점 == 끝 점이면 닫힌 고리', en: 'List of 3D vectors or a paths.* result. Closed ring when first == last' } },
+      { name: 'shape', type: 'list', default: 'square',       desc: { ko: '2D 외곽선, [바깥, 구멍], 또는 고체 여러 개의 목록 (shapes.* 결과)', en: '2D outline, [outer, holes...], or a list of solids (shapes.* result)' } },
+      { name: 'pos',   type: 'vector', default: '경로 중심', desc: { ko: '지정하면 입체 전체가 그 위치로 옮겨짐', en: 'Moves the whole solid when given' } },
+      { name: 'color', type: 'vector | list', default: 'color.white', desc: { ko: '색 하나 또는 경로 점마다의 색', en: 'One color or one per path point' } },
+      { name: 'scale', type: 'number | list', default: '1', desc: { ko: '단면 배율 (경로 점마다 다르게 가능)', en: 'Cross-section scale (per path point allowed)' } },
+      { name: 'start_face_color / end_face_color', type: 'vector', default: 'None', desc: { ko: '열린 경로 양 끝면의 색', en: 'Colors of the end caps' } },
     ],
     code: `from vpython import *
-import math
-star = []
-for i in range(10):
-    r = 0.5 if i % 2 == 0 else 0.2
-    a = i * math.pi / 5
-    star.append((r*math.cos(a), r*math.sin(a)))
-path = [vector(t, 0, 0) for t in range(-3, 4)]
-extrusion(path=path, shape=star, color=color.gold)`,
-    tags: ['extrusion', 'extrude', 'sweep', '압출'],
+ring = extrusion(path=paths.circle(radius=2), shape=shapes.rectangle(width=0.4, height=0.2), color=color.orange)
+tube = extrusion(path=[vector(0,0,0), vector(2,0,0)], shape=shapes.circle(radius=0.6, thickness=0.2),
+                 pos=vector(0, 2, 0), color=color.yellow, end_face_color=color.blue)
+tube.rotate(angle=pi/4, axis=vector(0, 1, 0))
+tube2 = tube.clone(pos=vector(0, 4, 0))`,
+    tags: ['extrusion', 'extrude', 'sweep', '압출', 'shapes', 'paths'],
+  },
+  {
+    id: 'shapes-paths',
+    category: 'meshes',
+    title: { ko: '단면·경로 생성기 (shapes / paths)', en: 'shapes / paths' },
+    description: {
+      ko: 'extrusion용 2D 단면(shapes.*)과 3D 경로(paths.*) 생성기. GlowScript와 같은 인자 이름·기본값. thickness를 주면 [바깥, 구멍]을 돌려줍니다.',
+      en: '2D cross-sections (shapes.*) and 3D paths (paths.*) for extrusion, with GlowScript argument names and defaults. thickness returns [outer, hole].',
+    },
+    signature: "shapes.rectangle(width=1, height=None, thickness=0, roundness=0)  shapes.circle(radius=0.5, np=64, thickness=0)\npaths.circle(radius=0.5, pos=vector(0,0,0), up=vector(0,1,0))  paths.arc(radius=0.5, angle2=pi)",
+    params: [
+      { name: 'shapes.*', type: '', default: '', desc: { ko: 'rectangle, circle, arc, ellipse, line, triangle, pentagon, hexagon, octagon, ngon, star, cross, trapezoid, points, gear, rackgear', en: 'rectangle, circle, arc, ellipse, line, triangle, pentagon, hexagon, octagon, ngon, star, cross, trapezoid, points, gear, rackgear' } },
+      { name: 'paths.*', type: '', default: '', desc: { ko: 'circle, arc(열린 경로), rectangle, ellipse, line, triangle, pentagon, hexagon, octagon, ngon, star, cross, trapezoid, points', en: 'circle, arc (open), rectangle, ellipse, line, triangle, pentagon, hexagon, octagon, ngon, star, cross, trapezoid, points' } },
+      { name: '공통 인자', type: '', default: '', desc: { ko: 'pos, rotate(라디안), scale, xscale, yscale, roundness(0~0.5), invert, thickness', en: 'pos, rotate (radians), scale, xscale, yscale, roundness (0–0.5), invert, thickness' } },
+    ],
+    code: `from vpython import *
+hex_ring = extrusion(path=paths.rectangle(width=5, height=2), shape=shapes.hexagon(length=0.3), color=color.red)
+cross_tube = extrusion(path=paths.cross(width=4, thickness=1), shape=shapes.circle(radius=0.2), color=color.green)
+gear = extrusion(path=[vector(0,0,0), vector(0,0,0.3)], shape=shapes.gear(n=12, radius=1), color=color.gray(0.7))
+star_frame = shapes.star(n=5, radius=1, thickness=0.1)   # [바깥, 구멍]`,
+    tags: ['shapes', 'paths', '단면', '경로', 'gear', 'star', 'circle'],
   },
   {
     id: 'vector',
@@ -952,6 +1061,57 @@ sphere(pos=vector(0,0,0), radius=1, color=color.red)`,
     tags: ['scene', 'camera', 'background', 'range', 'center'],
   },
 
+  {
+    id: 'canvas',
+    category: 'scene',
+    title: { ko: '캔버스 (canvas)', en: 'canvas' },
+    description: {
+      ko: 'GlowScript의 canvas(). VPyLab은 3D 화면이 하나라서 인자를 scene에 적용하고 scene을 돌려줍니다. 두 번째 호출부터는 같은 scene을 돌려주고 안내를 한 번 출력합니다. scene.visible·scene.delete()·scene.objects도 있습니다.',
+      en: "GlowScript's canvas(). VPyLab has one viewport, so it applies the arguments to scene and returns scene; later calls return the same scene with a one-time notice. scene.visible, scene.delete(), scene.objects are available.",
+    },
+    signature: "scene = canvas(width=640, height=400, background=color.white, title='', caption='', center=vector(0,0,0), range=10, forward=vector(0,0,-1))",
+    params: [
+      { name: 'width / height', type: 'number', default: '640 / 400', desc: { ko: '값은 기억하지만 화면 크기는 레이아웃이 정함', en: 'Stored, but the viewport size is set by the layout' } },
+      { name: 'background',     type: 'vector', default: '—',  desc: { ko: '배경색', en: 'Background color' } },
+      { name: 'title / caption', type: 'string', default: "''", desc: { ko: '3D 화면 위·아래 글자', en: 'Text above/below the viewport' } },
+      { name: 'center / range / forward / up / fov', type: '', default: '—', desc: { ko: '카메라 설정 (scene 속성과 같음)', en: 'Camera settings (same as scene attributes)' } },
+    ],
+    code: `from vpython import *
+scene = canvas(title='진자', width=600, height=400, background=color.white, range=3)
+bob = sphere(pos=vector(1, -2, 0), radius=0.2, color=color.red)
+print(len(scene.objects))   # 1
+scene.visible = True
+# scene.delete()  → 3D 객체 모두 지우기`,
+    tags: ['canvas', 'scene', '캔버스', 'visible', 'delete', 'objects'],
+  },
+  {
+    id: 'attach-light',
+    category: 'scene',
+    title: { ko: '따라다니는 광원 (attach_light)', en: 'attach_light' },
+    description: {
+      ko: '객체를 따라다니는 점광원. rate()·sleep()마다 광원 위치를 obj.pos + offset으로 옮깁니다. .offset·.color·.visible을 바꿀 수 있습니다.',
+      en: 'A point light that follows an object: each rate()/sleep() moves it to obj.pos + offset. .offset, .color, .visible are adjustable.',
+    },
+    signature: "attach_light(obj, offset=vector(0,0,0), color=color.white, intensity=1.0)",
+    params: [
+      { name: 'obj',    type: 'object', default: '—',             desc: { ko: '따라갈 객체', en: 'Object to follow' } },
+      { name: 'offset', type: 'vector', default: 'vector(0,0,0)', desc: { ko: '객체 위치에서의 거리', en: 'Offset from the object' } },
+      { name: 'color',  type: 'vector', default: 'color.white',   desc: { ko: '빛 색', en: 'Light color' } },
+    ],
+    code: `from vpython import *
+scene.lights = []
+scene.ambient = color.gray(0.2)
+floor = box(pos=vector(0, -1, 0), size=vector(10, 0.2, 10))
+sun = sphere(radius=0.3, color=color.yellow, emissive=True)
+attach_light(sun, offset=vector(0, 0.5, 0), color=color.yellow)
+t = 0
+while True:
+    rate(60)
+    sun.pos = vector(3*cos(t), 1, 3*sin(t))
+    t += 0.02`,
+    tags: ['attach_light', 'light', '광원', '조명', 'follow'],
+  },
+
   // ━━━ events ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   {
     id: 'scene-bind',
@@ -983,18 +1143,19 @@ while True:
     category: 'events',
     title: { ko: 'scene.mouse — 마우스 폴링', en: 'scene.mouse' },
     description: {
-      ko: 'scene.mouse.pos = 현재 마우스의 월드 좌표(z=0 평면 기준), .pick = 마우스 아래 객체 id.',
-      en: 'scene.mouse.pos = world coords (z=0 plane), scene.mouse.pick = object id under cursor.',
+      ko: 'scene.mouse.pos = 현재 마우스의 월드 좌표(z=0 평면 기준), .pick = 마우스 아래 객체 id, .ray = 카메라에서 마우스로 향하는 단위 벡터, .project(normal=, point=/d=) = 평면에 투영한 점.',
+      en: 'scene.mouse.pos = world coords (z=0 plane), .pick = object id under cursor, .ray = unit vector from camera, .project(normal=, point=/d=) = point on a plane.',
     },
-    signature: "scene.mouse.pos → vector\nscene.mouse.pick → str | None",
+    signature: "scene.mouse.pos → vector\nscene.mouse.pick → str | None\nscene.mouse.ray → vector\nscene.mouse.project(normal=vector(0,1,0), point=vector(0,0,0)) → vector | None",
     params: [],
     code: `from vpython import *
 ball = sphere(pos=vector(0,0,0), radius=0.3, color=color.coral)
 while True:
     rate(60)
-    target = scene.mouse.pos
-    ball.pos = ball.pos + (target - ball.pos) * 0.1   # 부드럽게 추적`,
-    tags: ['mouse', 'scene', 'pos', 'pick', '폴링'],
+    p = scene.mouse.project(normal=vector(0, 0, 1), d=0)   # z=0 평면 위의 마우스 위치
+    if p is not None:
+        ball.pos = ball.pos + (p - ball.pos) * 0.1          # 부드럽게 추적`,
+    tags: ['mouse', 'scene', 'pos', 'pick', 'ray', 'project', '폴링'],
   },
   {
     id: 'keysdown',
@@ -1179,6 +1340,33 @@ winput(prompt='크기', type='numeric', bind=on_input)
 while True:
     rate(30)`,
     tags: ['winput', 'input', 'widget', '입력창'],
+  },
+  {
+    id: 'wtext',
+    category: 'widgets',
+    title: { ko: '캡션 글자 (wtext)', en: 'wtext' },
+    description: {
+      ko: '3D 화면 아래 캡션 영역에 글자를 표시하고 .text로 바꿉니다. 슬라이더 값 표시에 씁니다. pos=scene.title_anchor면 제목 영역에 놓입니다.',
+      en: 'Text in the caption area below the viewport, updated via .text. Typical use: showing a slider value. pos=scene.title_anchor places it in the title area.',
+    },
+    signature: "wtext(text='', pos=scene.caption_anchor)",
+    params: [
+      { name: 'text', type: 'string', default: "''", desc: { ko: '표시할 글자 (.text로 갱신)', en: 'Text to show (update via .text)' } },
+      { name: 'pos',  type: 'anchor', default: 'scene.caption_anchor', desc: { ko: 'scene.caption_anchor | scene.title_anchor', en: 'scene.caption_anchor | scene.title_anchor' } },
+    ],
+    code: `from vpython import *
+ball = sphere(radius=0.5, color=color.cyan)
+scene.caption = '반지름: '
+readout = wtext(text='0.50')
+
+def on_slide(evt):
+    ball.radius = evt.value
+    readout.text = f'{evt.value:.2f}'
+
+slider(min=0.1, max=2, value=0.5, bind=on_slide)
+while True:
+    rate(30)`,
+    tags: ['wtext', 'caption', 'widget', '글자', 'slider'],
   },
 
   // ━━━ graphs (2D) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -504,10 +504,14 @@ export default class CameraSystem {
   /** scene.fov = 라디안 — 시야각. 명시한 range가 있으면 같은 범위가 보이도록 거리를 다시 계산한다. */
   setFov(radians) {
     if (!Number.isFinite(radians) || radians <= 0 || radians >= Math.PI) return;
+    // GlowScript처럼 보이는 범위(range)는 그대로 두고 카메라 거리를 다시 계산한다 (fov가 작아지면 멀어진다)
+    const keepRange = this._explicitRange || this.getRange();
     this.camera.fov = radians * (180 / Math.PI);
     this.camera.updateProjectionMatrix();
-    if (this.mode === MODE.MANUAL && this._explicitRange) {
-      this._applyDistance(this._distanceForRange(this._explicitRange));
+    if (this.mode === MODE.MANUAL) {
+      this._applyDistance(this._distanceForRange(keepRange));
+    } else if (this.mode === MODE.AUTO_FIT) {
+      this._autoFit();
     }
   }
 

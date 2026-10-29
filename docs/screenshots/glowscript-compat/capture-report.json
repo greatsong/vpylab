@@ -1,0 +1,18 @@
+[
+ {
+  "name": "Car",
+  "file": "docs/screenshots/glowscript-compat/Car.png",
+  "status": "running(stopped)",
+  "error": null,
+  "stdout": "",
+  "console": []
+ },
+ {
+  "name": "Stonehenge",
+  "file": "docs/screenshots/glowscript-compat/Stonehenge.png",
+  "status": "error",
+  "error": "NameError: name 'Date' is not defined. Did you mean: 'rate'?",
+  "stdout": "",
+  "console": []
+ }
+]

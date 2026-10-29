@@ -31,6 +31,8 @@ import {
   createSeries, deleteSeries, clearSeries, plotSeries,
   clearGraphs2D,
 } from './graph2d-system';
+import { buildExtrusionGeometry } from './extrusion-geometry';
+import { pickTextSpec, rebuildText3D, applyTextLength } from './text3d-system';
 
 // 메인 스레드에서 디스패치 활성화된 이벤트 이름들
 const sceneBoundEvents = new Set();
@@ -43,14 +45,82 @@ const meshRegistry = new Map();
 // 궤적(trail) 레지스트리 (id → { line, positions, material, maxPoints })
 const trailRegistry = new Map();
 
-// curve/points 동적 라인 레지스트리 (id → { line, positions, kind })
+// curve/points 동적 라인 레지스트리 (id → { line, positions, colors, kind, baseColor })
 const curveRegistry = new Map();
+
+// axis·up 기준 좌표계(basis)로 방향을 정하는 객체 종류 — box와 같은 방식으로 회전한다
+const BASIS_TYPES = new Set(['box', 'compound', 'group', 'extrusion', 'text', 'curve', 'points']);
 
 // 기본 재질 설정
 const DEFAULT_MATERIAL_PARAMS = {
   roughness: 0.4,
   metalness: 0.1,
 };
+
+/** 객체의 재질(배열이면 각각)에 fn을 적용 */
+function eachMaterial(obj, fn) {
+  const m = obj?.material;
+  if (!m) return;
+  (Array.isArray(m) ? m : [m]).forEach(fn);
+}
+
+/** group(묶음) 안으로 객체를 옮긴다 — 하위 객체의 위치는 묶음 기준 상대 좌표가 된다 */
+function attachToGroup(mesh, groupId, scene) {
+  if (!groupId) return;
+  const parent = meshRegistry.get(groupId);
+  if (!parent || parent.userData?.vpType !== 'group') return;
+  scene.remove(mesh);
+  parent.add(mesh);
+}
+
+/** 정점 색 속성을 한 색으로 채운다 */
+function fillColorAttribute(geometry, rgb) {
+  const attr = geometry?.getAttribute?.('color');
+  if (!attr) return;
+  for (let i = 0; i < attr.count; i++) attr.setXYZ(i, rgb[0], rgb[1], rgb[2]);
+  attr.needsUpdate = true;
+}
+
+/** curve/points의 위치·색 배열을 지오메트리에 다시 싣는다 */
+function refreshCurveGeometry(entry) {
+  const geometry = entry.line.geometry;
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(entry.positions, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(entry.colors, 3));
+  geometry.computeBoundingSphere();
+}
+
+/** 경로 점들의 경계 상자 중심 — Python 쪽 extrusion.pos 기본값과 같은 규칙 */
+function pathCenter(path) {
+  const pts = (path || []).filter((p) => Array.isArray(p) && p.length >= 2);
+  if (pts.length === 0) return [0, 0, 0];
+  const mins = [Infinity, Infinity, Infinity];
+  const maxs = [-Infinity, -Infinity, -Infinity];
+  for (const p of pts) {
+    for (let k = 0; k < 3; k++) {
+      const v = Number(p[k]) || 0;
+      if (v < mins[k]) mins[k] = v;
+      if (v > maxs[k]) maxs[k] = v;
+    }
+  }
+  return [0, 1, 2].map((k) => (mins[k] + maxs[k]) / 2);
+}
+
+/** 메시(그룹이면 자식까지)의 지오메트리·재질·텍스처를 해제 */
+function disposeObject(mesh) {
+  const disposeOne = (obj) => {
+    obj.geometry?.dispose?.();
+    eachMaterial(obj, (mat) => {
+      mat.map?.dispose?.();
+      mat.dispose?.();
+    });
+  };
+  disposeOne(mesh);
+  if (mesh.isGroup || mesh.children?.length) {
+    mesh.traverse?.((child) => {
+      if (child !== mesh) disposeOne(child);
+    });
+  }
+}
 
 function applyBoxOrientation(mesh, axisValue, upValue) {
   const axis = asVectorArray(axisValue, DEFAULT_OBJECT_PROPS.box.axis);
@@ -449,49 +519,84 @@ function createObject(cmd, scene) {
       break;
     }
 
-    case 'curve': {
-      // 동적으로 점이 추가되는 폴리라인
-      const initialPoints = (cmd.points || []).flat();
-      const cgeom = new THREE.BufferGeometry();
-      cgeom.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(initialPoints, 3),
-      );
-      const cmat = new THREE.LineBasicMaterial({
-        color: col,
-        transparent: cmd.opacity < 1,
-        opacity: cmd.opacity ?? 1,
-      });
-      mesh = new THREE.Line(cgeom, cmat);
+    case 'curve':
+    case 'points': {
+      // 점마다 색을 가진 폴리라인/점 집합 — 재질 색은 흰색으로 두고 정점 색으로 그린다
+      material.dispose();
+      const pointList = cmd.points || [];
+      const baseColor = cmd.color || [1, 1, 1];
+      const initialPoints = pointList.flat();
+      const initialColors = (Array.isArray(cmd.colors) && cmd.colors.length === pointList.length)
+        ? cmd.colors.flat()
+        : pointList.flatMap(() => baseColor);
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(initialPoints, 3));
+      geom.setAttribute('color', new THREE.Float32BufferAttribute(initialColors, 3));
+      if (cmd.type === 'curve') {
+        const cmat = new THREE.LineBasicMaterial({
+          vertexColors: true,
+          transparent: cmd.opacity < 1,
+          opacity: cmd.opacity ?? 1,
+        });
+        mesh = new THREE.Line(geom, cmat);
+      } else {
+        // size_units='world'면 점마다의 radius(평균)로 크기를 정하고, 기본은 픽셀 크기(size)
+        const radii = Array.isArray(cmd.radii) ? cmd.radii.filter((r) => r > 0) : [];
+        const avgRadius = radii.length ? radii.reduce((a, b) => a + b, 0) / radii.length : (cmd.radius || 0);
+        const worldUnits = cmd.size_units === 'world';
+        const pmat = new THREE.PointsMaterial({
+          vertexColors: true,
+          size: worldUnits ? Math.max(2 * (avgRadius || 0.02), 1e-3) : (cmd.size ?? 5) * 0.02,
+          sizeAttenuation: true,
+          transparent: cmd.opacity < 1,
+          opacity: cmd.opacity ?? 1,
+        });
+        mesh = new THREE.Points(geom, pmat);
+      }
+      mesh.userData = {
+        vpType: cmd.type,
+        boxAxis: asVectorArray(cmd.axis, [1, 0, 0]),
+        boxUp: asVectorArray(cmd.up, [0, 1, 0]),
+      };
+      applyBoxOrientation(mesh, mesh.userData.boxAxis, mesh.userData.boxUp);
+      if (Array.isArray(cmd.origin)) mesh.position.set(cmd.origin[0], cmd.origin[1], cmd.origin[2]);
       curveRegistry.set(cmd.id, {
         line: mesh,
         positions: initialPoints.slice(),
-        kind: 'curve',
+        colors: initialColors.slice(),
+        kind: cmd.type,
+        baseColor,
       });
       break;
     }
 
-    case 'points': {
-      // 점 집합 — THREE.Points
-      const initialPoints = (cmd.points || []).flat();
-      const pgeom = new THREE.BufferGeometry();
-      pgeom.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(initialPoints, 3),
-      );
-      const pmat = new THREE.PointsMaterial({
-        color: col,
-        size: (cmd.size ?? 5) * 0.02,
-        sizeAttenuation: true,
-        transparent: cmd.opacity < 1,
-        opacity: cmd.opacity ?? 1,
-      });
-      mesh = new THREE.Points(pgeom, pmat);
-      curveRegistry.set(cmd.id, {
-        line: mesh,
-        positions: initialPoints.slice(),
-        kind: 'points',
-      });
+    case 'group': {
+      // 묶음 — 하위 객체는 create 커맨드의 group 필드로 이 그룹 안에 들어온다
+      material.dispose();
+      mesh = new THREE.Group();
+      mesh.userData = {
+        vpType: 'group',
+        boxAxis: asVectorArray(cmd.axis, [1, 0, 0]),
+        boxUp: asVectorArray(cmd.up, [0, 1, 0]),
+      };
+      applyBoxOrientation(mesh, mesh.userData.boxAxis, mesh.userData.boxUp);
+      break;
+    }
+
+    case 'text': {
+      // 3D 입체 글자 — 글꼴을 비동기로 받아 자식 메시를 채운다 (글꼴에 없는 글자는 2D 라벨로 대체)
+      const holder = new THREE.Group();
+      holder.userData = {
+        vpType: 'text',
+        textSpec: pickTextSpec(cmd),
+        textMaterial: material,
+        createLabel: createLabelSprite,
+        boxAxis: asVectorArray(cmd.axis, [1, 0, 0]),
+        boxUp: asVectorArray(cmd.up, [0, 1, 0]),
+      };
+      applyBoxOrientation(holder, holder.userData.boxAxis, holder.userData.boxUp);
+      rebuildText3D(holder);
+      mesh = holder;
       break;
     }
 
@@ -522,30 +627,48 @@ function createObject(cmd, scene) {
     }
 
     case 'extrusion': {
-      // 단순화된 extrusion: 2D 단면(shape)을 path 첫→끝 방향으로 압출
+      // 2D 단면(shape: [[바깥, 구멍...], ...])을 path를 따라 쓸어 만든다.
+      // 지오메트리는 경로 중심 기준으로 만들고 mesh.position = pos 로 놓는다 (pos를 바꾸면 전체가 옮겨진다)
       const path = cmd.path || [];
-      const shape = cmd.shape || [];
-      if (path.length >= 2 && shape.length >= 3) {
-        const shape2D = new THREE.Shape();
-        shape2D.moveTo(shape[0][0], shape[0][1]);
-        for (let i = 1; i < shape.length; i++) {
-          shape2D.lineTo(shape[i][0], shape[i][1]);
+      let solids = cmd.shape || [];
+      // 옛 형식([[x, y], ...] 단일 외곽선)도 받는다
+      if (solids.length > 0 && Array.isArray(solids[0]) && solids[0].length >= 2 && typeof solids[0][0] === 'number') {
+        solids = [[solids]];
+      } else if (solids.length > 0 && Array.isArray(solids[0]) && Array.isArray(solids[0][0]) && typeof solids[0][0][0] === 'number') {
+        solids = [solids];
+      }
+      const built = buildExtrusionGeometry(path, solids, {
+        scale: cmd.scale,
+        colors: cmd.colors,
+        color: cmd.color,
+        up: [0, 1, 0],
+        showStartFace: cmd.show_start_face,
+        showEndFace: cmd.show_end_face,
+        startFaceColor: cmd.start_face_color,
+        endFaceColor: cmd.end_face_color,
+        center: pathCenter(path),
+      });
+      if (built) {
+        geometry = built.geometry;
+        material.side = THREE.DoubleSide;
+        if (built.vertexColored) {
+          material.vertexColors = true;
+          material.color = new THREE.Color(1, 1, 1);
+          material.needsUpdate = true;
         }
-        shape2D.closePath();
-
-        const curve3 = new THREE.CatmullRomCurve3(
-          path.map((p) => new THREE.Vector3(p[0], p[1], p[2] ?? 0)),
-        );
-        const extrudeSettings = {
-          steps: Math.max(path.length * 4, 12),
-          extrudePath: curve3,
-        };
-        geometry = new THREE.ExtrudeGeometry(shape2D, extrudeSettings);
       } else {
         // path/shape가 부실하면 1x1x1 box로 대체
         geometry = new THREE.BoxGeometry(1, 1, 1);
       }
       mesh = new THREE.Mesh(geometry, material);
+      mesh.userData = {
+        vpType: 'extrusion',
+        vertexColored: Boolean(built?.vertexColored),
+        boxAxis: asVectorArray(cmd.axis, [1, 0, 0]),
+        boxUp: asVectorArray(cmd.up, [0, 1, 0]),
+      };
+      applyBoxOrientation(mesh, mesh.userData.boxAxis, mesh.userData.boxUp);
+      if (!cmd.pos) mesh.position.set(...pathCenter(path));
       break;
     }
 
@@ -595,9 +718,10 @@ function createObject(cmd, scene) {
   mesh.userData = mesh.userData || {};
   mesh.userData.vpId = cmd.id;
 
-  // 씬에 추가
+  // 씬에 추가 (group= 으로 묶인 객체는 그 그룹 안으로)
   scene.add(mesh);
   meshRegistry.set(cmd.id, mesh);
+  attachToGroup(mesh, cmd.group, scene);
 
   // 궤적(trail) 생성
   if (cmd.make_trail) {
@@ -609,13 +733,13 @@ function createObject(cmd, scene) {
 }
 
 /**
- * 궤적(trail) 라인 생성
+ * 궤적(trail) 생성 — trail_type='curve'(선, 기본) 또는 'points'(점)
+ * interval=n: n번 움직일 때마다 한 점, pps=k: 초당 k점까지만, trail_radius: 점 궤적의 반지름
  */
 function createTrail(cmd, scene) {
   const trailColor = cmd.trail_color
     ? toThreeColor(cmd.trail_color)
     : toThreeColor(cmd.color || [1, 1, 1]);
-  const trailMaterial = new THREE.LineBasicMaterial({ color: trailColor });
   const trailGeometry = new THREE.BufferGeometry();
   const positions = [];
   // 초기 위치를 첫 포인트로 추가
@@ -626,13 +750,31 @@ function createTrail(cmd, scene) {
     'position',
     new THREE.Float32BufferAttribute(positions, 3),
   );
-  const trailLine = new THREE.Line(trailGeometry, trailMaterial);
+  const isPoints = cmd.trail_type === 'points';
+  let trailLine;
+  if (isPoints) {
+    const radius = asNumber(cmd.trail_radius, 0);
+    const trailMaterial = new THREE.PointsMaterial({
+      color: trailColor,
+      size: radius > 0 ? 2 * radius : 0.08,
+      sizeAttenuation: true,
+    });
+    trailLine = new THREE.Points(trailGeometry, trailMaterial);
+  } else {
+    const trailMaterial = new THREE.LineBasicMaterial({ color: trailColor });
+    trailLine = new THREE.Line(trailGeometry, trailMaterial);
+  }
   scene.add(trailLine);
   trailRegistry.set(cmd.id, {
     line: trailLine,
     positions: positions,
     // retain 지정 시 해당 값을 최대 포인트 수로 사용 (attach_trail 경로와 동일)
     maxPoints: cmd.retain > 0 ? cmd.retain : 10000,
+    type: isPoints ? 'points' : 'curve',
+    interval: Math.max(1, Math.floor(asNumber(cmd.interval, 1)) || 1),
+    pps: Math.max(0, asNumber(cmd.pps, 0)),
+    counter: 0,
+    lastTime: -Infinity,
   });
 }
 
@@ -642,6 +784,13 @@ function createTrail(cmd, scene) {
 function updateTrail(cmd) {
   const trail = trailRegistry.get(cmd.id);
   if (!trail) return;
+  trail.counter = (trail.counter || 0) + 1;
+  if (trail.interval > 1 && trail.counter % trail.interval !== 0) return;
+  if (trail.pps > 0) {
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    if (now - trail.lastTime < 1000 / trail.pps) return;
+    trail.lastTime = now;
+  }
   trail.positions.push(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
   // 최대 길이 제한
   if (trail.positions.length > trail.maxPoints * 3) {
@@ -668,18 +817,48 @@ function updateMesh(cmd) {
     registryUpdates.pos = cmd.pos;
   }
 
+  // curve/points의 origin — 점 좌표는 그대로 두고 전체를 옮긴다
+  if (Array.isArray(cmd.origin)) {
+    mesh.position.set(cmd.origin[0], cmd.origin[1], cmd.origin[2]);
+  }
+
+  // compound의 size/length 변경 — 그룹 배율
+  if (Array.isArray(cmd.scale) && mesh.userData?.vpType === 'compound') {
+    mesh.scale.set(asNumber(cmd.scale[0], 1), asNumber(cmd.scale[1], 1), asNumber(cmd.scale[2], 1));
+    registryUpdates.size = cmd.scale;
+  }
+
   if (cmd.color) {
+    const curveEntry = curveRegistry.get(cmd.id);
     if (mesh.isLight) {
       mesh.color = toThreeColor(cmd.color);
+    } else if (curveEntry) {
+      // curve/points — 점마다의 색을 모두 이 색으로 (GlowScript와 같음)
+      curveEntry.baseColor = cmd.color;
+      for (let i = 0; i < curveEntry.colors.length; i += 3) {
+        curveEntry.colors[i] = cmd.color[0];
+        curveEntry.colors[i + 1] = cmd.color[1];
+        curveEntry.colors[i + 2] = cmd.color[2];
+      }
+      refreshCurveGeometry(curveEntry);
+    } else if (mesh.userData?.vertexColored) {
+      // 정점 색으로 그리는 extrusion — 정점 색을 모두 바꾼다
+      fillColorAttribute(mesh.geometry, cmd.color);
     } else if (mesh.isGroup) {
-      // compound(Group) — 모든 자식 재질 색상 변경
+      // compound·group·text(Group) — 모든 자식 재질 색상 변경
       mesh.traverse((child) => {
-        if (child.material) updateMaterialColor(child.material, toThreeColor(cmd.color));
+        eachMaterial(child, (mat) => updateMaterialColor(mat, toThreeColor(cmd.color)));
       });
     } else if (mesh.material && !mesh.isSprite) {
       updateMaterialColor(mesh.material, toThreeColor(cmd.color));
     }
     registryUpdates.color = cmd.color;
+  }
+
+  if (cmd.size !== undefined && mesh.isPoints && mesh.material) {
+    // points의 픽셀 크기
+    mesh.material.size = asNumber(cmd.size, 5) * 0.02;
+    mesh.material.needsUpdate = true;
   }
 
   if (cmd.intensity !== undefined && mesh.isLight) {
@@ -701,10 +880,10 @@ function updateMesh(cmd) {
     if (mesh.isGroup) {
       // compound(Group) — 모든 자식 재질 투명도 변경
       mesh.traverse((child) => {
-        if (child.material) {
-          child.material.opacity = cmd.opacity;
-          child.material.transparent = cmd.opacity < 1;
-        }
+        eachMaterial(child, (mat) => {
+          mat.opacity = cmd.opacity;
+          mat.transparent = cmd.opacity < 1;
+        });
       });
     } else if (mesh.material) {
       mesh.material.opacity = cmd.opacity;
@@ -723,7 +902,7 @@ function updateMesh(cmd) {
       mat.needsUpdate = true;
     };
     if (mesh.isGroup) {
-      mesh.traverse((child) => apply(child.material));
+      mesh.traverse((child) => eachMaterial(child, apply));
     } else {
       apply(mesh.material);
     }
@@ -733,7 +912,7 @@ function updateMesh(cmd) {
   if (cmd.emissive !== undefined && !mesh.isLight) {
     if (mesh.isGroup) {
       mesh.traverse((child) => {
-        if (child.material) setMaterialEmissive(child.material, cmd.emissive);
+        eachMaterial(child, (mat) => setMaterialEmissive(mat, cmd.emissive));
       });
     } else if (mesh.material) {
       setMaterialEmissive(mesh.material, cmd.emissive);
@@ -805,7 +984,20 @@ function updateMesh(cmd) {
     mesh.geometry = newGeom;
   }
 
-  if (isBox && (cmd.axis !== undefined || cmd.up !== undefined)) {
+  // 3D 글자 — 글자·높이·두께·정렬이 바뀌면 다시 만들고, 길이만 바뀌면 가로 배율만 바꾼다
+  if (mesh.userData?.vpType === 'text') {
+    const rebuildKeys = ['text', 'height', 'depth', 'align', 'billboard', 'latin', 'start_face_color', 'end_face_color'];
+    const needsRebuild = rebuildKeys.some((key) => cmd[key] !== undefined);
+    if (cmd.text !== undefined) registryUpdates.text = cmd.text;
+    if (needsRebuild || cmd.length !== undefined) {
+      mesh.userData.textSpec = pickTextSpec(cmd, mesh.userData.textSpec);
+      if (needsRebuild) rebuildText3D(mesh);
+      else applyTextLength(mesh);
+    }
+  }
+
+  const usesBasis = isBox || BASIS_TYPES.has(mesh.userData?.vpType);
+  if (usesBasis && (cmd.axis !== undefined || cmd.up !== undefined)) {
     mesh.userData = mesh.userData || {};
     mesh.userData.boxAxis = asVectorArray(cmd.axis || mesh.userData.boxAxis, DEFAULT_OBJECT_PROPS.box.axis);
     mesh.userData.boxUp = asVectorArray(cmd.up || mesh.userData.boxUp, DEFAULT_OBJECT_PROPS.box.up);
@@ -941,7 +1133,20 @@ export function processBatch(commands, scene) {
             else if (cmd.property === 'append_title') overlay.appendTitle(text);
             else overlay.appendCaption(text);
           }
+        } else if (cmd.property === 'visible') {
+          // scene.visible = False — 3D 화면 전체를 숨긴다 (객체는 남는다)
+          scene.visible = cmd.value !== false;
+        } else if (cmd.property === 'delete') {
+          // scene.delete() — 3D 객체를 모두 지운다 (위젯·그래프·오버레이는 남는다)
+          deleteSceneObjects(scene, { markRegistry: true });
         }
+        break;
+      case 'wtext_create':
+      case 'wtext_update':
+        scene._overlay?.setWidgetText?.(cmd.id, String(cmd.text ?? ''), cmd.anchor);
+        break;
+      case 'wtext_delete':
+        scene._overlay?.removeWidgetText?.(cmd.id);
         break;
       case 'trail_update':
         updateTrail(cmd);
@@ -959,17 +1164,24 @@ export function processBatch(commands, scene) {
         break;
       }
       case 'trail_attach': {
-        // 기존 trail이 없으면 새로 만든다
+        // 기존 trail이 없으면 새로 만들고, 있으면 색·길이만 갱신한다
         if (!trailRegistry.has(cmd.id) && meshRegistry.has(cmd.id)) {
           createTrail({
             id: cmd.id,
             pos: cmd.pos || [0, 0, 0],
             color: [1, 1, 1],
             trail_color: cmd.trail_color,
+            trail_type: cmd.trail_type,
+            interval: cmd.interval,
+            pps: cmd.pps,
+            trail_radius: cmd.trail_radius,
+            retain: cmd.retain,
           }, scene);
-          if (cmd.retain) {
-            const t = trailRegistry.get(cmd.id);
-            if (t) t.maxPoints = cmd.retain;
+        } else {
+          const t = trailRegistry.get(cmd.id);
+          if (t) {
+            if (cmd.retain) t.maxPoints = cmd.retain;
+            if (cmd.trail_color && t.line.material) t.line.material.color = toThreeColor(cmd.trail_color);
           }
         }
         break;
@@ -977,12 +1189,28 @@ export function processBatch(commands, scene) {
       case 'curve_append': {
         const c = curveRegistry.get(cmd.id);
         if (c) {
-          c.positions.push(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
-          c.line.geometry.setAttribute(
-            'position',
-            new THREE.Float32BufferAttribute(c.positions, 3),
-          );
-          c.line.geometry.computeBoundingSphere();
+          // 새 형식: points/colors 목록, 옛 형식: pos 하나
+          const pts = Array.isArray(cmd.points) ? cmd.points : (cmd.pos ? [cmd.pos] : []);
+          const cols = (Array.isArray(cmd.colors) && cmd.colors.length === pts.length)
+            ? cmd.colors
+            : pts.map(() => c.baseColor);
+          for (const p of pts) c.positions.push(p[0], p[1], p[2]);
+          for (const col of cols) c.colors.push(col[0], col[1], col[2]);
+          refreshCurveGeometry(c);
+        }
+        break;
+      }
+      case 'curve_set': {
+        // 점 목록 전체 교체 (modify·pop·shift·retain 뒤)
+        const c = curveRegistry.get(cmd.id);
+        if (c) {
+          const pts = Array.isArray(cmd.points) ? cmd.points : [];
+          const cols = (Array.isArray(cmd.colors) && cmd.colors.length === pts.length)
+            ? cmd.colors
+            : pts.map(() => c.baseColor);
+          c.positions = pts.flat();
+          c.colors = cols.flat();
+          refreshCurveGeometry(c);
         }
         break;
       }
@@ -990,41 +1218,62 @@ export function processBatch(commands, scene) {
         const c = curveRegistry.get(cmd.id);
         if (c) {
           c.positions.length = 0;
-          c.line.geometry.setAttribute(
-            'position',
-            new THREE.Float32BufferAttribute([], 3),
-          );
-          c.line.geometry.computeBoundingSphere();
+          c.colors.length = 0;
+          refreshCurveGeometry(c);
         }
         break;
       }
       case 'compound': {
         const group = new THREE.Group();
-        // 기존 메시를 그룹으로 이동
+        // 기존 메시를 그룹으로 이동 — 부품 중심(center)이 그룹 원점이 되도록 자식 위치를 옮긴다
+        const center = Array.isArray(cmd.center) ? cmd.center : [0, 0, 0];
         for (const subId of cmd.sub_ids) {
           const subMesh = meshRegistry.get(subId);
           if (subMesh) {
             scene.remove(subMesh);
+            subMesh.position.set(
+              subMesh.position.x - center[0],
+              subMesh.position.y - center[1],
+              subMesh.position.z - center[2],
+            );
             group.add(subMesh);
           }
         }
         if (cmd.pos) group.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
+        else group.position.set(center[0], center[1], center[2]);
+        group.userData = {
+          vpType: 'compound',
+          boxAxis: asVectorArray(cmd.axis, [1, 0, 0]),
+          boxUp: asVectorArray(cmd.up, [0, 1, 0]),
+        };
+        applyBoxOrientation(group, group.userData.boxAxis, group.userData.boxUp);
         if (cmd.color) {
           group.traverse((child) => {
-            if (child.material) child.material.color = toThreeColor(cmd.color);
+            eachMaterial(child, (mat) => updateMaterialColor(mat, toThreeColor(cmd.color)));
           });
         }
         if (cmd.opacity !== undefined && cmd.opacity < 1) {
           group.traverse((child) => {
-            if (child.material) {
-              child.material.opacity = cmd.opacity;
-              child.material.transparent = true;
-            }
+            eachMaterial(child, (mat) => {
+              mat.opacity = cmd.opacity;
+              mat.transparent = true;
+            });
           });
+        }
+        if (cmd.emissive) {
+          group.traverse((child) => eachMaterial(child, (mat) => setMaterialEmissive(mat, true)));
+        }
+        if (cmd.texture) {
+          const tex = resolveTexture(cmd.texture);
+          group.traverse((child) => eachMaterial(child, (mat) => {
+            mat.map = tex || null;
+            mat.needsUpdate = true;
+          }));
         }
         group.visible = cmd.visible !== false;
         scene.add(group);
         meshRegistry.set(cmd.id, group);
+        attachToGroup(group, cmd.group, scene);
 
         // compound 궤적 생성
         if (cmd.make_trail) {
@@ -1086,30 +1335,15 @@ export function processBatch(commands, scene) {
 }
 
 /**
- * 씬 초기화 (모든 VPython 객체 제거)
+ * 3D 객체·궤적·곡선을 모두 씬에서 제거하고 해제한다 (scene.delete()와 새 실행 전 초기화가 함께 쓴다)
  */
-export function clearScene(scene) {
-  // 메시 레지스트리 정리
-  for (const [, mesh] of meshRegistry) {
+function deleteSceneObjects(scene, { markRegistry = false } = {}) {
+  for (const [id, mesh] of meshRegistry) {
     scene.remove(mesh);
     // distant_light의 target도 씬에서 제거 (생성 시 scene.add(light.target) 됨)
     if (mesh.isDirectionalLight && mesh.target) scene.remove(mesh.target);
-    if (mesh.geometry) mesh.geometry.dispose();
-    if (mesh.material) {
-      // 텍스처(label CanvasTexture 등)도 함께 해제
-      mesh.material.map?.dispose();
-      mesh.material.dispose();
-    }
-    // Group(compound)의 자식도 정리
-    if (mesh.isGroup) {
-      mesh.traverse((child) => {
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) {
-          child.material.map?.dispose();
-          child.material.dispose();
-        }
-      });
-    }
+    disposeObject(mesh);
+    if (markRegistry) updateObject(id, { visible: false });
   }
   meshRegistry.clear();
 
@@ -1123,6 +1357,14 @@ export function clearScene(scene) {
 
   // curve/points 레지스트리 정리 (line 자체는 meshRegistry와 공유)
   curveRegistry.clear();
+}
+
+/**
+ * 씬 초기화 (모든 VPython 객체 제거)
+ */
+export function clearScene(scene) {
+  deleteSceneObjects(scene);
+  scene.visible = true;
 
   // 위젯·2D 그래프 DOM 정리
   clearWidgets();
