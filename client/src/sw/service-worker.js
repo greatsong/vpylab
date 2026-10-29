@@ -11,7 +11,8 @@
  *   - 앱 셸·해시가 붙은 /assets/ (Monaco·Three.js·React 청크): 설치 때 미리 저장, 캐시 우선
  *   - /pyodide/v<버전>/ 핵심 파일과 CDN의 Pyodide·휠: 캐시 우선. 처음 받을 때 저장하고
  *     Worker가 준비를 마치면 메인 스레드가 WARM_PYODIDE 메시지로 빠진 파일을 채웁니다.
- *   - 글꼴 CSS: 캐시를 먼저 쓰고 뒤에서 갱신, 글꼴 파일: 캐시 우선
+ *   - 글꼴(Google Fonts·Fontshare) 요청은 건드리지 않습니다. sw.js의 CSP connect-src에 글꼴 출처가
+ *     없어 Service Worker 안에서 fetch하면 막히고, 페이지에 ERR_FAILED로 전달됩니다.
  *   - 페이지 이동(navigate): 네트워크 우선, 끊기면 저장한 앱 셸
  *   - 그 밖의 요청(API, Supabase 등)은 건드리지 않습니다.
  *
@@ -25,8 +26,8 @@ const PYODIDE_VERSION = self.__PYODIDE_VERSION__;
 
 const APP_CACHE = `vpylab-app-${BUILD_ID}`;
 const PYODIDE_CACHE = 'vpylab-pyodide';
-const FONT_CACHE = 'vpylab-fonts';
-const KNOWN_CACHES = new Set([APP_CACHE, PYODIDE_CACHE, FONT_CACHE]);
+// 예전 버전이 만든 'vpylab-fonts' 캐시는 KNOWN_CACHES에 없으므로 activate 때 지워집니다.
+const KNOWN_CACHES = new Set([APP_CACHE, PYODIDE_CACHE]);
 
 const PYODIDE_CORE = ['pyodide.js', 'pyodide.asm.js', 'pyodide.asm.wasm', 'python_stdlib.zip', 'pyodide-lock.json'];
 
@@ -34,12 +35,6 @@ function isPyodideUrl(url) {
   if (url.origin === self.location.origin) return url.pathname.startsWith('/pyodide/');
   return (url.hostname === 'cdn.jsdelivr.net' && url.pathname.startsWith('/pyodide/'))
     || (url.hostname === 'unpkg.com' && url.pathname.startsWith('/pyodide@'));
-}
-function isFontStylesheet(url) {
-  return url.hostname === 'fonts.googleapis.com' || url.hostname === 'api.fontshare.com';
-}
-function isFontFile(url) {
-  return url.hostname === 'fonts.gstatic.com' || url.hostname === 'cdn.fontshare.com';
 }
 /** 불투명 응답(no-cors)은 크기를 알 수 없어 저장하지 않습니다. */
 function cacheable(response) {
@@ -53,19 +48,6 @@ async function cacheFirst(cacheName, request) {
   const response = await fetch(request);
   if (cacheable(response)) await cache.put(request, response.clone());
   return response;
-}
-
-async function staleWhileRevalidate(cacheName, request) {
-  const cache = await caches.open(cacheName);
-  const hit = await cache.match(request, { ignoreVary: true });
-  const refresh = fetch(request).then(async (response) => {
-    if (cacheable(response)) await cache.put(request, response.clone());
-    return response;
-  }).catch(() => null);
-  if (hit) { refresh.catch(() => {}); return hit; }
-  const fresh = await refresh;
-  if (fresh) return fresh;
-  return Response.error();
 }
 
 async function networkFirstShell(request) {
@@ -124,8 +106,6 @@ self.addEventListener('fetch', (event) => {
   try { url = new URL(request.url); } catch { return; }
 
   if (isPyodideUrl(url)) { event.respondWith(cacheFirst(PYODIDE_CACHE, request)); return; }
-  if (isFontStylesheet(url)) { event.respondWith(staleWhileRevalidate(FONT_CACHE, request)); return; }
-  if (isFontFile(url)) { event.respondWith(cacheFirst(FONT_CACHE, request)); return; }
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') { event.respondWith(networkFirstShell(request)); return; }
