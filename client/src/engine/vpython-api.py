@@ -11,7 +11,14 @@ import json
 import math
 import re
 import asyncio
+import colorsys
+import random as _random_module
+import time as _time_module
 from typing import Optional
+from math import *   # GlowScript처럼 from vpython import * 가 sin, cos, pi, sqrt 등 math 이름을 함께 제공한다
+
+# vector 출력 자릿수 — print_options(digits=...)로 바꾼다
+_print_digits = 4
 
 # === 커맨드 버퍼 (배칭) ===
 _command_buffer = []
@@ -94,7 +101,8 @@ class vector:
         self._changed()
 
     def __repr__(self):
-        return f"<{self.x:.4g}, {self.y:.4g}, {self.z:.4g}>"
+        d = _print_digits
+        return f"<{self.x:.{d}g}, {self.y:.{d}g}, {self.z:.{d}g}>"
 
     def __add__(self, other):
         return vector(self.x + other.x, self.y + other.y, self.z + other.z)
@@ -193,6 +201,24 @@ class vector:
         sin_a = math.sin(angle)
         v = self
         return v * cos_a + k.cross(v) * sin_a + k * (k.dot(v) * (1 - cos_a))
+
+    def norm(self):
+        """단위 벡터 — hat과 같다 (GlowScript 호환)"""
+        return self.hat
+
+    def equals(self, other):
+        """성분이 모두 같은지 비교 (GlowScript 호환)"""
+        return self == other
+
+    @staticmethod
+    def random():
+        """각 성분이 -1~1 사이인 난수 벡터"""
+        return vector(
+            _random_module.uniform(-1, 1),
+            _random_module.uniform(-1, 1),
+            _random_module.uniform(-1, 1),
+        )
+
 
 # vec() — vector()의 단축 별칭
 vec = vector
@@ -310,6 +336,21 @@ class _ColorPalette:
         '상아': 'ivory', '아이보리': 'ivory',
     }
 
+    @staticmethod
+    def hsv_to_rgb(c):
+        """색상(h)·채도(s)·명도(v) 벡터 → RGB 벡터. 각 성분은 0~1 (GlowScript 호환)
+        예: color.hsv_to_rgb(vector(0.33, 1, 1)) → 초록"""
+        c = _coerce_vector(c, vector(0, 0, 0))
+        r, g, b = colorsys.hsv_to_rgb(c.x, c.y, c.z)
+        return vector(r, g, b)
+
+    @staticmethod
+    def rgb_to_hsv(c):
+        """RGB 벡터 → 색상(h)·채도(s)·명도(v) 벡터 (GlowScript 호환)"""
+        c = _coerce_vector(c, vector(0, 0, 0))
+        h, sat, v = colorsys.rgb_to_hsv(c.x, c.y, c.z)
+        return vector(h, sat, v)
+
     def __getitem__(self, key):
         """color['빨'], color['red'] 모두 지원"""
         # 한글 이름 → 영어로 변환
@@ -359,6 +400,9 @@ class _TexturePresets:
     ice = "preset:ice"
     circuit = "preset:circuit"
     fire = "preset:fire"
+    # GlowScript 문서에 있는 이름 — 가장 가까운 프리셋으로 그린다
+    rock = "preset:granite"
+    wood_old = "preset:wood"
 
     def __repr__(self):
         names = [k for k in dir(self) if not k.startswith('_') and isinstance(getattr(self, k), str)]
@@ -369,6 +413,25 @@ textures = _TexturePresets()
 텍스처 = textures  # 한글 별칭
 
 
+class _BumpmapPresets:
+    """GlowScript의 bumpmaps.* 이름. 현재 렌더러는 범프맵을 그리지 않으므로 받기만 하고 무시한다."""
+    wood = "bump:wood"
+    wood_old = "bump:wood_old"
+    stucco = "bump:stucco"
+    stones = "bump:stones"
+    rock = "bump:rock"
+    gravel = "bump:gravel"
+
+    def __repr__(self):
+        return "<범프맵 프리셋 — 현재는 받기만 하고 그리지 않음>"
+
+
+bumpmaps = _BumpmapPresets()
+
+# scene.objects 조회용: 만들어진 3D 객체 목록
+_scene_objects = []
+
+
 # === 벡터 소유 추적 ===
 class _VectorOwner:
     """_pos, _axis 같은 내부 속성에 벡터를 저장할 때 벡터에 소유자를 기록한다.
@@ -377,7 +440,8 @@ class _VectorOwner:
 
     def __setattr__(self, name, value):
         if isinstance(value, vector) and name.startswith('_') and name[1:] in self._vector_attrs:
-            if value._owner is not None and value._owner is not self:
+            # 사용자 변수나 다른 객체의 벡터를 그대로 보관하면 별칭이 되므로 복제한다 (VPython은 성분을 복사한다)
+            if value._owner is not self:
                 value = value.clone()
             value._owner = self
             value._attr = name[1:]
@@ -393,11 +457,17 @@ class _GObject(_VectorOwner):
         self._type = obj_type
         self._make_trail = kwargs.pop('make_trail', False)
         self._trail_color = kwargs.pop('trail_color', None)
-        self._pos = kwargs.get('pos', vector(0, 0, 0))
+        pos_arg = kwargs.get('pos', None)
+        if pos_arg is None:
+            pos_arg = vector(0, 0, 0)
+        elif not isinstance(pos_arg, vector):
+            raise TypeError(f"pos에는 vector를 넣어야 합니다. 예: pos=vector(1, 2, 3)  (받은 값: {pos_arg!r})")
+        self._pos = pos_arg
         self._color = kwargs.get('color', color.white)
         self._visible = kwargs.get('visible', True)
         self._opacity = kwargs.get('opacity', 1.0)
         self._emissive = kwargs.get('emissive', False)
+        _scene_objects.append(self)
         self._velocity = kwargs.get('velocity', vector(0, 0, 0))
         self._texture = kwargs.get('texture', None)
 
@@ -571,6 +641,33 @@ class _GObject(_VectorOwner):
         })
 
 
+class _AxisLength:
+    """axis가 있는 객체(cylinder, cone, arrow, helix)의 length — axis의 길이와 연동된다 (GlowScript 호환)"""
+
+    @property
+    def length(self):
+        return self._axis.mag
+
+    @length.setter
+    def length(self, value):
+        direction = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
+        self.axis = direction * float(value)
+
+
+class _RadiusSize:
+    """반지름이 있는 축 객체(cylinder, cone)의 size — vector(length, 2*radius, 2*radius) (GlowScript 호환)"""
+
+    @property
+    def size(self):
+        return vector(self._axis.mag, 2 * self._radius, 2 * self._radius)
+
+    @size.setter
+    def size(self, value):
+        value = _coerce_vector(value, vector(1, 2, 2))
+        self.length = value.x
+        self.radius = value.y / 2
+
+
 # === 구체적 3D 객체 ===
 class sphere(_GObject):
     def __init__(self, **kwargs):
@@ -586,8 +683,22 @@ class sphere(_GObject):
         self._radius = value
         _add_command({"action": "update", "id": self._id, "radius": value})
 
+    @property
+    def size(self):
+        """지름 벡터 vector(2r, 2r, 2r) (GlowScript 호환). 대입하면 x 성분의 절반이 반지름이 된다."""
+        d = 2 * self._radius
+        return vector(d, d, d)
+
+    @size.setter
+    def size(self, value):
+        value = _coerce_vector(value, vector(2, 2, 2))
+        self.radius = value.x / 2
+
     def _clone_kwargs(self):
         return {**super()._clone_kwargs(), 'radius': self._radius}
+
+
+simple_sphere = sphere   # GlowScript의 삼각형 수가 적은 구 — 같은 구로 그린다
 
 
 class box(_GObject):
@@ -719,10 +830,14 @@ class box(_GObject):
         }
 
 
-class cylinder(_GObject):
+class cylinder(_AxisLength, _RadiusSize, _GObject):
     def __init__(self, **kwargs):
         self._radius = kwargs.pop('radius', 1.0)
         self._axis = kwargs.pop('axis', vector(1, 0, 0))
+        length_arg = kwargs.pop('length', None)
+        if length_arg is not None:
+            direction = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
+            self._axis = direction * float(length_arg)
         super().__init__('cylinder', radius=self._radius, axis=self._axis.to_list(), **kwargs)
 
     @property
@@ -747,9 +862,13 @@ class cylinder(_GObject):
         return {**super()._clone_kwargs(), 'radius': self._radius, 'axis': self._axis.clone()}
 
 
-class arrow(_GObject):
+class arrow(_AxisLength, _GObject):
     def __init__(self, **kwargs):
         self._axis = kwargs.pop('axis', vector(1, 0, 0))
+        length_arg = kwargs.pop('length', None)
+        if length_arg is not None:
+            direction = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
+            self._axis = direction * float(length_arg)
         self._shaftwidth = kwargs.pop('shaftwidth', 0.1)
         super().__init__('arrow', axis=self._axis.to_list(), shaftwidth=self._shaftwidth, **kwargs)
 
@@ -775,10 +894,14 @@ class arrow(_GObject):
         return {**super()._clone_kwargs(), 'axis': self._axis.clone(), 'shaftwidth': self._shaftwidth}
 
 
-class cone(_GObject):
+class cone(_AxisLength, _RadiusSize, _GObject):
     def __init__(self, **kwargs):
         self._radius = kwargs.pop('radius', 1.0)
         self._axis = kwargs.pop('axis', vector(1, 0, 0))
+        length_arg = kwargs.pop('length', None)
+        if length_arg is not None:
+            direction = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
+            self._axis = direction * float(length_arg)
         super().__init__('cone', radius=self._radius, axis=self._axis.to_list(), **kwargs)
 
     @property
@@ -865,11 +988,21 @@ class pyramid(_GObject):
 
 # === 새 프리미티브: ellipsoid (타원체) ===
 class ellipsoid(_GObject):
-    """타원체 — sphere를 size로 비균등 스케일링"""
+    """타원체 — sphere를 size로 비균등 스케일링. size=vector(length, height, width)"""
     def __init__(self, **kwargs):
-        self._size = kwargs.pop('size', vector(1, 1, 1))
-        s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
-        super().__init__('ellipsoid', size=s, **kwargs)
+        size = _coerce_vector(kwargs.pop('size', None), vector(1, 1, 1))
+        # GlowScript처럼 length·height·width로도 지정할 수 있다
+        length_arg = kwargs.pop('length', None)
+        height_arg = kwargs.pop('height', None)
+        width_arg = kwargs.pop('width', None)
+        if length_arg is not None:
+            size.x = float(length_arg)
+        if height_arg is not None:
+            size.y = float(height_arg)
+        if width_arg is not None:
+            size.z = float(width_arg)
+        self._size = size
+        super().__init__('ellipsoid', size=self._size.to_list(), **kwargs)
 
     @property
     def size(self):
@@ -877,9 +1010,32 @@ class ellipsoid(_GObject):
 
     @size.setter
     def size(self, value):
-        self._size = value
-        s = value.to_list() if isinstance(value, vector) else list(value)
-        _add_command({"action": "update", "id": self._id, "size": s})
+        self._size = _coerce_vector(value, vector(1, 1, 1))
+        _add_command({"action": "update", "id": self._id, "size": self._size.to_list()})
+
+    @property
+    def length(self):
+        return self._size.x
+
+    @length.setter
+    def length(self, value):
+        self.size = vector(float(value), self._size.y, self._size.z)
+
+    @property
+    def height(self):
+        return self._size.y
+
+    @height.setter
+    def height(self, value):
+        self.size = vector(self._size.x, float(value), self._size.z)
+
+    @property
+    def width(self):
+        return self._size.z
+
+    @width.setter
+    def width(self, value):
+        self.size = vector(self._size.x, self._size.y, float(value))
 
     def _clone_kwargs(self):
         return {**super()._clone_kwargs(), 'size': self._size.clone()}
@@ -923,7 +1079,18 @@ class helix(_GObject):
     @axis.setter
     def axis(self, value):
         self._axis = value
-        _add_command({"action": "update", "id": self._id, "axis": value.to_list()})
+        self._length = self._axis.mag
+        _add_command({"action": "update", "id": self._id, "axis": value.to_list(), "length": float(self._length)})
+
+    @property
+    def length(self):
+        """나선의 길이 — axis의 길이와 같다 (GlowScript 호환)"""
+        return self._length if self._length is not None else self._axis.mag
+
+    @length.setter
+    def length(self, value):
+        direction = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
+        self.axis = direction * float(value)
 
     def _clone_kwargs(self):
         return {
@@ -941,6 +1108,7 @@ class label:
     """3D 위치에 텍스트 라벨을 표시 — 항상 카메라를 향함(Sprite)"""
     def __init__(self, **kwargs):
         self._id = _new_id()
+        _scene_objects.append(self)
         self._pos = kwargs.get('pos', vector(0, 0, 0))
         self._text = kwargs.get('text', '')
         self._color = kwargs.get('color', color.white)
@@ -1034,6 +1202,7 @@ class curve:
     c = curve(color=color.red); c.append(pos)"""
     def __init__(self, **kwargs):
         self._id = _new_id()
+        _scene_objects.append(self)
         self._color = kwargs.get('color', color.white)
         self._radius = float(kwargs.get('radius', 0))  # 0이면 기본 LineBasic, >0이면 굵은 선
         self._visible = kwargs.get('visible', True)
@@ -1100,6 +1269,7 @@ class points:
     """3D 점들의 집합 — 작은 점 또는 구로 표시"""
     def __init__(self, **kwargs):
         self._id = _new_id()
+        _scene_objects.append(self)
         self._color = kwargs.get('color', color.white)
         self._size = float(kwargs.get('size', 5))  # 픽셀 단위
         self._visible = kwargs.get('visible', True)
@@ -1154,6 +1324,7 @@ class compound:
     """여러 객체를 하나로 묶기"""
     def __init__(self, objects, **kwargs):
         self._id = _new_id()
+        _scene_objects.append(self)
         self._objects = list(objects)
         self._pos = kwargs.get('pos', vector(0, 0, 0))
         self._color = kwargs.get('color', None)
@@ -1830,6 +2001,29 @@ class menu(_Widget):
         super().__init__(value=self._selected, **kwargs)
         self._emit_create({"choices": self._choices, "selected": self._selected})
 
+    @property
+    def choices(self):
+        return list(self._choices)
+
+    @property
+    def selected(self):
+        """현재 선택된 항목 (GlowScript 호환, value와 같다)"""
+        return self.value
+
+    @selected.setter
+    def selected(self, v):
+        self.value = v
+
+    @property
+    def index(self):
+        """선택된 항목의 번호. 목록에 없으면 -1"""
+        v = self.value
+        return self._choices.index(v) if v in self._choices else -1
+
+    @index.setter
+    def index(self, i):
+        self.value = self._choices[int(i)]
+
 
 class winput(_Widget):
     """텍스트/숫자 입력 — Enter 키 또는 blur 시 bind 호출"""
@@ -1840,6 +2034,27 @@ class winput(_Widget):
         self._type = str(type)
         super().__init__(**kwargs)
         self._emit_create({"prompt": self._prompt, "input_type": self._type})
+
+    @property
+    def text(self):
+        """입력 칸의 글자 (GlowScript 호환). 아직 입력이 없으면 빈 문자열"""
+        v = self.value
+        return '' if v is None else str(v)
+
+    @text.setter
+    def text(self, v):
+        self.value = str(v)
+
+    @property
+    def number(self):
+        """입력값을 숫자로 바꾼 값. 숫자가 아니면 None"""
+        t = self.text.strip()
+        if not t:
+            return None
+        try:
+            return float(t)
+        except ValueError:
+            return None
 
 
 # === scene 객체 (카메라/배경 제어) ===
@@ -1904,6 +2119,20 @@ class _Camera:
         self._scene._mark_set()
         _add_command({"action": "scene", "property": "camera_axis", "value": value.to_list()})
 
+    def rotate(self, angle=0, axis=None, origin=None):
+        """카메라를 origin(기본 scene.center)을 중심으로 axis 둘레로 angle만큼 회전한다. 보는 점은 그대로다."""
+        if axis is None:
+            axis = self._scene.up
+        axis = _coerce_vector(axis, vector(0, 1, 0))
+        center = self._scene.center
+        origin = _coerce_vector(origin, center)
+        new_pos = origin + (self.pos - origin).rotate(angle, axis=axis)
+        new_up = self._scene.up.rotate(angle, axis=axis)
+        # pos를 지정하면 중심도 같이 움직이므로, axis로 중심을 원래 자리에 되돌린다
+        self.pos = new_pos
+        self.axis = center - new_pos
+        self._scene.up = new_up
+
     def follow(self, obj=None):
         """객체를 계속 화면 중심에 둔다. None이면 추적을 멈춘다."""
         self.follower = obj
@@ -1942,6 +2171,10 @@ class _Scene(_VectorOwner):
         self._lights = None
         self._camera = _Camera(self)
         self._set_seq = None   # 마지막으로 카메라 값을 지정했을 때의 상태 번호
+        self._width = None     # scene.width = 800 처럼 지정한 값 (화면 크기는 바뀌지 않고 값만 기억한다)
+        self._height = None
+        self._align = 'none'
+        self._resizable = True
 
     def _mark_set(self):
         """카메라 값을 지정한 직후에는 메인 스레드 상태가 아직 옛 값이므로 로컬 값을 쓰게 한다."""
@@ -2046,13 +2279,56 @@ class _Scene(_VectorOwner):
 
     @property
     def width(self):
+        if self._width is not None:
+            return self._width
         state = _camera_state()
         return int(state['width']) if state and state.get('width') else 640
 
+    @width.setter
+    def width(self, value):
+        """GlowScript 코드가 멈추지 않도록 값을 기억한다. 3D 화면 크기는 레이아웃이 정하므로 바뀌지 않는다."""
+        self._width = int(value)
+
     @property
     def height(self):
+        if self._height is not None:
+            return self._height
         state = _camera_state()
         return int(state['height']) if state and state.get('height') else 400
+
+    @height.setter
+    def height(self, value):
+        self._height = int(value)
+
+    @property
+    def align(self):
+        return self._align
+
+    @align.setter
+    def align(self, value):
+        self._align = str(value)
+
+    @property
+    def resizable(self):
+        return self._resizable
+
+    @resizable.setter
+    def resizable(self, value):
+        self._resizable = bool(value)
+
+    @property
+    def caption_anchor(self):
+        """위젯 위치 지정용 (GlowScript 호환). 위젯은 항상 전용 패널에 놓이므로 None을 돌려준다."""
+        return None
+
+    @property
+    def title_anchor(self):
+        return None
+
+    @property
+    def objects(self):
+        """현재 보이는 3D 객체 목록. for o in scene.objects: o.visible = False 로 모두 숨길 수 있다."""
+        return [o for o in _scene_objects if getattr(o, '_visible', True)]
 
     @property
     def ambient(self):
@@ -2301,6 +2577,79 @@ def cross(a, b):
 def norm(v):
     return v.hat
 
+def proj(a, b):
+    """a를 b 방향으로 투영한 벡터"""
+    return a.proj(b)
+
+def comp(a, b):
+    """a의 b 방향 스칼라 성분"""
+    return a.comp(b)
+
+def diff_angle(a, b):
+    """두 벡터 사이의 각 (라디안)"""
+    return a.diff_angle(b)
+
+def rotate(obj, angle=0, axis=None, origin=None):
+    """벡터면 회전한 새 벡터를 돌려주고, 3D 객체면 그 자리에서 회전시킨다 (GlowScript 함수형)"""
+    if isinstance(obj, vector):
+        return obj.rotate(angle, axis=axis)
+    if origin is None:
+        return obj.rotate(angle, axis=axis)
+    return obj.rotate(angle, axis=axis, origin=origin)
+
+
+class _RandomCompat:
+    """GlowScript의 random() — 0 이상 1 미만의 난수.
+    random.randint(1, 6)처럼 표준 random 모듈의 함수도 그대로 쓸 수 있다."""
+    def __call__(self):
+        return _random_module.random()
+
+    def __getattr__(self, name):
+        return getattr(_random_module, name)
+
+    def __repr__(self):
+        return "<random: random()은 0~1 난수, random.randint(a, b) 등도 사용 가능>"
+
+
+random = _RandomCompat()
+
+
+def arange(start, stop=None, step=1):
+    """start부터 stop 전까지 step 간격의 숫자 목록 (GlowScript 호환)"""
+    if stop is None:
+        start, stop = 0, start
+    if step == 0:
+        raise ValueError('arange의 step은 0이 될 수 없습니다')
+    count = int(math.ceil((stop - start) / step))
+    return [start + i * step for i in range(max(count, 0))]
+
+
+def clock():
+    """프로그램 실행 중 경과 시간(초)"""
+    return _time_module.time()
+
+
+def msclock():
+    """프로그램 실행 중 경과 시간(밀리초)"""
+    return _time_module.time() * 1000
+
+
+def sign(x):
+    """부호: 양수면 1, 음수면 -1, 0이면 0"""
+    return (x > 0) - (x < 0)
+
+
+def combin(n, k):
+    """조합의 수 nCk"""
+    return math.comb(int(n), int(k))
+
+
+def print_options(digits=None, **kwargs):
+    """vector 출력 자릿수 지정. 예: print_options(digits=3)"""
+    global _print_digits
+    if digits is not None:
+        _print_digits = max(1, int(digits))
+
 
 # === 한글 노트 이름 → 영어 변환 ===
 _KOREAN_NOTE_MAP = {
@@ -2465,13 +2814,18 @@ class note:
 
 # === 3D 차트 API ===
 
-def scatter3d(points, colors=None, size=0.08, colormap='rainbow', opacity=0.9, show_axes=True):
+def scatter3d(points, y=None, z=None, colors=None, size=0.08, colormap='rainbow', opacity=0.9, show_axes=True, color=None):
     """3D 산점도 — 미디어아트 스타일
-    points: [[x,y,z], ...] 또는 numpy array
+    points: [[x,y,z], ...] 또는 numpy array. scatter3d(x목록, y목록, z목록)처럼 좌표 목록 세 개로도 부를 수 있다
     colors: [[r,g,b], ...] (선택) — 없으면 z값 기반 컬러맵
+    color: 점 전체에 적용할 색 하나 (선택)
     """
+    if y is not None and z is not None:
+        points = list(zip(points, y, z))
     pts = [list(p) for p in points]  # numpy array → list 변환
-    cols = [list(c) for c in colors] if colors else None
+    if colors is None and color is not None:
+        colors = [color] * len(pts)
+    cols = [c.to_list() if isinstance(c, vector) else list(c) for c in colors] if colors else None  # vector도 받는다
     _add_command({
         "action": "chart",
         "chart_type": "scatter3d",
@@ -2529,7 +2883,7 @@ def bar3d(values, labels=None, colors=None, colormap='plasma', bar_width=0.6, sh
         "chart_type": "bar3d",
         "values": list(values),
         "labels": list(labels) if labels else None,
-        "colors": [list(c) for c in colors] if colors else None,
+        "colors": [c.to_list() if isinstance(c, vector) else list(c) for c in colors] if colors else None,
         "colormap": colormap,
         "bar_width": bar_width,
         "show_axes": show_axes,
@@ -2762,4 +3116,5 @@ def _reset_runtime_state():
     _widget_values.clear()
     _attached_arrows.clear()
     _user_lights.clear()
+    _scene_objects.clear()
     scene._reset()
