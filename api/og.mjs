@@ -9,7 +9,7 @@ export function createOgHandler({ env = process.env, fetchImpl = globalThis.fetc
   return async function handler(req, res) {
     const { kind, id } = requestQuery(req);
     const origin = requestOrigin(req);
-    const card = await buildCard({ kind, id: typeof id === 'string' ? id : '', origin, env, fetchImpl });
+    const card = await buildCard({ kind, id: typeof id === 'string' ? id : '', origin, env, cwd, fetchImpl });
     const shell = await loadShell({ origin, fetchImpl, cwd });
     const html = shell ? injectMeta(shell, card) : minimalShell(card);
 

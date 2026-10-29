@@ -4,7 +4,10 @@
   "framework": "vite",
   "functions": {
     "api/og.mjs": {
-      "includeFiles": "client/dist/index.html"
+      "includeFiles": "client/{dist/index.html,.env.production}"
+    },
+    "api/og-image.mjs": {
+      "includeFiles": "client/.env.production"
     }
   },
   "rewrites": [

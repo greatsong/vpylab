@@ -16,13 +16,13 @@ function redirect(res, location) {
   res.end();
 }
 
-export function createOgImageHandler({ env = process.env, fetchImpl = globalThis.fetch } = {}) {
+export function createOgImageHandler({ env = process.env, fetchImpl = globalThis.fetch, cwd = process.cwd() } = {}) {
   return async function handler(req, res) {
     const { id } = requestQuery(req);
     const fallback = `${requestOrigin(req)}${DEFAULT_CARD.imagePath}`;
     if (typeof id !== 'string' || !UUID.test(id)) return redirect(res, fallback);
 
-    const row = await fetchRow({ table: 'vpylab_gallery', id, select: 'thumbnail', filter: '&is_public=eq.true', env, fetchImpl });
+    const row = await fetchRow({ table: 'vpylab_gallery', id, select: 'thumbnail', filter: '&is_public=eq.true', env, cwd, fetchImpl });
     const thumbnail = typeof row?.thumbnail === 'string' ? row.thumbnail.trim() : '';
     if (/^https:\/\//.test(thumbnail)) return redirect(res, thumbnail);
 

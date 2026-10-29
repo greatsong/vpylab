@@ -138,7 +138,22 @@ describe('OG 카드 서버리스 함수', () => {
     expect(html).not.toContain('<s>');
   });
 
-  it('환경변수가 없으면 Supabase를 부르지 않고 기본 카드를 만든다', async () => {
+  it('환경변수가 없으면 번들에 포함된 client/.env.production의 공개 값을 읽는다', async () => {
+    writeFileSync(join(cwd, 'client/.env.production'), 'VITE_SUPABASE_URL=https://file.supabase.co/\nVITE_SUPABASE_ANON_KEY="file-key"\nVITE_API_URL=https://x\n');
+    const fetchImpl = fakeFetch({ vpylab_shares: [{ title: '파일 환경' }] });
+    const res = makeRes();
+    await createOgHandler({ env: {}, fetchImpl, cwd })(makeReq('/api/og?kind=share&id=abc12345'), res);
+    expect(res.headers['x-vpylab-card']).toBe('found');
+    expect(fetchImpl.mock.calls[0][0]).toMatch(/^https:\/\/file\.supabase\.co\/rest\/v1\/vpylab_shares/);
+    expect(fetchImpl.mock.calls[0][1].headers.apikey).toBe('file-key');
+    // Vercel 환경변수가 있으면 그쪽이 우선
+    resetShellCache();
+    const fetch2 = fakeFetch({ vpylab_shares: [{ title: 'T' }] });
+    await createOgHandler({ env, fetchImpl: fetch2, cwd })(makeReq('/api/og?kind=share&id=abc12345'), makeRes());
+    expect(fetch2.mock.calls[0][0]).toMatch(/^https:\/\/example\.supabase\.co\//);
+  });
+
+  it('환경변수도 파일도 없으면 Supabase를 부르지 않고 기본 카드를 만든다', async () => {
     const fetchImpl = vi.fn();
     const card = await buildCard({ kind: 'share', id: 'abc12345', env: {}, fetchImpl });
     expect(card.found).toBe(false);

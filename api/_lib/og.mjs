@@ -32,10 +32,34 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-/** Vercel 환경변수는 빌드용 VITE_ 접두어 이름을 그대로 쓰므로 둘 다 읽습니다. */
-export function supabaseEnv(env = process.env) {
-  const url = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || '').trim().replace(/\/$/, '');
-  const key = (env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || '').trim();
+let fileEnvCache = null;
+
+/**
+ * 빌드용 Supabase 값은 커밋된 client/.env.production(공개 anon 키)에서 오므로, Vercel 프로젝트
+ * 환경변수가 없을 때는 함수 번들에 포함한 그 파일을 읽습니다. cwd를 넘길 때만 읽습니다.
+ */
+export function fileEnv(cwd) {
+  if (!cwd) return {};
+  if (fileEnvCache) return fileEnvCache;
+  const out = {};
+  for (const candidate of ['client/.env.production', '.env.production']) {
+    try {
+      for (const line of readFileSync(resolve(cwd, candidate), 'utf8').split(/\r?\n/)) {
+        const match = /^\s*(VITE_SUPABASE_URL|VITE_SUPABASE_ANON_KEY)\s*=\s*(.*?)\s*$/.exec(line);
+        if (match && !(match[1] in out)) out[match[1]] = match[2].replace(/^["']|["']$/g, '');
+      }
+      break;
+    } catch { /* 다음 후보 */ }
+  }
+  fileEnvCache = out;
+  return out;
+}
+
+/** Vercel 환경변수(VITE_ 접두어 또는 SUPABASE_*)를 먼저 쓰고, 없으면 번들의 .env.production을 씁니다. */
+export function supabaseEnv(env = process.env, cwd) {
+  const fallback = fileEnv(cwd);
+  const url = (env.VITE_SUPABASE_URL || env.SUPABASE_URL || fallback.VITE_SUPABASE_URL || '').trim().replace(/\/$/, '');
+  const key = (env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || fallback.VITE_SUPABASE_ANON_KEY || '').trim();
   return url && key ? { url, key } : null;
 }
 
@@ -58,8 +82,8 @@ export function requestQuery(req) {
 }
 
 /** Supabase REST에서 한 행을 읽습니다. 실패·시간 초과·없음은 모두 null입니다. */
-export async function fetchRow({ table, id, select, filter = '', env, fetchImpl = globalThis.fetch }) {
-  const supabase = supabaseEnv(env);
+export async function fetchRow({ table, id, select, filter = '', env, cwd, fetchImpl = globalThis.fetch }) {
+  const supabase = supabaseEnv(env, cwd);
   if (!supabase || typeof fetchImpl !== 'function') return null;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -88,7 +112,7 @@ function clip(text, max = MAX_DESCRIPTION) {
  * 카드 정보를 만듭니다.
  * @returns {Promise<{ title, description, image, url, found: boolean }>}
  */
-export async function buildCard({ kind, id, origin = SITE_ORIGIN, env, fetchImpl }) {
+export async function buildCard({ kind, id, origin = SITE_ORIGIN, env, cwd, fetchImpl }) {
   const fallback = {
     title: DEFAULT_CARD.title,
     description: DEFAULT_CARD.description,
@@ -98,7 +122,7 @@ export async function buildCard({ kind, id, origin = SITE_ORIGIN, env, fetchImpl
   };
 
   if (kind === 'share' && SHARE_ID.test(id || '')) {
-    const row = await fetchRow({ table: 'vpylab_shares', id, select: 'title', env, fetchImpl });
+    const row = await fetchRow({ table: 'vpylab_shares', id, select: 'title', env, cwd, fetchImpl });
     if (!row) return fallback;
     return {
       title: `${clip(row.title, 80) || '제목 없음'} · VPyLab`,
@@ -111,7 +135,7 @@ export async function buildCard({ kind, id, origin = SITE_ORIGIN, env, fetchImpl
 
   if (kind === 'gallery' && UUID.test(id || '')) {
     const row = await fetchRow({
-      table: 'vpylab_gallery', id, select: 'title,description,thumbnail,author_alias', filter: '&is_public=eq.true', env, fetchImpl,
+      table: 'vpylab_gallery', id, select: 'title,description,thumbnail,author_alias', filter: '&is_public=eq.true', env, cwd, fetchImpl,
     });
     if (!row) return fallback;
     const thumbnail = typeof row.thumbnail === 'string' ? row.thumbnail : '';
@@ -207,4 +231,4 @@ export function minimalShell(card) {
 `;
 }
 
-export function resetShellCache() { shellCache = null; }
+export function resetShellCache() { shellCache = null; fileEnvCache = null; }
