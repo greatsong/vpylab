@@ -53,15 +53,17 @@ describe('PWA 설치 파일', () => {
     }
   });
 
-  it('Service Worker 사전 캐시 목록에 매니페스트가 들어간다', () => {
+  it('Service Worker 사전 캐시 목록에 public/의 매니페스트가 들어간다', () => {
+    // public/ 파일은 Vite 번들에 없으므로 플러그인이 디스크에서 읽어 넣는다
     const manifestEntries = buildPrecacheManifest({
       'index.html': { type: 'asset', source: '<html></html>' },
-      'manifest.webmanifest': { type: 'asset', source: '{"name":"VPyLab"}' },
       'icon-192.png': { type: 'asset', source: Buffer.alloc(4) },
       'assets/app-abcdef123456.js': { type: 'chunk', code: '' },
     });
-    const urls = manifestEntries.map((entry) => entry.url);
-    expect(urls).toContain('manifest.webmanifest');
+    const entry = manifestEntries.find((item) => item.url === 'manifest.webmanifest');
+    expect(entry).toBeTruthy();
+    expect(entry.revision).toMatch(/^[0-9a-f]{16}$/);
+    const urls = manifestEntries.map((item) => item.url);
     expect(urls).toContain('index.html');
     expect(urls).not.toContain('icon-192.png');
   });
