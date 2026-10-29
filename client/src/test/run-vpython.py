@@ -9,11 +9,10 @@ VPyLab 미션 코드를 CPython에서 실행해 브릿지 커맨드를 수집한
   - rate() 호출 횟수가 한도를 넘으면 사용자가 정지 버튼을 누른 것처럼 중단한다.
 
 표준 입력 : JSON 배열 [{ "id": str, "label": str, "code": str }]
-             (code는 code-preprocessor.js의 preprocessCode()를 거친 코드)
+             (code는 학생이 쓴 그대로. Worker와 같이 student-code-transform.py가 ast로 변환한다)
 표준 출력 : JSON 배열 [{ "id", "label", "ok", "stopped", "error", "stdout", "commands": [...] }]
 """
 
-import ast
 import asyncio
 import contextlib
 import io
@@ -24,6 +23,7 @@ import types
 from pathlib import Path
 
 API_PATH = Path(__file__).resolve().parents[1] / 'engine' / 'vpython-api.py'
+TRANSFORM_PATH = Path(__file__).resolve().parents[1] / 'engine' / 'student-code-transform.py'
 RATE_CALL_LIMIT = 20000  # 무한 루프 방지 — 이 횟수를 넘으면 실행 중지 신호를 보낸다
 
 collected_commands = []
@@ -54,8 +54,22 @@ class FakeJs(types.ModuleType):
     def _queueOutput(kind, text):
         return None
 
+    @staticmethod
+    def _popEvent():
+        return None
+
+    @staticmethod
+    def _getInputValue(request_id):
+        # input()에는 정해진 답을 준다 (브라우저에서는 입력 위젯이 받는다)
+        return json.dumps({'value': '42'})
+
 
 sys.modules['js'] = FakeJs()
+
+# === 학생 코드 변환기 등록 (Worker의 _vpylab_transform 모듈과 같다) ===
+transform_module = types.ModuleType('_vpylab_transform')
+exec(compile(TRANSFORM_PATH.read_text(encoding='utf-8'), str(TRANSFORM_PATH), 'exec'), transform_module.__dict__)
+sys.modules['_vpylab_transform'] = transform_module
 
 # === 가상 시계: time.time()/time.sleep()/asyncio.sleep()을 즉시 진행 ===
 virtual_clock = [0.0]
@@ -69,8 +83,13 @@ def fake_sleep(seconds):
     virtual_clock[0] += max(0.0, float(seconds))
 
 
+real_async_sleep = asyncio.sleep
+
+
 async def fake_async_sleep(seconds, result=None):
     virtual_clock[0] += max(0.0, float(seconds))
+    # 한 번은 실제로 양보해 나란히 도는 태스크(async 핸들러, rate 콜백)가 진행되게 한다
+    await real_async_sleep(0)
     return result
 
 
@@ -103,6 +122,8 @@ for name, value in api_namespace.items():
 sys.modules['vpython'] = vpython_module
 
 StopExecution = api_namespace['_StopExecution']
+# 학생 코드가 API 전역에 남긴 이름이 다음 코드에 새지 않도록 실행 전 상태를 보관한다
+baseline_namespace = dict(api_namespace)
 
 
 def run_one(code):
@@ -120,11 +141,9 @@ def run_one(code):
     loop = asyncio.new_event_loop()
     try:
         with contextlib.redirect_stdout(stdout):
-            compiled = compile(code, '<mission>', 'exec', flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
-            namespace = {'__name__': '__main__'}
-            result = eval(compiled, namespace)
-            if asyncio.iscoroutine(result):
-                loop.run_until_complete(result)
+            # Worker와 같은 경로: ast 변환 → 모듈 수준 실행(최상위 await) → 남은 태스크 대기.
+            # 학생 코드는 API 전역에서 실행된다 (Worker에서도 API와 같은 전역이다).
+            loop.run_until_complete(api_namespace['_vpylab_run'](code, '<mission>'))
     except StopExecution:
         stopped = True
     except BaseException as exc:  # noqa: BLE001 — 학생 코드의 모든 오류를 보고한다
@@ -137,6 +156,13 @@ def run_one(code):
         api_namespace['_send_commands']()
     except Exception:  # noqa: BLE001
         pass
+
+    # 학생 코드가 만든 이름은 지우고 덮어쓴 API 이름은 되돌린다 (_로 시작하는 내부 상태는 _reset_runtime_state 가 맡는다)
+    for key in list(api_namespace):
+        if key not in baseline_namespace:
+            del api_namespace[key]
+        elif not key.startswith('_'):
+            api_namespace[key] = baseline_namespace[key]
 
     return {
         'ok': error is None,

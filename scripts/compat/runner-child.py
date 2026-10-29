@@ -2,14 +2,13 @@
 """정적 하네스의 자식 프로세스 — 코드 한 개를 js 스텁과 함께 실행하고 결과를 JSON 한 줄로 출력한다.
 
 static-harness.py 가 호출한다. 표준 입력으로 JSON을 받는다:
-  {"api": "<vpython-api.py 경로>", "registration": "<워커 모듈 등록 Python>", "code": "<전처리된 코드>",
-   "rateLimit": 240, "wallLimit": 3.0}
+  {"api": "<vpython-api.py 경로>", "transform": "<student-code-transform.py 경로>",
+   "registration": "<워커 모듈 등록 Python>", "code": "<학생 코드 그대로>", "rateLimit": 240, "wallLimit": 3.0}
+학생 코드는 Worker와 같이 vpython-api.py 의 _vpylab_run 이 ast 로 변환해 모듈 수준에서 실행한다.
 Pyodide 대신 CPython 에서 돌기 때문에 js 모듈을 흉내 낸 스텁(더미 postMessage 등)을 sys.modules['js'] 에 넣는다.
 """
-import ast
 import asyncio
 import builtins
-import inspect
 import io
 import json
 import sys
@@ -30,7 +29,26 @@ def main():
         'stop_calls': 0,
         'started': time.time(),
         'stop_requested': False,
+        'warnings': [],        # 변환기 경고 (type: warning)
+        'synthetic_events': [],  # scene.waitfor 가 기다리는 이벤트에 보낼 가짜 이벤트
     }
+
+    def note_waiting_binds(payload):
+        """scene.waitfor 가 보낸 scene_bind(waiting=True) 를 보면 그 이벤트를 한 번 만들어 준다."""
+        try:
+            msg = json.loads(payload)
+        except (TypeError, ValueError):
+            return
+        if msg.get('type') == 'warning':
+            state['warnings'].append(msg.get('text'))
+            return
+        for cmd in msg.get('commands', []) or []:
+            if cmd.get('action') == 'scene_bind' and cmd.get('waiting'):
+                for name in cmd.get('events', []):
+                    evt = {'name': name, 'pos': [1.0, 2.0, 0.0], 'pick': None}
+                    if name.startswith('key'):
+                        evt['key'] = 'a'
+                    state['synthetic_events'].append(json.dumps(evt))
 
     class JsStub(types.ModuleType):
         """Pyodide 의 js 전역을 흉내 — 워커가 노출하는 함수만 의미 있게 구현"""
@@ -39,7 +57,9 @@ def main():
 
         @staticmethod
         def postMessage(payload):
-            state['messages'].append(payload if isinstance(payload, str) else json.dumps(payload, default=str))
+            text = payload if isinstance(payload, str) else json.dumps(payload, default=str)
+            state['messages'].append(text)
+            note_waiting_binds(text)
 
         @staticmethod
         def _getCurrentRunId():
@@ -47,7 +67,12 @@ def main():
 
         @staticmethod
         def _popEvent():
-            return None
+            # 대기 중인 waitfor 에만 가짜 이벤트를 준다 (bind 핸들러는 실제로 호출하지 않는다)
+            return state['synthetic_events'].pop(0) if state['synthetic_events'] else None
+
+        @staticmethod
+        def _getInputValue(request_id):
+            return json.dumps({'value': '42'})
 
         @staticmethod
         def _getMousePos():
@@ -109,6 +134,11 @@ def main():
     # input() 은 워커에 표준 입력이 없다 — 어떤 예외가 나는지 그대로 보고하기 위해 빈 stdin 으로 둔다
     sys.stdin = io.StringIO('')
 
+    # 변환기를 Worker 와 같은 모듈 이름으로 등록
+    transform_module = types.ModuleType('_vpylab_transform')
+    exec(compile(open(spec['transform'], encoding='utf-8').read(), '<vpylab-transform>', 'exec'), transform_module.__dict__)
+    sys.modules['_vpylab_transform'] = transform_module
+
     g = {'__name__': '__main__', '__builtins__': builtins}
     result = {'status': 'pass', 'error': None, 'rateCalls': 0}
     phase = 'api'
@@ -122,11 +152,8 @@ def main():
             g['_reset_runtime_state']()
         phase = 'student'
         state['started'] = time.time()
-        flags = ast.PyCF_ALLOW_TOP_LEVEL_AWAIT
-        code_obj = compile(spec['code'], '<student>', 'exec', flags=flags)
-        ret = eval(code_obj, g)
-        if inspect.iscoroutine(ret):
-            asyncio.run(ret)
+        # Worker 와 같은 경로: ast 변환 → 최상위 await 로 모듈 수준 실행 → 남은 태스크 대기
+        asyncio.run(g['_vpylab_run'](spec['code'], '<student>'))
         if '_send_commands' in g:
             g['_send_commands']()
     except SystemExit:
@@ -177,6 +204,7 @@ def main():
         'stdout': out_buf.getvalue()[-2000:],
         'stderr': err_buf.getvalue()[-2000:],
         'stubMissing': sorted(state['stub_missing']),
+        'warnings': state['warnings'],
         'duration': round(time.time() - state['started'], 3),
     })
     real_stdout.write(json.dumps(result, ensure_ascii=False, default=str))

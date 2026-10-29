@@ -193,11 +193,33 @@ scene.caption = "설명..."            # 콘솔에 출력
 ## 시뮬레이션 제어
 
 ```python
-await rate(60)        # 초당 60프레임. 코드 전처리기가 await를 자동 삽입
-await sleep(0.5)      # 비동기 sleep
+rate(60)              # 초당 60프레임 (GlowScript와 같이 평범한 함수처럼 쓴다)
+sleep(0.5)            # 0.5초 대기
+rate(60, move)        # GlowScript 콜백 형식: 한 프레임 뒤 move()를 부르고 바로 돌아온다
+
+def step(n):          # 함수·메서드 안에서도 쓸 수 있다
+    for i in range(n):
+        rate(60)
+        ball.pos += v * dt
+step(100)
+
+score = 0
+def hit():
+    global score      # 모듈 전역이 진짜 전역이므로 global이 동작한다
+    score += 1
+
+ev = scene.waitfor('click')     # 클릭할 때까지 기다렸다가 이벤트 객체(ev.pos, ev.pick)를 돌려준다
+ev = scene.waitfor('keydown')   # ev.key
+scene.waitfor('redraw')         # 한 프레임 그리기
+scene.pause()                   # 화면을 클릭할 때까지 멈춘다 (안내문: scene.pause('계속하려면 클릭'))
+name = input('이름: ')           # 3D 화면 위 입력 위젯으로 받는다. 문자열을 돌려준다
 ```
 
-> 학생 코드의 `rate(...)` / `sleep(...)`은 자동으로 `await`가 붙도록 전처리됩니다.
+> 실행 직전에 Worker 안의 Python이 학생 코드를 `ast`로 변환합니다([engine/student-code-transform.py](../client/src/engine/student-code-transform.py)).
+> `rate()`·`sleep()`·`scene.pause()`·`scene.waitfor()`·`input()`·`악기()`를 부르는 함수는 `async def`가 되고 그 호출에 `await`가 붙습니다.
+> 호출 그래프를 따라 전파되므로 그런 함수를 부르는 함수도 함께 바뀝니다. 모듈 수준 호출은 최상위 `await`로 실행하고 코드를 함수로 감싸지 않습니다.
+> 제약: `lambda` 안, `yield`가 있는 함수 안, `__init__` 안에서는 대기 함수를 쓸 수 없습니다(경고를 내고 기다리지 않습니다).
+> 대기 함수가 든 이벤트 핸들러는 별도 태스크로 돌아 메인 루프와 나란히 진행합니다.
 
 ---
 
@@ -372,6 +394,7 @@ v_curve.clear()
 ### 미지원 (현 시점)
 
 - `scene.width` / `scene.height` 쓰기 (읽기는 가능), 여러 개의 `canvas()`
+- `lambda`·생성기(`yield`)·`__init__` 안의 `rate()`/`sleep()` (경고 후 기다리지 않음)
 - 3D 입체 글자 `text()` (현재 2D 라벨로 대체), `shapes`·`paths` 라이브러리
 
 ### standalone HTML export 시 주의

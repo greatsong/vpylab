@@ -29,8 +29,8 @@ npx --prefix scripts/compat playwright install chromium
 | `corpus/glowscript-docs.json` | GlowScript 문서 각 페이지의 예제 블록·한 줄 코드 169개 (`extract-docs.py`) |
 | `corpus/vpython-demos.json` | vpython-jupyter Demos 노트북 35개 (`extract-demos.py`) |
 | `build-corpus.mjs` | 위 코퍼스와 `client/src/data/{examples,courses,missions}.js` 의 모든 코드를 `corpus/corpus.json` 으로 합침 |
-| `preprocess.mjs` | 실제 앱의 `code-preprocessor.js` 로 전처리하고 워커의 vpython 모듈 등록 블록·브릿지 커맨드 목록을 뽑아 `out/preprocessed.json` 저장 |
-| `static-harness.py` + `runner-child.py` | 코드마다 자식 프로세스에서 `vpython-api.py` 를 js 스텁과 함께 실행 → `out/static-results.json` |
+| `preprocess.mjs` | 코퍼스 코드와 워커의 vpython 모듈 등록 블록·브릿지 커맨드 목록을 `out/preprocessed.json` 에 저장 (학생 코드 변환은 실행 시 `student-code-transform.py` 가 Worker 와 같이 수행) |
+| `static-harness.py` + `runner-child.py` | 코드마다 자식 프로세스에서 `vpython-api.py` 의 `_vpylab_run` 으로 실행(ast 변환 → 모듈 수준 실행) → `out/static-results.json`. `scene.waitfor` 가 기다리는 이벤트와 `input()` 답(`42`)은 js 스텁이 만들어 준다 |
 | `browser-harness.mjs` | Playwright 로 `/sandbox` 를 열어 Monaco 에 코드를 넣고 실행 버튼을 눌러 Worker 메시지·브릿지 경고·3D 메시 수를 기록 → `out/browser-results.json` |
 | `summarize.mjs` | 두 결과를 합쳐 `out/summary.md`, `out/merged.json` 생성 |
 | `fetch-sources.mjs` | 문서·데모·공식 예제 원문을 다시 내려받을 때 사용 (원문은 저장소에 두지 않음) |
@@ -63,5 +63,5 @@ node scripts/compat/browser-harness.mjs --url http://127.0.0.1:4033             
 
 - 정적 하네스는 Python 쪽 의미만 본다. 브릿지(Three.js)가 커맨드를 어떻게 그리는지는 브라우저 하네스가 본다.
 - 브라우저 하네스는 Worker 를 재시작하지 않고 코드를 이어서 돌린다. 각 코드가 끝나면 Python 전역을 스냅샷으로 되돌리지만, `scene` 의 카메라·배경 같은 화면 상태는 앱이 실행 시작 때 초기화하는 범위까지만 되돌아간다.
-- 마우스·키보드·위젯 이벤트는 실제로 발생시키지 않는다. 핸들러 등록까지만 검사한다.
+- 마우스·키보드·위젯 이벤트는 실제로 발생시키지 않는다. 핸들러 등록까지만 검사한다. 정적 하네스는 `scene.waitfor()` 가 기다리는 이벤트만 가짜로 한 번 보내고, 브라우저 하네스는 보내지 않으므로 `waitfor`·`pause`·`input()` 코드는 브라우저에서 실행 시간 초과 뒤 정지로 끝난다.
 - 메시 수는 React fiber 에서 Three.js 씬을 찾아 센다. 씬을 못 찾으면 `create` 커맨드 수로 대신 판정한다.

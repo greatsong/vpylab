@@ -2,7 +2,7 @@
  * 미션 채점 검증 — "시작 코드는 실패, 모범 답안은 통과"
  *
  * 각 미션의 starterCode와 solutionCode를 브라우저와 같은 경로로 처리한다.
- *   preprocessCode() → vpython-api.py 실행(CPython, src/test/run-vpython.py)
+ *   vpython-api.py 실행(CPython, src/test/run-vpython.py — Worker와 같이 ast 변환 뒤 모듈 수준 실행)
  *   → 커맨드 재생(command-replay.js) → 객체 레지스트리 → gradeMission()
  *
  * 한계: Pyodide 대신 CPython으로 실행하므로 Three.js 렌더링·오디오는 거치지 않고,
@@ -13,7 +13,6 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import missions from './missions';
-import { preprocessCode } from '../engine/code-preprocessor';
 import { applyCommandsToRegistry } from '../engine/command-replay';
 import {
   clearRegistry, getSnapshot, getNoteHistory, getSoundHistory, getTrajectory,
@@ -31,13 +30,12 @@ function hasPython() {
 
 /**
  * 여러 코드를 한 번의 python3 호출로 실행
- * @param {{ id: string, label: string, code: string }[]} jobs - code는 전처리 전 학생 코드
+ * @param {{ id: string, label: string, code: string }[]} jobs - code는 학생 코드 그대로 (변환은 Python 쪽)
  * @returns {Map<string, object>} `${id}:${label}` → { ok, stopped, error, stdout, commands }
  */
 export function runPythonJobs(jobs) {
-  const prepared = jobs.map(job => ({ ...job, code: preprocessCode(job.code).code }));
   const proc = spawnSync('python3', ['-I', RUNNER], {
-    input: JSON.stringify(prepared),
+    input: JSON.stringify(jobs),
     encoding: 'utf8',
     maxBuffer: 1 << 28,
   });

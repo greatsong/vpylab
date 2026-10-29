@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * 코퍼스의 모든 코드를 실제 앱과 같은 전처리기(client/src/engine/code-preprocessor.js)로 변환해
- * out/preprocessed.json 에 저장한다. 정적 하네스(static-harness.py)가 이 결과를 실행한다.
+ * 코퍼스의 모든 코드를 out/preprocessed.json 에 모은다. 정적 하네스(static-harness.py)가 이 결과를 실행한다.
+ * 학생 코드 변환(rate() 등이 든 함수의 async 전환)은 Worker 와 같이 Python 쪽
+ * (client/src/engine/student-code-transform.py)이 실행 직전에 수행하므로 여기서는 코드를 그대로 둔다.
  * 워커가 vpython 모듈을 등록할 때 쓰는 Python 블록도 pyodide-worker.js 에서 그대로 뽑아 저장한다.
  */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -10,13 +11,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
-const { preprocessCode } = await import(path.join(root, 'client/src/engine/code-preprocessor.js'));
-
 const corpus = JSON.parse(await readFile(path.join(here, 'corpus/corpus.json'), 'utf8'));
-const items = corpus.map((it) => {
-  const { code, warnings } = preprocessCode(it.code);
-  return { id: it.id, code, warnings };
-});
+const items = corpus.map((it) => ({ id: it.id, code: it.code, warnings: [] }));
 
 // 워커의 모듈 등록 블록 추출: `import sys\nimport types\nvpython_module = ...` 부터 `sys.modules['vpython'] = vpython_module` 까지
 const workerSrc = await readFile(path.join(root, 'client/src/engine/pyodide-worker.js'), 'utf8');
@@ -39,5 +35,4 @@ await writeFile(path.join(here, 'out/preprocessed.json'), JSON.stringify({
   bridgeCaseLabels: [...new Set(caseLabels)],
   items,
 }, null, 1));
-const warned = items.filter((it) => it.warnings.length).length;
-console.log(`전처리 ${items.length}개 (경고 있는 코드 ${warned}개) → scripts/compat/out/preprocessed.json`);
+console.log(`코퍼스 ${items.length}개 → scripts/compat/out/preprocessed.json (변환은 실행 시 Python 쪽에서)`);

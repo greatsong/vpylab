@@ -32,6 +32,9 @@ let PYODIDE_CDN = PYODIDE_SOURCES[0].base;
 
 let pyodide = null;
 let vpythonApiCode = null;
+// 학생 코드 변환기(student-code-transform.py). 실행 직전 Python ast로 rate() 등이 든 함수를
+// async def로 바꾸고 호출에 await를 붙인다. 변환은 Worker 안의 Python이 맡는다.
+let transformSourceCode = null;
 
 // === 패키지 설치용 fetch 가드 ===
 // 초기화 뒤 fetch를 완전히 지우면 Pyodide의 loadPackage/micropip도 fetch를 찾지 못해
@@ -102,6 +105,8 @@ function resetOutputStreams() {
 // === 이벤트 큐 (메인 스레드 → Python) ===
 const _eventQueue = [];
 const _widgetValues = {};   // { widgetId: latestValue }
+// input() 응답: { requestId: JSON 문자열 '{"value": "..."}' 또는 '{"cancelled": true}' }
+const _inputValues = {};
 let _mouseState = { pos: [0, 0, 0], pick: null };
 let _cameraStateJson = null; // 메인 스레드가 보내는 카메라 상태 (scene.camera.pos 등 읽기용)
 let _pressedKeysJson = '[]';  // 현재 눌려있는 키 목록 (JSON 직렬화)
@@ -113,6 +118,7 @@ self._getMousePos = () => _mouseState.pos;
 self._getMousePick = () => _mouseState.pick;
 self._getCameraState = () => _cameraStateJson;
 self._getWidgetValue = (id) => _widgetValues[id] ?? null;
+self._getInputValue = (id) => _inputValues[id] ?? null;
 self._getPressedKeys = () => _pressedKeysJson;
 self._getCurrentRunId = () => currentRunId;
 
@@ -127,6 +133,7 @@ function sendProgress(percent, message) {
 function clearInputQueues() {
   _eventQueue.length = 0;
   for (const key of Object.keys(_widgetValues)) delete _widgetValues[key];
+  for (const key of Object.keys(_inputValues)) delete _inputValues[key];
 }
 
 async function flushOutputStreams(runId = currentRunId) {
@@ -211,7 +218,20 @@ async function initPyodide() {
 
     sendProgress(70, 'VPython API 준비 중...');
 
-    // 3. VPython API를 'vpython' 모듈로 등록 (한 번만)
+    // 3. 학생 코드 변환기를 '_vpylab_transform' 모듈로 등록 — 학생 전역과 섞이지 않게 별도 모듈에 둔다
+    if (transformSourceCode) {
+      pyodide.globals.set('__vpylab_transform_source__', transformSourceCode);
+      await pyodide.runPythonAsync(`
+import sys
+import types
+_vpylab_transform_module = types.ModuleType('_vpylab_transform')
+exec(compile(__vpylab_transform_source__, '${TRANSFORM_FILENAME}', 'exec'), _vpylab_transform_module.__dict__)
+sys.modules['_vpylab_transform'] = _vpylab_transform_module
+del _vpylab_transform_module, __vpylab_transform_source__
+`);
+    }
+
+    // 4. VPython API를 'vpython' 모듈로 등록 (한 번만)
     if (vpythonApiCode) {
       // vpython-api.py 코드를 실행하여 전역에 로드 (트레이스백에서 학생 코드와 구분되도록 파일 이름 지정)
       await pyodide.runPythonAsync(vpythonApiCode, { filename: API_FILENAME });
@@ -230,7 +250,7 @@ _vpython_names = [
     'slider', 'button', 'checkbox', 'radio', 'menu', 'winput',
     'scene', 'keysdown',
     'local_light', 'distant_light', 'attach_arrow',
-    'rate', 'sleep', 'scene_background',
+    'rate', 'sleep', 'input', 'scene_background',
     'mag', 'mag2', 'hat', 'dot', 'cross', 'norm',
     'play_sound', 'play_note', 'play_chord', 'play_sequence',
     'play_sfx', 'start_bgm', 'stop_bgm', 'note',
@@ -421,8 +441,10 @@ sys.stderr = _VPLBoundedOutput('stderr')
     // 학생 코드 실행 전 heartbeat — 모바일에서 초기화 지연으로 인한 타임아웃 방지
     sendRunMessage(runId, 'batch', { commands: [] });
 
-    // 학생 코드 실행 — 파일 이름을 붙여 트레이스백에서 API 코드와 구분한다
-    await pyodide.runPythonAsync(code, { filename: STUDENT_FILENAME });
+    // 학생 코드 실행 — vpython-api.py의 _vpylab_run이 ast 변환 뒤 모듈 수준에서 실행한다.
+    // 학생 코드 프레임은 <student> 파일 이름으로 트레이스백에 나타나고 줄 번호는 원본 그대로다.
+    pyodide.globals.set('__vpylab_source__', code);
+    await pyodide.runPythonAsync(`await _vpylab_run(__vpylab_source__, '${STUDENT_FILENAME}')`, { filename: RUNNER_FILENAME });
 
     // 실행 후 남은 커맨드 버퍼 플러시
     await pyodide.runPythonAsync('_send_commands()');
@@ -477,6 +499,8 @@ function formatPythonError(msg) {
 // 학생 코드와 VPython API를 구분하는 트레이스백 파일 이름
 const STUDENT_FILENAME = '<student>';
 const API_FILENAME = '<vpython-api>';
+const TRANSFORM_FILENAME = '<vpylab-transform>';
+const RUNNER_FILENAME = '<vpylab-runner>';
 const TRACEBACK_MARKER = 'Traceback (most recent call last):';
 
 /**
@@ -550,11 +574,12 @@ function parsePythonTraceback(msg, typeHint) {
 
 // === 메시지 핸들러 ===
 self.onmessage = async (event) => {
-  const { type, code, vpythonApi } = event.data;
+  const { type, code, vpythonApi, transformSource } = event.data;
 
   switch (type) {
     case 'init':
       if (vpythonApi) vpythonApiCode = vpythonApi;
+      if (transformSource) transformSourceCode = transformSource;
       await initPyodide();
       break;
 
@@ -581,6 +606,19 @@ self.onmessage = async (event) => {
       // 위젯 값 동기화
       if (event.data.id !== undefined) {
         _widgetValues[event.data.id] = event.data.value;
+      }
+      break;
+
+    case 'input_value':
+      // input() 응답 — value가 null이면 취소. Python의 input()이 폴링으로 읽는다.
+      if (event.data.id !== undefined) {
+        try {
+          _inputValues[event.data.id] = JSON.stringify(
+            event.data.value === null || event.data.value === undefined
+              ? { cancelled: true }
+              : { value: String(event.data.value) },
+          );
+        } catch { /* 직렬화 실패 시 무시 */ }
       }
       break;
 

@@ -1660,7 +1660,11 @@ def _process_pending_events():
                 info.value = evt['value']
             for h in handlers:
                 try:
-                    h(info)
+                    result = h(info)
+                    # 핸들러 안에서 rate()·sleep()을 쓰면 변환기가 async def로 바꾼다.
+                    # 그 코루틴은 별도 태스크로 돌려 메인 루프와 나란히 진행한다(GlowScript와 같다).
+                    if asyncio.iscoroutine(result):
+                        _spawn_task(result, 'event handler')
                 except Exception as e:
                     print(f"[event handler error] {e}")
     except Exception:
@@ -2149,10 +2153,60 @@ class _Scene(_VectorOwner):
         for n in names:
             _unbind(n, handler)
 
-    def waitfor(self, event_name):
-        """동기 대기 — VPython의 scene.waitfor와 호환되도록 단순화.
-        실제 비동기 환경에서는 이벤트 루프와 충돌하므로 권장하지 않음."""
-        print(f"[scene.waitfor] {event_name} — VPyLab은 scene.bind 콜백 사용을 권장")
+    async def waitfor(self, event_names):
+        """이벤트가 올 때까지 기다렸다가 이벤트 객체를 돌려준다 (GlowScript scene.waitfor).
+        ev = scene.waitfor('click')            # ev.pos, ev.pick
+        ev = scene.waitfor('keydown')          # ev.key
+        scene.waitfor('redraw')                # 한 프레임 그리기
+        변환기가 호출 앞에 await를 붙이므로 학생 코드에서는 평범한 함수처럼 쓴다.
+        기다리는 동안 중단 버튼이 동작하고, 다른 핸들러도 평소처럼 호출된다."""
+        names = event_names.split() if isinstance(event_names, str) else list(event_names)
+        if not names:
+            raise ValueError("scene.waitfor에 이벤트 이름을 넣어 주세요 (예: 'click')")
+        if all(n in ('redraw', 'draw_complete') for n in names):
+            await rate(60)
+            return _EventInfo(names[0])
+        received = []
+
+        def _catch(ev):
+            received.append(ev)
+
+        for n in names:
+            _bind(n, _catch)
+        # waiting 표시는 하네스가 대기 중인 이벤트를 알아보는 데 쓴다. 브릿지는 무시한다.
+        _add_command({"action": "scene_bind", "events": names, "waiting": True})
+        _send_commands()
+        try:
+            ticks = 0
+            while not received:
+                if _check_stop():
+                    _send_commands()
+                    raise _StopExecution("실행이 중지되었습니다")
+                _process_pending_events()
+                if received:
+                    break
+                if ticks % 10 == 0:
+                    _heartbeat()
+                ticks += 1
+                await asyncio.sleep(0.05)
+        finally:
+            for n in names:
+                _unbind(n, _catch)
+            freed = [n for n in names if not _event_handlers.get(n)]
+            if freed:
+                _add_command({"action": "scene_unbind", "events": freed})
+        return received[0]
+
+    async def pause(self, text=''):
+        """화면을 클릭할 때까지 멈춘다 (GlowScript scene.pause). 안내 문구를 줄 수 있다."""
+        notice_id = _new_id()
+        _add_command({"action": "pause_notice", "id": notice_id,
+                      "text": str(text) if text else "▶ 화면을 클릭하면 계속합니다"})
+        try:
+            return await self.waitfor('click')
+        finally:
+            _add_command({"action": "widget_delete", "id": notice_id})
+            _send_commands()
 
 
 scene = _Scene()
@@ -2237,11 +2291,55 @@ class _StopExecution(Exception):
     pass
 
 
+def _heartbeat():
+    """커맨드를 보내거나, 보낼 것이 없으면 빈 배치를 보낸다 (메인 스레드의 10초 무응답 타이머 초기화)."""
+    if _command_buffer:
+        _send_commands()
+    else:
+        js.postMessage(json.dumps({"type": "batch", "runId": _current_run_id(), "commands": []}))
+
+
+# === 나란히 도는 태스크 (async 이벤트 핸들러, rate(fps, callback)) ===
+_pending_tasks = set()
+
+
+def _spawn_task(coro, label):
+    """코루틴을 별도 태스크로 돌린다. 중단 예외는 조용히 끝내고, 다른 예외는 콘솔에 알린다."""
+    async def _runner():
+        try:
+            await coro
+        except _StopExecution:
+            pass
+        except Exception as e:
+            print(f"[{label} error] {e}")
+
+    task = asyncio.ensure_future(_runner())
+    _pending_tasks.add(task)
+    task.add_done_callback(_pending_tasks.discard)
+    return task
+
+
+async def _wait_pending_tasks():
+    """모듈 수준 코드가 끝난 뒤에도 돌고 있는 태스크가 있으면 기다린다. 그동안 중단 버튼이 동작한다."""
+    ticks = 0
+    while _pending_tasks:
+        if _check_stop():
+            for task in list(_pending_tasks):
+                task.cancel()
+            _send_commands()
+            raise _StopExecution("실행이 중지되었습니다")
+        if ticks % 10 == 0:
+            _heartbeat()
+        ticks += 1
+        await asyncio.sleep(0.05)
+
+
 # === rate() 함수 ===
-async def rate(fps):
+async def rate(fps, callback=None):
     """
     프레임 레이트 제어 + 커맨드 버퍼 플러시 + 이벤트 디스패치
     rate(100) = 초당 100회 루프, 각 반복 후 커맨드 배치 전송 및 등록된 핸들러 호출
+    rate(100, move) = GlowScript의 콜백 형식. 한 프레임 뒤에 move()를 부르고 바로 돌아온다.
     """
     if _check_stop():
         _send_commands()
@@ -2251,12 +2349,16 @@ async def rate(fps):
         _process_pending_events()
     if _attached_arrows:
         _update_attached_arrows()
-    if _command_buffer:
-        _send_commands()  # 누적된 커맨드를 한번에 전송
-    else:
-        # 커맨드가 없어도 하트비트 전송 (활동 타이머 리셋용)
-        js.postMessage(json.dumps({"type": "batch", "runId": _current_run_id(), "commands": []}))
+    _heartbeat()
     delay = 1.0 / fps
+    if callback is not None:
+        async def _later():
+            await asyncio.sleep(delay)
+            result = callback()
+            if asyncio.iscoroutine(result):
+                await result
+        _spawn_task(_later(), 'rate callback')
+        return
     await asyncio.sleep(delay)
 
 
@@ -2752,6 +2854,65 @@ async def 악기(instrument, name, duration=0.5, volume=None):
     await asyncio.sleep(duration)
 
 
+# === input() — 화면 입력 위젯으로 받는다 ===
+async def input(prompt=''):
+    """GlowScript처럼 input()으로 값을 받는다. Worker에는 표준 입력이 없으므로
+    3D 화면 위에 입력 위젯을 띄우고 학생이 입력할 때까지 기다린다. 변환기가 await를 붙인다.
+    돌려주는 값은 내장 input()과 같이 문자열이다."""
+    prompt = str(prompt)
+    request_id = _new_id()
+    _add_command({"action": "input_request", "id": request_id, "prompt": prompt})
+    _send_commands()
+    value = None
+    try:
+        ticks = 0
+        while True:
+            if _check_stop():
+                _send_commands()
+                raise _StopExecution("실행이 중지되었습니다")
+            raw = None
+            try:
+                raw = js._getInputValue(request_id)
+            except Exception:
+                raise RuntimeError("이 화면에서는 input()을 사용할 수 없습니다. winput()을 사용하세요.")
+            if raw is not None:
+                data = json.loads(str(raw))
+                if data.get('cancelled'):
+                    raise EOFError("입력이 취소되었습니다")
+                value = '' if data.get('value') is None else str(data.get('value'))
+                break
+            if _event_handlers:
+                _process_pending_events()
+            if ticks % 10 == 0:
+                _heartbeat()
+            ticks += 1
+            await asyncio.sleep(0.05)
+    finally:
+        _add_command({"action": "widget_delete", "id": request_id})
+        _send_commands()
+    # 터미널처럼 질문과 답을 콘솔에 남긴다
+    print(f"{prompt}{value}")
+    return value
+
+
+# === 학생 코드 실행기 ===
+async def _vpylab_run(source, filename='<student>', namespace=None):
+    """학생 코드를 변환(student-code-transform.py)해 모듈 수준에서 실행한다.
+    함수로 감싸지 않으므로 global 선언이 동작하고, 줄 번호는 학생 코드 그대로다.
+    모듈 수준 코드가 끝난 뒤에는 남은 태스크(async 핸들러, rate 콜백)가 끝날 때까지 기다린다.
+    Worker·하네스가 sys.modules['_vpylab_transform']에 변환기를 등록해 둔다."""
+    import inspect
+    import _vpylab_transform
+    code, warnings = _vpylab_transform.compile_student_code(source, filename)
+    for text in warnings:
+        js.postMessage(json.dumps({"type": "warning", "runId": _current_run_id(), "text": text}))
+    scope = globals() if namespace is None else namespace
+    result = eval(code, scope)
+    if inspect.iscoroutine(result):
+        await result
+    await _wait_pending_tasks()
+
+
 def _reset_runtime_state():
     """새 코드 실행 전 Python 측 런타임 상태를 정리"""
     global _command_buffer, _object_counter
@@ -2762,4 +2923,7 @@ def _reset_runtime_state():
     _widget_values.clear()
     _attached_arrows.clear()
     _user_lights.clear()
+    for task in list(_pending_tasks):
+        task.cancel()
+    _pending_tasks.clear()
     scene._reset()

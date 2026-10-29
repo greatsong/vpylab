@@ -2,8 +2,16 @@ import { runInNewContext } from 'node:vm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import source from './pyodide-worker.js?raw';
 
+// 학생 코드는 Worker 가 전역 __vpylab_source__ 에 넣고 `await _vpylab_run(...)` 으로 실행한다
+const isStudentRun = (code) => typeof code === 'string' && code.includes('_vpylab_run(');
+
 function createWorkerContext({ failImport = false, location = null, failLocal = false } = {}) {
-  const python = { runPythonAsync: vi.fn(async () => {}), loadPackage: vi.fn(async () => {}) };
+  const globals = new Map();
+  const python = {
+    runPythonAsync: vi.fn(async () => {}),
+    loadPackage: vi.fn(async () => {}),
+    globals: { set: vi.fn((key, value) => globals.set(key, value)), get: (key) => globals.get(key) },
+  };
   const self = Object.create({ fetch: vi.fn(), WebSocket: vi.fn(), indexedDB: {}, caches: {} });
   self.postMessage = vi.fn();
   self.loadPyodide = vi.fn(async () => python);
@@ -38,7 +46,7 @@ describe('실제 Worker 스크립트의 출력 제한과 샌드박스', () => {
     await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
     self.postMessage.mockClear();
     python.runPythonAsync.mockImplementation(async (code) => {
-      if (code === '학생 코드') {
+      if (isStudentRun(code) && python.globals.get('__vpylab_source__') === '학생 코드') {
         self._queueOutput('stdout', '중간 출력\n');
         await vi.advanceTimersByTimeAsync(75);
         expect(self.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'stdout', runId: 7, text: '중간 출력' }));
@@ -144,21 +152,23 @@ describe('실제 Worker 스크립트의 트레이스백 구조화', () => {
     const apiCall = python.runPythonAsync.mock.calls.find(([code]) => code === '# API');
     expect(apiCall[1]).toEqual({ filename: '<vpython-api>' });
     python.runPythonAsync.mockImplementation(async (code) => {
-      if (code !== '학생 코드') return;
+      if (!isStudentRun(code)) return;
       throw pythonError('KeyError', [
         'Traceback (most recent call last):',
         '  File "/lib/python312.zip/_pyodide/_base.py", line 597, in eval_code_async',
         '    await CodeRunner(',
         '  File "<student>", line 8, in <module>',
-        '  File "<student>", line 4, in __vpylab_main__',
+        '  File "<student>", line 4, in draw',
         '  File "<vpython-api>", line 279, in __getitem__',
         'KeyError: "\'핑크색\' 색상을 찾을 수 없습니다. 사용 가능: 빨, 빨강..."',
         '',
       ].join('\n'));
     });
     await self.onmessage({ data: { type: 'run', runId: 3, code: '학생 코드' } });
-    const studentCall = python.runPythonAsync.mock.calls.find(([code]) => code === '학생 코드');
-    expect(studentCall[1]).toEqual({ filename: '<student>' });
+    const studentCall = python.runPythonAsync.mock.calls.find(([code]) => isStudentRun(code));
+    expect(studentCall[0]).toContain("'<student>'");
+    expect(studentCall[1]).toEqual({ filename: '<vpylab-runner>' });
+    expect(python.globals.get('__vpylab_source__')).toBe('학생 코드');
     const message = self.postMessage.mock.calls.map(([entry]) => entry).find((entry) => entry.type === 'error');
     expect(message.runId).toBe(3);
     expect(message.error).toBe('KeyError: "\'핑크색\' 색상을 찾을 수 없습니다. 사용 가능: 빨, 빨강..."');
@@ -166,7 +176,7 @@ describe('실제 Worker 스크립트의 트레이스백 구조화', () => {
       type: 'KeyError',
       message: '"\'핑크색\' 색상을 찾을 수 없습니다. 사용 가능: 빨, 빨강..."',
       line: 4,
-      frames: [{ line: 8, name: '<module>' }, { line: 4, name: '__vpylab_main__' }],
+      frames: [{ line: 8, name: '<module>' }, { line: 4, name: 'draw' }],
     });
   });
 
@@ -174,7 +184,7 @@ describe('실제 Worker 스크립트의 트레이스백 구조화', () => {
     const { self, python } = createWorkerContext();
     await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
     python.runPythonAsync.mockImplementation(async (code) => {
-      if (code !== '학생 코드') return;
+      if (!isStudentRun(code)) return;
       throw pythonError('SyntaxError', [
         'Traceback (most recent call last):',
         '  File "/lib/python312.zip/_pyodide/_base.py", line 149, in _parse_and_compile_gen',
@@ -195,7 +205,7 @@ describe('실제 Worker 스크립트의 트레이스백 구조화', () => {
     await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
     self.postMessage.mockClear();
     python.runPythonAsync.mockImplementation(async (code) => {
-      if (code !== '학생 코드') return;
+      if (!isStudentRun(code)) return;
       self._queueOutput('stderr', '학생이 직접 쓴 경고\n');
       self._queueOutput('stderr', 'Traceback (most recent call last):\n  File "<student>", line 2, in <module>\nNameError: name \'spd\' is not defined\n');
       throw pythonError('NameError', '');
@@ -214,7 +224,7 @@ describe('실제 Worker 스크립트의 트레이스백 구조화', () => {
     await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
     self.postMessage.mockClear();
     python.runPythonAsync.mockImplementation(async (code) => {
-      if (code !== '학생 코드') return;
+      if (!isStudentRun(code)) return;
       self._queueOutput('stderr', 'Traceback (most recent call last):\n  File "<student>", line 3, in __vpylab_main__\n_StopExecution: 실행이 중지되었습니다\n');
       throw pythonError('_StopExecution', '');
     });
@@ -229,7 +239,7 @@ describe('실제 Worker 스크립트의 트레이스백 구조화', () => {
     const { self, python } = createWorkerContext();
     await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
     python.runPythonAsync.mockImplementation(async (code) => {
-      if (code === '학생 코드') throw new Error('Traceback (most recent call last):\n  File "<student>", line 1, in <module>\nZeroDivisionError: division by zero\n');
+      if (isStudentRun(code)) throw new Error('Traceback (most recent call last):\n  File "<student>", line 1, in <module>\nZeroDivisionError: division by zero\n');
     });
     await self.onmessage({ data: { type: 'run', runId: 5, code: '학생 코드' } });
     const message = self.postMessage.mock.calls.map(([entry]) => entry).find((entry) => entry.type === 'error');
