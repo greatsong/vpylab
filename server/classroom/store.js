@@ -41,7 +41,7 @@ export function createStore({ filename = ':memory:', localMode = false } = {}) {
     CREATE INDEX IF NOT EXISTS jobs_pending ON github_jobs(state,available_at);
     CREATE TABLE IF NOT EXISTS peer_review_rounds(id TEXT PRIMARY KEY,title TEXT NOT NULL,created_by TEXT NOT NULL REFERENCES users(id),state TEXT NOT NULL DEFAULT 'open',reviews_per_team INTEGER NOT NULL,created_at TEXT NOT NULL,closed_at TEXT);
     CREATE TABLE IF NOT EXISTS peer_review_assignments(id TEXT PRIMARY KEY,round_id TEXT NOT NULL REFERENCES peer_review_rounds(id),reviewer_project_id TEXT NOT NULL REFERENCES projects(id),target_project_id TEXT NOT NULL REFERENCES projects(id),created_at TEXT NOT NULL,UNIQUE(round_id,reviewer_project_id,target_project_id));
-    CREATE TABLE IF NOT EXISTS peer_reviews(id TEXT PRIMARY KEY,assignment_id TEXT NOT NULL REFERENCES peer_review_assignments(id),author_id TEXT NOT NULL REFERENCES users(id),like_text TEXT NOT NULL,wish_text TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(assignment_id,author_id));
+    CREATE TABLE IF NOT EXISTS peer_reviews(id TEXT PRIMARY KEY,assignment_id TEXT NOT NULL REFERENCES peer_review_assignments(id),author_id TEXT NOT NULL REFERENCES users(id),like_text TEXT NOT NULL,wish_text TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,hidden_at TEXT,hidden_by TEXT REFERENCES users(id),UNIQUE(assignment_id,author_id));
     CREATE INDEX IF NOT EXISTS peer_assignments_round ON peer_review_assignments(round_id);
     CREATE INDEX IF NOT EXISTS peer_assignments_target ON peer_review_assignments(target_project_id);
   `);
@@ -51,6 +51,9 @@ export function createStore({ filename = ':memory:', localMode = false } = {}) {
   if(!feedbackColumns.includes('visibility')) {db.exec('ALTER TABLE feedback ADD COLUMN visibility TEXT');db.exec("UPDATE feedback SET visibility=CASE WHEN student_id IS NULL THEN 'team' ELSE 'student' END WHERE visibility IS NULL");}
   if(!feedbackColumns.includes('evidence_ids'))db.exec("ALTER TABLE feedback ADD COLUMN evidence_ids TEXT NOT NULL DEFAULT '[]'");
   if(!feedbackColumns.includes('evidence_snapshot'))db.exec("ALTER TABLE feedback ADD COLUMN evidence_snapshot TEXT NOT NULL DEFAULT '[]'");
+  const peerReviewColumns=db.prepare('PRAGMA table_info(peer_reviews)').all().map(column=>column.name);
+  if(!peerReviewColumns.includes('hidden_at'))db.exec('ALTER TABLE peer_reviews ADD COLUMN hidden_at TEXT');
+  if(!peerReviewColumns.includes('hidden_by'))db.exec('ALTER TABLE peer_reviews ADD COLUMN hidden_by TEXT REFERENCES users(id)');
   let transactionDepth=0,savepointSerial=0;
   const store = {
     db,
@@ -259,21 +262,32 @@ export function createStore({ filename = ':memory:', localMode = false } = {}) {
     },
     myPeerReview(assignmentId,authorId) { const row=db.prepare('SELECT * FROM peer_reviews WHERE assignment_id=? AND author_id=?').get(assignmentId,authorId); return row?peerReviewFrom(row):null; },
     writePeerReview(assignmentId,actor,input) {
-      store.peerReviewAssignment(assignmentId,actor,{write:true});
+      const assignment=store.peerReviewAssignment(assignmentId,actor,{write:true});
+      // 학생이 대상 코드를 열어 둔 사이 교사가 배정을 다른 팀으로 바꿨으면, 옛 팀을 보고 쓴 글이 새 팀에 저장되지 않도록 거부합니다.
+      if(input.targetProjectId!==assignment.targetProjectId)throw new HttpError(409,'peer_review_target_changed','선생님이 검토 대상 팀을 바꿨습니다. 새 대상 팀의 저장본을 다시 읽고 리뷰를 보내주세요.',{targetProjectId:assignment.targetProjectId});
       const timestamp=now();
       db.prepare('INSERT INTO peer_reviews(id,assignment_id,author_id,like_text,wish_text,created_at,updated_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(assignment_id,author_id) DO UPDATE SET like_text=excluded.like_text,wish_text=excluded.wish_text,updated_at=excluded.updated_at').run(randomUUID(),assignmentId,actor.id,input.like,input.wish,timestamp,timestamp);
       return store.myPeerReview(assignmentId,actor.id);
+    },
+    // 교사가 부적절한 리뷰를 상대 팀에게 보이지 않게 숨기거나 다시 보이게 합니다. 숨긴 리뷰는 받은 리뷰와 학습 증거 집계에서 빠집니다.
+    hidePeerReview(reviewId,actor,hidden) {
+      const row=db.prepare('SELECT r.id,a.round_id FROM peer_reviews r JOIN peer_review_assignments a ON a.id=r.assignment_id WHERE r.id=?').get(reviewId);
+      if(!row)throw new HttpError(404,'peer_review_not_found','리뷰를 찾을 수 없습니다.');
+      store.teacherRound(row.round_id,actor);
+      if(hidden)db.prepare('UPDATE peer_reviews SET hidden_at=?,hidden_by=? WHERE id=?').run(now(),actor.id,reviewId);
+      else db.prepare('UPDATE peer_reviews SET hidden_at=NULL,hidden_by=NULL WHERE id=?').run(reviewId);
+      return store.peerReviewRoundDetail(row.round_id,actor);
     },
     // 프로젝트 화면용: 우리 팀이 검토할 배정과 우리 팀이 받은 리뷰. 받은 리뷰의 작성자는 팀 이름으로만 보이고 개인 이름은 교사만 봅니다.
     projectPeerReviews(id,actor) {
       const project=store.accessProject(id,actor);
       const assignments=db.prepare('SELECT a.*,rd.title AS round_title,rd.state AS round_state,tp.title AS target_title,(SELECT COUNT(*) FROM peer_reviews r WHERE r.assignment_id=a.id) AS review_count FROM peer_review_assignments a JOIN peer_review_rounds rd ON rd.id=a.round_id JOIN projects tp ON tp.id=a.target_project_id WHERE a.reviewer_project_id=? ORDER BY rd.created_at DESC,a.rowid').all(id).map(row=>({id:row.id,roundId:row.round_id,roundTitle:row.round_title,roundState:row.round_state,targetProjectId:row.target_project_id,targetTitle:row.target_title,teamReviewCount:row.review_count,myReview:store.myPeerReview(row.id,actor.id)}));
-      const received=db.prepare('SELECT r.*,a.round_id,rd.title AS round_title,rd.state AS round_state,rp.title AS reviewer_title,u.name AS author_name FROM peer_reviews r JOIN peer_review_assignments a ON a.id=r.assignment_id JOIN peer_review_rounds rd ON rd.id=a.round_id JOIN projects rp ON rp.id=a.reviewer_project_id JOIN users u ON u.id=r.author_id WHERE a.target_project_id=? ORDER BY r.updated_at DESC,r.rowid DESC').all(id).map(row=>({...peerReviewFrom(row),roundId:row.round_id,roundTitle:row.round_title,roundState:row.round_state,reviewerTeam:row.reviewer_title,...(actor.role==='teacher'?{authorId:row.author_id,authorName:row.author_name}:{})}));
+      const received=db.prepare('SELECT r.*,a.round_id,rd.title AS round_title,rd.state AS round_state,rp.title AS reviewer_title,u.name AS author_name FROM peer_reviews r JOIN peer_review_assignments a ON a.id=r.assignment_id JOIN peer_review_rounds rd ON rd.id=a.round_id JOIN projects rp ON rp.id=a.reviewer_project_id JOIN users u ON u.id=r.author_id WHERE a.target_project_id=? ORDER BY r.updated_at DESC,r.rowid DESC').all(id).filter(row=>actor.role==='teacher'||!row.hidden_at).map(row=>({...peerReviewFrom(row),roundId:row.round_id,roundTitle:row.round_title,roundState:row.round_state,reviewerTeam:row.reviewer_title,...(actor.role==='teacher'?{authorId:row.author_id,authorName:row.author_name}:{})}));
       return {projectId:id,canWrite:actor.role==='student'&&project.myRole!=='viewer',assignments,received};
     },
     // 학습 근거: 이 프로젝트의 팀원으로서 학생이 쓴 동료 리뷰(협업 영역의 교실 안 근거).
     writtenPeerReviews(id,studentId) {
-      return db.prepare('SELECT r.*,a.round_id,rd.title AS round_title,a.target_project_id,tp.title AS target_title FROM peer_reviews r JOIN peer_review_assignments a ON a.id=r.assignment_id JOIN peer_review_rounds rd ON rd.id=a.round_id JOIN projects tp ON tp.id=a.target_project_id WHERE a.reviewer_project_id=? AND r.author_id=? ORDER BY r.updated_at DESC,r.rowid DESC').all(id,studentId).map(row=>({...peerReviewFrom(row),roundId:row.round_id,roundTitle:row.round_title,targetProjectId:row.target_project_id,targetTitle:row.target_title}));
+      return db.prepare('SELECT r.*,a.round_id,rd.title AS round_title,a.target_project_id,tp.title AS target_title FROM peer_reviews r JOIN peer_review_assignments a ON a.id=r.assignment_id JOIN peer_review_rounds rd ON rd.id=a.round_id JOIN projects tp ON tp.id=a.target_project_id WHERE a.reviewer_project_id=? AND r.author_id=? AND r.hidden_at IS NULL ORDER BY r.updated_at DESC,r.rowid DESC').all(id,studentId).map(row=>({...peerReviewFrom(row),roundId:row.round_id,roundTitle:row.round_title,targetProjectId:row.target_project_id,targetTitle:row.target_title}));
     },
     getGithub(id) { const row=db.prepare('SELECT data FROM github_bindings WHERE project_id=?').get(id); return row ? parse(row.data) : null; },
     setGithub(id,data) { db.prepare('INSERT INTO github_bindings VALUES(?,?) ON CONFLICT(project_id) DO UPDATE SET data=excluded.data').run(id,encode(data)); return data; },
@@ -305,7 +319,7 @@ const PEER_REVIEW_DEMO_TEAMS=[
   {inviteCode:'PEERDEMOB',owner:DEMO_USERS[2],title:'학생 나 팀 · 천천히 도는 카메라와 행성',problem:'행성이 별 주위를 도는 동안 카메라가 함께 돌며 장면을 보여 줍니다.',successCriteria:'행성이 한 바퀴 도는 동안 카메라가 끊기지 않고 움직이며, 회전 속도를 바꾸면 무엇이 달라지는지 설명할 수 있습니다.',code:'from vpython import *\n\nscene.background = color.black\nstar = sphere(pos=vector(0, 0, 0), radius=1, color=color.yellow, emissive=True)\nplanet = sphere(pos=vector(4, 0, 0), radius=0.4, color=color.cyan, make_trail=True)\n\nangle = 0\nfor step in range(120):\n    angle = angle + 0.05\n    planet.pos = vector(4 * cos(angle), 0, 4 * sin(angle))\n    scene.camera.rotate(angle=0.02, axis=vector(0, 1, 0))\n    rate(30)\n'},
 ];
 function roundFrom(r) { return {id:r.id,title:r.title,createdBy:r.created_by,state:r.state,reviewsPerTeam:r.reviews_per_team,createdAt:r.created_at,closedAt:r.closed_at}; }
-function peerReviewFrom(r) { return {id:r.id,like:r.like_text,wish:r.wish_text,createdAt:r.created_at,updatedAt:r.updated_at}; }
+function peerReviewFrom(r) { return {id:r.id,like:r.like_text,wish:r.wish_text,createdAt:r.created_at,updatedAt:r.updated_at,hidden:Boolean(r.hidden_at),hiddenAt:r.hidden_at||null}; }
 function projectFrom(r) { return {id:r.id,title:r.title,problem:r.problem,successCriteria:r.success_criteria,code:r.code,version:r.version,ownerId:r.owner_id,inviteCode:r.invite_code,aiPolicy:r.ai_policy,source:parse(r.source),createdAt:r.created_at,updatedAt:r.updated_at}; }
 function checkpointFrom(r) { return {id:r.id,projectId:r.project_id,version:r.version,code:r.code,message:r.message,evidence:parse(r.evidence,{}),authorId:r.author_id,createdAt:r.created_at}; }
 function draftFrom(r) { return {projectId:r.project_id,userId:r.user_id,clientId:r.client_id,code:r.code,baseVersion:r.base_version,clientSequence:r.client_sequence,updatedAt:r.updated_at}; }

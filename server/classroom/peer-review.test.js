@@ -61,6 +61,8 @@ test('like·wish 본문은 20~1000자 사이여야 하고 앞뒤 공백은 세�
   assert.equal(normalizePeerReviewText(' ' + '가'.repeat(19) + ' ', 'I like').error, 'peer_review_text_too_short');
   assert.equal(normalizePeerReviewText('가'.repeat(1001), 'I wish').error, 'peer_review_text_too_long');
   assert.equal(normalizePeerReviewText('  ' + like + '  ', 'I like').text, like);
+  for (const value of ['ㅋ'.repeat(30), '!!!! .... ???? ,,,, ;;;;', '좋아좋아좋아좋아좋아좋아좋아좋아좋아좋아', ' . '.repeat(10)]) assert.equal(normalizePeerReviewText(value, 'I like').error, 'peer_review_text_repetitive', value);
+  assert.equal(normalizePeerReviewText('카메라 회전이 부드러워서 장면이 잘 보여 좋았어요', 'I like').error, undefined);
 });
 
 test('교사는 라운드를 만들면 순환 배정이 자동으로 생기고 배정을 바꾸거나 라운드를 닫을 수 있다', () => {
@@ -89,7 +91,7 @@ test('교사는 라운드를 만들면 순환 배정이 자동으로 생기고 �
     store.replacePeerReviewAssignment(round.id, aReviewsB.id, teacher, teamB.id);
 
     // 리뷰가 이미 있는 배정은 바꾸지 못한다.
-    store.writePeerReview(aReviewsB.id, studentA, { like, wish });
+    store.writePeerReview(aReviewsB.id, studentA, { like, wish, targetProjectId: teamB.id });
     assert.throws(() => store.replacePeerReviewAssignment(round.id, aReviewsB.id, teacher, demo.id), (error) => error.code === 'peer_review_already_written');
 
     const closed = store.closePeerReviewRound(round.id, teacher);
@@ -117,21 +119,21 @@ test('학생은 배정된 팀의 최신 저장본만 읽고 미배정 프로젝�
     assert.throws(() => store.peerReviewTarget('missing', studentA), (error) => error.status === 404);
     assert.equal(store.peerReviewTarget(bReviewsA.id, teacher).target.code, teamA.code);
 
-    assert.throws(() => store.writePeerReview(bReviewsA.id, studentA, { like, wish }), (error) => error.code === 'peer_review_not_assigned');
-    assert.throws(() => store.writePeerReview(aReviewsB.id, teacher, { like, wish }), (error) => error.code === 'student_required');
+    assert.throws(() => store.writePeerReview(bReviewsA.id, studentA, { like, wish, targetProjectId: teamA.id }), (error) => error.code === 'peer_review_not_assigned');
+    assert.throws(() => store.writePeerReview(aReviewsB.id, teacher, { like, wish, targetProjectId: teamB.id }), (error) => error.code === 'student_required');
     const viewer = store.ensureUser({ id: 'viewer-a', name: '관찰 학생', role: 'student' });
     store.addMember(teamA.id, studentA, viewer.id, 'viewer');
-    assert.throws(() => store.writePeerReview(aReviewsB.id, viewer, { like, wish }), (error) => error.code === 'access_denied');
+    assert.throws(() => store.writePeerReview(aReviewsB.id, viewer, { like, wish, targetProjectId: teamB.id }), (error) => error.code === 'access_denied');
     assert.equal(store.peerReviewTarget(aReviewsB.id, viewer).target.version, 1, '관찰자도 배정된 코드는 읽을 수 있다');
 
-    const first = store.writePeerReview(aReviewsB.id, studentA, { like, wish });
+    const first = store.writePeerReview(aReviewsB.id, studentA, { like, wish, targetProjectId: teamB.id });
     assert.equal(first.like, like);
-    const edited = store.writePeerReview(aReviewsB.id, studentA, { like: like + ' 다시 보니 더 좋았어요.', wish });
+    const edited = store.writePeerReview(aReviewsB.id, studentA, { like: like + ' 다시 보니 더 좋았어요.', wish, targetProjectId: teamB.id });
     assert.equal(edited.id, first.id, '한 배정에 작성자마다 하나만 남고 제출 뒤에도 고칠 수 있다');
     assert.equal(store.projectPeerReviews(teamB.id, studentB).received.length, 1);
 
     store.closePeerReviewRound(round.id, teacher);
-    assert.throws(() => store.writePeerReview(aReviewsB.id, studentA, { like, wish }), (error) => error.code === 'peer_review_round_closed' && error.status === 409);
+    assert.throws(() => store.writePeerReview(aReviewsB.id, studentA, { like, wish, targetProjectId: teamB.id }), (error) => error.code === 'peer_review_round_closed' && error.status === 409);
     assert.equal(store.peerReviewTarget(aReviewsB.id, studentA).target.version, 1, '닫힌 뒤에도 읽기는 가능하다');
   } finally { store.close(); }
 });
@@ -140,7 +142,7 @@ test('받은 리뷰의 작성자는 팀 이름으로만 보이고 개인 이름�
   const { store, teamA, teamB } = fixture();
   try {
     const round = store.createPeerReviewRound(teacher, { title: '1차', reviewsPerTeam: 1, projectIds: [teamA.id, teamB.id] });
-    store.writePeerReview(round.assignments.find((item) => item.reviewerProjectId === teamA.id).id, studentA, { like, wish });
+    store.writePeerReview(round.assignments.find((item) => item.reviewerProjectId === teamA.id).id, studentA, { like, wish, targetProjectId: teamB.id });
     const asStudent = store.projectPeerReviews(teamB.id, studentB);
     assert.equal(asStudent.received.length, 1); assert.equal(asStudent.received[0].reviewerTeam, teamA.title);
     assert.equal(asStudent.received[0].authorName, undefined); assert.equal(asStudent.received[0].authorId, undefined);
@@ -161,7 +163,7 @@ test('학생이 쓴 동료 리뷰는 협업 영역의 교실 안 근거로 세�
     const before = store.studentEvidence(teamA.id, teacher, studentA.id, []);
     assert.equal(before.summary.localEvidenceCounts.peerReviews, 0);
     assert.equal(before.summary.signals.find((signal) => signal.criterion === 'collaboration').localEvidence, '동료 리뷰 0건');
-    store.writePeerReview(assignment.id, studentA, { like, wish });
+    store.writePeerReview(assignment.id, studentA, { like, wish, targetProjectId: teamB.id });
     const after = store.studentEvidence(teamA.id, teacher, studentA.id, []);
     assert.equal(after.summary.localEvidenceCounts.peerReviews, 1);
     assert.equal(after.summary.evidenceCount, 0, 'GitHub 근거 수와 섞지 않는다');
@@ -192,14 +194,14 @@ test('HTTP: 교사가 라운드를 열면 학생 가가 학생 나 팀을 읽고
   assert.equal(target.status, 200); assert.equal(target.data.target.id, teamB.id); assert.equal(target.data.target.code, teamB.code); assert.equal(target.data.target.inviteCode, undefined);
   assert.equal((await a(`/peer-reviews/assignments/${otherAssignmentId}/target`)).status, 403);
   assert.equal((await a('/peer-reviews/assignments/missing/target')).status, 404);
-  for (const [body, code] of [[{ like: '짧아요', wish }, 'peer_review_text_too_short'], [{ like, wish: '' }, 'peer_review_text_required'], [{ like }, 'peer_review_text_required'], [{ like: '가'.repeat(1001), wish }, 'peer_review_text_too_long'], [{ like: 42, wish }, 'invalid_input']]) {
-    const rejected = await a(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', body }); assert.equal(rejected.status, 422, code); assert.equal(rejected.data.code, code);
+  for (const [body, code] of [[{ like: '짧아요', wish }, 'peer_review_text_too_short'], [{ like, wish: '' }, 'peer_review_text_required'], [{ like }, 'peer_review_text_required'], [{ like: '가'.repeat(1001), wish }, 'peer_review_text_too_long'], [{ like: 42, wish }, 'invalid_input'], [{ like: 'ㅋ'.repeat(25), wish }, 'peer_review_text_repetitive'], [{ like, wish, targetProjectId: '' }, 'invalid_input']]) {
+    const rejected = await a(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', body: { targetProjectId: teamB.id, ...body } }); assert.equal(rejected.status, 422, code); assert.equal(rejected.data.code, code);
   }
-  const written = await a(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', body: { like: `  ${like}  `, wish } });
+  const written = await a(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', body: { like: `  ${like}  `, wish, targetProjectId: teamB.id } });
   assert.equal(written.status, 200); assert.equal(written.data.review.like, like);
-  assert.equal((await a(`/peer-reviews/assignments/${otherAssignmentId}/review`, { method: 'PUT', body: { like, wish } })).status, 403);
-  assert.equal((await tc(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', body: { like, wish } })).status, 403);
-  const edited = await a(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', body: { like, wish: wish + ' 그리고 소리도 함께 넣어 보면 좋겠어요.' } });
+  assert.equal((await a(`/peer-reviews/assignments/${otherAssignmentId}/review`, { method: 'PUT', body: { like, wish, targetProjectId: teamA.id } })).status, 403);
+  assert.equal((await tc(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', body: { like, wish, targetProjectId: teamB.id } })).status, 403);
+  const edited = await a(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', body: { like, wish: wish + ' 그리고 소리도 함께 넣어 보면 좋겠어요.', targetProjectId: teamB.id } });
   assert.equal(edited.status, 200); assert.equal(edited.data.review.id, written.data.review.id);
   const receivedByB = await b(`/projects/${teamB.id}/peer-reviews`);
   assert.equal(receivedByB.data.received.length, 1); assert.equal(receivedByB.data.received[0].reviewerTeam, teamA.title); assert.equal(receivedByB.data.received[0].authorName, undefined);
@@ -213,7 +215,7 @@ test('HTTP: 교사가 라운드를 열면 학생 가가 학생 나 팀을 읽고
   assert.equal((await a(`/peer-reviews/rounds/${roundId}/close`, { method: 'POST', body: {} })).status, 403);
   const closed = await tc(`/peer-reviews/rounds/${roundId}/close`, { method: 'POST', body: {} });
   assert.equal(closed.status, 200); assert.equal(closed.data.round.state, 'closed');
-  const late = await a(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', body: { like, wish } });
+  const late = await a(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', body: { like, wish, targetProjectId: teamB.id } });
   assert.equal(late.status, 409); assert.equal(late.data.code, 'peer_review_round_closed');
   assert.equal((await a(`/projects/${teamA.id}/peer-reviews`)).data.assignments[0].roundState, 'closed');
   const evidence = await tc(`/projects/${teamA.id}/student-evidence/${studentA.id}`);
@@ -235,11 +237,68 @@ test('동료 리뷰 테이블은 기존 DB에 그대로 얹히고 재시작 후�
     const teamA = store.listProjects(studentA).find((project) => project.ownerId === studentA.id), teamB = store.listProjects(studentB).find((project) => project.ownerId === studentB.id);
     assert.equal(store.listProjects(teacher).length, 3, '시드 프로젝트는 다시 만들지 않는다');
     const round = store.createPeerReviewRound(teacher, { title: '재시작 전', reviewsPerTeam: 1, projectIds: [teamA.id, teamB.id] });
-    const review = store.writePeerReview(round.assignments.find((item) => item.reviewerProjectId === teamA.id).id, studentA, { like, wish });
+    const review = store.writePeerReview(round.assignments.find((item) => item.reviewerProjectId === teamA.id).id, studentA, { like, wish, targetProjectId: teamB.id });
     store.close();
     store = createStore({ filename, localMode: true });
     const detail = store.peerReviewRoundDetail(round.id, teacher);
     assert.equal(detail.title, '재시작 전'); assert.equal(detail.assignments.length, 2); assert.equal(detail.reviews[0].id, review.id);
     assert.equal(store.listProjects(teacher).length, 3);
+  } finally { store?.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('학생이 대상 코드를 열어 둔 사이 교사가 배정을 바꾸면 옛 팀 보고 쓴 리뷰를 409로 거부한다', async (t) => {
+  const { apiFor, store, demo, teamA, teamB } = await httpFixture(t);
+  const tc = apiFor(teacher.id), a = apiFor(studentA.id);
+  const created = await tc('/peer-reviews/rounds', { method: 'POST', body: { title: '교체 시험', reviewsPerTeam: 1, projectIds: [demo.id, teamA.id, teamB.id] } });
+  const assignment = created.data.round.assignments.find((item) => item.reviewerProjectId === teamA.id);
+  const opened = await a(`/peer-reviews/assignments/${assignment.id}/target`);
+  assert.equal(opened.data.target.id, assignment.targetProjectId, '응답에 대상 프로젝트 id가 들어 있다');
+  const other = [demo.id, teamB.id].find((id) => id !== assignment.targetProjectId);
+  assert.equal((await tc(`/peer-reviews/rounds/${created.data.round.id}/assignments/${assignment.id}`, { method: 'PATCH', body: { targetProjectId: other } })).status, 200);
+  const stale = await a(`/peer-reviews/assignments/${assignment.id}/review`, { method: 'PUT', body: { like, wish, targetProjectId: opened.data.target.id } });
+  assert.equal(stale.status, 409); assert.equal(stale.data.code, 'peer_review_target_changed'); assert.equal(stale.data.targetProjectId, other);
+  assert.equal(store.myPeerReview(assignment.id, studentA.id), null);
+  const fresh = await a(`/peer-reviews/assignments/${assignment.id}/review`, { method: 'PUT', body: { like, wish, targetProjectId: other } });
+  assert.equal(fresh.status, 200);
+});
+
+test('교사가 숨긴 리뷰는 상대 팀의 받은 리뷰와 학습 증거에서 빠지고 교사 화면에는 숨김으로 남으며 다시 보이게 할 수 있다', async (t) => {
+  const { apiFor, store, teamA, teamB } = await httpFixture(t);
+  const tc = apiFor(teacher.id), a = apiFor(studentA.id), b = apiFor(studentB.id);
+  const created = await tc('/peer-reviews/rounds', { method: 'POST', body: { title: '숨김 시험', reviewsPerTeam: 1, projectIds: [teamA.id, teamB.id] } });
+  const assignment = created.data.round.assignments.find((item) => item.reviewerProjectId === teamA.id);
+  const written = await a(`/peer-reviews/assignments/${assignment.id}/review`, { method: 'PUT', body: { like, wish, targetProjectId: teamB.id } });
+  const reviewId = written.data.review.id;
+  assert.equal((await a(`/peer-reviews/reviews/${reviewId}/hide`, { method: 'POST', body: {} })).status, 403, '학생은 숨길 수 없다');
+  assert.equal((await tc('/peer-reviews/reviews/missing/hide', { method: 'POST', body: {} })).status, 404);
+  const hidden = await tc(`/peer-reviews/reviews/${reviewId}/hide`, { method: 'POST', body: {} });
+  assert.equal(hidden.status, 200); assert.equal(hidden.data.round.reviews[0].hidden, true); assert.ok(hidden.data.round.reviews[0].hiddenAt);
+  assert.deepEqual((await b(`/projects/${teamB.id}/peer-reviews`)).data.received, [], '상대 팀의 받은 리뷰에서 빠진다');
+  const teacherReceived = (await tc(`/projects/${teamB.id}/peer-reviews`)).data.received;
+  assert.equal(teacherReceived.length, 1); assert.equal(teacherReceived[0].hidden, true);
+  assert.equal((await tc(`/projects/${teamA.id}/student-evidence/${studentA.id}`)).data.summary.localEvidenceCounts.peerReviews, 0, '학습 증거 집계에서 빠진다');
+  const mine = (await a(`/peer-reviews/assignments/${assignment.id}/target`)).data.myReview;
+  assert.equal(mine.hidden, true, '작성자는 자기 글이 숨겨졌음을 안다');
+  const otherTeacher = store.ensureUser({ id: 'teacher-outside', name: '다른 학급 교사', role: 'teacher' });
+  assert.throws(() => store.hidePeerReview(reviewId, otherTeacher, false), (error) => error.code === 'access_denied');
+  const shown = await tc(`/peer-reviews/reviews/${reviewId}/unhide`, { method: 'POST', body: {} });
+  assert.equal(shown.status, 200); assert.equal(shown.data.round.reviews[0].hidden, false);
+  assert.equal((await b(`/projects/${teamB.id}/peer-reviews`)).data.received.length, 1);
+  assert.equal((await tc(`/projects/${teamA.id}/student-evidence/${studentA.id}`)).data.summary.localEvidenceCounts.peerReviews, 1);
+});
+
+test('숨김 열이 없는 이전 동료 리뷰 테이블에도 열을 더해 그대로 얹힌다', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'vpylab-peer-hidden-')), filename = join(directory, 'state.sqlite');
+  let store;
+  try {
+    store = createStore({ filename, localMode: true });
+    store.db.exec('DROP TABLE peer_reviews; CREATE TABLE peer_reviews(id TEXT PRIMARY KEY,assignment_id TEXT NOT NULL REFERENCES peer_review_assignments(id),author_id TEXT NOT NULL REFERENCES users(id),like_text TEXT NOT NULL,wish_text TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,UNIQUE(assignment_id,author_id))');
+    store.close();
+    store = createStore({ filename, localMode: true });
+    const teamA = store.listProjects(studentA).find((project) => project.ownerId === studentA.id), teamB = store.listProjects(studentB).find((project) => project.ownerId === studentB.id);
+    const round = store.createPeerReviewRound(teacher, { title: '이전 스키마', reviewsPerTeam: 1, projectIds: [teamA.id, teamB.id] });
+    const review = store.writePeerReview(round.assignments.find((item) => item.reviewerProjectId === teamA.id).id, studentA, { like, wish, targetProjectId: teamB.id });
+    assert.equal(review.hidden, false);
+    assert.equal(store.hidePeerReview(review.id, teacher, true).reviews[0].hidden, true);
   } finally { store?.close(); rmSync(directory, { recursive: true, force: true }); }
 });

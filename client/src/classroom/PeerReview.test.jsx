@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import PeerReviewTab, { PeerReviewAdmin } from './PeerReview';
 import { validatePeerReview } from './peer-review-rules';
 import { request } from './api';
@@ -93,16 +93,39 @@ describe('교사 관찰실의 동료 리뷰 구역', () => {
   });
 });
 
-describe('학생 작업 공간의 동료 리뷰 탭', () => {
-  let data; let myReview;
-  beforeEach(() => {
-    myReview = null; request.mockReset();
-    data = { projectId: 'team-a', canWrite: true, assignments: [{ id: 'as-1', roundId: 'round-1', roundTitle: '1차 동료 리뷰', roundState: 'open', targetProjectId: 'team-b', targetTitle: '학생 나 팀', teamReviewCount: 0, myReview: null }], received: [{ id: 'rv-9', roundTitle: '1차 동료 리뷰', roundState: 'open', reviewerTeam: '예시 프로젝트', like: '공이 튀는 움직임이 자연스러워서 보기 좋았어요.', wish: '배경에 별을 더 넣으면 밤하늘 느낌이 날 것 같아요.', updatedAt: '2026-10-30T01:00:00.000Z' }] };
+describe('교사가 부적절한 리뷰를 숨기고 다시 보이게 한다', () => {
+  afterEach(() => cleanup());
+  it('숨기기 버튼이 교사 전용 경로를 부르고 숨김 표시로 바뀐다', async () => {
+    const round = roundFixture(); round.assignments[0].reviewCount = 1;
+    round.reviews = [{ id: 'rv-1', assignmentId: 'as-1', reviewerProjectId: 'team-a', targetProjectId: 'team-b', authorId: 'student-a', authorName: '학생 가', like, wish, updatedAt: '2026-10-30T01:30:00.000Z', hidden: false, hiddenAt: null }];
+    request.mockReset();
     request.mockImplementation(async (path, options) => {
-      if (path === '/projects/team-a/peer-reviews') return { ...data, assignments: data.assignments.map((item) => ({ ...item, myReview })) };
-      if (path === '/peer-reviews/assignments/as-1/target') return { assignment: data.assignments[0], target: { id: 'team-b', title: '학생 나 팀', problem: '행성이 별 주위를 돕니다.', successCriteria: '카메라가 끊기지 않습니다.', code: 'planet = sphere()', version: 3, updatedAt: '2026-10-30T00:30:00.000Z' }, myReview };
+      if (path === '/peer-reviews/rounds') return { rounds: [round] };
+      if (path === '/peer-reviews/reviews/rv-1/hide' && options.method === 'POST') return { round: { ...round, reviews: [{ ...round.reviews[0], hidden: true, hiddenAt: '2026-10-30T02:00:00.000Z' }] } };
+      throw new Error(`예상하지 못한 요청: ${path}`);
+    });
+    render(<PeerReviewAdmin user={teacher} projects={projects} />);
+    fireEvent.click(await screen.findByRole('button', { name: '숨기기' }));
+    expect(await screen.findByRole('button', { name: '보이기' })).toBeInTheDocument();
+    expect(screen.getByText('숨김')).toBeInTheDocument();
+    expect(request.mock.calls.some(([path, options]) => path === '/peer-reviews/reviews/rv-1/hide' && options?.method === 'POST' && options.userId === teacher.id)).toBe(true);
+    expect(screen.queryByRole('button', { name: /승인|거절|별점|점수/ })).toBeNull();
+  });
+});
+
+describe('학생 작업 공간의 동료 리뷰 탭', () => {
+  let data; let myReview; let delayedFirst;
+  beforeEach(() => {
+    myReview = null; delayedFirst = null; request.mockReset();
+    data = { projectId: 'team-a', canWrite: true, assignments: [{ id: 'as-1', roundId: 'round-1', roundTitle: '1차 동료 리뷰', roundState: 'open', targetProjectId: 'team-b', targetTitle: '학생 나 팀', teamReviewCount: 0, myReview: null }, { id: 'as-2', roundId: 'round-1', roundTitle: '1차 동료 리뷰', roundState: 'open', targetProjectId: 'demo', targetTitle: '예시 프로젝트', teamReviewCount: 0, myReview: null }], received: [{ id: 'rv-9', roundTitle: '1차 동료 리뷰', roundState: 'open', reviewerTeam: '예시 프로젝트', like: '공이 튀는 움직임이 자연스러워서 보기 좋았어요.', wish: '배경에 별을 더 넣으면 밤하늘 느낌이 날 것 같아요.', updatedAt: '2026-10-30T01:00:00.000Z' }] };
+    request.mockImplementation(async (path, options) => {
+      if (path === '/projects/team-a/peer-reviews') return { ...data, assignments: data.assignments.map((item) => item.id === 'as-1' ? { ...item, myReview } : item) };
+      if (path === '/peer-reviews/assignments/as-1/target') { const result = { assignment: data.assignments[0], target: { id: 'team-b', title: '학생 나 팀', problem: '행성이 별 주위를 돕니다.', successCriteria: '카메라가 끊기지 않습니다.', code: 'planet = sphere()', version: 3, updatedAt: '2026-10-30T00:30:00.000Z' }, myReview }; return delayedFirst ? delayedFirst.promise.then(() => result) : result; }
+      if (path === '/peer-reviews/assignments/as-2/target') return { assignment: data.assignments[1], target: { id: 'demo', title: '예시 프로젝트', problem: '물체의 움직임을 관찰합니다.', successCriteria: '조건을 바꿔 비교합니다.', code: 'ball = sphere(color=color.blue)', version: 0, updatedAt: '2026-10-30T00:10:00.000Z' }, myReview: null };
+      if (path === '/peer-reviews/assignments/as-2/review' && options.method === 'PUT') return { review: { id: 'rv-2', ...options.body, updatedAt: '2026-10-30T02:00:00.000Z' } };
       if (path === '/peer-reviews/assignments/as-1/review' && options.method === 'PUT') {
         if (options.body.wish.includes('서버 거부')) throw Object.assign(new Error('닫힌 라운드에는 리뷰를 쓸 수 없습니다.'), { code: 'peer_review_round_closed', status: 409 });
+        if (options.body.wish.includes('대상 교체')) { data.assignments[0].targetProjectId = 'demo'; data.assignments[0].targetTitle = '예시 프로젝트'; throw Object.assign(new Error('선생님이 검토 대상 팀을 바꿨습니다. 새 대상 팀의 저장본을 다시 읽고 리뷰를 보내주세요.'), { code: 'peer_review_target_changed', status: 409, targetProjectId: 'demo' }); }
         myReview = { id: 'rv-1', ...options.body, updatedAt: '2026-10-30T02:00:00.000Z' }; return { review: myReview };
       }
       throw new Error(`예상하지 못한 요청: ${path}`);
@@ -131,13 +154,14 @@ describe('학생 작업 공간의 동료 리뷰 탭', () => {
     fireEvent.click(within(form).getByRole('button', { name: '리뷰 보내기 →' }));
     expect(await within(form).findByRole('status')).toHaveTextContent('리뷰를 보냈습니다.');
     expect(puts('PUT')).toHaveLength(1);
-    expect(puts('PUT')[0]).toMatchObject(['/peer-reviews/assignments/as-1/review', { method: 'PUT', userId: student.id, body: { like, wish } }]);
+    expect(puts('PUT')[0]).toMatchObject(['/peer-reviews/assignments/as-1/review', { method: 'PUT', userId: student.id, body: { like, wish, targetProjectId: 'team-b' } }]);
     expect(within(form).getByRole('button', { name: '리뷰 고쳐서 저장' })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('작성함')).toBeInTheDocument());
-    const received = screen.getByRole('region', { name: '우리 팀이 받은 리뷰' });
+    const received = screen.getByRole('group', { name: '우리 팀이 받은 리뷰' });
     expect(within(received).getByText('예시 프로젝트 팀이 남긴 리뷰')).toBeInTheDocument();
     expect(within(received).getByText(/배경에 별을 더 넣으면/)).toBeInTheDocument();
     expect(within(received).queryByText(/학생 나|학생 가/)).toBeNull();
+    expect(screen.getByText(/선생님에게는 쓴 사람의 이름이 보입니다/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /승인|거절|별점|점수/ })).toBeNull();
     expect(document.querySelector('input[type="range"], input[type="radio"]')).toBeNull();
   });
@@ -160,5 +184,36 @@ describe('학생 작업 공간의 동료 리뷰 탭', () => {
     expect(within(closedForm).getByLabelText('I like — 좋았던 점')).toHaveValue(like);
     expect(within(closedForm).getByLabelText('I like — 좋았던 점')).toBeDisabled();
     expect(within(closedForm).queryByRole('button', { name: /리뷰/ })).toBeNull();
+  });
+
+  it('배정 A를 열고 바로 B를 열면 늦게 온 A의 응답을 버리고 B의 코드와 폼만 보여준다', async () => {
+    delayedFirst = (() => { let resolve; const promise = new Promise((accept) => { resolve = accept; }); return { promise, resolve }; })();
+    render(<PeerReviewTab projectId="team-a" user={student} />);
+    fireEvent.click(await screen.findByRole('button', { name: /학생 나 팀/ }));
+    fireEvent.click(screen.getByRole('button', { name: /예시 프로젝트/ }));
+    expect(await screen.findByRole('textbox', { name: '대상 팀 코드' })).toHaveValue('ball = sphere(color=color.blue)');
+    await act(async () => { delayedFirst.resolve(); });
+    expect(screen.getByRole('textbox', { name: '대상 팀 코드' })).toHaveValue('ball = sphere(color=color.blue)');
+    expect(screen.getByRole('heading', { name: '예시 프로젝트' })).toBeInTheDocument();
+    const form = screen.getByRole('form', { name: '동료 리뷰 작성' });
+    fireEvent.change(within(form).getByLabelText('I like — 좋았던 점'), { target: { value: like } });
+    fireEvent.change(within(form).getByLabelText('I wish — 이렇게 되면 더 좋겠어요'), { target: { value: wish } });
+    fireEvent.click(within(form).getByRole('button', { name: '리뷰 보내기 →' }));
+    await within(form).findByRole('status');
+    expect(puts('PUT')[0][0]).toBe('/peer-reviews/assignments/as-2/review');
+    expect(puts('PUT')[0][1].body.targetProjectId).toBe('demo');
+  });
+
+  it('교사가 검토 대상을 바꿨으면 409를 알리고 입력을 지키며 새 대상의 저장본을 다시 연다', async () => {
+    render(<PeerReviewTab projectId="team-a" user={student} />);
+    fireEvent.click(await screen.findByRole('button', { name: /학생 나 팀/ }));
+    const form = await screen.findByRole('form', { name: '동료 리뷰 작성' });
+    fireEvent.change(within(form).getByLabelText('I like — 좋았던 점'), { target: { value: like } });
+    fireEvent.change(within(form).getByLabelText('I wish — 이렇게 되면 더 좋겠어요'), { target: { value: `${wish} 대상 교체` } });
+    fireEvent.click(within(form).getByRole('button', { name: '리뷰 보내기 →' }));
+    expect(await within(form).findByRole('alert')).toHaveTextContent('선생님이 검토 대상 팀을 바꿨습니다.');
+    expect(within(form).getByLabelText('I like — 좋았던 점')).toHaveValue(like);
+    expect(puts('PUT')).toHaveLength(1);
+    expect(request.mock.calls.filter(([path]) => path === '/peer-reviews/assignments/as-1/target')).toHaveLength(2);
   });
 });

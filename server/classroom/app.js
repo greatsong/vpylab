@@ -159,7 +159,9 @@ export function createClassroomApp({store:providedStore,filename,localMode=false
   api.post('/peer-reviews/rounds/:roundId/close',requireActor,mutate(200,req=>({round:store.closePeerReviewRound(req.params.roundId,req.actor)})));
   api.get('/projects/:id/peer-reviews',requireActor,(req,res)=>res.json(store.projectPeerReviews(req.params.id,req.actor)));
   api.get('/peer-reviews/assignments/:assignmentId/target',requireActor,(req,res)=>res.json(store.peerReviewTarget(req.params.assignmentId,req.actor)));
-  api.put('/peer-reviews/assignments/:assignmentId/review',requireActor,mutate(200,req=>({review:store.writePeerReview(req.params.assignmentId,req.actor,{like:peerReviewText(req.body.like,'I like'),wish:peerReviewText(req.body.wish,'I wish')})})));
+  api.put('/peer-reviews/assignments/:assignmentId/review',requireActor,mutate(200,req=>({review:store.writePeerReview(req.params.assignmentId,req.actor,{like:peerReviewText(req.body.like,'I like'),wish:peerReviewText(req.body.wish,'I wish'),targetProjectId:field(req.body.targetProjectId,'검토 대상 프로젝트',{required:true,max:200})})})));
+  api.post('/peer-reviews/reviews/:reviewId/hide',requireActor,mutate(200,req=>({round:store.hidePeerReview(req.params.reviewId,req.actor,true)})));
+  api.post('/peer-reviews/reviews/:reviewId/unhide',requireActor,mutate(200,req=>({round:store.hidePeerReview(req.params.reviewId,req.actor,false)})));
   api.get('/teacher',requireActor,(req,res)=>res.json(store.teacherOverview(req.actor)));
   app.use('/api/v2',api);
   app.use('/api/v2',createGitHubRouter({store,requireActor,localMode,service:githubService}));

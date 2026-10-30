@@ -8,18 +8,22 @@ import { fields, PEER_REVIEW_MAX, PEER_REVIEW_MIN, validatePeerReview } from './
 // 점수·별점·승인/거절 버튼은 두지 않습니다.
 const dateText = (value) => value ? new Date(value).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 
+// 좁은 화면에서는 검토 화면이 먼저 보이도록 받은 리뷰를 접어 둡니다.
+const narrowScreen = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 900px)').matches;
+
 function ReceivedReviews({ received, isTeacher }) {
-  return <section className="cr-peer-received" aria-label="우리 팀이 받은 리뷰">
-    <h3>받은 리뷰 <span className="cr-small-badge">{received.length}</span></h3>
+  const [open] = useState(() => !narrowScreen());
+  return <details className="cr-peer-received" open={open} aria-label="우리 팀이 받은 리뷰">
+    <summary><h3>받은 리뷰 <span className="cr-small-badge">{received.length}</span></h3></summary>
     <p className="cr-hint">다른 팀이 우리 팀의 저장본을 읽고 남긴 I like / I wish입니다. 작성 팀의 이름으로만 표시합니다.</p>
     {received.map((review) => <article className="cr-feedback" key={review.id}>
-      <div className="cr-section-heading"><strong>{review.reviewerTeam} 팀이 남긴 리뷰{isTeacher && review.authorName ? ` · ${review.authorName}` : ''}</strong><span className="cr-small-badge">{review.roundTitle}</span></div>
+      <div className="cr-section-heading"><strong>{review.reviewerTeam} 팀이 남긴 리뷰{isTeacher && review.authorName ? ` · ${review.authorName}` : ''}</strong><span className="cr-small-badge">{review.hidden ? '숨김' : review.roundTitle}</span></div>
       <p><b>I like</b> {review.like}</p>
       <p><b>I wish</b> {review.wish}</p>
       <small>{dateText(review.updatedAt)}</small>
     </article>)}
     {!received.length && <p className="cr-empty small">아직 받은 리뷰가 없습니다. 다른 팀의 리뷰가 제출되면 이곳에 나타납니다.</p>}
-  </section>;
+  </details>;
 }
 
 /** 학생 작업 공간의 "동료 리뷰" 탭. 배정된 팀의 저장본을 읽기 전용으로 보고 실행해 본 뒤 두 칸을 씁니다. */
@@ -48,29 +52,44 @@ export default function PeerReviewTab({ projectId, user }) {
     return () => { live.current = false; abort.abort(); };
   }, [load]);
 
-  const open = async (assignment) => {
-    setSelectedId(assignment.id); setTarget(null); setRunning(false); setFormError(''); setNotice(''); setError('');
+  // 배정 A를 열고 바로 B를 열면 응답이 역순으로 올 수 있습니다. 마지막으로 연 배정의 응답만 화면에 반영합니다.
+  const openSequence = useRef(0);
+  const selectedRef = useRef(null);
+  const fetchTarget = async (assignmentId, { keepForm = false } = {}) => {
+    const sequence = ++openSequence.current;
     try {
-      const result = await request(`/peer-reviews/assignments/${assignment.id}/target`, { userId: user.id });
-      if (!live.current) return;
+      const result = await request(`/peer-reviews/assignments/${assignmentId}/target`, { userId: user.id });
+      if (!live.current || sequence !== openSequence.current || result.assignment?.id !== assignmentId) return;
       setTarget(result);
-      setForm({ like: result.myReview?.like || '', wish: result.myReview?.wish || '' });
-    } catch (failure) { if (live.current) setError(failure.message); }
+      if (!keepForm) setForm({ like: result.myReview?.like || '', wish: result.myReview?.wish || '' });
+    } catch (failure) { if (live.current && sequence === openSequence.current) setError(failure.message); }
+  };
+  const open = (assignment) => {
+    if (busy) return;
+    selectedRef.current = assignment.id;
+    setSelectedId(assignment.id); setTarget(null); setRunning(false); setFormError(''); setNotice(''); setError('');
+    fetchTarget(assignment.id);
   };
 
   const submit = async (event) => {
     event.preventDefault();
     const problem = validatePeerReview(form);
     if (problem) { setFormError(problem); return; }
+    // 제출 중 다른 배정으로 바꾸어도 결과는 제출을 시작한 배정에만 반영합니다.
+    const assignmentId = selectedId, targetProjectId = target?.target?.id, wasEdit = Boolean(target?.myReview);
     setBusy(true); setFormError(''); setNotice('');
     try {
-      const result = await request(`/peer-reviews/assignments/${selectedId}/review`, { method: 'PUT', userId: user.id, body: { like: form.like.trim(), wish: form.wish.trim() } });
+      const result = await request(`/peer-reviews/assignments/${assignmentId}/review`, { method: 'PUT', userId: user.id, body: { like: form.like.trim(), wish: form.wish.trim(), targetProjectId } });
       if (!live.current) return;
-      setTarget((previous) => previous ? { ...previous, myReview: result.review } : previous);
-      setNotice(target?.myReview ? '리뷰를 고쳐서 저장했습니다.' : '리뷰를 보냈습니다. 제출 뒤에도 자기 리뷰는 고칠 수 있습니다.');
+      setTarget((previous) => previous?.assignment?.id === assignmentId ? { ...previous, myReview: result.review } : previous);
+      if (selectedRef.current === assignmentId) setNotice(wasEdit ? '리뷰를 고쳐서 저장했습니다.' : '리뷰를 보냈습니다. 제출 뒤에도 자기 리뷰는 고칠 수 있습니다.');
       try { await load(); } catch { /* 목록 갱신은 다음 열람 때 다시 시도합니다. */ }
-    } catch (failure) { if (live.current) setFormError(failure.message); }
-    finally { if (live.current) setBusy(false); }
+    } catch (failure) {
+      if (!live.current) return;
+      setFormError(failure.message);
+      // 교사가 검토 대상을 바꾼 경우 새 대상 팀의 저장본을 다시 열되, 적어 둔 글은 지우지 않습니다.
+      if (failure.code === 'peer_review_target_changed') { try { await load(); } catch { /* 아래에서 대상만 다시 엽니다. */ } fetchTarget(assignmentId, { keepForm: true }); }
+    } finally { if (live.current) setBusy(false); }
   };
 
   const assignment = data?.assignments.find((item) => item.id === selectedId) || null;
@@ -82,7 +101,7 @@ export default function PeerReviewTab({ projectId, user }) {
       <p className="cr-hint">선생님이 배정한 팀의 저장본을 읽고 실행해 본 뒤, 좋았던 점과 바라는 점을 남깁니다. 점수나 등급은 없습니다.</p>
       {error && <p className="cr-banner error" role="alert">{error}</p>}
       {!data && !error && <p className="cr-loading">배정을 불러오는 중입니다…</p>}
-      {data?.assignments.map((item) => <button type="button" className={`cr-proposal-item ${selectedId === item.id ? 'active' : ''}`} key={item.id} onClick={() => open(item)}>
+      {data?.assignments.map((item) => <button type="button" className={`cr-proposal-item ${selectedId === item.id ? 'active' : ''}`} key={item.id} disabled={busy} onClick={() => open(item)}>
         <span className={`cr-small-badge ${item.myReview ? 'mint' : ''}`}>{item.roundState === 'closed' ? '마감' : item.myReview ? '작성함' : '작성 전'}</span>
         <strong>{item.targetTitle}</strong>
         <small>{item.roundTitle} · 우리 팀 리뷰 {item.teamReviewCount}건</small>
@@ -104,6 +123,8 @@ export default function PeerReviewTab({ projectId, user }) {
             <h3>{target.myReview ? '내가 남긴 리뷰 고치기' : '리뷰 남기기'}</h3>
             {closed && <p className="cr-banner warning">이 라운드는 마감되어 더는 쓰거나 고칠 수 없습니다. 남긴 리뷰는 그대로 보존됩니다.</p>}
             {data && !data.canWrite && !closed && <p className="cr-banner warning">{user.role === 'teacher' ? '동료 리뷰는 검토 팀의 학생이 작성합니다. 교사는 읽기만 합니다.' : '관찰자는 리뷰를 읽을 수만 있습니다.'}</p>}
+            {canWrite && <p className="cr-hint cr-peer-notice">상대 팀에는 우리 팀 이름으로만 보이지만, 선생님에게는 쓴 사람의 이름이 보입니다. 팀원 각자 한 건씩 쓸 수 있고, 보내면 바로 상대 팀에 보입니다.</p>}
+            {target.myReview?.hidden && <p className="cr-banner warning">선생님이 이 리뷰를 상대 팀에게 보이지 않도록 숨겼습니다. 내용을 고쳐 다시 저장하면 선생님이 확인합니다.</p>}
             <div className="cr-peer-fields">{fields.map(({ key, label, guide, example }) => {
               const id = `peer-${key}-${assignment.id}`, length = form[key].trim().length;
               return <div className="cr-field cr-peer-field" key={key}>
@@ -194,19 +215,19 @@ export function PeerReviewAdmin({ user, projects }) {
       <div className="cr-section-heading"><div><h3>{round.title}</h3><p className="cr-hint">{round.state === 'closed' ? `마감 ${dateText(round.closedAt)}` : `진행 중 · ${dateText(round.createdAt)}에 열림`} · 학생 {studentTotal}명</p></div>{round.state === 'open' && <button type="button" className="cr-button" disabled={busy} onClick={() => act(() => request(`/peer-reviews/rounds/${round.id}/close`, { method: 'POST', userId: user.id, body: {} }), '라운드를 닫았습니다. 학생은 더는 쓸 수 없고 받은 리뷰는 계속 볼 수 있습니다.')}>라운드 닫기</button>}</div>
       <h4>배정 표</h4>
       <p className="cr-hint">검토 팀 → 대상 팀. 드롭다운으로 대상 팀을 바꿀 수 있습니다. 리뷰가 이미 작성된 배정과 마감된 라운드는 바꿀 수 없습니다.</p>
-      <table className="cr-peer-table"><thead><tr><th>검토 팀</th><th>대상 팀</th><th>작성된 리뷰</th></tr></thead><tbody>
+      <div className="cr-peer-table-wrap"><table className="cr-peer-table"><thead><tr><th>검토 팀</th><th>대상 팀</th><th>작성된 리뷰</th></tr></thead><tbody>
         {round.assignments.map((assignment) => <tr key={assignment.id}><td>{assignment.reviewerTitle}</td><td>
           <select aria-label={`${assignment.reviewerTitle}의 검토 대상`} value={assignment.targetProjectId} disabled={busy || round.state !== 'open' || assignment.reviewCount > 0} onChange={(event) => act(() => request(`/peer-reviews/rounds/${round.id}/assignments/${assignment.id}`, { method: 'PATCH', userId: user.id, body: { targetProjectId: event.target.value } }), '검토 대상을 바꿨습니다.')}>
             {round.projects.filter((project) => project.id !== assignment.reviewerProjectId).map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
           </select></td><td>{assignment.reviewCount}건</td></tr>)}
-      </tbody></table>
+      </tbody></table></div>
       <h4>제출 현황</h4>
-      <table className="cr-peer-table"><thead><tr><th>팀</th><th>학생</th><th>검토할 팀</th><th>쓴 리뷰</th><th>받은 리뷰</th></tr></thead><tbody>
+      <div className="cr-peer-table-wrap"><table className="cr-peer-table"><thead><tr><th>팀</th><th>학생</th><th>검토할 팀</th><th>쓴 리뷰</th><th>받은 리뷰</th></tr></thead><tbody>
         {round.projects.map((project) => <tr key={project.id}><td>{project.title}</td><td>{project.studentCount}명</td><td>{project.assigned}팀</td><td>{project.written}건</td><td>{project.received}건</td></tr>)}
-      </tbody></table>
+      </tbody></table></div>
       <h4>작성된 리뷰 <span className="cr-small-badge">{round.reviews.length}</span></h4>
-      <p className="cr-hint">학생에게는 작성 팀의 이름만 보이고, 개인 이름은 교사만 봅니다.</p>
-      {round.reviews.map((review) => { const assignment = round.assignments.find((item) => item.id === review.assignmentId); return <article className="cr-feedback" key={review.id}><div className="cr-section-heading"><strong>{assignment?.reviewerTitle || '검토 팀'} → {assignment?.targetTitle || '대상 팀'}</strong><span className="cr-small-badge">{review.authorName}</span></div><p><b>I like</b> {review.like}</p><p><b>I wish</b> {review.wish}</p><small>{dateText(review.updatedAt)}</small></article>; })}
+      <p className="cr-hint">학생에게는 작성 팀의 이름만 보이고, 개인 이름은 교사만 봅니다. 부적절한 리뷰는 ‘숨기기’로 상대 팀에게 보이지 않게 할 수 있습니다.</p>
+      {round.reviews.map((review) => { const assignment = round.assignments.find((item) => item.id === review.assignmentId); return <article className={`cr-feedback ${review.hidden ? 'hidden-review' : ''}`} key={review.id}><div className="cr-section-heading"><strong>{assignment?.reviewerTitle || '검토 팀'} → {assignment?.targetTitle || '대상 팀'}</strong><span className="cr-inline-actions"><span className="cr-small-badge">{review.authorName}</span>{review.hidden && <span className="cr-small-badge">숨김</span>}<button type="button" className="cr-button small" disabled={busy} onClick={() => act(() => request(`/peer-reviews/reviews/${review.id}/${review.hidden ? 'unhide' : 'hide'}`, { method: 'POST', userId: user.id, body: {} }), review.hidden ? '리뷰를 다시 상대 팀에게 보이게 했습니다.' : '리뷰를 숨겼습니다. 상대 팀의 받은 리뷰와 학습 근거 집계에서 빠집니다.')}>{review.hidden ? '보이기' : '숨기기'}</button></span></div><p><b>I like</b> {review.like}</p><p><b>I wish</b> {review.wish}</p><small>{dateText(review.updatedAt)}{review.hidden && ` · 숨김 ${dateText(review.hiddenAt)}`}</small></article>; })}
       {!round.reviews.length && <p className="cr-empty small">아직 작성된 리뷰가 없습니다.</p>}
     </div>}
   </section>;

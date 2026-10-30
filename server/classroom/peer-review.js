@@ -4,6 +4,7 @@
 export const PEER_REVIEW_MIN_LENGTH = 20;
 export const PEER_REVIEW_MAX_LENGTH = 1000;
 export const PEER_REVIEW_MAX_PER_TEAM = 10;
+export const PEER_REVIEW_MIN_DISTINCT = 5;
 
 /**
  * 순환 배정: i번 팀이 i+1 … i+N번 팀을 검토합니다. 팀 수가 N+1보다 적으면 가능한 만큼만 배정하며,
@@ -27,5 +28,7 @@ export function normalizePeerReviewText(value, label) {
   if (!text) return { error: 'peer_review_text_required', message: `${label} 칸을 적어주세요.` };
   if (text.length < PEER_REVIEW_MIN_LENGTH) return { error: 'peer_review_text_too_short', message: `${label} 칸은 ${PEER_REVIEW_MIN_LENGTH}자 이상 적어주세요. 어떤 장면에서 그렇게 느꼈는지 함께 적으면 좋습니다.` };
   if (text.length > PEER_REVIEW_MAX_LENGTH) return { error: 'peer_review_text_too_long', message: `${label} 칸은 ${PEER_REVIEW_MAX_LENGTH}자까지 적을 수 있습니다.` };
+  // 같은 글자 반복(ㅋㅋㅋㅋ…)이나 공백·기호만으로 길이를 채운 입력은 받지 않습니다. 서로 다른 글자·숫자가 5자 미만이면 거부합니다.
+  if (new Set([...text].filter((char) => /[\p{L}\p{N}]/u.test(char))).size < PEER_REVIEW_MIN_DISTINCT) return { error: 'peer_review_text_repetitive', message: `${label} 칸에는 같은 글자를 반복하지 말고 어떤 장면에서 그렇게 느꼈는지 문장으로 적어주세요.` };
   return { text };
 }
