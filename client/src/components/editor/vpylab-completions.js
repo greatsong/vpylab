@@ -8,6 +8,16 @@
  * - registerVpylabCompletions(monaco): 위 둘을 Monaco 완성 공급자로 한 번만 등록한다
  */
 import data from '../../engine/completion-data.js';
+import {
+  STARTER_SNIPPETS,
+  KOREAN_SEARCH_ALIASES,
+  PYTHON_BUILTINS,
+  MATH_NAMES,
+  RANDOM_MEMBERS,
+  IMPORT_RANDOM_HINT,
+  LIST_METHODS,
+  PYTHON_KEYWORDS,
+} from './starter-snippets.js';
 
 const IDENT_RE = /[\p{L}_][\p{L}\p{N}_]*/u;
 const DOTTED_TAIL_RE = /([\p{L}_][\p{L}\p{N}_]*(?:\s*\.\s*[\p{L}_][\p{L}\p{N}_]*)*)\s*$/u;
@@ -21,7 +31,7 @@ const INSTRUMENT_FUNCTIONS = new Set(['악기', 'play_instrument']);
 const SFX_FUNCTIONS = new Set(['효과음', 'play_sfx', 'sfx']);
 const BGM_FUNCTIONS = new Set(['배경음악', 'start_bgm', 'bgm']);
 const VECTOR_ATTRS = new Set(['pos', 'axis', 'size', 'velocity', 'center', 'up', 'forward', 'color', 'background', 'ambient']);
-const NO_MEMBER_SUGGESTION = new Set(['random', 'math', 'np', 'numpy', 'self', 'json', 'time', 'asyncio', 'js']);
+const NO_MEMBER_SUGGESTION = new Set(['math', 'np', 'numpy', 'self', 'json', 'time', 'asyncio', 'js']);
 
 export const TRIGGER_CHARACTERS = ['[', "'", '"', '(', '.'];
 
@@ -90,8 +100,9 @@ export function analyzeContext(textBefore) {
   }
 
   const bracket = stack.length ? { ...stack[stack.length - 1] } : null;
+  const importsRandom = /^\s*(?:import random\b|from random import)/m.test(textBefore);
   if (string) {
-    return { string: { quote: string.quote, content: textBefore.slice(string.start) }, bracket, member: null, word: '' };
+    return { string: { quote: string.quote, content: textBefore.slice(string.start) }, bracket, member: null, word: '', importsRandom };
   }
   const word = WORD_TAIL_RE.exec(textBefore)[0];
   const beforeWord = textBefore.slice(0, textBefore.length - word.length);
@@ -100,7 +111,7 @@ export function analyzeContext(textBefore) {
     const m = DOTTED_TAIL_RE.exec(beforeWord.slice(Math.max(0, beforeWord.length - 200), beforeWord.length - 1));
     member = m ? m[1].replace(/\s+/g, '') : '';
   }
-  return { string: null, bracket, member, word };
+  return { string: null, bracket, member, word, importsRandom };
 }
 
 // ───────────────────────── 항목 만들기 ─────────────────────────
@@ -298,18 +309,91 @@ function kwargItems(callee, ctx) {
   }));
 }
 
+/** 이름과 한글 검색어를 함께 filterText로. "공" → sphere */
+function withAliases(name, aliases) {
+  return aliases?.length ? `${name} ${aliases.join(' ')}` : name;
+}
+
+/** `name(${1:x})` 꼴 함수 항목 */
+function callItem(entry, ctx, { kind = 'function', detailPrefix = '', sort }) {
+  const hasArgs = entry.args !== null && entry.args !== undefined;
+  const argLabel = hasArgs ? entry.args.replace(/\$\{\d+:([^}]*)\}/g, '$1') : '';
+  return {
+    label: hasArgs ? `${entry.name}(${argLabel})` : entry.name,
+    insertText: hasArgs ? `${entry.name}(${entry.args})$0` : entry.name,
+    isSnippet: hasArgs,
+    filterText: withAliases(entry.name, entry.aliases),
+    replaceLength: ctx.word.length,
+    kind: hasArgs ? kind : 'variable',
+    detail: `${detailPrefix}${entry.name}${hasArgs ? `(${argLabel})` : ''}`,
+    documentation: entry.documentation,
+    sortText: sort,
+  };
+}
+
+/** API 함수·객체 + 파이썬 내장 함수·math 이름·키워드 (괄호 안에서도 쓰는 한 줄짜리 항목) */
 function apiItems(ctx) {
-  return data.api.map((it, i) => ({
+  const items = data.api.map((it, i) => ({
     label: it.name,
     insertText: it.insertText,
     isSnippet: it.isSnippet,
-    filterText: it.name,
+    filterText: withAliases(it.name, KOREAN_SEARCH_ALIASES[it.name]),
     replaceLength: ctx.word.length,
     kind: it.kind,
     detail: it.detail,
     documentation: it.documentation,
-    sortText: `${it.math ? 3 : it.documented ? 1 : 2}${pad(i)}`,
+    sortText: `${it.documented ? 1 : 3}${pad(i)}`,
   }));
+  PYTHON_BUILTINS.forEach((b, i) => items.push(callItem(b, ctx, { detailPrefix: '파이썬 내장 ', sort: `2${pad(i)}` })));
+  MATH_NAMES.forEach((m, i) => items.push(callItem(m, ctx, { detailPrefix: 'math ', sort: `2${pad(100 + i)}` })));
+  PYTHON_KEYWORDS.forEach((k, i) => {
+    items.push({
+      label: k.name,
+      insertText: k.name,
+      filterText: withAliases(k.name, k.aliases),
+      replaceLength: ctx.word.length,
+      kind: 'keyword',
+      detail: `키워드 ${k.name}`,
+      documentation: k.documentation,
+      sortText: `4${pad(i)}`,
+    });
+  });
+  return items;
+}
+
+/** 구문·패턴 스니펫 (여러 줄이 있어 괄호 밖 일반 자리에서만) */
+function snippetItems(ctx) {
+  return STARTER_SNIPPETS.map((sn, i) => ({
+    label: sn.label,
+    labelDescription: sn.korean,
+    insertText: sn.insertText,
+    isSnippet: true,
+    // Monaco는 filterText에서 일찍 맞는 항목을 앞에 두므로, 한글 검색어를 앞에 둬 "반복"에 rate보다 for/while이 먼저 오게 한다
+    filterText: [...(sn.aliases || []), sn.label].join(' '),
+    replaceLength: ctx.word.length,
+    kind: 'snippet',
+    detail: sn.korean,
+    documentation: sn.documentation,
+    sortText: `0${pad(i)}`,
+  }));
+}
+
+/** 일반 자리: 스니펫이 먼저, 그다음 API·내장 함수·키워드 */
+function generalItems(ctx) {
+  return [...snippetItems(ctx), ...apiItems(ctx)];
+}
+
+function randomItems(ctx) {
+  const hint = ctx.importsRandom ? '' : ` (${IMPORT_RANDOM_HINT})`;
+  return RANDOM_MEMBERS.map((m, i) => {
+    const item = callItem(m, ctx, { kind: 'method', detailPrefix: 'random.', sort: pad(i) });
+    item.documentation = `${m.documentation}${hint}`;
+    return item;
+  });
+}
+
+function listMethodItems(ctx) {
+  return LIST_METHODS.map((m, i) => callItem(m, ctx, { kind: 'method', detailPrefix: '리스트.', sort: `2${pad(i)}` }));
 }
 
 /** 따옴표를 아직 안 적은 문자열 인자 자리의 항목. 해당 없는 자리면 null */
@@ -375,10 +459,12 @@ export function buildSuggestions(ctx, { textAfter = '', triggerCharacter = null 
     if (member === 'scene.camera') return memberItems(data.members.camera, ctx, 'scene.camera');
     if (member === 'scene.mouse') return memberItems(data.members.mouse, ctx, 'scene.mouse');
     if (member === 'vector' || member === 'vec') return memberItems(data.members.vector, ctx, 'vector');
+    if (member === 'random') return randomItems(ctx);
     const last = member.split('.').pop();
     if (NO_MEMBER_SUGGESTION.has(last)) return [];
     if (VECTOR_ATTRS.has(last)) return memberItems(data.members.vector, ctx, member);
-    return memberItems(data.members.object, ctx, '객체');
+    // 변수의 종류는 모르니 3D 객체 속성 다음에 리스트 메서드도 보여 준다
+    return [...memberItems(data.members.object, ctx, '객체'), ...listMethodItems(ctx)];
   }
 
   // 3) 괄호 안 (문자열 아님): 아직 따옴표를 안 적은 문자열 자리 → 따옴표까지 넣어 준다.
@@ -399,9 +485,9 @@ export function buildSuggestions(ctx, { textAfter = '', triggerCharacter = null 
     }
   }
 
-  // 4) 그 밖의 자리: API 함수·객체·한글 별칭
+  // 4) 그 밖의 자리: 구문·패턴 스니펫, API 함수·객체·한글 별칭, 내장 함수, 키워드
   if (triggerCharacter) return [];
-  return apiItems(ctx);
+  return generalItems(ctx);
 }
 
 // ───────────────────────── Monaco 등록 ─────────────────────────
@@ -420,6 +506,8 @@ function monacoKind(monaco, kind) {
     case 'method': return K.Method;
     case 'kwarg': return K.Field;
     case 'value': return K.EnumMember;
+    case 'snippet': return K.Snippet;
+    case 'keyword': return K.Keyword;
     default: return K.Text;
   }
 }
@@ -444,7 +532,7 @@ export function registerVpylabCompletions(monaco) {
       const suggestions = items.map((it) => {
         const replaceLength = Math.min(it.replaceLength, position.column - 1);
         return {
-          label: it.label,
+          label: it.labelDescription ? { label: it.label, description: it.labelDescription } : it.label,
           kind: monacoKind(monaco, it.kind),
           insertText: it.insertText,
           insertTextRules: it.isSnippet ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet : undefined,

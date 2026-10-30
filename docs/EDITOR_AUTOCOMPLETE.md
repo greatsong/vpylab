@@ -20,9 +20,30 @@ VPyLab 편집기(Monaco)는 VPython 이름을 외우지 않아도 되도록 자�
 | `ball.` 처럼 객체 변수 뒤 | 공통 속성(pos, color, velocity, radius…)과 메서드 | `ball.velocity` |
 | `ball.pos.` 처럼 벡터 뒤 | x, y, z, mag, hat… | `ball.pos.x` |
 | `sphere(` 처럼 함수 괄호 뒤 | 그 함수의 키워드 인자 (`color=` 자리에는 색이 먼저) | `sphere(radius=0.5)` |
-| 그 밖의 자리 | API 함수·객체와 한글 별칭. 함수는 괄호와 기본 인자가 든 스니펫 | `sphere(pos=vector(0,0,0), radius=1.0, color=color.white)` |
+| `random.` | `randint`, `uniform`, `choice`, `random`, `shuffle`. `import random`이 없으면 설명에 안내가 붙는다 | `random.randint(1, 6)` |
+| `목록.` 처럼 변수 뒤 | 객체 속성 다음에 리스트 메서드 `append`, `pop`, `index` | `목록.append(값)` |
+| 그 밖의 자리 | 구문·패턴 스니펫이 먼저, 그다음 API 함수·객체와 한글 별칭, 파이썬 내장 함수, 키워드 | 아래 표 |
 
 함수 스니펫은 인자마다 탭 정지가 있어 Tab으로 다음 인자로 옮겨 가며 값을 바꿉니다. 각 항목에는 한국어 한 줄 설명이 붙습니다.
+
+## 구문·패턴 스니펫과 한글 검색
+
+입문 학생이 타이핑을 줄일 수 있도록 자주 쓰는 구문과 한 줄 패턴을 스니펫으로 넣었습니다(`client/src/components/editor/starter-snippets.js`). 라벨 옆에 한글 설명이 보이고, 한글로 쳐도 찾힙니다.
+
+| 입력 | 제안 |
+|---|---|
+| `for`, `반복` | `for i in range(10):` + 들여쓴 본문 자리, `while True:` + `rate(60)` |
+| `if`, `조건` | `if 조건:`, `elif 조건:`, `else:` |
+| `random`, `무작위` | `import random`, `x = random.uniform(-5, 5)` |
+| `리스트`, `목록` | `리스트 = []`, `리스트.append(값)` |
+| `공`, `상자`, `빛` | `공 = sphere(...)`, `상자 = box(...)`, `빛 = local_light(...)`, `scene.lights = []` |
+| `소리` | `음표("도", 0.3)`, `효과음("coin")`, `배경음악("adventure")` |
+| `화면`, `배경` | `scene.range = 4`, `scene_background(색상['검정'])` |
+| `출력`, `길이`, `정수`, `반올림` … | `print()`, `len()`, `int()`, `round()`, `min()`, `max()`, `sum()`, `abs()`, `float()`, `str()`, `range()` |
+| `sin`, `cos`, `sqrt`, `pi` | `from vpython import *`로 함께 들어오는 math 이름 |
+| `True`, `False`, `and`, `or`, `not`, `in`, `break` | 키워드 |
+
+이 밖의 표준 라이브러리 이름은 넣지 않습니다. 엔진 내부 이름(`_`로 시작)은 어느 자리에서도 제안하지 않습니다.
 
 ## 어디에서 오는가
 

@@ -124,7 +124,7 @@ describe('buildSuggestions — 문맥별 집합', () => {
     expect(labels(suggest('ball.pos.'))).toEqual(expect.arrayContaining(['x', 'y', 'z', 'mag']));
     expect(labels(suggest('vector.'))).toContain('random()');
     expect(suggest('x = 0.')).toEqual([]);
-    expect(suggest('random.')).toEqual([]);
+    expect(suggest('math.')).toEqual([]);
   });
   it('함수 괄호 바로 뒤에는 키워드 인자를, 글자를 적으면 API 항목도 함께 준다', () => {
     const onTrigger = suggest('sphere(', { triggerCharacter: '(' });
@@ -164,6 +164,77 @@ describe('buildSuggestions — 문맥별 집합', () => {
   });
 });
 
+describe('buildSuggestions — 구문 스니펫·내장 함수·한글 검색', () => {
+  it('일반 자리에는 구문·패턴 스니펫이 맨 앞에 온다', () => {
+    const items = suggest('');
+    const first = labels(items.slice(0, 4));
+    expect(first).toEqual(['from vpython import *', 'for i in range(10):', 'while True:', 'if 조건:']);
+    const forSnippet = items.find((it) => it.label === 'for i in range(10):');
+    expect(forSnippet.isSnippet).toBe(true);
+    expect(forSnippet.insertText).toBe('for ${1:i} in range(${2:10}):\n    ${3:pass}');
+    expect(forSnippet.labelDescription).toBe('횟수 반복');
+    expect(forSnippet.kind).toBe('snippet');
+    const whileSnippet = items.find((it) => it.label === 'while True:');
+    expect(whileSnippet.insertText).toContain('rate(${1:60})');
+    expect(items.find((it) => it.label.startsWith('공 = sphere(')).insertText).toContain("색상['${6:빨강}']");
+    expect(items.find((it) => it.label === 'scene.lights = []')).toBeDefined();
+    expect(items.find((it) => it.label === '음표("도", 0.3)').insertText).toBe('음표("${1:도}", ${2:0.3})');
+    // 스니펫 → 문서 있는 API → 내장 함수 → 나머지 → 키워드 순
+    const sortOf = (label) => items.find((it) => it.label === label).sortText;
+    expect(sortOf('for i in range(10):') < sortOf('sphere')).toBe(true);
+    expect(sortOf('sphere') < sortOf('range(10)')).toBe(true);
+    expect(sortOf('range(10)') < sortOf('msclock')).toBe(true);
+    expect(sortOf('msclock') < sortOf('True')).toBe(true);
+  });
+  it('한글 접두 검색어가 filterText에 들어간다: 반복→for/while, 공→sphere, 빛→local_light, 소리→음표', () => {
+    const items = suggest('');
+    const matching = (word) => items.filter((it) => it.filterText.split(' ').some((t) => t.startsWith(word))).map((it) => it.label);
+    expect(matching('반복')).toEqual(expect.arrayContaining(['for i in range(10):', 'while True:', 'rate', 'break']));
+    expect(matching('조건')).toEqual(expect.arrayContaining(['if 조건:', 'elif 조건:', 'else:']));
+    expect(matching('공')).toEqual(expect.arrayContaining(['sphere', "공 = sphere(pos=vector(0, 0, 0), radius=0.5, color=색상['빨강'])"]));
+    expect(matching('상자')).toContain('box');
+    expect(matching('빛')).toEqual(expect.arrayContaining(['local_light', 'scene.lights = []']));
+    expect(matching('소리')).toEqual(expect.arrayContaining(['음표', '효과음', '음표("도", 0.3)', '효과음("coin")']));
+    expect(matching('출력')).toContain('print(값)');
+  });
+  it('파이썬 내장 함수·math 이름·키워드를 한국어 설명과 함께 준다', () => {
+    const items = suggest('x = ');
+    const range = items.find((it) => it.label === 'range(10)');
+    expect(range.insertText).toBe('range(${1:10})$0');
+    expect(range.documentation).toContain('0부터 9까지');
+    expect(labels(items)).toEqual(expect.arrayContaining(['len(리스트)', 'int(값)', 'round(x, 2)', 'max(a, b)', 'sum(리스트)', 'sin(x)', 'sqrt(x)', 'pi']));
+    expect(items.find((it) => it.label === 'pi').isSnippet).toBe(false);
+    expect(items.find((it) => it.label === 'True').kind).toBe('keyword');
+    expect(labels(items)).toEqual(expect.arrayContaining(['False', 'and', 'or', 'not', 'in', 'break']));
+    // input은 vpython-api.py가 다시 정의한 것 하나만
+    expect(labels(items).filter((l) => l === 'input' || l.startsWith('input(')).length).toBe(1);
+    // 괄호 안(print(len( 같은 자리)에서도 내장 함수는 나오지만 여러 줄 스니펫은 나오지 않는다
+    const inside = suggest('print(le');
+    expect(labels(inside)).toContain('len(리스트)');
+    expect(labels(inside)).not.toContain('for i in range(10):');
+  });
+  it('random. 뒤에는 random 함수만, import random이 없으면 안내를 붙인다', () => {
+    const noImport = suggest('x = random.');
+    expect(labels(noImport)).toEqual(['randint(1, 6)', 'uniform(-5, 5)', 'choice(리스트)', 'random()', 'shuffle(리스트)']);
+    expect(noImport[0].documentation).toContain('맨 위에 import random 필요');
+    expect(noImport[0].insertText).toBe('randint(${1:1}, ${2:6})$0');
+    const withImport = suggest('import random\nx = random.');
+    expect(withImport[0].documentation).not.toContain('import random 필요');
+    expect(labels(suggest('import random\nx = random.ra'))).toContain('randint(1, 6)');
+  });
+  it('변수 뒤 점에는 객체 속성 다음에 리스트 메서드(append·pop·index)가 온다', () => {
+    const items = suggest('목록.');
+    expect(labels(items)).toEqual(expect.arrayContaining(['append(값)', 'pop()', 'index(값)']));
+    expect(items.find((it) => it.label === 'append(값)').sortText > items.find((it) => it.label === 'pos').sortText).toBe(true);
+    expect(labels(items)).not.toContain('upper()');
+  });
+  it('엔진 내부 이름(_로 시작)은 어느 자리에서도 제안하지 않는다', () => {
+    for (const text of ['', 'x = ', 'scene.', 'ball.', 'color.', 'random.', 'sphere(', '음표(']) {
+      for (const it of suggest(text)) expect(it.label.startsWith('_'), `${text} → ${it.label}`).toBe(false);
+    }
+  });
+});
+
 describe('registerVpylabCompletions', () => {
   function fakeMonaco() {
     const register = vi.fn();
@@ -172,7 +243,7 @@ describe('registerVpylabCompletions', () => {
       monaco: {
         languages: {
           registerCompletionItemProvider: register,
-          CompletionItemKind: { Color: 1, Function: 2, Class: 3, Module: 4, Variable: 5, Property: 6, Method: 7, Field: 8, EnumMember: 9, Text: 10 },
+          CompletionItemKind: { Color: 1, Function: 2, Class: 3, Module: 4, Variable: 5, Property: 6, Method: 7, Field: 8, EnumMember: 9, Snippet: 11, Keyword: 12, Text: 10 },
           CompletionItemInsertTextRule: { InsertAsSnippet: 4 },
           CompletionTriggerKind: { Invoke: 0, TriggerCharacter: 1 },
         },
@@ -211,6 +282,10 @@ describe('registerVpylabCompletions', () => {
     const sphere = result.suggestions.find((s) => s.label === 'sphere');
     expect(sphere.insertTextRules).toBe(4);
     expect(sphere.range.startColumn).toBe(1);
+
+    const forSnippet = result.suggestions.find((s) => s.label?.label === 'for i in range(10):');
+    expect(forSnippet.label.description).toBe('횟수 반복');
+    expect(forSnippet.kind).toBe(11);
 
     const model3 = fakeModel(['x = (']);
     expect(provider.provideCompletionItems(model3, { lineNumber: 1, column: 6 }, { triggerKind: 1, triggerCharacter: '(' }).suggestions).toEqual([]);

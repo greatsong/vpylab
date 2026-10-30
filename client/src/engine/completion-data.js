@@ -485,13 +485,6 @@ function buildData(source) {
       push({ name: alias, kind: 'variable', insertText: alias, isSnippet: false, detail: `${list.name}와 같음`, documentation: example, documented: true });
     }
   }
-  // math 모듈 이름 (from math import * 로 함께 제공됨)
-  const mathDoc = DOC_INDEX.byId.get('math_functions')?.description?.ko || '';
-  for (const name of ['sin', 'cos', 'tan', 'sqrt', 'radians', 'degrees', 'floor', 'ceil', 'exp', 'log']) {
-    push({ name, kind: 'function', insertText: `${name}(\${1:x})$0`, isSnippet: true, detail: `${name}(x)`, documentation: mathDoc, documented: false, math: true });
-  }
-  push({ name: 'pi', kind: 'variable', insertText: 'pi', isSnippet: false, detail: '원주율 3.14159…', documentation: mathDoc, documented: false, math: true });
-
   // 키워드 인자 (docs.js params 중 서명에 `이름=` 꼴로 나오는 것만)
   const kwargs = new Map();
   for (const [name, doc] of DOC_INDEX.bySignatureName) {

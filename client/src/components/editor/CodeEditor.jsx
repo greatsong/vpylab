@@ -77,6 +77,8 @@ export default function CodeEditor({ code, onChange, fontSize = 14, readOnly = f
           tabSize: 4,
           insertSpaces: true,
           automaticLayout: true,
+          // 편집기 칸이 좁을 때 제안 목록이 칸 밖으로 잘리지 않게 고정 위치에 그린다
+          fixedOverflowWidgets: true,
           wordWrap: 'on',
           bracketPairColorization: { enabled: true },
           renderLineHighlight: 'line',

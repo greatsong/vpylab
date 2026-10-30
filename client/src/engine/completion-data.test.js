@@ -103,6 +103,7 @@ describe('완성 데이터 (정적 검사)', () => {
     let checked = 0;
     const seenNames = new Set();
     for (const doc of docs) {
+      if (doc.id === 'math_functions') continue; // math 이름은 손으로 적은 목록(starter-snippets.js)에서 온다
       const m = sigRe.exec((doc.signature || '').split('\n')[0]);
       if (!m) continue;
       const item = byName.get(m[1]);
