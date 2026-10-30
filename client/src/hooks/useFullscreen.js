@@ -9,6 +9,11 @@ export function fullscreenSupported(doc = typeof document !== 'undefined' ? docu
   return !!(doc.fullscreenEnabled || doc.webkitFullscreenEnabled);
 }
 
+/** 지금 어떤 뷰포트가 전체 화면(브라우저 API 또는 CSS 대체)인지. 정지 때 탭 전환을 막는 데 씁니다. */
+export function isViewportFullscreen(doc = typeof document !== 'undefined' ? document : undefined) {
+  return !!doc?.querySelector?.('[data-vpylab-viewport][data-fullscreen="true"]');
+}
+
 function requestOn(element) {
   const request = element.requestFullscreen || element.webkitRequestFullscreen;
   return request ? request.call(element) : Promise.reject(new Error('fullscreen unsupported'));

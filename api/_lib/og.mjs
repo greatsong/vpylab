@@ -176,12 +176,15 @@ export function renderMetaTags(card) {
 
 /** index.html의 기본 og/twitter 메타·제목·설명을 카드 값으로 바꿉니다. */
 export function injectMeta(html, card) {
+  // replacement는 반드시 함수로 둡니다. 문자열이면 제목의 `$&`·`$'` 같은 토큰이 HTML 조각으로 확장됩니다.
+  const title = `<title>${escapeHtml(card.title)}</title>`;
+  const description = `<meta name="description" content="${escapeHtml(card.description)}" />`;
+  const tags = `    ${renderMetaTags(card)}\n`;
   let out = String(html)
     .replace(/[ \t]*<meta\s+(?:property|name)="(?:og|twitter):[^"]*"[^>]*\/?>\s*\n?/g, '')
-    .replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(card.title)}</title>`)
-    .replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtml(card.description)}" />`);
-  const tags = `    ${renderMetaTags(card)}\n`;
-  if (out.includes('</head>')) out = out.replace('</head>', `${tags}  </head>`);
+    .replace(/<title>[^<]*<\/title>/, () => title)
+    .replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?>/, () => description);
+  if (out.includes('</head>')) out = out.replace('</head>', () => `${tags}  </head>`);
   else out = tags + out;
   return out;
 }
@@ -201,7 +204,7 @@ export async function loadShell({ origin = SITE_ORIGIN, fetchImpl = globalThis.f
     } catch { /* 다음 후보 */ }
   }
   try {
-    const res = await fetchImpl(`${origin}/index.html`, { headers: { Accept: 'text/html' } });
+    const res = await fetchImpl(`${origin}/index.html`, { headers: { Accept: 'text/html' }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (res.ok) {
       const html = await res.text();
       if (html.includes('<div id="root">')) {

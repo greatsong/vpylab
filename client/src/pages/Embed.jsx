@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useParams } from 'react-router-dom';
 import { useI18n } from '../i18n/useI18n';
 import Viewport3D from '../components/viewport/Viewport3D';
@@ -7,18 +7,21 @@ import usePyodide from '../hooks/usePyodide';
 import useAppStore from '../stores/appStore';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
-import { ensureAudioReady, isAudioUnlocked, stopAllSounds, stopBgm } from '../engine/sound-system';
+import {
+  ensureAudioReady, isAudioUnlocked, stopAllSounds, stopBgm, setMasterMuted, getAudioState, subscribeAudioState,
+} from '../engine/sound-system';
 import { loadSharedCode } from '../utils/share';
 import { supabase } from '../lib/supabase';
 import { isGalleryId, workUrl } from '../utils/embed';
 
-/** 갤러리 작품 또는 공유 코드를 읽습니다. 비공개 작품은 RLS가 막아 "없음"으로 처리됩니다. */
+/** 갤러리 작품 또는 공유 코드를 읽습니다. 공개 작품만 읽어 소유자가 로그인한 상태에서도 비공개 초안은 임베드되지 않습니다. */
 async function loadWork(id) {
   if (isGalleryId(id)) {
     const { data, error } = await supabase
       .from('vpylab_gallery')
       .select('title, code')
       .eq('id', id)
+      .eq('is_public', true)
       .single();
     if (error || !data?.code) return null;
     return { title: data.title || '', code: data.code, kind: 'gallery' };
@@ -30,13 +33,14 @@ async function loadWork(id) {
 
 /**
  * /embed/:id — 다른 사이트의 iframe에 넣는 가벼운 보기 전용 페이지.
- * 헤더·편집기·로그인·저장 없이 3D 화면, 제목, 실행·정지, 소리 켜기, "VPyLab에서 열기"만 둡니다.
- * 열리면 자동 실행하고, 소리는 브라우저 정책상 사용자 동작 뒤에만 켜집니다.
+ * 헤더·편집기·로그인·저장 없이 3D 화면, 제목, 실행·정지, 소리, "VPyLab에서 열기"만 둡니다.
+ * 열리면 자동 실행하고, 소리는 브라우저 정책상 사용자 동작 뒤에만 켜집니다. 켠 뒤에는 음소거 토글로 남습니다.
  */
 export default function Embed() {
   const { id } = useParams();
   const { t, locale } = useI18n();
   const theme = useAppStore((s) => s.theme);
+  const isDarkTheme = useAppStore((s) => !!s.THEME_META?.[s.theme]?.dark);
   const sceneRef = useRef(null);
   const autoRanRef = useRef(false);
   // id별로 읽은 결과. id가 바뀌면 이전 결과는 무시됩니다(동기 setState 없이 파생).
@@ -45,6 +49,7 @@ export default function Embed() {
   const notFound = loaded?.id === id && !loaded.work;
   const [lastError, setLastError] = useState('');
   const [soundOn, setSoundOn] = useState(() => isAudioUnlocked());
+  const audio = useSyncExternalStore(subscribeAudioState, getAudioState, getAudioState);
 
   const handleBatch = useCallback((commands) => {
     if (sceneRef.current) processBatch(commands, sceneRef.current);
@@ -78,8 +83,10 @@ export default function Embed() {
     runCode(work.code);
   }, [isReady, work, runCode]);
 
+  // 실행 버튼은 사용자 제스처이므로 여기서 오디오 잠금도 함께 풉니다.
   const run = () => {
     setLastError('');
+    ensureAudioReady().then((ready) => setSoundOn(ready || isAudioUnlocked())).catch(() => {});
     startRun();
   };
 
@@ -99,6 +106,7 @@ export default function Embed() {
   const enableSound = async () => {
     const ready = await ensureAudioReady();
     setSoundOn(ready || isAudioUnlocked());
+    setMasterMuted(false);
   };
 
   useEffect(() => () => { stopBgm(); stopAllSounds(); }, []);
@@ -109,6 +117,7 @@ export default function Embed() {
     : !work ? t('embed.loading')
       : isLoading ? `${t('embed.preparing')} ${progress ? `${progress}%` : ''} ${progressMessage || ''}`.trim()
         : lastError;
+  const smallButton = { padding: '4px 10px', fontSize: 12 };
 
   return (
     <div
@@ -122,22 +131,34 @@ export default function Embed() {
         style={{ height: 44, borderBottom: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-panel)' }}
       >
         <a href={openUrl} target="_blank" rel="noopener noreferrer" className="flex items-center no-underline shrink-0" aria-label="VPyLab">
-          <BrandMark size={22} inverse={theme === 'deep-dark'} />
+          <BrandMark size={22} inverse={isDarkTheme} />
         </a>
         <span className="text-sm font-semibold truncate flex-1 min-w-0" title={work?.title || ''} data-testid="embed-title">
           {work?.title || (notFound ? t('embed.notFound') : 'VPyLab')}
         </span>
         {isRunning ? (
-          <button type="button" onClick={stop} className="toolbar-btn --stop" style={{ padding: '4px 10px', fontSize: 12 }}>
+          <button type="button" onClick={stop} className="toolbar-btn --stop" style={smallButton}>
             {t('editor.stop')}
           </button>
         ) : (
-          <button type="button" onClick={run} disabled={!isReady || !work} className="toolbar-btn --run" style={{ padding: '4px 10px', fontSize: 12 }}>
+          <button type="button" onClick={run} disabled={!isReady || !work} className="toolbar-btn --run" style={smallButton}>
             {t('editor.run')}
           </button>
         )}
-        {!soundOn && (
-          <button type="button" onClick={enableSound} className="toolbar-btn" style={{ padding: '4px 10px', fontSize: 12 }} title={t('embed.enableSound')}>
+        {soundOn ? (
+          <button
+            type="button"
+            onClick={() => setMasterMuted(!audio?.muted)}
+            className="toolbar-btn"
+            style={smallButton}
+            title={audio?.muted ? t('embed.unmute') : t('embed.mute')}
+            aria-pressed={!!audio?.muted}
+            data-testid="embed-mute-toggle"
+          >
+            {audio?.muted ? `🔇 ${t('embed.unmute')}` : `🔊 ${t('embed.mute')}`}
+          </button>
+        ) : (
+          <button type="button" onClick={enableSound} className="toolbar-btn" style={smallButton} title={t('embed.enableSound')}>
             🔈 {t('embed.enableSound')}
           </button>
         )}
@@ -146,7 +167,7 @@ export default function Embed() {
           target="_blank"
           rel="noopener noreferrer"
           className="toolbar-btn no-underline"
-          style={{ padding: '4px 10px', fontSize: 12 }}
+          style={smallButton}
           data-testid="embed-open-link"
         >
           {t('embed.openInVPyLab')} ↗

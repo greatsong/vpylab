@@ -13,6 +13,7 @@ import { runSound, errorSound, stopBgm, stopAllSounds, initAudioOnUserGesture, i
 import { captureThumbnail } from '../engine/thumbnail';
 import { createShareLink, decodeCodeFromURL } from '../utils/share';
 import ShareLinkDialog from '../components/share/ShareLinkDialog';
+import { isViewportFullscreen } from '../hooks/useFullscreen';
 import {
   shouldForceDetailed,
   markDetailedSaved,
@@ -565,7 +566,8 @@ export default function Sandbox() {
   const handleStop = () => {
     stopExecution();
     stopBgm();  // 실행 정지 시 BGM 자동 정지
-    setActiveTab('editor');  // 정지 시 코드 에디터로 복귀
+    // 정지 시 코드 에디터로 복귀. 모바일 전체 화면(CSS 대체 모드) 중에는 탭을 바꾸면 전체 화면이 풀리므로 유지합니다.
+    if (!isViewportFullscreen()) setActiveTab('editor');
     addOutput('⏹ 실행 중지됨', 'warning');
   };
 
@@ -686,10 +688,20 @@ export default function Sandbox() {
     })();
   }, [addOutput, openProjectInEditor, setSearchParams, teamInviteCode, user]);
 
+  // 공유 카드 제목: 프로젝트 제목 → 코드 첫 줄 주석 → 기본 문구
+  const shareTitle = () => {
+    const projectTitle = activeProject?.title?.trim();
+    if (projectTitle) return projectTitle.slice(0, 80);
+    const firstComment = String(codeRef.current || '').split('\n').map((line) => line.trim()).find((line) => line.startsWith('#'));
+    const fromComment = firstComment ? firstComment.replace(/^#+\s*/, '').trim() : '';
+    return (fromComment || 'VPyLab 코드').slice(0, 80);
+  };
+
   const handleShare = async () => {
-    const { url, error } = await createShareLink(codeRef.current);
+    const title = shareTitle();
+    const { url, error } = await createShareLink(codeRef.current, title);
     if (error || !url) {
-      setShareMsg('Failed');
+      setShareMsg(t('share.failed'));
       setTimeout(() => setShareMsg(''), 2000);
       return;
     }
@@ -701,7 +713,7 @@ export default function Sandbox() {
       setShareMsg(t('share.copyLink'));
     }
     setTimeout(() => setShareMsg(''), 2000);
-    setShareDialog({ url, id: url.slice(url.lastIndexOf('/s/') + 3) });
+    setShareDialog({ url, id: url.slice(url.lastIndexOf('/s/') + 3), title });
   };
 
   const handleExport = async () => {
@@ -1057,7 +1069,7 @@ export default function Sandbox() {
     <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
       {shareDialog && (
-        <ShareLinkDialog url={shareDialog.url} shareId={shareDialog.id} onClose={() => setShareDialog(null)} />
+        <ShareLinkDialog url={shareDialog.url} shareId={shareDialog.id} title={shareDialog.title} onClose={() => setShareDialog(null)} />
       )}
 
       {/* 툴바 */}

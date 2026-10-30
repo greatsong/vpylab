@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { I18nProvider } from './i18n';
+import { useI18n } from './i18n/useI18n';
 import Home from './pages/Home';
 import AuthCallback from './pages/AuthCallback';
 import AuthModal from './components/auth/AuthModal';
@@ -35,6 +36,7 @@ const Embed = lazyWithRetry(() => import('./pages/Embed'));
 
 function AppContent() {
   const initialize = useAuthStore((s) => s.initialize);
+  const { t } = useI18n();
 
   useEffect(() => {
     const cleanup = initialize();
@@ -47,7 +49,7 @@ function AppContent() {
       <Suspense fallback={
         <div className="h-screen flex items-center justify-center"
           style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)' }}>
-          로딩 중...
+          {t('common.loading')}
         </div>
       }>
         <Routes>

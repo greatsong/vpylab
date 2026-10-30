@@ -25,13 +25,29 @@ export function isStandalone(win = typeof window !== 'undefined' ? window : unde
   return win.navigator?.standalone === true;
 }
 
-/** iOS의 Safari인지 (iPadOS 13+는 데스크톱 UA를 쓰므로 터치 지점 수로 구분) */
-export function isIosSafari(nav = typeof navigator !== 'undefined' ? navigator : undefined) {
+const IN_APP_BROWSER = /KAKAOTALK|NAVER\(|NAVER |Instagram|FBAN|FBAV|FB_IAB|Line\/|\bLine\b|DaumApps|Snapchat|Twitter/i;
+
+/** 카카오톡·네이버·인스타그램·페이스북·라인 같은 앱 안 브라우저인지 */
+export function isInAppBrowser(nav = typeof navigator !== 'undefined' ? navigator : undefined) {
+  return !!nav && IN_APP_BROWSER.test(nav.userAgent || '');
+}
+
+export function isIos(nav = typeof navigator !== 'undefined' ? navigator : undefined) {
   if (!nav) return false;
   const ua = nav.userAgent || '';
-  const isIos = /iPad|iPhone|iPod/.test(ua) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
-  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|OPT\//.test(ua);
-  return isIos && isSafari;
+  return /iPad|iPhone|iPod/.test(ua) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
+}
+
+/** iOS의 Safari인지 (iPadOS 13+는 데스크톱 UA를 쓰므로 터치 지점 수로 구분). 앱 안 브라우저는 제외 */
+export function isIosSafari(nav = typeof navigator !== 'undefined' ? navigator : undefined) {
+  if (!nav || !isIos(nav) || isInAppBrowser(nav)) return false;
+  const ua = nav.userAgent || '';
+  return /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|OPT\//.test(ua);
+}
+
+/** 안드로이드 앱 안 브라우저(설치 프롬프트가 없음) */
+export function isAndroidInApp(nav = typeof navigator !== 'undefined' ? navigator : undefined) {
+  return !!nav && /Android/i.test(nav.userAgent || '') && isInAppBrowser(nav);
 }
 
 export function getInstallState() { return snapshot; }
@@ -78,14 +94,24 @@ export async function promptInstall() {
   }
 }
 
-export function shouldShowIosHint({ nav, win, storage } = {}) {
-  if (!isIosSafari(nav) || isStandalone(win)) return false;
+/**
+ * 설치 안내 종류. 'ios'(Safari 공유 → 홈 화면에 추가), 'android-inapp'(크롬에서 열기), 없으면 null.
+ * 닫으면 localStorage에 기억합니다.
+ */
+export function installHintKind({ nav, win, storage } = {}) {
+  if (isStandalone(win)) return null;
+  const kind = isIosSafari(nav) ? 'ios' : isAndroidInApp(nav) ? 'android-inapp' : null;
+  if (!kind) return null;
   try {
     const store = storage || localStorage;
-    return store.getItem(IOS_HINT_KEY) !== '1';
+    return store.getItem(IOS_HINT_KEY) === '1' ? null : kind;
   } catch {
-    return true;
+    return kind;
   }
+}
+
+export function shouldShowIosHint(options = {}) {
+  return installHintKind(options) === 'ios';
 }
 
 export function dismissIosHint(storage) {

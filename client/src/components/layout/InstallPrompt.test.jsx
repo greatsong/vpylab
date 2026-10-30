@@ -6,9 +6,9 @@ import { initInstallPrompt, resetInstallState } from '../../lib/pwa-install';
 
 vi.mock('../../lib/pwa-install', async (importOriginal) => {
   const actual = await importOriginal();
-  return { ...actual, shouldShowIosHint: vi.fn(() => false) };
+  return { ...actual, installHintKind: vi.fn(() => null) };
 });
-import { shouldShowIosHint } from '../../lib/pwa-install';
+import { installHintKind } from '../../lib/pwa-install';
 
 function fakeTarget() {
   const handlers = {};
@@ -57,17 +57,23 @@ describe('iOS 홈 화면 안내', () => {
   afterEach(() => cleanup());
 
   it('대상이 아니면 그리지 않는다', () => {
-    shouldShowIosHint.mockReturnValue(false);
+    installHintKind.mockReturnValue(null);
     renderWithI18n(<IosInstallHint />);
     expect(screen.queryByTestId('ios-install-hint')).toBeNull();
   });
 
   it('대상이면 안내를 보이고 닫기를 누르면 localStorage에 기억한다', () => {
-    shouldShowIosHint.mockReturnValue(true);
+    installHintKind.mockReturnValue('ios');
     renderWithI18n(<IosInstallHint />);
     expect(screen.getByTestId('ios-install-hint')).toHaveTextContent('홈 화면에 추가');
     fireEvent.click(screen.getByText('닫기'));
     expect(screen.queryByTestId('ios-install-hint')).toBeNull();
     expect(localStorage.getItem('vpylab-ios-install-hint-dismissed')).toBe('1');
+  });
+
+  it('안드로이드 앱 안 브라우저에는 크롬에서 열라는 안내를 보인다', () => {
+    installHintKind.mockReturnValue('android-inapp');
+    renderWithI18n(<IosInstallHint />);
+    expect(screen.getByTestId('ios-install-hint')).toHaveTextContent('크롬에서 열면 설치할 수 있습니다');
   });
 });

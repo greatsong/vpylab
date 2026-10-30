@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   initInstallPrompt, getInstallState, subscribeInstallState, promptInstall,
-  shouldShowIosHint, dismissIosHint, isIosSafari, isStandalone, resetInstallState,
+  shouldShowIosHint, dismissIosHint, isIosSafari, isStandalone, resetInstallState, installHintKind, isAndroidInApp,
 } from './pwa-install';
 
 function fakeTarget() {
@@ -82,6 +82,25 @@ describe('PWA 설치 상태', () => {
     // 이미 홈 화면 앱으로 열렸으면 안내하지 않는다
     expect(shouldShowIosHint({ nav: iosSafari, win: { navigator: { standalone: true } }, storage: { getItem: () => null } })).toBe(false);
     expect(isStandalone({ matchMedia: () => ({ matches: true }), navigator: {} })).toBe(true);
+  });
+
+  it('카카오톡·인스타그램 같은 앱 안 브라우저는 iOS Safari로 보지 않고, 안드로이드 인앱은 크롬 안내 대상이다', () => {
+    const base = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/604.1';
+    const kakaoIos = { userAgent: `${base} KAKAOTALK 10.4.0`, platform: 'iPhone', maxTouchPoints: 5 };
+    const instaIos = { userAgent: `${base} Instagram 300.0`, platform: 'iPhone', maxTouchPoints: 5 };
+    expect(isIosSafari(kakaoIos)).toBe(false);
+    expect(isIosSafari(instaIos)).toBe(false);
+    const win = { matchMedia: () => ({ matches: false }), navigator: {} };
+    const storage = { getItem: () => null, setItem: () => {} };
+    expect(installHintKind({ nav: kakaoIos, win, storage })).toBe(null);
+
+    const kakaoAndroid = { userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-S911N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36 KAKAOTALK/10.4.0', platform: 'Linux armv8l', maxTouchPoints: 5 };
+    const chromeAndroid = { ...kakaoAndroid, userAgent: kakaoAndroid.userAgent.replace(' KAKAOTALK/10.4.0', '') };
+    expect(isAndroidInApp(kakaoAndroid)).toBe(true);
+    expect(isAndroidInApp(chromeAndroid)).toBe(false);
+    expect(installHintKind({ nav: kakaoAndroid, win, storage })).toBe('android-inapp');
+    expect(installHintKind({ nav: chromeAndroid, win, storage })).toBe(null);
+    expect(installHintKind({ nav: kakaoAndroid, win, storage: { getItem: () => '1' } })).toBe(null);
   });
 
   it('localStorage가 막혀 있어도 예외를 내지 않는다', () => {

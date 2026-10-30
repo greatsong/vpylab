@@ -5,9 +5,9 @@ import '@testing-library/jest-dom';
 function memoryStorage() {
   const map = new Map();
   return {
-    getItem: (key) => (map.has(key) ? map.get(key) : null),
+    getItem: (key) => (map.has(String(key)) ? map.get(String(key)) : null),
     setItem: (key, value) => { map.set(String(key), String(value)); },
-    removeItem: (key) => { map.delete(key); },
+    removeItem: (key) => { map.delete(String(key)); },
     clear: () => map.clear(),
     key: (index) => [...map.keys()][index] ?? null,
     get length() { return map.size; },

@@ -129,6 +129,16 @@ describe('OG 카드 서버리스 함수', () => {
     expect(res2.body).toContain('href="https://vpylab.vercel.app/s/abc12345"');
   });
 
+  it("제목의 `$'`·`$&` 같은 치환 토큰이 HTML 조각으로 확장되지 않는다", () => {
+    const html = '<html><head><title>x</title><meta name="description" content="d" /></head><body><p>tail</p></body></html>';
+    const out = injectMeta(html, { title: "a $' b $& c $1", description: "$' $`", image: 'https://i', url: 'https://u', found: true });
+    expect(out).toContain("<title>a $&#39; b $&amp; c $1</title>");
+    expect(out).toContain('<meta name="description" content="$&#39; $`" />');
+    expect(out).toContain('<meta property="og:title" content="a $&#39; b $&amp; c $1" />');
+    expect(out.match(/<title>/g)).toHaveLength(1);
+    expect(out).not.toContain('</head></head>');
+  });
+
   it('메타 주입은 따옴표·꺾쇠를 이스케이프한다', () => {
     const html = injectMeta('<html><head><title>x</title></head><body></body></html>', {
       title: 'a"b', description: '<s>', image: 'https://i', url: 'https://u', found: true,
@@ -168,9 +178,22 @@ describe('OG 썸네일 이미지 함수', () => {
     await createOgImageHandler({ env, fetchImpl })(makeReq(`/api/og-image?id=${GALLERY_ID}`), res);
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toBe('image/png');
-    expect(res.headers['cache-control']).toContain('max-age=86400');
+    expect(res.headers['cache-control']).toBe('public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400');
     expect(Buffer.isBuffer(res.body)).toBe(true);
     expect(res.body.subarray(1, 4).toString()).toBe('PNG');
+  });
+
+  it('선언한 형식과 실제 바이트가 다르거나 너무 긴 data URI는 기본 카드 이미지로 보낸다', async () => {
+    const fakePng = Buffer.from('this is not a png at all, just text bytes').toString('base64');
+    const res = makeRes();
+    await createOgImageHandler({ env, fetchImpl: fakeFetch({ vpylab_gallery: [{ thumbnail: `data:image/png;base64,${fakePng}` }] }) })(makeReq(`/api/og-image?id=${GALLERY_ID}`), res);
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe('https://vpylab.vercel.app/brand/og-default.png');
+
+    const huge = `data:image/png;base64,${'A'.repeat(3 * 1024 * 1024 + 10)}`;
+    const res2 = makeRes();
+    await createOgImageHandler({ env, fetchImpl: fakeFetch({ vpylab_gallery: [{ thumbnail: huge }] }) })(makeReq(`/api/og-image?id=${GALLERY_ID}`), res2);
+    expect(res2.statusCode).toBe(302);
   });
 
   it('URL 썸네일은 그 주소로, 없거나 비공개면 기본 카드 이미지로 보낸다', async () => {

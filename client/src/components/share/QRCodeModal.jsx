@@ -62,7 +62,7 @@ export default function QRCodeModal({ url, title, onClose }) {
       >
         <h2 className="m-0 text-base font-semibold truncate w-full text-center">{title || t('qr.title')}</h2>
         {failed ? (
-          <p className="text-sm" style={{ color: '#EF4444' }}>QR 생성 실패</p>
+          <p className="text-sm" style={{ color: '#EF4444' }}>{t('qr.failed')}</p>
         ) : (
           <img
             src={dataUrl || undefined}

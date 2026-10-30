@@ -46,7 +46,19 @@
     "free": "자유",
     "featured": "인기 작품",
     "remixes": "이 작품에서 영감을 받은 Remix",
-    "preview": "3D 미리보기"
+    "preview": "3D 미리보기",
+    "runInVPyLab": "VPyLab에서 실행",
+    "remixProject": "Remix 프로젝트",
+    "edit": "수정하기",
+    "fork": "GitHub Fork",
+    "forking": "Fork 준비 중",
+    "openIssue": "Issue 남기기",
+    "closeCode": "코드 닫기",
+    "closePreview": "미리보기 닫기",
+    "copyCode": "코드 복사",
+    "codeCopied": "복사됨",
+    "loadingWork": "작품을 불러오는 중입니다.",
+    "enginePreparing": "Python 엔진을 준비하고 있습니다."
   },
   "home": {
     "serverConnected": "서버 연결됨",
@@ -125,7 +137,8 @@
     "copyLink": "링크 복사",
     "copied": "복사됨!",
     "externalCode": "이 코드는 외부에서 공유된 것입니다. 실행 전 내용을 확인하세요.",
-    "tooLarge": "코드가 너무 깁니다 (50KB 초과)"
+    "tooLarge": "코드가 너무 깁니다 (50KB 초과)",
+    "failed": "공유 링크를 만들지 못했습니다"
   },
   "errors": {
     "syntaxError": "문법 오류",
@@ -309,17 +322,19 @@
     "install": "앱으로 설치",
     "installTitle": "홈 화면이나 바탕화면에 VPyLab을 설치합니다",
     "iosHint": "iPhone·iPad에서는 Safari의 공유 버튼을 누르고 '홈 화면에 추가'를 선택하면 앱처럼 사용할 수 있습니다.",
-    "dismiss": "닫기"
+    "dismiss": "닫기",
+    "androidInAppHint": "앱 안 브라우저에서는 설치할 수 없습니다. 크롬에서 열면 설치할 수 있습니다."
   },
   "embed": {
     "openInVPyLab": "VPyLab에서 열기",
     "enableSound": "소리 켜기",
-    "soundOn": "소리 켜짐",
     "copyEmbed": "임베드 코드 복사",
     "embedCopied": "임베드 코드를 복사했습니다",
     "notFound": "작품을 찾을 수 없습니다",
     "loading": "작품을 불러오는 중입니다",
-    "preparing": "Python 엔진을 준비하는 중입니다"
+    "preparing": "Python 엔진을 준비하는 중입니다",
+    "mute": "음소거",
+    "unmute": "소리 켜기"
   },
   "qr": {
     "show": "QR 보기",
@@ -328,7 +343,8 @@
     "download": "PNG 내려받기",
     "copyLink": "링크 복사",
     "copied": "복사됨",
-    "close": "닫기"
+    "close": "닫기",
+    "failed": "QR 생성 실패"
   },
   "shareLink": {
     "title": "공유 링크",
@@ -337,6 +353,18 @@
   },
   "viewport": {
     "fullscreen": "전체 화면",
-    "exitFullscreen": "전체 화면 나가기"
+    "exitFullscreen": "전체 화면 나가기",
+    "autoFit": "자동",
+    "follow": "추적",
+    "lockZoom": "줌 고정",
+    "axes": "XYZ",
+    "autoFitTip": "전체 물체가 화면에 담기도록 자동 줌",
+    "followTip": "움직이는 물체 중심을 따라감",
+    "lockZoomTip": "카메라 줌 거리를 현재 상태로 고정합니다"
+  },
+  "sharedCode": {
+    "loading": "코드 로딩 중...",
+    "notFound": "코드를 찾을 수 없습니다",
+    "backHome": "홈으로 돌아가기"
   }
 }

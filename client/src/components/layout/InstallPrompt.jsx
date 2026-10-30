@@ -2,7 +2,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useI18n } from '../../i18n/useI18n';
 import {
-  getInstallState, subscribeInstallState, promptInstall, shouldShowIosHint, dismissIosHint,
+  getInstallState, subscribeInstallState, promptInstall, installHintKind, dismissIosHint,
 } from '../../lib/pwa-install';
 
 /** 헤더의 "앱으로 설치" 버튼. 브라우저가 설치 프롬프트를 준 동안만 보이고, 설치 뒤에는 숨깁니다. */
@@ -27,12 +27,12 @@ export function InstallButton() {
   );
 }
 
-/** iOS Safari용 한 번짜리 안내. 닫으면 localStorage에 기억합니다. */
+/** iOS Safari(홈 화면에 추가)·안드로이드 앱 안 브라우저(크롬에서 열기)용 한 번짜리 안내. 닫으면 localStorage에 기억합니다. */
 export function IosInstallHint() {
   const { t } = useI18n();
-  const [visible, setVisible] = useState(() => shouldShowIosHint());
-  if (!visible) return null;
-  const close = () => { dismissIosHint(); setVisible(false); };
+  const [kind, setKind] = useState(() => installHintKind());
+  if (!kind) return null;
+  const close = () => { dismissIosHint(); setKind(null); };
   return createPortal(
     <div
       role="status"
@@ -48,7 +48,7 @@ export function IosInstallHint() {
       data-testid="ios-install-hint"
     >
       <span className="text-lg leading-none" aria-hidden="true">📲</span>
-      <p className="flex-1 m-0 leading-relaxed">{t('pwa.iosHint')}</p>
+      <p className="flex-1 m-0 leading-relaxed">{t(kind === 'ios' ? 'pwa.iosHint' : 'pwa.androidInAppHint')}</p>
       <button
         type="button"
         onClick={close}

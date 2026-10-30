@@ -6,7 +6,7 @@ import CameraSystem from '../../engine/camera-system';
 import { postCameraState, postEvent, postMouseState, postPressedKeys } from '../../engine/pyodide-singleton';
 import { isEventBound } from '../../engine/vpython-bridge';
 import useFullscreen from '../../hooks/useFullscreen';
-import { useI18n } from '../../i18n/useI18n';
+import { useOptionalI18n } from '../../i18n/useI18n';
 
 const THEME_BG = {
   'creative-light': 0xf8fafc,
@@ -29,7 +29,8 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
   const containerRef = useRef(null);
   const wrapperRef = useRef(null);
   const fullscreen = useFullscreen(wrapperRef);
-  const { t } = useI18n();
+  // 교실 앱은 I18nProvider 없이 이 구성 요소를 쓰므로 선택적 훅을 씁니다.
+  const { t } = useOptionalI18n();
   const rendererRef = useRef(null);
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
@@ -389,9 +390,9 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
               backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
               border: cameraMode === 'auto-fit' ? '1px solid var(--color-accent)' : '1px solid transparent',
             }}
-            title="전체 물체가 화면에 담기도록 자동 줌"
+            title={t('viewport.autoFitTip')}
           >
-            자동
+            {t('viewport.autoFit')}
           </button>
           <button
             onClick={() => {
@@ -406,9 +407,9 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
               backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
               border: cameraMode === 'follow' ? '1px solid var(--color-accent)' : '1px solid transparent',
             }}
-            title="움직이는 물체 중심을 따라감"
+            title={t('viewport.followTip')}
           >
-            추적
+            {t('viewport.follow')}
           </button>
         </div>
 
@@ -419,7 +420,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
             backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
             border: lockFollowZoom ? '1px solid var(--color-accent)' : 'none',
           }}
-          title="카메라 줌 거리를 현재 상태로 고정합니다"
+          title={t('viewport.lockZoomTip')}
         >
           <input
             type="checkbox"
@@ -427,7 +428,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
             onChange={(e) => setLockFollowZoom(e.target.checked)}
             className="accent-current"
           />
-          줌 고정
+          {t('viewport.lockZoom')}
         </label>
 
         {/* 축 토글 */}
@@ -444,7 +445,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
             onChange={(e) => setShowAxes(e.target.checked)}
             className="accent-current"
           />
-          XYZ
+          {t('viewport.axes')}
         </label>
       </div>
     </div>
