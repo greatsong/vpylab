@@ -848,6 +848,11 @@ const SFX_MAP = {
   level_up: levelUpSound,
 };
 
+/** 지원하는 효과음 이름 목록 (편집기 자동 완성·문서용) */
+export function getSfxNames() {
+  return Object.keys(SFX_MAP);
+}
+
 /**
  * 이름으로 효과음 재생
  * @param {string} name - 효과음 이름 (jump, coin, powerup, death 등)
@@ -970,6 +975,11 @@ const BGM_PATTERNS = {
  * @param {string} name - BGM 이름 (adventure, explore, battle, peaceful, victory)
  * @param {boolean} loop - 반복 여부 (기본 true)
  */
+/** 지원하는 배경음악 이름 목록 (편집기 자동 완성·문서용) */
+export function getBgmNames() {
+  return Object.keys(BGM_PATTERNS);
+}
+
 /** 지원하는 배경음악 이름인지 확인 */
 export function hasBgm(name) {
   return Boolean(BGM_PATTERNS[name?.toLowerCase()]);
