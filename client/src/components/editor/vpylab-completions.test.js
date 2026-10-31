@@ -53,14 +53,17 @@ describe('buildSuggestions — 문맥별 집합', () => {
     const red = items.find((it) => it.label === "'빨강'");
     expect(red.insertText).toBe("'빨강'");
     expect(red.kind).toBe('color');
+    // '빨' 같은 한 글자 키는 '빨강' 뒤에 온다
+    expect(red.sortText < items.find((it) => it.label === "'빨'").sortText).toBe(true);
     expect(red.documentation.startsWith('#ff0000')).toBe(true);
     expect(red.replaceLength).toBe(0);
   });
   it("색상['빨 처럼 따옴표 뒤에서는 내용만 바꾸고, 닫는 따옴표가 없으면 붙인다", () => {
     const items = suggest("색상['빨", { textAfter: "']" });
     const red = items.find((it) => it.label === '빨강');
-    expect(red.insertText).toBe('빨강');
+    expect(red.insertText).toBe("빨강'");
     expect(red.replaceLength).toBe(1);
+    expect(red.replaceAfter).toBe(1); // 닫는 따옴표까지 바꾼다
     const noClose = suggest("색상['빨", { textAfter: '' }).find((it) => it.label === '빨강');
     expect(noClose.insertText).toBe("빨강'");
   });
@@ -164,6 +167,81 @@ describe('buildSuggestions — 문맥별 집합', () => {
   });
 });
 
+describe('buildSuggestions — 교체 범위(커서 오른쪽)', () => {
+  it('color.r|ed 에서 red를 고르면 오른쪽 ed까지 바꾼다', () => {
+    const red = suggest('color.r', { textAfter: 'ed' }).find((it) => it.label === 'red');
+    expect(red.replaceLength).toBe(1);
+    expect(red.replaceAfter).toBe(2);
+    const sphere = suggest('sp', { textAfter: 'here(radius=1)' }).find((it) => it.label === 'sphere');
+    expect(sphere.replaceAfter).toBe(4);
+    const pos = suggest('ball.p', { textAfter: 'os.x' }).find((it) => it.label === 'pos');
+    expect(pos.replaceAfter).toBe(2);
+  });
+  it("색상['파|랑'] 에서 빨강을 고르면 '랑'과 닫는 따옴표까지 바꿔 색상['빨강'] 이 된다", () => {
+    const red = suggest("색상['파", { textAfter: "랑']" }).find((it) => it.label === '빨강');
+    expect(red.replaceLength).toBe(1);
+    expect(red.replaceAfter).toBe(2); // 랑 + '
+    expect(red.insertText).toBe("빨강'");
+    // 닫는 따옴표가 없으면 문자열로 보이는 글자까지 바꾸고 따옴표를 붙인다
+    const noClose = suggest("색상['파", { textAfter: '랑]' }).find((it) => it.label === '빨강');
+    expect(noClose.replaceAfter).toBe(1);
+    expect(noClose.insertText).toBe("빨강'");
+    const nothingAfter = suggest('음표("도', { textAfter: '' }).find((it) => it.label === '도5');
+    expect(nothingAfter.replaceAfter).toBe(0);
+    expect(nothingAfter.insertText).toBe('도5"');
+  });
+  it("색상[|''] 처럼 커서 뒤에 빈 따옴표가 있으면 그것까지 바꿔 따옴표가 겹치지 않는다", () => {
+    const red = suggest('색상[', { textAfter: "'']" }).find((it) => it.label === "'빨강'");
+    expect(red.replaceAfter).toBe(2);
+    expect(red.insertText).toBe("'빨강'");
+    const typed = suggest('색상[', { textAfter: "'파랑']" }).find((it) => it.label === "'빨강'");
+    expect(typed.replaceAfter).toBe(4);
+    const plain = suggest('색상[', { textAfter: ']' }).find((it) => it.label === "'빨강'");
+    expect(plain.replaceAfter).toBe(0);
+  });
+});
+
+describe('buildSuggestions — 키워드 인자 우선 슬롯', () => {
+  it('악기(name="|") 에는 음 이름, 악기(instrument="|") 에는 악기가 나온다', () => {
+    expect(labels(suggest('악기(name="'))).toContain('도');
+    expect(labels(suggest('악기(name="'))).not.toContain('피아노');
+    expect(labels(suggest('악기(instrument="'))).toContain('피아노');
+    expect(labels(suggest('악기(name='))).toContain('"도"');
+  });
+  it('음표(duration=0.5, name="|") 에는 음 이름이 나오고, duration="|" 에는 안 나온다', () => {
+    expect(labels(suggest('음표(duration=0.5, name="'))).toContain('도');
+    expect(suggest('음표(duration="')).toEqual([]);
+    expect(labels(suggest('효과음(name="'))).toContain('coin');
+    expect(labels(suggest('배경음악(name='))).toContain('"adventure"');
+    // 키워드가 없을 때만 위치로 판단한다
+    expect(labels(suggest('악기("피아노", "'))).toContain('도');
+  });
+});
+
+describe('analyzeContext — 문자열 경계', () => {
+  it('앞 줄의 닫히지 않은 일반 문자열은 줄 끝에서 닫힌 것으로 본다', () => {
+    const ctx = analyzeContext('x = "oops\n색상[');
+    expect(ctx.string).toBeNull();
+    expect(ctx.bracket).toMatchObject({ callee: '색상', char: '[' });
+    expect(labels(suggest("y = 'a\n음표(\""))).toContain('도');
+  });
+  it('세 따옴표 문자열만 줄을 넘긴다', () => {
+    const triple = '"'.repeat(3);
+    expect(analyzeContext(`${triple}설명\n색상[`).string).toMatchObject({ quote: triple });
+    expect(analyzeContext("'''a\nb'''\n색상['").string).toMatchObject({ quote: "'" });
+  });
+  it('f-string 보간식 안은 문자열 밖으로 본다', () => {
+    const ctx = analyzeContext('print(f"지금 색은 {color.');
+    expect(ctx.string).toBeNull();
+    expect(ctx.member).toBe('color');
+    expect(labels(suggest('print(f"지금 색은 {color.'))).toContain('red');
+    // 보간식이 닫히면 다시 문자열 안이다
+    expect(analyzeContext('print(f"지금 {x} 색은 ').string).toMatchObject({ quote: '"' });
+    // {{ 는 보간식이 아니다
+    expect(analyzeContext('f"{{color.').string).toMatchObject({ quote: '"' });
+  });
+});
+
 describe('buildSuggestions — 구문 스니펫·내장 함수·한글 검색', () => {
   it('일반 자리에는 구문·패턴 스니펫이 맨 앞에 온다', () => {
     const items = suggest('');
@@ -257,6 +335,7 @@ describe('registerVpylabCompletions', () => {
         return [...before, lines[endLineNumber - 1].slice(0, endColumn - 1)].join('\n');
       },
       getLineContent: (n) => lines[n - 1],
+      getLineLength: (n) => lines[n - 1].length,
     };
   }
 
@@ -273,8 +352,13 @@ describe('registerVpylabCompletions', () => {
     const { suggestions } = provider.provideCompletionItems(model, { lineNumber: 2, column: 19 }, { triggerKind: 0 });
     const red = suggestions.find((s) => s.label === '빨강');
     expect(red.kind).toBe(1);
-    expect(red.insertText).toBe('빨강');
-    expect(red.range).toEqual({ startLineNumber: 2, startColumn: 18, endLineNumber: 2, endColumn: 19 });
+    expect(red.insertText).toBe("빨강'");
+    // 범위는 커서 왼쪽 '빨'부터 오른쪽 닫는 따옴표까지
+    expect(red.range).toEqual({ startLineNumber: 2, startColumn: 18, endLineNumber: 2, endColumn: 20 });
+
+    const modelMid = fakeModel(['c = color.red']);
+    const mid = provider.provideCompletionItems(modelMid, { lineNumber: 1, column: 12 }, { triggerKind: 0 }).suggestions.find((s) => s.label === 'red');
+    expect(mid.range).toEqual({ startLineNumber: 1, startColumn: 11, endLineNumber: 1, endColumn: 14 });
     expect(red.documentation.value.startsWith('#ff0000')).toBe(true);
 
     const model2 = fakeModel(['sp']);

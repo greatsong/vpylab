@@ -2,7 +2,7 @@
  * 자동 완성 데이터가 원본(vpython-api.py·sound-system.js·docs.js)과 어긋나지 않는지 검사한다.
  * python3가 있으면 실제 vpython-api.py를 CPython으로 실행해 이름 목록을 받아 정규식 추출 결과와 대조한다.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import data, {
   extractClassBlock,
   extractDictLiteral,
@@ -161,10 +161,14 @@ print(json.dumps({
 }, ensure_ascii=False))
 `;
 
+// vitest는 skip된 suite의 콜백도 실행하므로, Python 실행은 beforeAll 안에서만 한다 (python3가 없는 환경에서 수집 단계가 깨지지 않게)
 describe.skipIf(!hasPython())('완성 데이터 (CPython 대조)', () => {
-  const result = runPythonJobs([{ id: 'completion', label: 'dump', code: DUMP_CODE }]).get('completion:dump');
-  if (!result?.ok) throw new Error(`vpython-api.py 실행 실패: ${result?.error}`);
-  const actual = JSON.parse(result.stdout.trim().split('\n').pop());
+  let actual;
+  beforeAll(() => {
+    const result = runPythonJobs([{ id: 'completion', label: 'dump', code: DUMP_CODE }]).get('completion:dump');
+    if (!result?.ok) throw new Error(`vpython-api.py 실행 실패: ${result?.error}`);
+    actual = JSON.parse(result.stdout.trim().split('\n').pop());
+  });
 
   it('색 이름(영어·한글)이 실제 팔레트와 같다', () => {
     expect(data.colors.map((c) => c.name).sort()).toEqual([...actual.colors].sort());

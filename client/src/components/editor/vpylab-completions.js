@@ -22,6 +22,8 @@ import {
 const IDENT_RE = /[\p{L}_][\p{L}\p{N}_]*/u;
 const DOTTED_TAIL_RE = /([\p{L}_][\p{L}\p{N}_]*(?:\s*\.\s*[\p{L}_][\p{L}\p{N}_]*)*)\s*$/u;
 const WORD_TAIL_RE = /[\p{L}\p{N}_]*$/u;
+const WORD_HEAD_RE = /^[\p{L}\p{N}_]*/u;
+const QUOTED_HEAD_RE = /^(['"])[^'"\n]*\1/u; // 커서 바로 뒤에 놓인 '...' 또는 "..."
 const SCAN_WINDOW = 8000;
 
 const COLOR_NAMESPACES = new Set(['color', '색상']);
@@ -30,6 +32,13 @@ const NOTE_FUNCTIONS = new Set(['음표', 'play_note']);
 const INSTRUMENT_FUNCTIONS = new Set(['악기', 'play_instrument']);
 const SFX_FUNCTIONS = new Set(['효과음', 'play_sfx', 'sfx']);
 const BGM_FUNCTIONS = new Set(['배경음악', 'start_bgm', 'bgm']);
+/** 문자열 인자를 받는 함수의 자리: 키워드 이름 → 자리, 위치 → 자리 */
+const STRING_SLOTS = [
+  { names: NOTE_FUNCTIONS, byKw: { name: 'note' }, byIndex: ['note'] },
+  { names: INSTRUMENT_FUNCTIONS, byKw: { instrument: 'instrument', name: 'note' }, byIndex: ['instrument', 'note'] },
+  { names: SFX_FUNCTIONS, byKw: { name: 'sfx' }, byIndex: ['sfx'] },
+  { names: BGM_FUNCTIONS, byKw: { name: 'bgm' }, byIndex: ['bgm'] },
+];
 const VECTOR_ATTRS = new Set(['pos', 'axis', 'size', 'velocity', 'center', 'up', 'forward', 'color', 'background', 'ambient']);
 const NO_MEMBER_SUGGESTION = new Set(['math', 'np', 'numpy', 'self', 'json', 'time', 'asyncio', 'js']);
 
@@ -52,7 +61,7 @@ export function analyzeContext(textBefore) {
     start = textBefore.lastIndexOf('\n', textBefore.length - SCAN_WINDOW) + 1;
   }
   const stack = [];
-  let string = null; // { quote, start }
+  let string = null; // { quote, start, fstring }
   for (let i = start; i < textBefore.length; i++) {
     const ch = textBefore[i];
     if (string) {
@@ -61,6 +70,17 @@ export function analyzeContext(textBefore) {
       } else if (textBefore.startsWith(string.quote, i)) {
         i += string.quote.length - 1;
         string = null;
+      } else if (ch === '\n' && string.quote.length === 1) {
+        // 일반 문자열은 줄을 넘지 못한다. 앞 줄의 닫히지 않은 따옴표(학생 오타)가 다음 줄을 삼키지 않게 한다
+        string = null;
+      } else if (ch === '{' && string.fstring) {
+        if (textBefore[i + 1] === '{') {
+          i++; // {{ 는 글자 그대로의 중괄호
+        } else {
+          // f"{color.red}" 의 보간식 안은 문자열 밖이다. 닫는 } 에서 문자열 상태로 돌아간다
+          stack.push({ char: '{', callee: '', argIndex: 0, kw: null, fstring: string });
+          string = null;
+        }
       }
       continue;
     }
@@ -73,7 +93,8 @@ export function analyzeContext(textBefore) {
     if (ch === "'" || ch === '"') {
       const triple = ch.repeat(3);
       const quote = textBefore.startsWith(triple, i) ? triple : ch;
-      string = { quote, start: i + quote.length };
+      const prefix = /[A-Za-z]{0,2}$/.exec(textBefore.slice(Math.max(start, i - 2), i))[0];
+      string = { quote, start: i + quote.length, fstring: /f/i.test(prefix) };
       i += quote.length - 1;
       continue;
     }
@@ -83,7 +104,8 @@ export function analyzeContext(textBefore) {
       continue;
     }
     if (ch === ')' || ch === ']' || ch === '}') {
-      stack.pop();
+      const popped = stack.pop();
+      if (popped?.fstring) string = popped.fstring;
       continue;
     }
     if (stack.length && ch === ',') {
@@ -120,16 +142,24 @@ function pad(i) {
   return String(i).padStart(4, '0');
 }
 
-/** 문자열 값 하나를 완성 항목으로 (따옴표 처리 포함) */
+/**
+ * 문자열 값 하나를 완성 항목으로 (따옴표 처리 포함).
+ * replaceLength는 커서 왼쪽, replaceAfter는 커서 오른쪽에서 함께 바꿀 글자 수다.
+ * 색상['파|랑'] 에서 빨강을 고르면 '랑'과 닫는 따옴표까지 바꿔 색상['빨강'] 이 된다.
+ */
 function stringItem(name, { ctx, textAfter, quote, detail, documentation, kind, sort, color }) {
   if (ctx.string) {
-    // 따옴표를 이미 적은 뒤: 내용만 넣고, 닫는 따옴표가 뒤에 없으면 붙인다
-    const closing = textAfter.startsWith(ctx.string.quote) ? '' : ctx.string.quote;
+    const q = ctx.string.quote;
+    const closeAt = textAfter.indexOf(q);
+    const lineEnd = textAfter.search(/[\n'"\])]/);
+    // 닫는 따옴표가 뒤에 있으면 거기까지, 없으면 문자열로 보이는 글자까지 바꾸고 따옴표를 붙인다
+    const replaceAfter = closeAt >= 0 && (lineEnd < 0 || closeAt <= lineEnd) ? closeAt + q.length : lineEnd < 0 ? textAfter.length : lineEnd;
     return {
       label: name,
-      insertText: `${name}${closing}`,
+      insertText: `${name}${q}`,
       filterText: name,
       replaceLength: ctx.string.content.length,
+      replaceAfter,
       kind,
       detail,
       documentation,
@@ -137,11 +167,14 @@ function stringItem(name, { ctx, textAfter, quote, detail, documentation, kind, 
       color,
     };
   }
+  // 따옴표를 아직 안 적은 자리: 커서 뒤에 이미 '...' 가 있으면 그것까지 바꾼다 (색상[|''] → 색상['빨강'])
+  const quoted = QUOTED_HEAD_RE.exec(textAfter);
   return {
     label: `${quote}${name}${quote}`,
     insertText: `${quote}${name}${quote}`,
     filterText: name,
     replaceLength: ctx.word.length,
+    replaceAfter: quoted ? quoted[0].length : ctx.wordAfter,
     kind,
     detail,
     documentation,
@@ -153,11 +186,13 @@ function stringItem(name, { ctx, textAfter, quote, detail, documentation, kind, 
 function colorKeyItems(ctx, textAfter) {
   const items = [];
   data.koreanColorKeys.forEach((c, i) => {
-    // Monaco는 Color 종류 항목의 documentation 맨 앞에 있는 #rrggbb 로 색 견본을 그린다
-    items.push(stringItem(c.key, { ctx, textAfter, quote: "'", kind: 'color', color: c.hex, detail: `${c.key} → color.${c.english}`, documentation: `${c.hex} 색상['${c.key}']`, sort: `0${pad(i)}` }));
+    // Monaco는 Color 종류 항목의 documentation 맨 앞에 있는 #rrggbb 로 색 견본을 그린다.
+    // '빨' 같은 한 글자 키보다 '빨강'이 먼저 오게 한다 (Enter를 치면 색상['빨강'])
+    const group = c.key.length >= 2 ? '0' : '1';
+    items.push(stringItem(c.key, { ctx, textAfter, quote: "'", kind: 'color', color: c.hex, detail: `${c.key} → color.${c.english}`, documentation: `${c.hex} 색상['${c.key}']`, sort: `${group}${pad(i)}` }));
   });
   data.colors.forEach((c, i) => {
-    items.push(stringItem(c.name, { ctx, textAfter, quote: "'", kind: 'color', color: c.hex, detail: c.korean, documentation: `${c.hex} 색상['${c.name}'] 또는 color.${c.name}`, sort: `1${pad(i)}` }));
+    items.push(stringItem(c.name, { ctx, textAfter, quote: "'", kind: 'color', color: c.hex, detail: c.korean, documentation: `${c.hex} 색상['${c.name}'] 또는 color.${c.name}`, sort: `2${pad(i)}` }));
   });
   return items;
 }
@@ -168,6 +203,7 @@ function colorAttrItems(ctx, prefix = '') {
     insertText: `${prefix}${c.name}`,
     filterText: `${prefix}${c.name} ${c.korean}`,
     replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
     kind: 'color',
     color: c.hex,
     detail: c.korean,
@@ -182,6 +218,7 @@ function colorAttrItems(ctx, prefix = '') {
         isSnippet: true,
         filterText: m.name,
         replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
         kind: 'method',
         detail: `color.${m.name}(${m.args})`,
         documentation: m.doc,
@@ -245,6 +282,7 @@ function textureItems(ctx, prefix = '') {
     insertText: `${prefix}${t.name}`,
     filterText: `${prefix}${t.name}`,
     replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
     kind: 'value',
     detail: t.preset === t.name ? '텍스처' : `텍스처 (${t.preset}와 같음)`,
     documentation: `box(texture=textures.${t.name})`,
@@ -259,6 +297,7 @@ function memberItems(group, ctx, ownerLabel) {
     insertText: p.name,
     filterText: p.name,
     replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
     kind: 'property',
     detail: `${ownerLabel}.${p.name}`,
     documentation: p.doc,
@@ -271,6 +310,7 @@ function memberItems(group, ctx, ownerLabel) {
       isSnippet: true,
       filterText: m.name,
       replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
       kind: 'method',
       detail: `${ownerLabel}.${m.name}(${m.args})`,
       documentation: m.doc,
@@ -286,6 +326,7 @@ function noteConstantItems(ctx) {
     insertText: name,
     filterText: name,
     replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
     kind: 'value',
     detail: `${freq}Hz`,
     documentation: `note.${name}`,
@@ -302,6 +343,7 @@ function kwargItems(callee, ctx) {
     isSnippet: true,
     filterText: p.name,
     replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
     kind: 'kwarg',
     detail: `${callee}(${p.name}=${p.default})`,
     documentation: p.desc,
@@ -324,6 +366,7 @@ function callItem(entry, ctx, { kind = 'function', detailPrefix = '', sort }) {
     isSnippet: hasArgs,
     filterText: withAliases(entry.name, entry.aliases),
     replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
     kind: hasArgs ? kind : 'variable',
     detail: `${detailPrefix}${entry.name}${hasArgs ? `(${argLabel})` : ''}`,
     documentation: entry.documentation,
@@ -339,6 +382,7 @@ function apiItems(ctx) {
     isSnippet: it.isSnippet,
     filterText: withAliases(it.name, KOREAN_SEARCH_ALIASES[it.name]),
     replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
     kind: it.kind,
     detail: it.detail,
     documentation: it.documentation,
@@ -352,6 +396,7 @@ function apiItems(ctx) {
       insertText: k.name,
       filterText: withAliases(k.name, k.aliases),
       replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
       kind: 'keyword',
       detail: `키워드 ${k.name}`,
       documentation: k.documentation,
@@ -371,6 +416,7 @@ function snippetItems(ctx) {
     // Monaco는 filterText에서 일찍 맞는 항목을 앞에 두므로, 한글 검색어를 앞에 둬 "반복"에 rate보다 for/while이 먼저 오게 한다
     filterText: [...(sn.aliases || []), sn.label].join(' '),
     replaceLength: ctx.word.length,
+    replaceAfter: ctx.wordAfter,
     kind: 'snippet',
     detail: sn.korean,
     documentation: sn.documentation,
@@ -396,22 +442,34 @@ function listMethodItems(ctx) {
   return LIST_METHODS.map((m, i) => callItem(m, ctx, { kind: 'method', detailPrefix: '리스트.', sort: `2${pad(i)}` }));
 }
 
-/** 따옴표를 아직 안 적은 문자열 인자 자리의 항목. 해당 없는 자리면 null */
-function slotItems(bracket, ctx, textAfter) {
+/**
+ * 문자열 인자 자리의 종류. 키워드(name=, instrument=)가 있으면 이름으로, 없으면 위치(argIndex)로 정한다.
+ * 따옴표를 적었든 안 적었든 같은 판별을 쓴다. 해당 없는 자리면 null
+ */
+export function stringSlot(bracket) {
+  if (!bracket) return null;
   if (bracket.char === '[') {
-    if (COLOR_NAMESPACES.has(bracket.callee)) return colorKeyItems(ctx, textAfter);
-    const list = findNamedList(bracket.callee);
-    if (list) return namedListKeyItems(list, ctx, textAfter);
-    return null;
+    if (COLOR_NAMESPACES.has(bracket.callee)) return 'colorKey';
+    return findNamedList(bracket.callee) ? 'namedList' : null;
   }
-  if (bracket.char === '(' && bracket.kw === null) {
-    if (NOTE_FUNCTIONS.has(bracket.callee) && bracket.argIndex === 0) return noteItems(ctx, textAfter);
-    if (INSTRUMENT_FUNCTIONS.has(bracket.callee) && bracket.argIndex === 0) return instrumentItems(ctx, textAfter);
-    if (INSTRUMENT_FUNCTIONS.has(bracket.callee) && bracket.argIndex === 1) return noteItems(ctx, textAfter);
-    if (SFX_FUNCTIONS.has(bracket.callee) && bracket.argIndex === 0) return sfxItems(ctx, textAfter);
-    if (BGM_FUNCTIONS.has(bracket.callee) && bracket.argIndex === 0) return bgmItems(ctx, textAfter);
+  if (bracket.char !== '(') return null;
+  const spec = STRING_SLOTS.find((entry) => entry.names.has(bracket.callee));
+  if (!spec) return null;
+  if (bracket.kw !== null) return spec.byKw[bracket.kw] || null;
+  return spec.byIndex[bracket.argIndex] || null;
+}
+
+/** 문자열 인자 자리의 항목. 해당 없는 자리면 null */
+function slotItems(bracket, ctx, textAfter) {
+  switch (stringSlot(bracket)) {
+    case 'colorKey': return colorKeyItems(ctx, textAfter);
+    case 'namedList': return namedListKeyItems(findNamedList(bracket.callee), ctx, textAfter);
+    case 'note': return noteItems(ctx, textAfter);
+    case 'instrument': return instrumentItems(ctx, textAfter);
+    case 'sfx': return sfxItems(ctx, textAfter);
+    case 'bgm': return bgmItems(ctx, textAfter);
+    default: return null;
   }
-  return null;
 }
 
 function findNamedList(name) {
@@ -424,30 +482,14 @@ function findNamedList(name) {
  * @param {{ textAfter?: string, triggerCharacter?: string | null }} options
  *   triggerCharacter가 있으면 사용자가 그 글자를 막 적은 것이므로, 아무 데서나 긴 목록을 띄우지 않는다
  */
-export function buildSuggestions(ctx, { textAfter = '', triggerCharacter = null } = {}) {
-  if (ctx.comment) return [];
+export function buildSuggestions(rawCtx, { textAfter = '', triggerCharacter = null } = {}) {
+  if (rawCtx.comment) return [];
+  // 커서 오른쪽에 붙은 식별자 조각(color.r|ed 의 'ed')도 함께 바꾼다
+  const ctx = { ...rawCtx, wordAfter: WORD_HEAD_RE.exec(textAfter)[0].length };
   const { string, bracket, member } = ctx;
 
-  // 1) 문자열 인자 자리
-  if (string) {
-    if (!bracket) return [];
-    if (bracket.char === '[') {
-      if (COLOR_NAMESPACES.has(bracket.callee)) return colorKeyItems(ctx, textAfter);
-      const list = findNamedList(bracket.callee);
-      if (list) return namedListKeyItems(list, ctx, textAfter);
-      return [];
-    }
-    if (bracket.char === '(') {
-      if (NOTE_FUNCTIONS.has(bracket.callee) && bracket.argIndex === 0) return noteItems(ctx, textAfter);
-      if (INSTRUMENT_FUNCTIONS.has(bracket.callee)) {
-        if (bracket.argIndex === 0 || bracket.kw === 'instrument') return instrumentItems(ctx, textAfter);
-        if (bracket.argIndex === 1 || bracket.kw === 'name') return noteItems(ctx, textAfter);
-      }
-      if (SFX_FUNCTIONS.has(bracket.callee) && bracket.argIndex === 0) return sfxItems(ctx, textAfter);
-      if (BGM_FUNCTIONS.has(bracket.callee) && bracket.argIndex === 0) return bgmItems(ctx, textAfter);
-    }
-    return [];
-  }
+  // 1) 문자열 인자 자리 (따옴표를 적은 뒤)
+  if (string) return slotItems(bracket, ctx, textAfter) || [];
 
   // 2) 점 뒤: 네임스페이스·객체 멤버
   if (member !== null) {
@@ -472,7 +514,7 @@ export function buildSuggestions(ctx, { textAfter = '', triggerCharacter = null 
   if (bracket) {
     const slot = slotItems(bracket, ctx, textAfter);
     if (slot) return triggerCharacter ? slot : [...slot, ...apiItems(ctx)];
-    if (bracket.char === '(' && bracket.kw) {
+    if (bracket.char === '(' && bracket.kw !== null) {
       // color=, trail_color= 자리에는 color.빨강, texture= 자리에는 textures.wood 를 먼저 보여 준다
       const lead = /color$/.test(bracket.kw) ? colorAttrItems(ctx, 'color.') : bracket.kw === 'texture' ? textureItems(ctx, 'textures.') : [];
       if (triggerCharacter) return lead;
@@ -529,8 +571,10 @@ export function registerVpylabCompletions(monaco) {
       const ctx = analyzeContext(textBefore);
       const triggerCharacter = context.triggerKind === monaco.languages.CompletionTriggerKind.TriggerCharacter ? context.triggerCharacter : null;
       const items = buildSuggestions(ctx, { textAfter, triggerCharacter });
+      const lineLength = model.getLineLength(position.lineNumber);
       const suggestions = items.map((it) => {
         const replaceLength = Math.min(it.replaceLength, position.column - 1);
+        const replaceAfter = Math.min(it.replaceAfter ?? ctx.wordAfter ?? 0, lineLength + 1 - position.column);
         return {
           label: it.labelDescription ? { label: it.label, description: it.labelDescription } : it.label,
           kind: monacoKind(monaco, it.kind),
@@ -544,7 +588,7 @@ export function registerVpylabCompletions(monaco) {
             startLineNumber: position.lineNumber,
             startColumn: position.column - replaceLength,
             endLineNumber: position.lineNumber,
-            endColumn: position.column,
+            endColumn: position.column + replaceAfter,
           },
         };
       });
