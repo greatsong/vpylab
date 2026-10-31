@@ -320,3 +320,4 @@ label(pos=vector(0, 1.2, 0), text="안녕!", color=색상['하양'], height=20)
 
 - 코드: AGPL v3
 - 미션 콘텐츠: CC BY-NC-SA 4.0
+- 포함한 외부 코드(MIT): `shapes`·`paths` 구현은 [vpython-jupyter](https://github.com/vpython/vpython-jupyter)의 `shapespaths.py`를 가져왔고, `compound`의 좌표 변환과 `text`의 위치 계산식은 같은 저장소의 `vpython.py`에서 이식했다(Copyright (C) 2015 John Coady, Ruth Chabay, Bruce Sherwood). `group`은 [GlowScript](https://github.com/vpython/glowscript)의 `lib/glow/primitives.js`(MIT)를 명세로 삼았다. 출처와 허가 문구는 `client/src/engine/vpython-api.py`의 해당 절에 있다.

@@ -456,6 +456,62 @@
   "code": "from vpython import *\n\nscene_background(vector(0.04, 0.04, 0.08))\n\n# === 20종 프리셋 (5x4 그리드) ===\npreset_names = [\n    'wood', 'metal', 'stones', 'granite', 'gravel',\n    'rough', 'rug', 'stucco', 'flower', 'earth',\n    'brick', 'checker', 'grid', 'galaxy', 'nebula',\n    'water', 'lava', 'ice', 'circuit', 'fire',\n]\n\ncols = 5\nfor i, name in enumerate(preset_names):\n    row = i // cols\n    col = i % cols\n    x = (col - 2) * 1.7\n    y = 3.0 - row * 1.7\n    box(pos=vector(x, y, 0),\n        size=vector(1.5, 1.5, 0.2),\n        texture=getattr(textures, name))\n    label(pos=vector(x, y - 1.0, 0), text=name, height=11,\n          color=color.white, background=vector(0, 0, 0))\n\n# === 외부 URL 텍스처 예제 ===\n# picsum.photos — CORS 지원 무료 랜덤 이미지\nsphere(pos=vector(-3, -4.8, 0), radius=0.85,\n       texture=\"https://picsum.photos/seed/vpylab/512/512\")\nlabel(pos=vector(-3, -5.9, 0), text=\"picsum (랜덤)\", height=11,\n      color=color.white, background=vector(0, 0, 0))\n\n# NASA images-assets — 은하 (CORS 지원, 공공 이미지)\ngalaxy_url = \"https://images-assets.nasa.gov/image/PIA12348/PIA12348~thumb.jpg\"\nsphere(pos=vector(0, -4.8, 0), radius=0.85, texture=galaxy_url)\nlabel(pos=vector(0, -5.9, 0), text=\"NASA 은하\", height=11,\n      color=color.white, background=vector(0, 0, 0))\n\n# Wikimedia Commons — 화성 (직접 링크, CORS 지원)\nmars_url = \"https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg\"\nsphere(pos=vector(3, -4.8, 0), radius=0.85, texture=mars_url)\nlabel(pos=vector(3, -5.9, 0), text=\"화성\", height=11,\n      color=color.white, background=vector(0, 0, 0))\n\n# 한 번 flush — 모든 객체 표시 후 종료\nrate(1)\nprint(\"✨ 20종 프리셋 + 3종 외부 URL 텍스처 표시 완료\")\n"
  },
  {
+  "id": "internal:course:beg-first-steps:beg-first-steps-1",
+  "source": "internal",
+  "kind": "program",
+  "title": "코스 [object Object] / [object Object]",
+  "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-1",
+  "code": "from vpython import *\n음표(\"도\")\n"
+ },
+ {
+  "id": "internal:course:beg-first-steps:beg-first-steps-2",
+  "source": "internal",
+  "kind": "program",
+  "title": "코스 [object Object] / [object Object]",
+  "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-2",
+  "code": "from vpython import *\nscene.lights = []\nsphere(color=색상['회색'])\nlocal_light(pos=vector(2, 2, 2), color=색상['빨강'], intensity=50)\n효과음(\"coin\")\n"
+ },
+ {
+  "id": "internal:course:beg-first-steps:beg-first-steps-3",
+  "source": "internal",
+  "kind": "program",
+  "title": "코스 [object Object] / [object Object]",
+  "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-3",
+  "code": "from vpython import *\nfor i in range(7):\n    sphere(pos=vector(i - 3, 0, 0), radius=0.4, color=무지개[i])\n    음표(\"도레미파솔라시\"[i], 0.3)\n효과음(\"levelup\")\n"
+ },
+ {
+  "id": "internal:course:beg-first-steps:beg-first-steps-4",
+  "source": "internal",
+  "kind": "program",
+  "title": "코스 [object Object] / [object Object]",
+  "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-4",
+  "code": "from vpython import *\nscene.range = 4\nbox(pos=vector(0, -3, 0), size=vector(6, 0.2, 3), color=색상['회색'])\n공 = sphere(pos=vector(0, 3, 0), radius=0.5, color=색상['노랑'])\n속도 = 0\nwhile True:\n    rate(60)\n    속도 = 속도 - 0.01\n    공.pos.y = 공.pos.y + 속도\n    if 공.pos.y < -2.4:\n        속도 = 0.3\n        효과음(\"jump\")\n"
+ },
+ {
+  "id": "internal:course:beg-first-steps:beg-first-steps-5",
+  "source": "internal",
+  "kind": "program",
+  "title": "코스 [object Object] / [object Object]",
+  "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-5",
+  "code": "from vpython import *\nimport random\nfor i in range(30):\n    x = random.uniform(-5, 5)\n    y = random.uniform(-3, 3)\n    sphere(pos=vector(x, y, 0), radius=0.2, color=random.choice(무지개))\n    소리(random.randint(300, 900), 0.1)\n    sleep(0.1)\n"
+ },
+ {
+  "id": "internal:course:beg-first-steps:beg-first-steps-6",
+  "source": "internal",
+  "kind": "program",
+  "title": "코스 [object Object] / [object Object]",
+  "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-6",
+  "code": "from vpython import *\n멜로디 = [\"도\", \"미\", \"솔\", \"도5\", \"솔\", \"미\", \"도\"]\n건반들 = []\nfor i in range(7):\n    건반 = box(pos=vector(i - 3, 0, 0), size=vector(0.9, 0.3, 2), color=색상['흰색'])\n    건반들.append(건반)\nfor i in range(7):\n    건반들[i].color = 무지개[i]\n    음표(멜로디[i], 0.4)\n    건반들[i].color = 색상['흰색']\n"
+ },
+ {
+  "id": "internal:course:beg-first-steps:beg-first-steps-7",
+  "source": "internal",
+  "kind": "program",
+  "title": "코스 [object Object] / [object Object]",
+  "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-7",
+  "code": "from vpython import *\nimport random\nscene.lights = []\n공 = sphere(radius=1, color=색상['회색'])\n빛 = local_light(pos=vector(0, 2, 2), color=색상['보라'], intensity=60)\n멜로디 = [\"도\", \"미\", \"솔\", \"도5\"]\nfor 프레임 in range(1, 601):\n    rate(60)\n    if 프레임 % 30 == 0:\n        음번호 = random.randint(0, 3)\n        play_note(멜로디[음번호], 0.4)\n        빛.color = 무지개[음번호 * 2]\n        공.radius = 1.4\n    공.radius = 공.radius - (공.radius - 1) * 0.1\n"
+ },
+ {
   "id": "internal:course:beg-shapes:beg-shapes-1",
   "source": "internal",
   "kind": "program",
@@ -2833,6 +2889,176 @@
   "tags": [
    "glowscript-only"
   ],
+  "progress": false
+ },
+ {
+  "id": "idiom:canvas-single",
+  "source": "idiom",
+  "kind": "program",
+  "title": "canvas(**kw)는 scene에 인자를 적용하고 같은 scene을 돌려준다",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/canvas.html",
+  "code": "from vpython import *\nscene = canvas(width=600, height=300, background=color.white, title='제목', center=vector(0, 1, 0), range=5)\nassert scene.width == 600 and scene.height == 300 and scene.title == '제목'\nassert scene.center == vector(0, 1, 0)\nc2 = canvas(title='둘째')\nassert c2 is scene\nassert canvas.get_selected() is scene\nscene.select()\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:canvas-visible-delete",
+  "source": "idiom",
+  "kind": "program",
+  "title": "scene.visible, scene.delete(), scene.objects",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/canvas.html",
+  "code": "from vpython import *\nb = box()\ns = sphere()\nassert len(scene.objects) == 2\nscene.visible = False\nscene.visible = True\nscene.delete()\nassert len(scene.objects) == 0\nball = sphere()\nL = attach_light(ball)\nf = attach_trail(lambda: ball.pos)\nscene.delete()\nassert scene.lights == []\nfor i in range(2):\n    rate(100)\n    ball.pos = vector(i, 0, 0)   # 지워진 객체를 갱신하려는 부착물이 없어야 한다\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:group-basic",
+  "source": "idiom",
+  "kind": "program",
+  "title": "group()과 box(group=g), g.pos·g.rotate()·g.visible",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/group.html",
+  "code": "from vpython import *\ng = group()\nb = box(group=g, pos=vector(1, 0, 0), color=color.red)\ns = sphere(group=g, pos=vector(-1, 0, 0))\nassert len(g.objects) == 2\ng.pos = vector(3, 0, 0)\ng.pos.x = 5\nassert g.pos.x == 5 and b.pos.x == 1\ng.rotate(angle=pi / 2, axis=vector(0, 1, 0))\nassert abs(g.axis.z + 1) < 1e-9\nassert abs(b.pos.z + 1) < 1e-9 and abs(b.pos.x) < 1e-9   # GlowScript처럼 하위 객체의 상대 pos가 돈다\nassert g.group_to_world(b.pos) == b.pos + g.pos\ng.color = color.green\nassert s.color == color.green\ng2 = group()\nb2 = box(group=g2, pos=vector(1, 0, 0))\ng2.axis = vector(-1, 0, 0)                  # 정반대 축: 자식이 π 회전한다\nassert abs(b2.pos.x + 1) < 1e-9\nb2.visible = False\ng2.visible = False\ng2.visible = True\nassert b2.visible is False               # 묶음 visible은 자식의 값을 덮어쓰지 않는다\ng.rotate(angle=0.1, axis=vector(0, 1, 0), origin=vector(0, 0, 0))\ng.visible = False\nb.color = color.blue\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:group-compound-clone",
+  "source": "idiom",
+  "kind": "program",
+  "title": "compound.clone(pos=, group=)와 text(group=)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/group.html",
+  "code": "from vpython import *\nr = ring(radius=1, thickness=0.2, color=color.black, axis=vector(0, 0, 1))\nc1 = cylinder(pos=vector(-1, 0, 0), axis=vector(2, 0, 0), radius=0.1)\nw = compound([r, c1])\ng = group()\nw1 = w.clone(pos=vector(4, 0, 0), group=g)\nw2 = w.clone(pos=vector(-4, 0, 0), group=g)\nw.visible = False\nT = text(group=g, text='Car', pos=vector(0, 1, 0), depth=1, color=color.green)\nassert len(g.objects) == 3\nw1.rotate(angle=-0.1, axis=vector(0, 0, 1))\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:compound-rotate-clone",
+  "source": "idiom",
+  "kind": "program",
+  "title": "compound.rotate(angle=, axis=, origin=)와 clone()",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/compound.html",
+  "code": "from vpython import *\nc = compound([box(pos=vector(1, 0, 0)), sphere(pos=vector(-1, 0, 0))])\nc.rotate(angle=0.2, axis=vector(0, 0, 1))\nc.rotate(angle=pi / 2, axis=vector(0, 0, 1), origin=vector(0, 0, 0))\nassert abs(c.axis.hat.x - cos(0.2 + pi / 2)) < 1e-9\nassert abs(c.length - c.axis.mag) < 1e-9\nc.length = 5\nassert abs(c.axis.mag - 5) < 1e-9 and abs(c.size.x - 5) < 1e-9\nc.rotate(angle=0.3)   # 기본 축은 자기 axis\nc2 = c.clone(pos=vector(0, 3, 0), color=color.red)\nassert c2.pos == vector(0, 3, 0) and c2.color == color.red\nc2.texture = textures.metal\nc2.emissive = True\nc3 = compound([box()], size=vector(5, 6, 7))\nassert c3.size == vector(5, 6, 7) and abs(c3.length - 5) < 1e-9\nc4 = compound([box()], length=3)\nassert abs(c4.size.x - 3) < 1e-9\nassert len(scene.objects) == 4\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:extrusion-clone-rotate",
+  "source": "idiom",
+  "kind": "program",
+  "title": "extrusion.clone()·rotate()·pos 기본값(경로 중심)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/extrusion.html",
+  "code": "from vpython import *\ne = extrusion(path=[vector(0, 0, 0), vector(2, 0, 0)], shape=shapes.circle(radius=0.5))\nassert e.pos == vector(1, 0, 0)\ne2 = e.clone(pos=vector(0, 3, 0))\nassert e2.pos == vector(0, 3, 0)\ne2.rotate(angle=pi / 2, axis=vector(0, 1, 0), origin=vector(0, 0, 0))\nassert abs(e2.axis.z + 1) < 1e-9\ne3 = extrusion(pos=vector(7, 0, 10), path=[vector(0, 0, 0), vector(0, 1, 0), vector(0, 1, 1)], shape=shapes.circle(radius=0.05))\nassert e3.pos == vector(7, 0, 10)\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:curve-forms",
+  "source": "idiom",
+  "kind": "program",
+  "title": "curve 위치 인자·append(pos=, color=, radius=)·리스트·dict 점",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/curve.html",
+  "code": "from vpython import *\nc = curve(vector(0, 0, 0), vector(1, 0, 0))\nassert c.npoints == 2\nc.append(pos=vector(2, 0, 0), color=color.red, radius=0.1)\nc.append([vector(3, 0, 0), vector(4, 0, 0)])\nc.append(vector(5, 0, 0), vector(6, 0, 0))\nc.append({'pos': vector(7, 0, 0), 'color': color.blue})\nc.append(pos=[vector(8, 0, 0), vector(9, 0, 0)])   # pos= 에 점 목록\nassert c.npoints == 10\nassert c.point(2)['color'] == color.red and c.point(2)['radius'] == 0.1\nd = curve(pos=[{'pos': vector(0, 0, 0), 'color': color.red}, {'pos': vector(1, 1, 0)}], radius=0.05)\nassert d.point(1)['color'] == color.white and d.point(1)['radius'] == 0.05\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:curve-modify-point",
+  "source": "idiom",
+  "kind": "program",
+  "title": "curve.modify()·point()·pop()·shift()·rotate()·origin",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/curve.html",
+  "code": "from vpython import *\np = [{'pos': vector(i, 0, 0), 'radius': 0.01 * i, 'color': vec.random()} for i in range(5)]\nc = curve(p)\nassert len(c) == 5\nc.modify(0, pos=vector(9, 9, 9))\nc.modify(1, color=color.blue, x=5)\nc.modify(2, vector(1, 2, 3))\nassert c.point(0)['pos'] == vector(9, 9, 9) and c.point(1)['pos'].x == 5 and c.point(2)['pos'].z == 3\nlast = c.pop()\nassert last['pos'] == vector(4, 0, 0)\nc.shift()\nassert c.npoints == 3\ns = curve([vector(i, 0, 0) for i in range(4)])\ns.splice(-1, 1, vector(9, 0, 0))             # 음수 start: 마지막 점 교체\nassert s.npoints == 4 and s.point(3)['pos'].x == 9\ns.splice(10, 5, vector(7, 0, 0))            # 범위 밖 start: 끝에 추가\nassert s.npoints == 5 and s.point(4)['pos'].x == 7\ns.splice(1, 99)                              # howmany가 넘치면 끝까지\nassert s.npoints == 1\nr = curve(pos=[vector(i, 0, 0) for i in range(5)], retain=2)\nassert r.npoints == 2 and r.point(0)['pos'].x == 3   # 생성 시 retain\nr.unshift(vector(-1, 0, 0))\nassert r.npoints == 2\nr.splice(0, 0, vector(8, 0, 0), vector(9, 0, 0))\nassert r.npoints == 2\nc.rotate(angle=0.005, axis=vector(0, 1, 0))\nc.origin = vector(0, 1, 0)\nassert c.pos == vector(0, 1, 0)\nc.color = color.green\nassert c.point(0)['color'] == color.green\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:points-forms",
+  "source": "idiom",
+  "kind": "program",
+  "title": "points(pos=[dict], size_units=world)와 append",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/points.html",
+  "code": "from vpython import *\np = points(pos=[{'pos': vector(0, 0, 0), 'radius': 0.02, 'color': color.red}], size_units='world')\np.append(vector(1, 1, 1))\np.append(pos=vector(2, 2, 2), color=color.blue)\nassert p.npoints == 3 and p.point(2)['color'] == color.blue\nq = points(vector(0, 0, 0), vector(1, 0, 0), size=8, color=color.yellow)\nassert q.npoints == 2\nq.size = 12\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:shapes-basic",
+  "source": "idiom",
+  "kind": "program",
+  "title": "shapes.rectangle/circle/triangle/star 등 2D 단면",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "from vpython import *\nmarker = sphere(radius=0.1)   # 생성기만 쓰는 코드라 하네스의 무반응 판정을 피하기 위한 객체\nr = shapes.rectangle(width=2, height=1)\nassert len(r) == 5 and r[0] == r[-1]\nassert r[0] == [1, -0.5] and r[1] == [1, 0.5]   # vpython-jupyter shapespaths와 같은 순서\nrr = shapes.rectangle(width=2, height=1, thickness=0.1, roundness=0.3)\nassert len(rr) == 2 and len(rr[0]) > 5\nc = shapes.circle(radius=1, thickness=0.2)\nassert len(c) == 2 and len(c[0]) == 65\nassert len(shapes.triangle(length=1)) == 4\nassert len(shapes.star(n=5, radius=1)) == 11\nfor f in (shapes.pentagon, shapes.hexagon, shapes.octagon):\n    assert f(length=0.3)[0] == f(length=0.3)[-1]\nassert len(shapes.ngon(np=7, length=1)) == 8\nshapes.cross(width=4, thickness=1)\nshapes.trapezoid(width=1.6, height=1, top=0.6)\nshapes.arc(radius=1, angle2=pi)\nshapes.ellipse(width=2, height=1)\nshapes.line(start=[0, 0], end=[1, 1])\nassert shapes.points(pos=[[0, 0], [1, 0], [1, 1]])[-1] == [0, 0]\nassert len(shapes.gear(n=9, radius=0.455, addendum=0.04, dedendum=0.06, fradius=0.01)) > 9\nshapes.rackgear()\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:paths-basic",
+  "source": "idiom",
+  "kind": "program",
+  "title": "paths.circle/arc/rectangle/line — xz 평면 vector 경로",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/shapes_and_paths.html",
+  "code": "from vpython import *\nmarker = sphere(radius=0.1)   # 생성기만 쓰는 코드라 하네스의 무반응 판정을 피하기 위한 객체\npc = paths.circle(radius=2)\nassert isinstance(pc[0], vector) and abs(pc[0].y) < 1e-9 and pc[0] == pc[-1]\nassert abs(pc[0].x - 2) < 1e-9\npa = paths.arc(radius=1.7, angle2=pi)\nassert pa[0] != pa[-1]\npr = paths.rectangle(width=5, height=2)\nassert len(pr) == 5\npl = paths.line(start=vector(0, 0, 0), end=vector(0, 0, -2), np=5)\nassert len(pl) == 5 and pl[-1] == vector(0, 0, -2)\nassert len(paths.circle(radius=3)) == 33   # np 기본값 32 (vpython-jupyter)\npt = paths.pointlist(pos=[[0, 0], [1, 0], [1, 1]])\nassert isinstance(pt[0], vector) and pt[0] == pt[-1]\npp = paths.pentagon(length=1, pos=vector(1, 2, 3), up=vector(1, 0, 0))\nassert abs((pp[0] - vector(1, 2, 3)).x) < 1e-9\npaths.cross(width=4, thickness=1)\npaths.triangle(length=1); paths.hexagon(length=1); paths.star(radius=1); paths.ellipse(width=2)   # 원본 paths에는 octagon이 없다\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:extrusion-shapes-paths",
+  "source": "idiom",
+  "kind": "program",
+  "title": "extrusion(path=paths.*, shape=shapes.*) — 구멍·여러 고체·색 목록",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/extrusion.html",
+  "code": "from vpython import *\nE1 = extrusion(path=[vector(0, 0, 0), vector(0, 0, -0.7)],\n    shape=[shapes.circle(radius=1.5), shapes.triangle(pos=[0, -0.6], length=1.2),\n           shapes.trapezoid(pos=[0, 0.6], width=1.6, height=1, top=0.6)], pos=vector(-4, 1.5, 0))\nE2 = extrusion(path=paths.arc(radius=1.7, angle2=pi),\n    shape=[[shapes.triangle(length=2), shapes.circle(pos=[0, .5], radius=0.2)],\n           [shapes.rectangle(pos=[0, 1.8], width=1, height=0.3)]],\n    start_face_color=color.red, end_face_color=color.red)\nE2.pos = vector(3, 2, 0)\nrect = extrusion(path=paths.rectangle(width=5, height=2), shape=shapes.hexagon(length=0.3), color=color.red)\nbottom = extrusion(path=paths.cross(width=4, thickness=1), shape=shapes.circle(radius=0.2), color=color.green)\ntube = extrusion(path=[vector(0, 0, 0), vector(2, 0, 0)], shape=shapes.circle(radius=0.6, thickness=0.2),\n                 pos=vector(-1, 1.7, 0), axis=vector(0, 0, 2), color=color.yellow, end_face_color=color.blue)\npath = [vector(t, 0, 0) for t in range(5)]\nconch = extrusion(shape=shapes.circle(radius=0.69, thickness=0.01), path=path, color=[vec.random() for _ in path], scale=[1, 2, 3, 4, 5], texture=textures.rock)\nconch.rotate(angle=pi / 2)\nold = extrusion(path=path, shape=[(0, 0.5), (0.15, 0.15), (0.5, 0.15)], color=color.gold)\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:text-3d",
+  "source": "idiom",
+  "kind": "program",
+  "title": "text(text=, depth=, align=, height=)·length·start·billboard",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/text.html",
+  "code": "from vpython import *\nt = text(text='Hello', pos=vector(0, 0, 0), height=0.5, depth=0.2, align='center', color=color.yellow, billboard=True, emissive=True)\nassert t.height == 0.5 and t.depth == 0.2 and t.align == 'center'\nassert t.start.x < 0 < t.end.x\nt4 = text(text='Regular', pos=vector(-4, -1, 0), depth=0.5, start_face_color=color.red, end_face_color=color.green)\nbox(pos=t4.start, size=0.1 * vector(1, 1, 1))\nassert t4.start == vector(-4, -1, 0)\nassert t4.upper_left == vector(-4, 0, 0) and t4.end.x > t4.start.x and t4.lower_left.y < t4.start.y\nassert t4.vertical_spacing == 1.5 and t4.font == 'sans'\nt.text = 'Bye'\nt.length = 3\nassert t.length == 3\nt.rotate(angle=0.3, axis=vector(0, 1, 0))\nt2 = t.clone(pos=vector(1, 1, 1))\nassert t2.text == 'Bye'\nk = text(text='안녕', depth=0.3)\nL = label(pos=vector(0, 1, 0), text='2D 라벨')\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:attach-trail-function",
+  "source": "idiom",
+  "kind": "program",
+  "title": "attach_trail(obj/함수, color=, retain=, type=, pps=)와 stop/start/clear",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/trail.html",
+  "code": "from vpython import *\nb = sphere(make_trail=True, trail_type='points', interval=10, pps=15)\nh = attach_trail(b, color=color.green, retain=100)\nh.stop()\nh.start()\nh.clear()\nf = attach_trail(lambda: b.pos + vector(0, 1, 0), type='points', radius=0.05)\ng = attach_trail(lambda: b.pos * 2, color=color.cyan, pps=0)\nk = attach_trail(lambda: b.pos, interval=3)\nfor i in range(3):\n    rate(100)\n    b.pos = vector(i, 0, 0)\nassert f.trail.npoints >= 2 and g.trail.npoints >= 2\nassert k.trail.npoints == 1   # interval=3: rate 3번에 한 점\nf.stop()\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:attach-light-follow",
+  "source": "idiom",
+  "kind": "program",
+  "title": "attach_light(obj, offset=, color=) — 객체를 따라다니는 광원",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/attach_light.html",
+  "code": "from vpython import *\nb = sphere(pos=vector(1, 0, 0), color=color.magenta, emissive=True)\nL = attach_light(b, offset=vector(0, 1, 0), color=color.green)\nassert L.light.pos == vector(1, 1, 0)\nassert attach_light(b).color == b.color   # color 기본값은 객체의 색 (vpython-jupyter)\nscene.lights = [L]\nassert scene.lights == [L]\nscene.lights = []\nL.offset = vector(0, 2, 0)\nassert L.light.pos == vector(1, 2, 0)\nL.color = color.red\nL.visible = False\nL.visible = True\nfor i in range(2):\n    rate(100)\n    b.pos = vector(i, 0, 0)\nassert L.light.pos == vector(0, 2, 0)   # 마지막 rate() 시점의 b.pos + offset\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:mouse-ray-project",
+  "source": "idiom",
+  "kind": "program",
+  "title": "scene.mouse.ray, scene.mouse.project(normal=, point=/d=)",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/mouse.html",
+  "code": "from vpython import *\nr = scene.mouse.ray\nassert abs(r.mag - 1) < 1e-9\np = scene.mouse.project(normal=vector(0, 0, 1), point=vector(0, 0, 0))\nassert p is not None and abs(p.z) < 1e-9\np2 = scene.mouse.project(normal=vector(0, 0, 1), d=0)\nassert p2 == p\nassert scene.mouse.project(normal=vector(0, 0, 1), point=vector(0, 0, 100)) is None\nassert scene.mouse.camera == scene.camera.pos\nassert scene.mouse.alt is False\n",
+  "tags": [],
+  "progress": false
+ },
+ {
+  "id": "idiom:wtext-basic",
+  "source": "idiom",
+  "kind": "program",
+  "title": "wtext(text=)와 .text 갱신, title_anchor",
+  "origin": "https://www.glowscript.org/docs/VPythonDocs/wtext.html",
+  "code": "from vpython import *\nw = wtext(text='0.0')\nassert w.text == '0.0'\nw.text = '1.5'\nassert w.text == '1.5'\nw2 = wtext(text='제목', pos=scene.title_anchor)\nw2.delete()\ns = slider(min=0, max=1, pos=scene.caption_anchor)\nscene.append_to_caption(' m')\n",
+  "tags": [],
   "progress": false
  },
  {

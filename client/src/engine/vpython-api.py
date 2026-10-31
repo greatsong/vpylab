@@ -63,6 +63,12 @@ class vector:
     def __init__(self, x=0, y=0, z=0):
         self._owner = None   # 이 벡터를 속성으로 가진 객체 (예: sphere)
         self._attr = None    # 그 객체에서의 속성 이름 (예: 'pos')
+        if isinstance(x, vector):
+            # vector(v) — GlowScript처럼 복사본을 만든다
+            x, y, z = x._x, x._y, x._z
+        elif isinstance(x, (list, tuple)) and len(x) == 3:
+            # vector((x, y, z)) — 튜플·리스트도 받는다 (vpython-jupyter의 shapespaths가 사용)
+            x, y, z = x
         self._x = float(x)
         self._y = float(y)
         self._z = float(z)
@@ -251,6 +257,59 @@ def _coerce_vector(value, default=None):
     if isinstance(default, vector):
         return default.clone()
     return default
+
+
+# === 한 번만 출력하는 안내 · group 인자 · 공통 회전 ===
+_notices_shown = set()   # 실행 한 번에 한 번만 출력하는 안내문의 키
+
+
+def _notice_once(key, message):
+    """같은 안내문은 실행 한 번에 한 번만 출력한다."""
+    if key in _notices_shown:
+        return
+    _notices_shown.add(key)
+    print(message)
+
+
+def _track_scene_object(obj):
+    _scene_objects.append(obj)
+
+
+def _untrack_scene_object(obj):
+    try:
+        _scene_objects.remove(obj)
+    except ValueError:
+        pass
+
+
+def _group_ref(value):
+    """group= 인자를 검사해 group 객체를 돌려준다. None이면 None."""
+    if value is None:
+        return None
+    if not isinstance(value, group):
+        raise TypeError("group= 인자에는 group()으로 만든 객체를 넘겨야 합니다")
+    return value
+
+
+def _rotate_object(obj, angle, axis=None, origin=None):
+    """pos(와 있으면 axis·up)를 가진 객체를 origin을 지나는 axis 축으로 angle(라디안)만큼 회전한다.
+    origin 미지정: 객체 자기 위치(자리는 그대로 두고 방향만 돈다).
+    axis 미지정: 객체 자신의 axis (GlowScript와 같음). axis가 없는 객체(sphere 등)는 y축."""
+    if axis is None:
+        own = getattr(obj, '_axis', None)
+        axis = own.clone() if isinstance(own, vector) and own.mag > 0 else vector(0, 1, 0)
+    else:
+        axis = _coerce_vector(axis, vector(0, 1, 0))
+    if origin is None:
+        origin = obj.pos
+    else:
+        origin = _coerce_vector(origin, vector(0, 0, 0))
+    rel = obj.pos - origin
+    obj.pos = origin + rel.rotate(angle, axis=axis)
+    if isinstance(getattr(obj, '_axis', None), vector):
+        obj.axis = obj._axis.rotate(angle, axis=axis)
+    if isinstance(getattr(obj, '_up', None), vector):
+        obj.up = obj._up.rotate(angle, axis=axis)
 
 
 # === 색상 팔레트 (30색) ===
@@ -455,6 +514,7 @@ class _GObject(_VectorOwner):
     def __init__(self, obj_type, **kwargs):
         self._id = _new_id()
         self._type = obj_type
+        self._group = _group_ref(kwargs.pop('group', None))
         self._make_trail = kwargs.pop('make_trail', False)
         self._trail_color = kwargs.pop('trail_color', None)
         pos_arg = kwargs.get('pos', None)
@@ -479,6 +539,10 @@ class _GObject(_VectorOwner):
             serialized = _serialize_command_value(v)
             if serialized is not None:
                 extra[k] = serialized
+        if self._group is not None:
+            # group(묶음)에 속한 객체 — pos는 묶음 기준의 상대 위치
+            self._group._objects.append(self)
+            extra['group'] = self._group._id
 
         _add_command({
             "action": "create",
@@ -607,28 +671,18 @@ class _GObject(_VectorOwner):
     def rotate(self, angle, axis=None, origin=None):
         """원점을 중심으로 axis 축으로 angle(라디안)만큼 객체를 회전.
         - origin 미지정: 객체 자기 위치(self.pos)를 중심으로 회전
-        - axis 미지정: y축(0,1,0)
+        - axis 미지정: 객체 자신의 axis (GlowScript와 같음). axis가 없는 sphere·ring 등은 y축(0,1,0).
+          cylinder·cone처럼 axis가 대칭축인 객체는 축을 생략하면 모양 변화가 보이지 않는다.
         객체에 axis 속성이 있으면(cylinder, arrow, cone 등) 함께 회전"""
-        if axis is None:
-            axis = vector(0, 1, 0)
-        if origin is None:
-            origin = self._pos
-        # pos 회전 (origin 기준 상대 위치를 회전)
-        rel = self._pos - origin
-        new_rel = rel.rotate(angle, axis=axis)
-        self.pos = origin + new_rel
-        # axis/up 속성 보유 시 함께 회전
-        if hasattr(self, '_axis') and isinstance(self._axis, vector):
-            self.axis = self._axis.rotate(angle, axis=axis)
-        if hasattr(self, '_up') and isinstance(self._up, vector):
-            self.up = self._up.rotate(angle, axis=axis)
+        _rotate_object(self, angle, axis, origin)
 
     def clear_trail(self):
         """누적된 궤적(trail)을 모두 지움"""
         _add_command({"action": "trail_clear", "id": self._id})
 
-    def attach_trail(self, color=None, retain=10000):
-        """객체에 궤적을 부착 (이미 있으면 색상/길이만 갱신)"""
+    def attach_trail(self, color=None, retain=10000, type='curve', pps=0, radius=0, interval=1):
+        """객체에 궤적을 부착 (이미 있으면 색상/길이만 갱신). stop()/start()/clear()가 있는 손잡이를 돌려준다.
+        type='points'면 점 궤적, interval=n이면 n번 움직일 때마다 한 점, pps=k면 초당 k점까지만 남긴다."""
         self._make_trail = True
         if color is not None:
             self._trail_color = color
@@ -637,8 +691,34 @@ class _GObject(_VectorOwner):
             "id": self._id,
             "trail_color": color.to_list() if isinstance(color, vector) else None,
             "pos": self._pos.to_list(),
-            "retain": int(retain),
+            "retain": int(retain) if retain and retain > 0 else 10000,
+            "trail_type": str(type),
+            "pps": float(pps or 0),
+            "interval": int(interval or 1),
+            "trail_radius": float(radius or 0),
         })
+        return _TrailHandle(self, color=color, radius=radius, retain=retain, type=type, pps=pps)
+
+
+class _TrailHandle:
+    """attach_trail()이 돌려주는 손잡이 — stop()으로 멈추고 start()로 다시 잇고 clear()로 지운다.
+    속성 이름(radius·retain·pps·type)은 vpython-jupyter의 attach_trail과 같다 (값은 만들 때 정해진다)."""
+    def __init__(self, obj, color=None, radius=0, retain=-1, type='curve', pps=0):
+        self.obj = obj
+        self.color = color
+        self.radius = radius
+        self.retain = retain
+        self.type = type
+        self.pps = pps
+
+    def stop(self):
+        self.obj._make_trail = False
+
+    def start(self):
+        self.obj._make_trail = True
+
+    def clear(self):
+        self.obj.clear_trail()
 
 
 class _AxisLength:
@@ -1192,55 +1272,557 @@ class label:
         return label(**args)
 
 
-# 영어 별칭: text() = label()
-text = label
+# === 새 프리미티브: text (3D 입체 글자) ===
+_LATIN_GLYPH_LIMIT = 0x0250   # 번들 글꼴(helvetiker)이 가진 글자 범위. 그 밖(한글 등)은 2D 라벨로 대체한다
 
 
-# === 새 프리미티브: curve (선분 누적 곡선) ===
-class curve:
-    """3D 폴리라인 — 점을 누적해 선을 그림.
-    c = curve(color=color.red); c.append(pos)"""
+def _text_is_latin(s):
+    return all(ord(ch) < _LATIN_GLYPH_LIMIT for ch in s)
+
+
+class text(_GObject):
+    """3D 입체 글자 — text(text='Hello', pos=vector(0,0,0), height=1, depth=0.2, align='left', color=color.white)
+    pos는 기준선 위치(align='left'면 왼쪽 끝, 'center'면 가운데, 'right'면 오른쪽 끝).
+    axis 방향으로 글이 흐르고 up이 글자의 위쪽이다. billboard=True면 항상 카메라를 향한다.
+    번들 글꼴은 라틴 문자만 담고 있어 한글 등은 카메라를 향하는 2D 라벨로 대체된다. 2D 화면 라벨은 label()을 사용한다."""
+    _vector_attrs = _GObject._vector_attrs + ('start_face_color', 'end_face_color')
+
+    # 속성 이름·기본값·검사는 vpython-jupyter vpython.py의 class text(MIT)를 따른다:
+    # height=1, depth=0.2*height, align='left', font='sans'|'serif', billboard=False, size 없음, text 필수,
+    # start/end_face_color 기본값은 color, upper_left·lower_right·start·end·vertical_spacing 계산식 이식.
     def __init__(self, **kwargs):
-        self._id = _new_id()
-        _scene_objects.append(self)
-        self._color = kwargs.get('color', color.white)
-        self._radius = float(kwargs.get('radius', 0))  # 0이면 기본 LineBasic, >0이면 굵은 선
-        self._visible = kwargs.get('visible', True)
-        self._points = []  # [vector, ...]
+        if 'size' in kwargs:
+            raise AttributeError("The text object has no size attribute.")
+        if 'text' not in kwargs:
+            raise AttributeError('A text object must have a text attribute')
+        if 'length' in kwargs:
+            raise AttributeError("text length can't be set when creating a text object")
+        self._text = str(kwargs.pop('text'))
+        self._height = float(kwargs.pop('height', 1.0))
+        depth = kwargs.pop('depth', None)
+        self._depth = float(depth) if depth is not None else 0.2 * self._height
+        self._align = str(kwargs.pop('align', 'left'))
+        font = str(kwargs.pop('font', 'sans'))
+        if font not in ('sans', 'serif'):
+            raise AttributeError("text font must be either 'sans' or 'serif' ")
+        self._font = font
+        self._billboard = bool(kwargs.pop('billboard', False))
+        self._axis = _coerce_vector(kwargs.pop('axis', None), vector(1, 0, 0))
+        self._up = _coerce_vector(kwargs.pop('up', None), vector(0, 1, 0))
+        base_color = _coerce_vector(kwargs.get('color'), vector(1, 1, 1))
+        self._start_face_color = _coerce_vector(kwargs.pop('start_face_color', None), base_color)
+        self._end_face_color = _coerce_vector(kwargs.pop('end_face_color', None), base_color)
+        self._show_start_face = bool(kwargs.pop('show_start_face', True))
+        self._show_end_face = bool(kwargs.pop('show_end_face', True))
+        self._lines = len(self._text.split('\n'))
+        self._length_override = None
+        self._latin = _text_is_latin(self._text)
+        if not self._latin:
+            _notice_once('text-latin', "[text] 번들 글꼴에 없는 글자(한글 등)가 있어 입체 글자 대신 카메라를 향하는 2D 라벨로 표시합니다.")
+        super().__init__(
+            'text',
+            text=self._text, height=self._height, depth=self._depth, align=self._align, font=self._font,
+            billboard=self._billboard, axis=self._axis, up=self._up, latin=self._latin,
+            start_face_color=self._start_face_color, end_face_color=self._end_face_color,
+            **kwargs,
+        )
 
-        # 초기 points 인자 지원
-        initial = kwargs.get('pos', None)
-        if initial is not None:
-            if isinstance(initial, vector):
-                self._points.append(initial.clone())
+    def _update(self, **fields):
+        _add_command({"action": "update", "id": self._id, **fields})
+
+    @property
+    def text(self):
+        return self._text
+
+    @text.setter
+    def text(self, value):
+        self._text = str(value)
+        self._lines = len(self._text.split('\n'))
+        latin = _text_is_latin(self._text)
+        if not latin:
+            _notice_once('text-latin', "[text] 번들 글꼴에 없는 글자(한글 등)가 있어 입체 글자 대신 카메라를 향하는 2D 라벨로 표시합니다.")
+        self._latin = latin
+        self._update(text=self._text, latin=latin)
+
+    @property
+    def height(self):
+        return self._height
+
+    @height.setter
+    def height(self, value):
+        self._height = float(value)
+        self._update(height=self._height)
+
+    @property
+    def depth(self):
+        return self._depth
+
+    @depth.setter
+    def depth(self, value):
+        val = float(value)
+        # 너무 얇은 두께는 글자 높이의 1%로 (vpython-jupyter와 같음)
+        if abs(val) < 0.01 * self._height:
+            val = -0.01 * self._height if val < 0 else 0.01 * self._height
+        self._depth = val
+        self._update(depth=self._depth)
+
+    @property
+    def align(self):
+        return self._align
+
+    @align.setter
+    def align(self, value):
+        self._align = str(value)
+        self._update(align=self._align)
+
+    @property
+    def billboard(self):
+        return self._billboard
+
+    @billboard.setter
+    def billboard(self, value):
+        self._billboard = bool(value)
+        self._update(billboard=self._billboard)
+
+    @property
+    def font(self):
+        return self._font
+
+    @font.setter
+    def font(self, value):
+        if value not in ('sans', 'serif'):
+            raise AttributeError("text font must be either 'sans' or 'serif' ")
+        self._font = value   # 번들 글꼴은 하나라 모양은 바뀌지 않는다
+
+    @property
+    def start_face_color(self):
+        return self._start_face_color
+
+    @property
+    def end_face_color(self):
+        return self._end_face_color
+
+    @property
+    def show_start_face(self):
+        return self._show_start_face
+
+    @property
+    def show_end_face(self):
+        return self._show_end_face
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @axis.setter
+    def axis(self, value):
+        self._axis = _coerce_vector(value, vector(1, 0, 0))
+        self._update(axis=self._axis.to_list(), up=self._up.to_list())
+
+    @property
+    def up(self):
+        return self._up
+
+    @up.setter
+    def up(self, value):
+        self._up = _coerce_vector(value, vector(0, 1, 0))
+        self._update(axis=self._axis.to_list(), up=self._up.to_list())
+
+    def _estimate_length(self):
+        """글자 폭의 어림값 — 글꼴 측정은 브릿지가 하므로 평균 글자 폭(높이의 0.6배)으로 센다."""
+        longest = max((len(line) for line in self._text.split('\n')), default=0)
+        return 0.6 * self._height * longest
+
+    @property
+    def length(self):
+        """글의 가로 길이. 대입하면 글이 그 길이로 늘거나 준다."""
+        if self._length_override is not None:
+            return self._length_override
+        return self._estimate_length()
+
+    @length.setter
+    def length(self, value):
+        self._length_override = float(value)
+        self._update(length=self._length_override)
+
+    # --- 아래 계산식은 vpython-jupyter vpython.py의 class text에서 이식 (MIT) ---
+    @property
+    def descender(self):
+        """기준선 아래로 내려가는 글자(g, p 등)의 깊이 (높이의 0.3배 어림값)"""
+        return 0.3 * self._height
+
+    @property
+    def upper_left(self):
+        if self.align == "right":
+            dx = -self.length
+        elif self.align == "center":
+            dx = -self.length/2
+        else:
+            dx = 0
+        ul = self.pos + (self.height * norm(self.up)) + dx*norm(self.axis)
+        return ul
+
+    @property
+    def upper_right(self):
+        return self.upper_left + norm(self.axis)*self.length
+
+    @property
+    def lower_left(self):
+        return self.upper_left + norm(self.up)*(-self.height -self.descender - 1.5*self.height*(self._lines-1) )
+
+    @property
+    def lower_right(self):
+        return self.lower_left + norm(self.axis)*self.length
+
+    @property
+    def start(self):
+        """글의 왼쪽 끝 위치 (기준선 위)"""
+        return self.upper_left - norm(self.up)*self.height
+
+    @property
+    def end(self):
+        """글의 오른쪽 끝 위치 (기준선 위)"""
+        return self.upper_right - norm(self.up)*self.height
+
+    @property
+    def vertical_spacing(self):
+        """여러 줄일 때 줄 사이 간격"""
+        return 1.5*self.height
+
+    def _clone_kwargs(self):
+        return {
+            **super()._clone_kwargs(),
+            'text': self._text,
+            'height': self._height,
+            'depth': self._depth,
+            'align': self._align,
+            'font': self._font,
+            'billboard': self._billboard,
+            'axis': self._axis.clone(),
+            'up': self._up.clone(),
+            'start_face_color': self._start_face_color.clone() if isinstance(self._start_face_color, vector) else None,
+            'end_face_color': self._end_face_color.clone() if isinstance(self._end_face_color, vector) else None,
+        }
+
+
+
+
+# === 새 프리미티브: curve / points (점마다 위치·색·반지름을 가진 점 목록) ===
+def _as_point(value):
+    """vector 또는 (x, y, z)를 새 vector로"""
+    if isinstance(value, vector):
+        return value.clone()
+    if isinstance(value, (list, tuple)) and len(value) == 3 and all(isinstance(c, (int, float)) for c in value):
+        return vector(*value)
+    raise TypeError(f"점은 vector 또는 (x, y, z) 형식이어야 합니다: {value!r}")
+
+
+def _point_items(args):
+    """curve/points의 생성자·append 인자를 점 항목 목록으로 편다.
+    벡터 하나, (x, y, z), {'pos': v, 'color': c, 'radius': r}, 그리고 이들의 리스트와 여러 위치 인자를 모두 받는다."""
+    items = []
+    for a in args:
+        if a is None:
+            continue
+        if isinstance(a, (vector, dict)):
+            items.append(a)
+        elif isinstance(a, (list, tuple)):
+            if len(a) == 3 and all(isinstance(c, (int, float)) for c in a):
+                items.append(vector(*a))
             else:
-                for p in initial:
-                    self._points.append(p.clone() if isinstance(p, vector) else vector(*p))
+                items.extend(_point_items(a))
+        else:
+            raise TypeError(f"점은 vector, (x, y, z) 또는 {{'pos': ...}} 형식이어야 합니다: {a!r}")
+    return items
 
-        _add_command({
+
+class _PointList(_VectorOwner):
+    """curve와 points의 공통 구현. 점마다 pos·color·radius를 저장하고 브릿지에 목록으로 보낸다."""
+    _vector_attrs = ('color', 'origin', 'axis', 'up')
+    _type = 'curve'
+
+    def __init__(self, *args, **kwargs):
+        self._id = _new_id()
+        self._group = _group_ref(kwargs.pop('group', None))
+        self._color = _coerce_vector(kwargs.get('color'), color.white)
+        self._radius = float(kwargs.get('radius', 0))
+        self._visible = bool(kwargs.get('visible', True))
+        self._opacity = float(kwargs.get('opacity', 1.0))
+        self._emissive = bool(kwargs.get('emissive', False))
+        self._retain = int(kwargs.get('retain', -1))
+        self._origin = _coerce_vector(kwargs.get('origin'), vector(0, 0, 0))
+        self._axis = _coerce_vector(kwargs.get('axis'), vector(1, 0, 0))
+        self._up = _coerce_vector(kwargs.get('up'), vector(0, 1, 0))
+        self._pos_list = []
+        self._color_list = []
+        self._radius_list = []
+        for item in _point_items(list(args) + [kwargs.get('pos')]):
+            self._store(item)
+        self._trim_retain()
+
+        cmd = {
             "action": "create",
             "id": self._id,
-            "type": "curve",
+            "type": self._type,
             "color": self._color.to_list(),
             "radius": self._radius,
             "visible": self._visible,
-            "points": [p.to_list() for p in self._points],
+            "opacity": self._opacity,
+            "emissive": self._emissive,
+            "origin": self._origin.to_list(),
+            "axis": self._axis.to_list(),
+            "up": self._up.to_list(),
+            "points": [p.to_list() for p in self._pos_list],
+            "colors": [c.to_list() for c in self._color_list],
+            "radii": list(self._radius_list),
+        }
+        cmd.update(self._extra_create(kwargs))
+        if self._group is not None:
+            self._group._objects.append(self)
+            cmd['group'] = self._group._id
+        _add_command(cmd)
+        _track_scene_object(self)
+
+    def _extra_create(self, kwargs):
+        return {}
+
+    def _store(self, item, index=None):
+        """점 항목 하나를 (pos, color, radius)로 나눠 저장한다."""
+        if isinstance(item, dict):
+            if 'pos' not in item:
+                raise ValueError("점 dict에는 'pos'가 있어야 합니다. 예: {'pos': vector(0,0,0), 'color': color.red}")
+            pos = _as_point(item['pos'])
+            col = _coerce_vector(item.get('color'), self._color)
+            rad = float(item.get('radius', self._radius))
+        else:
+            pos = _as_point(item)
+            col = self._color.clone()
+            rad = self._radius
+        if index is None:
+            self._pos_list.append(pos)
+            self._color_list.append(col)
+            self._radius_list.append(rad)
+        else:
+            self._pos_list[index] = pos
+            self._color_list[index] = col
+            self._radius_list[index] = rad
+
+    def _send_all(self):
+        """점 목록 전체를 다시 보낸다 (modify·pop·shift 등 뒤)."""
+        _add_command({
+            "action": "curve_set",
+            "id": self._id,
+            "points": [p.to_list() for p in self._pos_list],
+            "colors": [c.to_list() for c in self._color_list],
+            "radii": list(self._radius_list),
         })
 
-    def append(self, pos):
-        """점을 추가"""
-        v = pos.clone() if isinstance(pos, vector) else vector(*pos)
-        self._points.append(v)
+    def _trim_retain(self):
+        if self._retain > 0 and len(self._pos_list) > self._retain:
+            cut = len(self._pos_list) - self._retain
+            del self._pos_list[:cut]
+            del self._color_list[:cut]
+            del self._radius_list[:cut]
+            return True
+        return False
+
+    # --- 점 추가·수정 ---
+    def append(self, *args, **kwargs):
+        """점 추가 — append(v), append(v1, v2), append([v1, v2]), append(pos=v, color=c, radius=r), append({'pos': v})"""
+        if 'retain' in kwargs:
+            self._retain = int(kwargs.pop('retain'))
+        items = _point_items(args)
+        if 'pos' in kwargs:
+            pos_arg = kwargs['pos']
+            if isinstance(pos_arg, (list, tuple)) and not (
+                len(pos_arg) == 3 and all(isinstance(c, (int, float)) for c in pos_arg)
+            ):
+                # append(pos=[v1, v2, ...]) — 점 목록
+                pos_items = _point_items([pos_arg])
+            else:
+                pos_items = [pos_arg]
+            for p in pos_items:
+                spec = dict(p) if isinstance(p, dict) else {'pos': p}
+                for key in ('color', 'radius'):
+                    if key in kwargs:
+                        spec[key] = kwargs[key]
+                items.append(spec)
+        elif kwargs:
+            # append(v, color=c) — 위치 인자 점에 색·반지름을 적용
+            styled = []
+            for it in items:
+                spec = dict(it) if isinstance(it, dict) else {'pos': it}
+                for key in ('color', 'radius'):
+                    if key in kwargs:
+                        spec[key] = kwargs[key]
+                styled.append(spec)
+            items = styled
+        if not items:
+            return
+        start = len(self._pos_list)
+        for it in items:
+            self._store(it)
+        if self._trim_retain():
+            self._send_all()
+            return
         _add_command({
             "action": "curve_append",
             "id": self._id,
-            "pos": v.to_list(),
+            "points": [p.to_list() for p in self._pos_list[start:]],
+            "colors": [c.to_list() for c in self._color_list[start:]],
+            "radii": list(self._radius_list[start:]),
         })
+
+    def push(self, *args, **kwargs):
+        """append와 같다 (GlowScript 별칭)"""
+        self.append(*args, **kwargs)
+
+    def _build_items(self, items):
+        """점 항목들을 (pos 목록, color 목록, radius 목록)으로 만든다 (기존 목록은 건드리지 않는다)."""
+        saved = (self._pos_list, self._color_list, self._radius_list)
+        self._pos_list, self._color_list, self._radius_list = [], [], []
+        try:
+            for it in items:
+                self._store(it)
+            built = (self._pos_list, self._color_list, self._radius_list)
+        finally:
+            self._pos_list, self._color_list, self._radius_list = saved
+        return built
+
+    def unshift(self, *args):
+        """맨 앞에 점을 끼워 넣는다."""
+        new_pos, new_col, new_rad = self._build_items(_point_items(args))
+        self._pos_list[0:0] = new_pos
+        self._color_list[0:0] = new_col
+        self._radius_list[0:0] = new_rad
+        self._trim_retain()
+        self._send_all()
+
+    def modify(self, index, *args, **kwargs):
+        """index번째 점을 바꾼다 — modify(i, pos=v), modify(i, color=c), modify(i, x=1.5), modify(i, vector)"""
+        n = len(self._pos_list)
+        if not -n <= index < n:
+            raise IndexError(f"점 번호 {index}이(가) 범위를 벗어났습니다 (점 {n}개)")
+        spec = {}
+        if args:
+            first = args[0]
+            if isinstance(first, dict):
+                spec.update(first)
+            else:
+                spec['pos'] = first
+        spec.update(kwargs)
+        pos = _as_point(spec['pos']) if 'pos' in spec else self._pos_list[index].clone()
+        for comp in ('x', 'y', 'z'):
+            if comp in spec:
+                setattr(pos, comp, float(spec[comp]))
+        self._pos_list[index] = pos
+        if 'color' in spec:
+            self._color_list[index] = _coerce_vector(spec['color'], self._color)
+        if 'radius' in spec:
+            self._radius_list[index] = float(spec['radius'])
+        self._send_all()
+
+    def point(self, index):
+        """index번째 점의 정보 dict — {'pos', 'color', 'radius', 'visible'}"""
+        return {
+            'pos': self._pos_list[index].clone(),
+            'color': self._color_list[index].clone(),
+            'radius': self._radius_list[index],
+            'visible': self._visible,
+        }
+
+    def slice(self, start, end=None):
+        """start부터 end 앞까지의 점 정보 dict 목록"""
+        rng = range(len(self._pos_list))[start:end]
+        return [self.point(i) for i in rng]
+
+    def pop(self, index=-1):
+        """점 하나를 빼서 dict로 돌려준다 (기본: 마지막 점)."""
+        info = self.point(index)
+        del self._pos_list[index]
+        del self._color_list[index]
+        del self._radius_list[index]
+        self._send_all()
+        return info
+
+    def shift(self):
+        """첫 점을 빼서 dict로 돌려준다."""
+        return self.pop(0)
+
+    def splice(self, start, howmany, *items):
+        """start부터 howmany개를 지우고 그 자리에 items를 넣는다. 음수 start는 끝에서 센다 (JavaScript splice와 같음)."""
+        n = len(self._pos_list)
+        start = int(start)
+        if start < 0:
+            start = max(n + start, 0)
+        start = min(start, n)
+        end = min(start + max(int(howmany), 0), n)
+        new_pos, new_col, new_rad = self._build_items(_point_items(items))
+        self._pos_list[start:end] = new_pos
+        self._color_list[start:end] = new_col
+        self._radius_list[start:end] = new_rad
+        self._trim_retain()
+        self._send_all()
 
     def clear(self):
         """모든 점 지우기"""
-        self._points = []
+        self._pos_list = []
+        self._color_list = []
+        self._radius_list = []
         _add_command({"action": "curve_clear", "id": self._id})
+
+    def rotate(self, angle, axis=None, origin=None):
+        """origin을 지나는 axis(기본: 자기 axis) 축으로 전체를 회전한다 (점 좌표는 그대로 두고 방향만 바꾼다)."""
+        if axis is None:
+            axis = self._axis.clone() if self._axis.mag > 0 else vector(0, 1, 0)
+        axis = _coerce_vector(axis, vector(0, 1, 0))
+        origin = _coerce_vector(origin, vector(0, 0, 0)) if origin is not None else self._origin
+        rel = self._origin - origin
+        self._origin = origin + rel.rotate(angle, axis=axis)
+        self._axis = self._axis.rotate(angle, axis=axis)
+        self._up = self._up.rotate(angle, axis=axis)
+        _add_command({
+            "action": "update", "id": self._id,
+            "origin": self._origin.to_list(), "axis": self._axis.to_list(), "up": self._up.to_list(),
+        })
+
+    # --- 속성 ---
+    @property
+    def npoints(self):
+        return len(self._pos_list)
+
+    def __len__(self):
+        return len(self._pos_list)
+
+    @property
+    def origin(self):
+        return self._origin
+
+    @origin.setter
+    def origin(self, value):
+        self._origin = _coerce_vector(value, vector(0, 0, 0))
+        _add_command({"action": "update", "id": self._id, "origin": self._origin.to_list()})
+
+    # GlowScript에서 curve.pos는 origin과 같은 뜻이다
+    pos = origin
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @axis.setter
+    def axis(self, value):
+        self._axis = _coerce_vector(value, vector(1, 0, 0))
+        _add_command({"action": "update", "id": self._id, "axis": self._axis.to_list(), "up": self._up.to_list()})
+
+    @property
+    def up(self):
+        return self._up
+
+    @up.setter
+    def up(self, value):
+        self._up = _coerce_vector(value, vector(0, 1, 0))
+        _add_command({"action": "update", "id": self._id, "axis": self._axis.to_list(), "up": self._up.to_list()})
 
     @property
     def color(self):
@@ -1248,8 +1830,30 @@ class curve:
 
     @color.setter
     def color(self, value):
-        self._color = value
-        _add_command({"action": "update", "id": self._id, "color": value.to_list()})
+        """전체 색 — 점마다 준 색도 모두 이 색으로 바뀐다 (GlowScript와 같음)"""
+        self._color = _coerce_vector(value, color.white)
+        self._color_list = [self._color.clone() for _ in self._color_list]
+        _add_command({"action": "update", "id": self._id, "color": self._color.to_list()})
+
+    @property
+    def radius(self):
+        return self._radius
+
+    @radius.setter
+    def radius(self, value):
+        self._radius = float(value)
+        self._radius_list = [self._radius for _ in self._radius_list]
+        _add_command({"action": "update", "id": self._id, "radius": self._radius})
+
+    @property
+    def retain(self):
+        return self._retain
+
+    @retain.setter
+    def retain(self, value):
+        self._retain = int(value)
+        if self._trim_retain():
+            self._send_all()
 
     @property
     def visible(self):
@@ -1257,96 +1861,176 @@ class curve:
 
     @visible.setter
     def visible(self, value):
-        self._visible = value
-        _add_command({"action": "update", "id": self._id, "visible": value})
-
-    def __len__(self):
-        return len(self._points)
-
-
-# === 새 프리미티브: points (점 집합) ===
-class points:
-    """3D 점들의 집합 — 작은 점 또는 구로 표시"""
-    def __init__(self, **kwargs):
-        self._id = _new_id()
-        _scene_objects.append(self)
-        self._color = kwargs.get('color', color.white)
-        self._size = float(kwargs.get('size', 5))  # 픽셀 단위
-        self._visible = kwargs.get('visible', True)
-        self._points = []
-
-        initial = kwargs.get('pos', None)
-        if initial is not None:
-            if isinstance(initial, vector):
-                self._points.append(initial.clone())
-            else:
-                for p in initial:
-                    self._points.append(p.clone() if isinstance(p, vector) else vector(*p))
-
-        _add_command({
-            "action": "create",
-            "id": self._id,
-            "type": "points",
-            "color": self._color.to_list(),
-            "size": self._size,
-            "visible": self._visible,
-            "points": [p.to_list() for p in self._points],
-        })
-
-    def append(self, pos):
-        v = pos.clone() if isinstance(pos, vector) else vector(*pos)
-        self._points.append(v)
-        _add_command({
-            "action": "curve_append",  # 동일한 메커니즘 재사용
-            "id": self._id,
-            "pos": v.to_list(),
-        })
-
-    def clear(self):
-        self._points = []
-        _add_command({"action": "curve_clear", "id": self._id})
+        self._visible = bool(value)
+        _add_command({"action": "update", "id": self._id, "visible": self._visible})
 
     @property
-    def visible(self):
-        return self._visible
+    def opacity(self):
+        return self._opacity
 
-    @visible.setter
-    def visible(self, value):
-        self._visible = value
-        _add_command({"action": "update", "id": self._id, "visible": value})
+    @opacity.setter
+    def opacity(self, value):
+        self._opacity = float(value)
+        _add_command({"action": "update", "id": self._id, "opacity": self._opacity})
 
-    def __len__(self):
-        return len(self._points)
+    @property
+    def emissive(self):
+        return self._emissive
+
+    @emissive.setter
+    def emissive(self, value):
+        self._emissive = bool(value)
+        _add_command({"action": "update", "id": self._id, "emissive": self._emissive})
+
+
+class curve(_PointList):
+    """3D 폴리라인 — 점을 누적해 선을 그린다.
+    c = curve(color=color.red); c.append(pos)
+    c = curve(v1, v2, v3)                      # 위치 인자로 점 여러 개
+    c = curve(pos=[{'pos': v, 'color': c}])    # 점마다 색·반지름
+    c.npoints, c.point(i), c.modify(i, pos=v), c.rotate(angle=, axis=)"""
+    _type = 'curve'
+
+
+class points(_PointList):
+    """3D 점 집합 — 작은 점으로 표시.
+    size: 픽셀 크기(size_units='pixels', 기본) 또는 radius로 월드 크기(size_units='world')
+    shape: 'round'(기본) 또는 'square'"""
+    _type = 'points'
+
+    def __init__(self, *args, **kwargs):
+        self._size = float(kwargs.get('size', 5))
+        self._size_units = str(kwargs.get('size_units', 'pixels'))
+        self._shape = str(kwargs.get('shape', 'round'))
+        super().__init__(*args, **kwargs)
+
+    def _extra_create(self, kwargs):
+        return {"size": self._size, "size_units": self._size_units, "shape": self._shape}
+
+    @property
+    def size(self):
+        return self._size
+
+    @size.setter
+    def size(self, value):
+        self._size = float(value)
+        _add_command({"action": "update", "id": self._id, "size": self._size})
+
+    @property
+    def size_units(self):
+        return self._size_units
+
+    @property
+    def shape(self):
+        return self._shape
 
 
 # === compound (복합 객체) ===
-class compound:
-    """여러 객체를 하나로 묶기"""
+def _object_extent(obj):
+    """객체의 대략적인 경계 상자 (lo, hi). compound의 중심·크기 어림용이며 회전은 무시한다."""
+    pos = getattr(obj, 'pos', None)
+    if not isinstance(pos, vector):
+        return vector(0, 0, 0), vector(0, 0, 0)
+    t = getattr(obj, '_type', None)
+    if t == 'sphere':
+        r = float(getattr(obj, '_radius', 1))
+        return pos - vector(r, r, r), pos + vector(r, r, r)
+    if t in ('box', 'ellipsoid'):
+        s = getattr(obj, '_size', vector(1, 1, 1))
+        h = vector(abs(s.x) / 2, abs(s.y) / 2, abs(s.z) / 2)
+        return pos - h, pos + h
+    if t == 'pyramid':
+        s = getattr(obj, '_size', vector(1, 1, 1))
+        a = getattr(obj, '_axis', vector(1, 0, 0))
+        end = pos + a.hat * s.x
+        r = max(abs(s.y), abs(s.z)) / 2
+        return vector(min(pos.x, end.x) - r, min(pos.y, end.y) - r, min(pos.z, end.z) - r), \
+            vector(max(pos.x, end.x) + r, max(pos.y, end.y) + r, max(pos.z, end.z) + r)
+    if t in ('cylinder', 'cone', 'arrow', 'helix'):
+        a = getattr(obj, '_axis', vector(1, 0, 0))
+        r = float(getattr(obj, '_radius', getattr(obj, '_shaftwidth', 0.1)))
+        end = pos + a
+        return vector(min(pos.x, end.x) - r, min(pos.y, end.y) - r, min(pos.z, end.z) - r), \
+            vector(max(pos.x, end.x) + r, max(pos.y, end.y) + r, max(pos.z, end.z) + r)
+    if t == 'ring':
+        r = float(getattr(obj, '_radius', 1)) + float(getattr(obj, '_thickness', 0.1))
+        return pos - vector(r, r, r), pos + vector(r, r, r)
+    if isinstance(obj, compound):
+        h = obj.size / 2
+        return pos - h, pos + h
+    return pos.clone(), pos.clone()
+
+
+class compound(_VectorOwner):
+    """여러 객체를 하나로 묶기. 묶은 뒤에는 하나의 객체처럼 pos·color·rotate()·clone()을 쓴다.
+    pos 기본값은 부품들의 중심(경계 상자 중심)이고, pos를 지정하면 중심이 그 자리로 옮겨진다 (GlowScript와 같음).
+    (하위 객체를 나중에 따로 바꾸려면 group()을 사용한다.)"""
+    _vector_attrs = ('pos', 'axis', 'up', 'color', 'trail_color', 'scale')
+
     def __init__(self, objects, **kwargs):
         self._id = _new_id()
-        _scene_objects.append(self)
         self._objects = list(objects)
-        self._pos = kwargs.get('pos', vector(0, 0, 0))
+        self._group = _group_ref(kwargs.pop('group', None))
+        # 부품들의 경계 상자 → 중심과 원래 크기 (회전은 무시한 어림값)
+        lo, hi = None, None
+        for obj in self._objects:
+            a, b = _object_extent(obj)
+            if lo is None:
+                lo, hi = a.clone(), b.clone()
+            else:
+                lo = vector(min(lo.x, a.x), min(lo.y, a.y), min(lo.z, a.z))
+                hi = vector(max(hi.x, b.x), max(hi.y, b.y), max(hi.z, b.z))
+        if lo is None:
+            lo = hi = vector(0, 0, 0)
+        self._center0 = (lo + hi) / 2
+        self._size0 = vector(max(hi.x - lo.x, 1e-9), max(hi.y - lo.y, 1e-9), max(hi.z - lo.z, 1e-9))
+        self._scale = vector(1, 1, 1)
+        self._pos = _coerce_vector(kwargs.get('pos'), self._center0)
+        axis_dir = _coerce_vector(kwargs.get('axis'), vector(1, 0, 0))
+        axis_dir = axis_dir.hat if axis_dir.mag > 0 else vector(1, 0, 0)
+        self._axis = axis_dir * self._size0.x
+        self._up = _coerce_vector(kwargs.get('up'), vector(0, 1, 0))
         self._color = kwargs.get('color', None)
         self._visible = kwargs.get('visible', True)
         self._opacity = kwargs.get('opacity', 1.0)
+        self._emissive = kwargs.get('emissive', False)
+        self._texture = kwargs.get('texture', None)
         self._make_trail = kwargs.pop('make_trail', False)
         self._trail_color = kwargs.pop('trail_color', None)
 
-        # 하위 객체 ID 수집
-        sub_ids = [obj._id for obj in self._objects]
+        # 하위 객체 ID 수집 — 묶인 객체는 scene.objects에서 빠진다 (GlowScript와 같음)
+        sub_ids = []
+        for obj in self._objects:
+            sub_ids.append(obj._id)
+            _untrack_scene_object(obj)
 
-        _add_command({
+        cmd = {
             "action": "compound",
             "id": self._id,
             "sub_ids": sub_ids,
             "pos": self._pos.to_list(),
+            "center": self._center0.to_list(),
+            "axis": self._axis.to_list(),
+            "up": self._up.to_list(),
             "color": self._color.to_list() if self._color else None,
             "visible": self._visible,
             "opacity": self._opacity,
+            "emissive": self._emissive,
+            "texture": self._texture,
             "make_trail": self._make_trail,
             "trail_color": self._trail_color.to_list() if self._trail_color else None,
-        })
+        }
+        if self._group is not None:
+            self._group._objects.append(self)
+            cmd['group'] = self._group._id
+        _add_command(cmd)
+        _track_scene_object(self)
+        # 생성 시 size / length / height / width — 만든 뒤 setter 경로로 배율을 적용한다
+        if kwargs.get('size') is not None:
+            self.size = kwargs['size']
+        for name in ('length', 'height', 'width'):
+            if kwargs.get(name) is not None:
+                setattr(self, name, kwargs[name])
 
     def __getitem__(self, index):
         """compound[0] — 인덱스로 하위 객체 접근"""
@@ -1361,10 +2045,80 @@ class compound:
 
     @pos.setter
     def pos(self, value):
-        self._pos = value
-        _add_command({"action": "update", "id": self._id, "pos": value.to_list()})
+        self._pos = _coerce_vector(value, vector(0, 0, 0))
+        _add_command({"action": "update", "id": self._id, "pos": self._pos.to_list()})
         if self._make_trail:
-            _add_command({"action": "trail_update", "id": self._id, "pos": value.to_list()})
+            _add_command({"action": "trail_update", "id": self._id, "pos": self._pos.to_list()})
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @axis.setter
+    def axis(self, value):
+        """방향과 길이 — axis의 길이가 length(axis 방향 크기)가 된다 (GlowScript와 같음)."""
+        value = _coerce_vector(value, vector(1, 0, 0))
+        if value.mag == 0:
+            raise ValueError('compound.axis는 길이가 0이 아닌 벡터여야 합니다')
+        self._axis = value
+        self._scale = vector(value.mag / self._size0.x, self._scale.y, self._scale.z)
+        _add_command({
+            "action": "update", "id": self._id,
+            "axis": self._axis.to_list(), "up": self._up.to_list(), "scale": self._scale.to_list(),
+        })
+
+    @property
+    def up(self):
+        return self._up
+
+    @up.setter
+    def up(self, value):
+        self._up = _coerce_vector(value, vector(0, 1, 0))
+        _add_command({"action": "update", "id": self._id, "axis": self._axis.to_list(), "up": self._up.to_list()})
+
+    # --- 크기: 부품 경계 상자(어림값) × 배율 ---
+    def _send_scale(self):
+        _add_command({"action": "update", "id": self._id, "scale": self._scale.to_list()})
+
+    @property
+    def size(self):
+        """vector(length, height, width) — 부품들의 경계 상자 크기(회전 무시) × 배율"""
+        return vector(self._size0.x * self._scale.x, self._size0.y * self._scale.y, self._size0.z * self._scale.z)
+
+    @size.setter
+    def size(self, value):
+        v = _coerce_vector(value, self.size)
+        self._scale = vector(v.x / self._size0.x, v.y / self._size0.y, v.z / self._size0.z)
+        direction = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
+        self._axis = direction * v.x
+        _add_command({"action": "update", "id": self._id, "axis": self._axis.to_list(), "up": self._up.to_list(), "scale": self._scale.to_list()})
+
+    @property
+    def length(self):
+        return self._size0.x * self._scale.x
+
+    @length.setter
+    def length(self, value):
+        s = self.size
+        self.size = vector(float(value), s.y, s.z)
+
+    @property
+    def height(self):
+        return self._size0.y * self._scale.y
+
+    @height.setter
+    def height(self, value):
+        self._scale = vector(self._scale.x, float(value) / self._size0.y, self._scale.z)
+        self._send_scale()
+
+    @property
+    def width(self):
+        return self._size0.z * self._scale.z
+
+    @width.setter
+    def width(self, value):
+        self._scale = vector(self._scale.x, self._scale.y, float(value) / self._size0.z)
+        self._send_scale()
 
     @property
     def color(self):
@@ -1392,6 +2146,232 @@ class compound:
     def opacity(self, value):
         self._opacity = value
         _add_command({"action": "update", "id": self._id, "opacity": value})
+
+    @property
+    def emissive(self):
+        return self._emissive
+
+    @emissive.setter
+    def emissive(self, value):
+        self._emissive = bool(value)
+        _add_command({"action": "update", "id": self._id, "emissive": self._emissive})
+
+    @property
+    def texture(self):
+        return self._texture
+
+    @texture.setter
+    def texture(self, value):
+        self._texture = value
+        _add_command({"action": "update", "id": self._id, "texture": value})
+
+    def rotate(self, angle, axis=None, origin=None):
+        """origin(기본: 자기 위치)을 지나는 axis(기본: 자기 axis) 축으로 angle(라디안)만큼 전체를 회전"""
+        _rotate_object(self, angle, axis, origin)
+
+    # --- 좌표 변환: vpython-jupyter vpython.py의 compound.world_to_compound / compound_to_world 이식 (MIT) ---
+    # 원본: https://github.com/vpython/vpython-jupyter/blob/master/vpython/vpython.py
+    # Copyright (C) 2015 by John Coady, Ruth Chabay, and Bruce Sherwood — MIT License (전문은 shapes/paths 절 참조)
+    @property
+    def origin(self):
+        """compound 좌표계의 원점(부품 중심). 읽기 전용이며 위치는 pos로 바꾼다."""
+        return self._center0.clone()
+
+    @origin.setter
+    def origin(self, value):
+        raise AttributeError('The compound "origin" attribute is read-only; change "pos" instead.')
+
+    def world_to_compound(self, v):
+            v = v-self._pos
+            x_axis = self._axis.hat
+            y_axis = self._up.hat
+            z_axis = x_axis.cross(y_axis)
+            ox = self._size0.x/self.size.x # _size0 is the original size
+            oy = self._size0.y/self.size.y
+            oz = self._size0.z/self.size.z
+            return self.origin + vector(v.dot(x_axis)*ox, v.dot(y_axis)*oy, v.dot(z_axis)*oz)
+
+    def compound_to_world(self, v):
+            v = v-self.origin
+            x_axis = self._axis.hat
+            y_axis = self._up.hat
+            z_axis = x_axis.cross(y_axis)
+            ox = self.size.x/self._size0.x # _size0 is the original size
+            oy = self.size.y/self._size0.y
+            oz = self.size.z/self._size0.z
+            return self._pos + v.x*ox*x_axis + v.y*oy*y_axis + v.z*oz*z_axis
+
+    def clear_trail(self):
+        _add_command({"action": "trail_clear", "id": self._id})
+
+    def attach_trail(self, color=None, retain=10000, type='curve', pps=0, radius=0, interval=1):
+        return _GObject.attach_trail(self, color=color, retain=retain, type=type, pps=pps, radius=radius, interval=interval)
+
+    def clone(self, **kwargs):
+        """같은 부품으로 새 compound를 만든다. kwargs로 pos·color·group 등을 덮어쓸 수 있다.
+        예: wheel2 = wheel.clone(pos=vector(4, 0, 0))"""
+        parts = []
+        for obj in self._objects:
+            if not hasattr(obj, 'clone'):
+                raise TypeError(f"compound.clone(): {type(obj).__name__} 객체는 복제할 수 없습니다")
+            parts.append(obj.clone())
+        args = {
+            'pos': self._pos.clone(),
+            'axis': self._axis.clone(),
+            'up': self._up.clone(),
+            'color': self._color.clone() if isinstance(self._color, vector) else self._color,
+            'visible': self._visible,
+            'opacity': self._opacity,
+            'emissive': self._emissive,
+            'texture': self._texture,
+            'make_trail': self._make_trail,
+            'trail_color': self._trail_color.clone() if isinstance(self._trail_color, vector) else self._trail_color,
+        }
+        args.update(kwargs)
+        size = args.pop('size', None)
+        copy = compound(parts, **args)
+        if size is not None:
+            copy.size = size
+        elif self._scale != vector(1, 1, 1):
+            copy.size = self.size
+        return copy
+
+
+# === group (객체 묶음 — 하위 객체를 나중에 따로 바꿀 수 있다) ===
+# 명세: GlowScript lib/glow/primitives.js의 group (MIT, Copyright (C) 2011 by David Scherer and Bruce Sherwood,
+#       https://github.com/vpython/glowscript/blob/master/lib/glow/primitives.js)
+# - 하위 객체의 pos는 묶음 기준 상대 좌표이고 화면 위치는 g.pos를 더한 값이다 (group_to_world / world_to_group)
+# - g.rotate(angle=, axis=, origin=)는 하위 객체를 하나씩 world 좌표에서 돌린 뒤 다시 상대 좌표로 바꾼다
+# - g.axis를 바꾸면 옛 axis → 새 axis 각도만큼 같은 회전을 한다. g.up·g.color·g.visible은 하위 객체 모두에 전파된다
+class group(_VectorOwner):
+    """객체 묶음. g = group(); box(group=g, pos=vector(1, 0, 0))
+    하위 객체의 pos는 묶음 기준(g.pos가 원점)의 상대 위치다. g.pos·g.rotate()·g.visible·g.color·g.up이 모든 하위 객체에
+    적용되고, compound와 달리 하위 객체를 나중에 따로 바꿀 수 있다."""
+    _vector_attrs = ('pos', 'axis', 'up', 'color')
+
+    def __init__(self, **kwargs):
+        self._id = _new_id()
+        self._objects = []
+        self._parent = _group_ref(kwargs.get('group'))
+        self._pos = _coerce_vector(kwargs.get('pos'), vector(0, 0, 0))
+        self._axis = _coerce_vector(kwargs.get('axis'), vector(1, 0, 0))
+        self._up = _coerce_vector(kwargs.get('up'), vector(0, 1, 0))
+        self._color = _coerce_vector(kwargs.get('color'), vector(1, 1, 1))
+        self._visible = bool(kwargs.get('visible', True))
+        cmd = {
+            "action": "create",
+            "id": self._id,
+            "type": "group",
+            "pos": self._pos.to_list(),
+            "visible": self._visible,
+        }
+        if self._parent is not None:
+            self._parent._objects.append(self)
+            cmd['group'] = self._parent._id
+        _add_command(cmd)
+
+    @property
+    def objects(self):
+        """묶음에 든 객체 목록 (복사본). 객체는 box(group=g)처럼 만들 때 넣는다."""
+        return list(self._objects)
+
+    def __len__(self):
+        return len(self._objects)
+
+    def __getitem__(self, index):
+        return self._objects[index]
+
+    def group_to_world(self, v):
+        """묶음 기준 좌표 → 화면 좌표"""
+        return _coerce_vector(v, vector(0, 0, 0)) + self._pos
+
+    def world_to_group(self, v):
+        """화면 좌표 → 묶음 기준 좌표"""
+        return _coerce_vector(v, vector(0, 0, 0)) - self._pos
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, value):
+        self._pos = _coerce_vector(value, vector(0, 0, 0))
+        _add_command({"action": "update", "id": self._id, "pos": self._pos.to_list()})
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @axis.setter
+    def axis(self, value):
+        """옛 axis에서 새 axis로 가는 회전을 하위 객체에 적용한다 (GlowScript axis_changed)"""
+        new_axis = _coerce_vector(value, vector(1, 0, 0))
+        old_axis = self._axis
+        if old_axis.mag > 0 and new_axis.mag > 0:
+            ang = old_axis.diff_angle(new_axis)
+            ax = old_axis.cross(new_axis)
+            if ang > 1e-12 and ax.mag < 1e-12:
+                # 정반대 방향(외적이 0) — 옛 축에 수직인 축으로 π 회전
+                ax = old_axis.cross(vector(0, 1, 0))
+                if ax.mag < 1e-12:
+                    ax = old_axis.cross(vector(1, 0, 0))
+                ang = math.pi
+            if ang > 1e-12:
+                self._rotate_children(ang, ax, self._pos)
+                self._up = self._up.rotate(ang, axis=ax)
+        self._axis = new_axis
+
+    @property
+    def up(self):
+        return self._up
+
+    @up.setter
+    def up(self, value):
+        """하위 객체의 up을 모두 이 값으로 (GlowScript와 같음)"""
+        self._up = _coerce_vector(value, vector(0, 1, 0))
+        for obj in self._objects:
+            if isinstance(getattr(obj, '_up', None), vector):
+                obj.up = self._up.clone()
+
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, value):
+        """하위 객체의 색을 모두 이 색으로"""
+        self._color = _coerce_vector(value, vector(1, 1, 1))
+        for obj in self._objects:
+            if hasattr(obj, 'color'):
+                obj.color = self._color.clone()
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        """묶음 전체를 숨기거나 보인다. 하위 객체 각각의 visible 값은 그대로 두므로(GlowScript와 다른 점),
+        먼저 숨겨 둔 하위 객체는 묶음을 다시 보여도 숨겨진 채로 남는다."""
+        self._visible = bool(value)
+        _add_command({"action": "update", "id": self._id, "visible": self._visible})
+
+    def _rotate_children(self, angle, axis, origin):
+        """origin(화면 좌표)을 지나는 axis 축으로 하위 객체를 하나씩 돌린다. 상대 좌표이므로 origin에서 g.pos를 뺀다."""
+        rel_origin = _coerce_vector(origin, self._pos) - self._pos
+        for obj in self._objects:
+            if hasattr(obj, 'rotate'):
+                obj.rotate(angle, axis=axis, origin=rel_origin)
+
+    def rotate(self, angle, axis=None, origin=None):
+        """origin(기본: g.pos)을 지나는 axis(기본: g.axis) 축으로 묶음 전체를 회전. 하위 객체를 하나씩 돌리고 g.axis·g.up도 돌린다."""
+        if axis is None:
+            axis = self._axis.clone() if self._axis.mag > 0 else vector(0, 1, 0)
+        axis = _coerce_vector(axis, vector(0, 1, 0))
+        origin = self._pos if origin is None else _coerce_vector(origin, self._pos)
+        self._rotate_children(angle, axis, origin)
+        self._axis = self._axis.rotate(angle, axis=axis)
+        self._up = self._up.rotate(angle, axis=axis)
 
 
 # === 조명 객체 ===
@@ -1578,52 +2558,186 @@ class quad:
         _add_command({"action": "update", "id": self._id, "visible": value})
 
 
-class extrusion:
-    """2D 단면을 path를 따라 압출(스윕). VPython 호환 단순화 버전.
-    - path: [vector, ...] 또는 평면 좌표 리스트
-    - shape: [(x, y), ...] 2D 단면 외곽선 (또는 vector 리스트)
-    """
-    def __init__(self, path=None, shape=None, color=None, **kwargs):
-        self._id = _new_id()
-        self._color = color if color is not None else vector(1, 1, 1)
-        self._visible = kwargs.get('visible', True)
-        self._opacity = float(kwargs.get('opacity', 1.0))
-        # path 정규화
-        path = path or []
-        path_pts = []
-        for p in path:
-            if isinstance(p, vector):
-                path_pts.append(p.to_list())
-            else:
-                path_pts.append(list(p))
-        # shape 정규화 — (x, y) 튜플 또는 vector
-        shape = shape or [(-0.5, -0.5), (0.5, -0.5), (0.5, 0.5), (-0.5, 0.5)]
-        shape_pts = []
-        for s in shape:
-            if isinstance(s, vector):
-                shape_pts.append([s.x, s.y])
-            else:
-                shape_pts.append(list(s)[:2])
+def _is_point2d(p):
+    return isinstance(p, vector) or (
+        isinstance(p, (list, tuple)) and len(p) >= 2 and all(isinstance(c, (int, float)) for c in p[:2])
+    )
 
-        _add_command({
-            "action": "create",
-            "id": self._id,
-            "type": "extrusion",
-            "path": path_pts,
-            "shape": shape_pts,
-            "color": self._color.to_list(),
-            "visible": self._visible,
-            "opacity": self._opacity,
-        })
+
+def _is_contour(c):
+    return isinstance(c, (list, tuple)) and len(c) > 0 and all(_is_point2d(p) for p in c)
+
+
+def _contour_points(c):
+    return [[float(p.x), float(p.y)] if isinstance(p, vector) else [float(p[0]), float(p[1])] for p in c]
+
+
+def _normalize_shape(shape):
+    """extrusion의 shape 인자 → [[바깥 외곽선, 구멍, ...], ...] (고체 목록, 점은 [x, y])
+    받는 형식: [x, y] 점 목록 / [바깥, 구멍...] 목록(shapes.circle(thickness=)의 결과) / 고체 여러 개의 목록"""
+    if shape is None:
+        return [[[[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5], [-0.5, -0.5]]]]
+    if _is_contour(shape):
+        return [[_contour_points(shape)]]
+    if isinstance(shape, (list, tuple)) and shape and all(_is_contour(c) for c in shape):
+        return [[_contour_points(c) for c in shape]]
+    solids = []
+    for s in shape or []:
+        if _is_contour(s):
+            solids.append([_contour_points(s)])
+        elif isinstance(s, (list, tuple)) and s and all(_is_contour(c) for c in s):
+            solids.append([_contour_points(c) for c in s])
+        else:
+            raise TypeError("shape는 [x, y] 점 목록, [바깥, 구멍, ...] 목록, 또는 그런 목록의 목록이어야 합니다 (shapes.* 결과)")
+    if not solids:
+        raise ValueError("shape에 점이 없습니다")
+    return solids
+
+
+# extrusion 입력 상한 — 정점 수가 경로 점 수 × 단면 점 수 × 6에 비례한다
+_EXTRUSION_MAX_PATH_POINTS = 2000
+_EXTRUSION_MAX_SHAPE_POINTS = 2000
+_EXTRUSION_MAX_PRODUCT = 2_000_000
+
+
+def _normalize_path(path):
+    """extrusion의 path 인자 → [[x, y, z], ...]"""
+    pts = []
+    for p in (path or []):
+        if isinstance(p, vector):
+            pts.append(p.to_list())
+        elif isinstance(p, (list, tuple)) and len(p) >= 2 and all(isinstance(c, (int, float)) for c in p):
+            pts.append([float(p[0]), float(p[1]), float(p[2]) if len(p) > 2 else 0.0])
+        else:
+            raise TypeError("path는 vector 목록이어야 합니다 (paths.* 결과). 예: path=[vector(0,0,0), vector(0,0,2)]")
+    if len(pts) < 2:
+        raise ValueError("path에는 점이 2개 이상 필요합니다")
+    return pts
+
+
+class extrusion(_GObject):
+    """2D 단면(shape)을 경로(path)를 따라 쓸어 만든 입체.
+    extrusion(path=paths.circle(radius=2), shape=shapes.rectangle(width=0.4, height=0.2))
+    - shape: [x, y] 점 목록, [바깥, 구멍] 목록(shapes.circle(thickness=)의 결과), 또는 고체 여러 개의 목록
+    - pos: 기본값은 경로의 중심. 지정하면 입체 전체가 그 위치로 옮겨진다
+    - color: 색 하나 또는 경로 점마다의 색 목록. scale: 숫자 또는 경로 점마다의 배율 목록
+    - start_face_color / end_face_color: 열린 경로 양 끝면의 색
+    - rotate()·clone()·axis·up은 다른 객체와 같다"""
+    # 인자 검사와 오류 문구는 vpython-jupyter vpython.py의 class extrusion(MIT)을 따른다.
+    # (열리지 않은 단면은 원본과 달리 오류 대신 첫 점을 끝에 더해 닫는다 — VPyLab 기존 예제 호환)
+    def __init__(self, path=None, shape=None, **kwargs):
+        if path is None:
+            raise AttributeError("An extrusion must have a path.")
+        if shape is None:
+            raise AttributeError("An extrusion must have a shape.")
+        self._path = _normalize_path(path)
+        self._shape = _normalize_shape(shape)
+        pathlength = len(self._path)
+        # 정점 수는 경로 점 수 × 단면 점 수에 비례하므로 상한을 둔다 (브라우저가 멈추지 않도록)
+        shape_points = sum(len(contour) for solid in self._shape for contour in solid)
+        if pathlength > _EXTRUSION_MAX_PATH_POINTS:
+            raise ValueError(f"extrusion의 path 점은 {_EXTRUSION_MAX_PATH_POINTS}개까지입니다 (받은 값: {pathlength}개)")
+        if shape_points > _EXTRUSION_MAX_SHAPE_POINTS:
+            raise ValueError(f"extrusion의 shape 점은 모두 합쳐 {_EXTRUSION_MAX_SHAPE_POINTS}개까지입니다 (받은 값: {shape_points}개)")
+        if pathlength * shape_points > _EXTRUSION_MAX_PRODUCT:
+            raise ValueError(
+                f"extrusion이 너무 큽니다: path 점 수 × shape 점 수가 {_EXTRUSION_MAX_PRODUCT:,}을 넘을 수 없습니다 "
+                f"(받은 값: {pathlength} × {shape_points} = {pathlength * shape_points:,}). np나 점 개수를 줄이세요."
+            )
+        for attr in ['scale', 'xscale', 'yscale', 'twist', 'color']:
+            value = kwargs.get(attr)
+            if isinstance(value, (list, tuple)) and attr != 'color' and len(value) != pathlength:
+                raise AttributeError("The "+attr+" list must be the same length as the list of points on the path ("+str(pathlength)+").")
+            if attr == 'color' and isinstance(value, (list, tuple)) and value and isinstance(value[0], vector) and len(value) != pathlength:
+                raise AttributeError("The color list must be the same length as the list of points on the path ("+str(pathlength)+").")
+        self._axis = _coerce_vector(kwargs.pop('axis', None), vector(1, 0, 0))
+        self._up = _coerce_vector(kwargs.pop('up', None), vector(0, 1, 0))
+        scale = kwargs.pop('scale', 1.0)
+        self._scale = [float(s) for s in scale] if isinstance(scale, (list, tuple)) else float(scale)
+        self._start_face_color = _coerce_vector(kwargs.pop('start_face_color', None), None)
+        self._end_face_color = _coerce_vector(kwargs.pop('end_face_color', None), None)
+        self._show_start_face = bool(kwargs.pop('show_start_face', True))
+        self._show_end_face = bool(kwargs.pop('show_end_face', True))
+        for ignored in ('twist', 'smooth', 'xscale', 'yscale', 'shininess'):
+            kwargs.pop(ignored, None)
+
+        # 경로 점마다 다른 색 (Conch 예제처럼 color=[v1, v2, ...])
+        color_arg = kwargs.get('color', None)
+        self._colors = None
+        if isinstance(color_arg, (list, tuple)) and color_arg and not (
+            len(color_arg) == 3 and all(isinstance(c, (int, float)) for c in color_arg)
+        ):
+            self._colors = [_coerce_vector(c, color.white) for c in color_arg]
+            kwargs['color'] = self._colors[0].clone()
+        elif color_arg is not None and not isinstance(color_arg, vector):
+            kwargs['color'] = _coerce_vector(color_arg, color.white)
+        if kwargs.get('pos') is None:
+            kwargs['pos'] = self._path_center()
+
+        super().__init__(
+            'extrusion',
+            path=self._path,
+            shape=self._shape,
+            axis=self._axis,
+            up=self._up,
+            scale=self._scale,
+            colors=self._colors,
+            start_face_color=self._start_face_color,
+            end_face_color=self._end_face_color,
+            show_start_face=self._show_start_face,
+            show_end_face=self._show_end_face,
+            **kwargs,
+        )
+
+    def _path_center(self):
+        xs = [p[0] for p in self._path]
+        ys = [p[1] for p in self._path]
+        zs = [p[2] for p in self._path]
+        return vector((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, (min(zs) + max(zs)) / 2)
 
     @property
-    def visible(self):
-        return self._visible
+    def path(self):
+        return [vector(*p) for p in self._path]
 
-    @visible.setter
-    def visible(self, value):
-        self._visible = value
-        _add_command({"action": "update", "id": self._id, "visible": value})
+    @property
+    def shape(self):
+        return [[[list(p) for p in contour] for contour in solid] for solid in self._shape]
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @axis.setter
+    def axis(self, value):
+        """방향만 바뀐다. 기본 axis=vector(1,0,0)이 만든 그대로의 방향이다."""
+        self._axis = _coerce_vector(value, vector(1, 0, 0))
+        _add_command({"action": "update", "id": self._id, "axis": self._axis.to_list(), "up": self._up.to_list()})
+
+    @property
+    def up(self):
+        return self._up
+
+    @up.setter
+    def up(self, value):
+        self._up = _coerce_vector(value, vector(0, 1, 0))
+        _add_command({"action": "update", "id": self._id, "axis": self._axis.to_list(), "up": self._up.to_list()})
+
+    def _clone_kwargs(self):
+        args = {
+            **super()._clone_kwargs(),
+            'path': [vector(*p) for p in self._path],
+            'shape': self.shape,
+            'axis': self._axis.clone(),
+            'up': self._up.clone(),
+            'scale': list(self._scale) if isinstance(self._scale, list) else self._scale,
+            'start_face_color': self._start_face_color.clone() if isinstance(self._start_face_color, vector) else None,
+            'end_face_color': self._end_face_color.clone() if isinstance(self._end_face_color, vector) else None,
+            'show_start_face': self._show_start_face,
+            'show_end_face': self._show_end_face,
+        }
+        if self._colors:
+            args['color'] = [c.clone() for c in self._colors]
+        return args
 
 
 # === 2D 그래프 시스템 ===
@@ -1779,6 +2893,44 @@ class _MouseState:
             return js._getMousePick()
         except Exception:
             return None
+
+    @property
+    def camera(self):
+        """카메라 위치 (scene.camera.pos와 같다)"""
+        return scene.camera.pos
+
+    @property
+    def ray(self):
+        """카메라에서 마우스가 가리키는 점을 향하는 단위 벡터"""
+        direction = self.pos - scene.camera.pos
+        if direction.mag == 0:
+            return scene.forward
+        return direction.hat
+
+    def project(self, normal=None, point=None, d=None):
+        """마우스 광선을 평면에 투영한 점. 평면은 normal(법선)과 point(평면 위 한 점) 또는 d(원점에서 법선 방향 거리)로 준다.
+        광선이 평면과 만나지 않으면 None. 예: scene.mouse.project(normal=vector(0,1,0), point=vector(0,0,0))"""
+        normal = _coerce_vector(normal, vector(0, 0, 1))
+        if normal.mag == 0:
+            raise ValueError('project의 normal은 길이가 0이 아닌 벡터여야 합니다')
+        if point is None:
+            point = normal.hat * float(d or 0)
+        else:
+            point = _coerce_vector(point, vector(0, 0, 0))
+        cam = scene.camera.pos
+        ray = self.ray
+        denom = normal.dot(ray)
+        if abs(denom) < 1e-12:
+            return None
+        t = normal.dot(point - cam) / denom
+        if t < 0:
+            return None
+        return cam + ray * t
+
+    # 보조 키 상태 — VPyLab은 포인터 이벤트에서 보조 키를 읽지 않으므로 항상 False
+    alt = False
+    ctrl = False
+    shift = False
 
 
 _mouse_singleton = _MouseState()
@@ -2179,6 +3331,7 @@ class _Scene(_VectorOwner):
         self._height = None
         self._align = 'none'
         self._resizable = True
+        self._visible = True
 
     def _mark_set(self):
         """카메라 값을 지정한 직후에는 메인 스레드 상태가 아직 옛 값이므로 로컬 값을 쓰게 한다."""
@@ -2322,17 +3475,81 @@ class _Scene(_VectorOwner):
 
     @property
     def caption_anchor(self):
-        """위젯 위치 지정용 (GlowScript 호환). 위젯은 항상 전용 패널에 놓이므로 None을 돌려준다."""
-        return None
+        """wtext(pos=scene.caption_anchor) 위치 표시 — vpython-jupyter처럼 [캔버스 번호, 2]. 위젯은 전용 패널에 놓이므로 위젯에서는 무시된다."""
+        return list(_CAPTION_ANCHOR)
 
     @property
     def title_anchor(self):
-        return None
+        """wtext(pos=scene.title_anchor)면 글자가 제목 영역에 놓인다 — [캔버스 번호, 1]"""
+        return list(_TITLE_ANCHOR)
+
+    # vpython-jupyter canvas의 userzoom·userspin·userpan — 값만 기억한다 (VPyLab의 카메라 조작은 뷰포트 설정이 정한다)
+    @property
+    def userzoom(self):
+        return getattr(self, '_userzoom', True)
+
+    @userzoom.setter
+    def userzoom(self, value):
+        object.__setattr__(self, '_userzoom', bool(value))
+
+    @property
+    def userspin(self):
+        return getattr(self, '_userspin', True)
+
+    @userspin.setter
+    def userspin(self, value):
+        object.__setattr__(self, '_userspin', bool(value))
+
+    @property
+    def userpan(self):
+        return getattr(self, '_userpan', True)
+
+    @userpan.setter
+    def userpan(self, value):
+        object.__setattr__(self, '_userpan', bool(value))
 
     @property
     def objects(self):
         """현재 보이는 3D 객체 목록. for o in scene.objects: o.visible = False 로 모두 숨길 수 있다."""
         return [o for o in _scene_objects if getattr(o, '_visible', True)]
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        """scene.visible = False 면 3D 화면 전체를 숨긴다 (객체는 남아 있다)."""
+        self._visible = bool(value)
+        _add_command({"action": "scene", "property": "visible", "value": self._visible})
+
+    def delete(self):
+        """3D 화면의 객체를 모두 지운다 (GlowScript의 canvas.delete()). 사용자가 만든 조명(local_light·distant_light·
+        attach_light)과 부착물(attach_arrow·attach_trail)도 함께 지워지고, 위젯·그래프·캡션은 남는다."""
+        for obj in list(_scene_objects):
+            try:
+                obj._visible = False
+            except Exception:
+                pass
+        _scene_objects.clear()
+        # 지워진 객체를 rate()마다 갱신하려는 부착물도 함께 정리한다
+        _user_lights.clear()
+        _attached_arrows.clear()
+        for item in list(_attached_followers):
+            if hasattr(item, 'stop'):
+                item.stop()
+        _attached_followers.clear()
+        self._lights = None
+        _add_command({"action": "scene", "property": "delete", "value": True})
+
+    def select(self):
+        """GlowScript의 canvas.select() — 캔버스가 하나뿐이므로 할 일이 없다."""
+        return self
+
+    @property
+    def pixel_to_world(self):
+        """화면 픽셀 하나가 중심 거리에서 차지하는 월드 길이"""
+        return 2 * self.range / max(1, self.height)
 
     @property
     def ambient(self):
@@ -2487,6 +3704,26 @@ class _Scene(_VectorOwner):
 scene = _Scene()
 
 
+# === canvas() — GlowScript의 캔버스 생성 ===
+_canvas_calls = 0
+
+
+def canvas(**kwargs):
+    """GlowScript의 canvas(width=, height=, background=, title=, center=, range=, forward=, ...).
+    VPyLab은 3D 화면이 하나라서 인자를 scene에 적용하고 scene을 돌려준다.
+    두 번째 호출부터는 같은 scene을 돌려주고 안내를 한 번 출력한다."""
+    global _canvas_calls
+    _canvas_calls += 1
+    if _canvas_calls > 1:
+        _notice_once('canvas-single', "[canvas] VPyLab은 캔버스를 하나만 지원합니다. 새 canvas()는 기존 scene을 그대로 돌려줍니다.")
+    for key, value in kwargs.items():
+        setattr(scene, key, value)
+    return scene
+
+
+canvas.get_selected = lambda: scene
+
+
 # === attach_arrow — 객체의 벡터 속성을 따라다니는 화살표 ===
 _attached_arrows = []
 
@@ -2545,6 +3782,1301 @@ def _update_attached_arrows():
             item.update()
         except Exception as e:
             print(f"[attach_arrow] 갱신 실패: {e}")
+
+
+# === rate()·sleep()마다 갱신하는 부착물: attach_trail(함수)·attach_light ===
+_attached_followers = []
+
+
+def _update_attached_followers():
+    for item in _attached_followers:
+        try:
+            item.update()
+        except Exception as e:
+            print(f"[{type(item).__name__}] 갱신 실패: {e}")
+
+
+class _FunctionTrail:
+    """attach_trail(함수, ...) — rate()·sleep()을 지날 때마다 함수가 돌려준 벡터를 궤적에 더한다."""
+    def __init__(self, fn, color=None, radius=0, retain=-1, type='curve', pps=0, interval=1):
+        self.fn = fn
+        self._active = True
+        self._pps = float(pps or 0)
+        self._interval = max(1, int(interval or 1))   # interval=n: n번째 갱신마다 한 점
+        self._counter = 0
+        self._last_time = None
+        kwargs = {'color': color if color is not None else vector(1, 1, 1), 'retain': int(retain)}
+        if type == 'points':
+            if radius and radius > 0:
+                kwargs['radius'] = float(radius)
+                kwargs['size_units'] = 'world'
+            self.trail = points(**kwargs)
+        else:
+            kwargs['radius'] = float(radius or 0)
+            self.trail = curve(**kwargs)
+        _attached_followers.append(self)
+
+    def update(self):
+        if not self._active:
+            return
+        self._counter += 1
+        if self._interval > 1 and self._counter % self._interval != 0:
+            return
+        if self._pps > 0:
+            import time as _time
+            now = _time.time()
+            if self._last_time is not None and now - self._last_time < 1.0 / self._pps:
+                return
+            self._last_time = now
+        value = self.fn()
+        if isinstance(value, vector):
+            self.trail.append(value)
+
+    def stop(self):
+        self._active = False
+
+    def start(self):
+        self._active = True
+
+    def clear(self):
+        self.trail.clear()
+
+
+def attach_trail(obj, color=None, radius=0, retain=-1, type='curve', pps=0, interval=1):
+    """객체 또는 함수에 궤적을 붙인다. 돌려주는 손잡이로 stop()·start()·clear()를 한다.
+    attach_trail(ball, color=color.green, retain=100)   # 객체가 움직일 때마다 점을 남긴다
+    attach_trail(lambda: ball.pos + vector(0, 1, 0))     # 함수 값이 궤적이 된다 (rate()마다 한 점)
+    type='points'면 점 궤적, pps=k면 초당 k점까지만, interval=n이면 n번 움직일 때마다 한 점."""
+    if hasattr(obj, 'attach_trail'):
+        return obj.attach_trail(color=color, retain=retain, type=type, pps=pps, radius=radius, interval=interval)
+    if callable(obj):
+        return _FunctionTrail(obj, color=color, radius=radius, retain=retain, type=type, pps=pps, interval=interval)
+    raise TypeError("attach_trail의 첫 인자는 3D 객체이거나 벡터를 돌려주는 함수여야 합니다")
+
+
+class attach_light:
+    """attach_light(obj, offset=vector(0,0,0), color=color.white) — 객체를 따라다니는 점광원.
+    rate()·sleep()마다 광원 위치를 obj.pos + offset으로 옮긴다. .color·.offset·.visible을 바꿀 수 있다."""
+    # 인자 이름·기본값은 vpython-jupyter의 attach_light(MIT)와 같다: color 기본값은 객체의 색, offset 기본값은 vector(0,0,0)
+    def __init__(self, obj, offset=None, color=None, intensity=1.0):
+        if not isinstance(getattr(obj, 'pos', None), vector):
+            raise AttributeError("Cannot attach a light to an object that has no pos attribute.")
+        if color is not None and not isinstance(color, vector):
+            raise AttributeError("The color attribute must be a vector.")
+        if offset is not None and not isinstance(offset, vector):
+            raise AttributeError('The attach_light attribute "offset" must be a vector.')
+        self.obj = obj
+        self._offset = _coerce_vector(offset, vector(0, 0, 0))
+        light_color = _coerce_vector(color, _coerce_vector(getattr(obj, 'color', None), vector(1, 1, 1)))
+        self.light = local_light(pos=obj.pos + self._offset, color=light_color, intensity=intensity)
+        self._visible = True
+        self._last = None
+        _attached_followers.append(self)
+
+    @property
+    def _id(self):
+        """scene.lights = [L] 처럼 조명 목록에 넣을 수 있도록 광원의 id를 돌려준다."""
+        return self.light._id
+
+    @property
+    def pos(self):
+        return self.light.pos
+
+    @property
+    def intensity(self):
+        return self.light.intensity
+
+    @intensity.setter
+    def intensity(self, value):
+        self.light.intensity = value
+
+    def update(self):
+        if not self._visible:
+            return
+        pos = self.obj.pos + self._offset
+        key = pos.to_list()
+        if key == self._last:
+            return
+        self._last = key
+        self.light.pos = pos
+
+    @property
+    def offset(self):
+        return self._offset
+
+    @offset.setter
+    def offset(self, value):
+        self._offset = _coerce_vector(value, vector(0, 0, 0))
+        self._last = None
+        self.update()
+
+    @property
+    def color(self):
+        return self.light.color
+
+    @color.setter
+    def color(self, value):
+        self.light.color = _coerce_vector(value, vector(1, 1, 1))
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = bool(value)
+        _add_command({"action": "update", "id": self.light._id, "visible": self._visible})
+        if self._visible:
+            self._last = None
+            self.update()
+
+
+# === wtext — 캡션(또는 제목) 영역의 글자 ===
+# vpython-jupyter와 같은 표현: title_anchor = [canvas 번호, 1], caption_anchor = [canvas 번호, 2], print_anchor = 3
+_TITLE_ANCHOR = [0, 1]
+_CAPTION_ANCHOR = [0, 2]
+print_anchor = 3
+
+
+class wtext:
+    """캡션 영역에 글자를 표시하고 나중에 바꾼다 — 슬라이더 값 표시에 쓴다.
+    w = wtext(text='0.0')
+    w.text = f'{s.value:.1f}'
+    pos=scene.title_anchor면 제목 영역에 표시한다. (인자 이름은 vpython-jupyter의 wtext와 같다)"""
+    def __init__(self, text='', pos=None, **kwargs):
+        self._id = _new_id()
+        self._text = str(text)
+        if pos == print_anchor:
+            raise AttributeError('wtext: Cannot specify "print_anchor" in VPython 7.')
+        self.location = pos
+        self._anchor = 'title' if (isinstance(pos, (list, tuple)) and len(pos) == 2 and pos[1] == 1) else 'caption'
+        _add_command({"action": "wtext_create", "id": self._id, "text": self._text, "anchor": self._anchor})
+
+    @property
+    def text(self):
+        return self._text
+
+    @text.setter
+    def text(self, value):
+        self._text = str(value)
+        _add_command({"action": "wtext_update", "id": self._id, "text": self._text})
+
+    def delete(self):
+        _add_command({"action": "wtext_delete", "id": self._id})
+
+
+# === shapes / paths — vpython-jupyter의 shapespaths.py를 그대로 이식 (MIT) ===
+# 원본: https://github.com/vpython/vpython-jupyter/blob/master/vpython/shapespaths.py
+#       (https://raw.githubusercontent.com/vpython/vpython-jupyter/master/vpython/shapespaths.py)
+# 이식 방식: 상대 import 한 줄을 VPyLab의 vector로 바꾸고 __all__ 선언만 뺐다. 나머지 코드는 손대지 않았다.
+# 결과(2D 단면은 [x, y] 목록, 경로는 vector 목록)는 extrusion이 그대로 받는다. 끝의 pointlist 별칭만 VPyLab이 덧붙였다.
+#
+# Copyright (C) 2015 by John Coady, Ruth Chabay, and Bruce Sherwood
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# === 이식 코드 시작 ===
+from math import sqrt, sin, cos, tan, asin, acos, atan, floor, pi
+
+# (VPyLab) vec·vector·mag·norm은 이 파일 앞부분의 VPyLab 구현을 그대로 사용한다
+
+
+ # The path and shape objects were designed and implemented by Kadir Haldenbilen
+ # for Classic VPython 5. Modified by Bruce Sherwood for GlowScript/Jupyter VPython,
+ # eliminating dependency on Polygon library.
+
+ # GlowScript API:
+ # shape = [2Ds], hole = [2Ds] or shape = [ [shape 2Ds], [hole 2Ds] ]
+ # Another option for hole is [ [hole1], [hole2], ..... ]
+ # If hole represents multiple holes, len([hole[0]]) > 1
+
+   ##################################
+   ## ----------- shapes ------------
+   ##################################
+
+npdefault = 64 # default number of points for a circle. ellipse, and arc
+
+def roundc(cps, roundness=0.1, invert=False, nseg=16):
+    cp = []
+    for i in range(len(cps)): cp.append(vec(cps[i][0], cps[i][1], 0)) # convert [x,y] => vec(x,y,0), so can use vector functions
+
+    # If points are ordered counterclockwise, vord will be > 0
+    vord = 0
+    cp.pop() # remove the final point, which is equal to the initial point
+    lcp = len(cp)
+    for i in range(lcp):
+        i1 = (i + 1) % lcp
+        i2 = (i + 2) % lcp
+        v1 = cp[i1] - cp[i]
+        v2 = cp[i2] - cp[i1]
+        dv = v1.cross(v2).z
+        vord += dv
+
+    if vord < 0: cp.reverse() # force points to be in counterclockwise order
+
+    # Determine shortest side
+    L = 1e200
+    for i in range(lcp):
+        p1 = cp[i]
+        p2 = cp[(i + 1) % lcp]
+        lm = mag(p2 - p1)
+        if (lm < L):
+            L = lm
+
+    r = L * roundness # radius of rounded curve connecting adjacent sides
+
+    ncp = [[0,0]] # starting point will be modified later
+    for i in range(lcp):
+        v1 = cp[(i+1) % lcp] - cp[i % lcp]   # first side
+        v2 = cp[(i+2) % lcp] - cp[(i+1) % lcp] # next side
+        theta = v1.diff_angle(v2)   # angle of change of direction from first side to next side
+        d = r*tan(theta/2)         # how much to shorten the end of a side and the start of the next
+        p1 = cp[i] + v1 - d*norm(v1)   # end of first side, start of bend
+        p2 = cp[(i+1) % lcp] + d*norm(v2) # start of next side, end of bend
+        ncp.append([p1.x, p1.y])
+        N = norm(v1).cross(norm(v2))
+        center = p1 + r*norm(N.cross(v1)) # center of circular arc
+        v = p1 - center
+        dtheta = theta/(nseg+1)
+        if N.z < 0: dtheta = -dtheta
+        if invert:
+            c = 0.5*(p1 + p2) # midpoint along line connecting p1 and p2
+            center = c + (c-center)    # move center to other side of corner
+            v = p1 - center
+            dtheta = -dtheta
+
+        for j in range(1,nseg): # don't repeat the starting point of this arc
+            v1 = center + v.rotate(j*dtheta)
+            ncp.append([v1.x, v1.y])
+
+        ncp.append([p2.x, p2.y])
+
+    v1 = cp[1] - cp[0]
+    v1 = cp[0] + d*norm(v1) # start of first side, at end of preceding bend
+    ncp[0] = [v1.x, v1.y]
+    return ncp
+
+def rotatecp(cp, pos=[0,0], rotate=0):
+    sinr = sin(rotate)
+    cosr = cos(rotate)
+    xRel = pos[0]
+    yRel = pos[1]
+    cpr = []
+    for i in range(len(cp)):
+        p = cp[i]
+        x = p[0]
+        y = p[1]
+        newx = x * cosr - y * sinr - xRel * cosr + yRel * sinr + xRel
+        newy = x * sinr + y * cosr - xRel * sinr - yRel * cosr + yRel
+        cpr.append([ newx, newy ])
+    return cpr
+
+def scalecp(cp, xscale=1, yscale=1):
+    cpr = []
+    for i in range(len(cp)):
+        p = cp[i]
+        cpr.append([ xscale * p[0], yscale * p[1] ])
+    return cpr
+
+def addpos(cp, pos=[0,0]):
+    for i in range(len(cp)):
+        p = cp[i]
+        p[0] += pos[0]
+        p[1] += pos[1]
+    return cp
+
+##The following script has been developed and based on the
+##Blender 235 script "Blender Mechanical Gears"
+##developed in 2004 by Stefano <S68> Selleri,
+##released under the Blender Artistic License (BAL).
+##See www.blender.org.
+
+####################################################################
+#CREATES THE BASE INVOLUTE PROFILE
+####################################################################
+def ToothOutline(n=30, res=1, phi=20, radius=50, addendum=0.4, dedendum=0.5, fradius=0.1, bevel=0.05):
+    TOOTHGEO = {
+        'PitchRadius' : radius,
+        'TeethN'      : n,
+        'PressureAng' : phi,
+        'Addendum'    : addendum,
+        'Dedendum'    : dedendum,
+        'Fillet'      : fradius,
+        'Bevel'       : bevel,
+        'Resolution'  : res,
+        }
+    ####################################################################
+    #Basic Math computations: Radii
+    #
+    R = {
+        'Bottom'  : TOOTHGEO['PitchRadius'] - TOOTHGEO['Dedendum'] - TOOTHGEO['Fillet'],
+        'Ded'     : TOOTHGEO['PitchRadius'] - TOOTHGEO['Dedendum'],
+        'Base'    : TOOTHGEO['PitchRadius'] * cos(TOOTHGEO['PressureAng']*pi/180.0),
+        'Bevel'   : TOOTHGEO['PitchRadius'] + TOOTHGEO['Addendum'] - TOOTHGEO['Bevel'],
+        'Add'     : TOOTHGEO['PitchRadius'] + TOOTHGEO['Addendum']
+    }
+
+    ####################################################################
+    #Basic Math computations: Angles
+    #
+    DiametralPitch = TOOTHGEO['TeethN']/(2*TOOTHGEO['PitchRadius'])
+    ToothThickness = 1.5708/DiametralPitch
+    CircularPitch  = pi / DiametralPitch
+
+    U1 = sqrt((1-cos(TOOTHGEO['PressureAng']*pi/180.0))/
+                   cos(TOOTHGEO['PressureAng']*pi/180.0))
+    U2 = sqrt(R['Bevel']*R['Bevel']/(R['Ded']*R['Ded'])-1)
+
+    ThetaA1 = atan((sin(U1)-U1*cos(U1))/(cos(U1)+U1*sin(U1)))
+    ThetaA2 = atan((sin(U2)-U2*cos(U2))/(cos(U2)+U2*sin(U2)))
+    ThetaA3 = ThetaA1 + ToothThickness/(TOOTHGEO['PitchRadius']*2.0)
+
+    A = {
+        'Theta0' : CircularPitch/(TOOTHGEO['PitchRadius']*2.0),
+        'Theta1' : ThetaA3 + TOOTHGEO['Fillet']/R['Ded'],
+        'Theta2' : ThetaA3,
+        'Theta3' : ThetaA3 - ThetaA2,
+        'Theta4' : ThetaA3 - ThetaA2 - TOOTHGEO['Bevel']/R['Add']
+    }
+
+    ####################################################################
+    # Profiling
+    #
+    N = TOOTHGEO['Resolution']
+    points  = []
+    normals = []
+    # Top half bottom of tooth
+    for i in range(2*N):
+        th = (A['Theta1'] - A['Theta0'])*i/(2*N-1) + A['Theta0']
+        points.append ([R['Bottom']*cos(th),
+                        R['Bottom']*sin(th)])
+        normals.append([-cos(th),
+                        -sin(th)])
+
+    # Bottom Fillet
+    xc = R['Ded']*cos(A['Theta1'])
+    yc = R['Ded']*sin(A['Theta1'])
+    Aw = pi/2.0 + A['Theta2'] - A['Theta1']
+    for i in range(N):
+        th = (Aw)*(i+1)/(N) + pi + A['Theta1']
+        points.append ([xc + TOOTHGEO['Fillet']*cos(th),
+                        yc + TOOTHGEO['Fillet']*sin(th)])
+        normals.append([cos(th),
+                        sin(th)])
+
+    # Straight part
+    for i in range(N):
+        r = (R['Base']-R['Ded'])*(i+1)/(N) + R['Ded']
+        points.append ([r*cos(A['Theta2']),
+                        r*sin(A['Theta2'])])
+        normals.append([cos(A['Theta2']-pi/2.0),
+                        sin(A['Theta2']-pi/2.0)])
+
+    # Tooth Involute
+    for i in range(3*N):
+        r = (R['Bevel'] - R['Base'])*(i+1)/(3*N) + R['Base']
+        u = sqrt(r*r/(R['Base']*R['Base'])-1)
+        xp = R['Base']*(cos(u)+u*sin(u))
+        yp = - R['Base']*(sin(u)-u*cos(u))
+        points.append ([xp*cos(A['Theta2'])-yp*sin(A['Theta2']),
+                        +xp*sin(A['Theta2'])+yp*cos(A['Theta2'])])
+        normals.append([-sin(u),
+                        -cos(u)])
+
+    # Tooth Bevel
+    auxth = -u
+    auxth = auxth + ThetaA3 + pi/2.0
+    m     = tan(auxth)
+    P0    = points[len(points)-1]
+    rA    = TOOTHGEO['Bevel']/(1-cos(auxth-A['Theta4']))
+    xc    = P0[0] - rA*cos(auxth)
+    yc    = P0[1] - rA*sin(auxth)
+    for i in range(N):
+        th = (A['Theta4'] - auxth)*(i+1)/(N) + auxth
+        points.append ([xc + rA*cos(th),
+                        yc +rA*sin(th)])
+        normals.append([-cos(th),
+                        -sin(th)])
+
+    # Tooth Top
+    P0    = points[len(points)-1]
+    A['Theta4'] = atan (P0[1]/P0[0])
+    Ra = sqrt(P0[0]*P0[0]+P0[1]*P0[1])
+    for i in range(N):
+        th = (-A['Theta4'])*(i+1)/(N) + A['Theta4']
+        points.append ([Ra*cos(th),
+                        Ra*sin(th)])
+        normals.append([-cos(th),
+                        -sin(th)])
+
+    # Mirrors this!
+    N = len(points)
+    for i in range(N-1):
+        P = points[N-2-i]
+        points.append([P[0],-P[1]])
+        V = normals[N-2-i]
+        normals.append([V[0],-V[1]])
+
+    return points               # ,normals
+
+####################################################################
+#CREATES THE BASE RACK PROFILE
+####################################################################
+def RackOutline(n=30, res=1, phi=20, radius=5, addendum=0.4, dedendum=0.5, fradius=0.1, bevel=0.05):
+    TOOTHGEO = {
+        'PitchRadius' : radius,
+        'TeethN'      : n,
+        'PressureAng' : phi,
+        'Addendum'    : addendum,
+        'Dedendum'    : dedendum,
+        'Fillet'      : fradius,
+        'Bevel'       : bevel,
+        'Resolution'  : res,
+        }
+    ####################################################################
+    #Basic Math computations: QUotes
+    #
+    X = {
+        'Bottom'  :  - TOOTHGEO['Dedendum'] - TOOTHGEO['Fillet'],
+        'Ded'     :  - TOOTHGEO['Dedendum'],
+        'Bevel'   : TOOTHGEO['Addendum'] - TOOTHGEO['Bevel'],
+        'Add'     : TOOTHGEO['Addendum']
+    }
+
+    ####################################################################
+    #Basic Math computations: Angles
+    #
+    DiametralPitch = TOOTHGEO['TeethN']/(2*TOOTHGEO['PitchRadius'])
+    ToothThickness = 1.5708/DiametralPitch
+    CircularPitch  = pi / DiametralPitch
+
+    Pa = TOOTHGEO['PressureAng']*pi/180.0
+
+    yA1 = ToothThickness/2.0
+    yA2 = (-X['Ded']+TOOTHGEO['Fillet']*sin(Pa))*tan(Pa)
+    yA3 = TOOTHGEO['Fillet']*cos(Pa)
+
+    A = {
+        'y0' : CircularPitch/2.0,
+        'y1' : yA1+yA2+yA3,
+        'y2' : yA1+yA2,
+        'y3' : yA1 -(X['Add']-TOOTHGEO['Bevel'])*tan(Pa),
+        'y4' : yA1 -(X['Add']-TOOTHGEO['Bevel'])*tan(Pa)
+                - cos(Pa)/(1-sin(Pa))*TOOTHGEO['Bevel']
+    }
+
+    ####################################################################
+    # Profiling
+    #
+    N = TOOTHGEO['Resolution']
+    points  = []
+    normals = []
+    ist = 0
+    if fradius: ist = 1
+    # Top half bottom of tooth
+    for i in range(ist, 2*N):
+        y = (A['y1'] - A['y0'])*i/(2*N-1) + A['y0']
+        points.append ([X['Bottom'],
+                        y])
+        normals.append([-1.0,
+                        -0.0])
+
+    # Bottom Fillet
+    xc = X['Ded']
+    yc = A['y1']
+    Aw = pi/2.0 - Pa
+
+    for i in range(N):
+        th = (Aw)*(i+1)/(N) + pi
+        points.append ([xc + TOOTHGEO['Fillet']*cos(th),
+                        yc + TOOTHGEO['Fillet']*sin(th)])
+        normals.append([cos(th),
+                        sin(th)])
+
+    # Straight part
+    Xded = X['Ded'] - TOOTHGEO['Fillet']*sin(Pa)
+    for i in range(4*N):
+        x = (X['Bevel']-Xded)*(i+1)/(4*N) + Xded
+        points.append ([x,
+                        yA1-tan(Pa)*x])
+        normals.append([-sin(Pa),
+                        -cos(Pa)])
+
+    # Tooth Bevel
+    rA    = TOOTHGEO['Bevel']/(1-sin(Pa))
+    xc    =  X['Add'] - rA
+    yc    =  A['y4']
+    for i in range(N):
+        th = (-pi/2.0+Pa)*(i+1)/(N) + pi/2.0-Pa
+        points.append ([xc + rA*cos(th),
+                        yc + rA*sin(th)])
+        normals.append([-cos(th),
+                        -sin(th)])
+
+    # Tooth Top
+    for i in range(N):
+        y = -A['y4']*(i+1)/(N) + A['y4']
+        points.append ([X['Add'],
+                        y])
+        normals.append([-1.0,
+                        0.0])
+
+    # Mirrors this!
+    N = len(points)
+    for i in range(N-1):
+        P = points[N-2-i]
+        points.append([P[0],-P[1]])
+        V = normals[N-2-i]
+        normals.append([V[0],-V[1]])
+
+    return points               # ,normals
+
+####################################################################
+## CREATES THE BASE CROWN INVOLUTE -- NOT CURRENTLY IMPLEMENTED IN GLOWSCRIPT -- GAVE ERRORS
+####################################################################
+# def CrownOutline(n=30, res=1, phi=20., radius=5.0, addendum=0.4, dedendum=0.5, fradius=0.1, bevel=0.05):
+    # TOOTHGEO = {
+        # 'PitchRadius' : radius,
+        # 'TeethN'      : n,
+        # 'PressureAng' : phi,
+        # 'Addendum'    : addendum,
+        # 'Dedendum'    : dedendum,
+        # 'Fillet'      : fradius,
+        # 'Bevel'       : bevel,
+        # 'Resolution'  : res,
+        # }
+    ###################################################################
+    ## Basic Math computations: Radii
+
+    # R = {
+        # 'Bottom'  : TOOTHGEO['PitchRadius'] * cos(TOOTHGEO['PressureAng']*pi/180.0) ,
+        # 'Base'    : TOOTHGEO['PitchRadius'] * cos(TOOTHGEO['PressureAng']*pi/180.0) + TOOTHGEO['Fillet'],
+        # 'Ded'     : TOOTHGEO['PitchRadius'] + TOOTHGEO['Dedendum']
+    # }
+
+    ###################################################################
+    ## Basic Math computations: Angles
+
+    # DiametralPitch = TOOTHGEO['TeethN']/(2*TOOTHGEO['PitchRadius'])
+    # ToothThickness = 1.5708/DiametralPitch
+    # CircularPitch  = pi / DiametralPitch
+
+    # U1 = sqrt((1-cos(TOOTHGEO['PressureAng']*pi/180.0))/
+                   # cos(TOOTHGEO['PressureAng']*pi/180.0))
+    # U2 = sqrt(R['Ded']*R['Ded']/(R['Base']*R['Base'])-1)
+
+    # ThetaA1 = atan((sin(U1)-U1*cos(U1))/(cos(U1)+U1*sin(U1)))
+    # ThetaA2 = atan((sin(U2)-U2*cos(U2))/(cos(U2)+U2*sin(U2)))
+    # ThetaA3 = ThetaA1 + ToothThickness/(TOOTHGEO['PitchRadius']*2.0)
+
+    # A = {
+        # 'Theta0' : CircularPitch/(TOOTHGEO['PitchRadius']*2.0),
+        # 'Theta1' : (ThetaA3 + TOOTHGEO['Fillet']/R['Base']),
+        # 'Theta2' : ThetaA3,
+        # 'Theta3' : ThetaA3 - ThetaA2,
+        # 'Theta4' : ThetaA3 - ThetaA2 - TOOTHGEO['Bevel']/R['Ded']
+    # }
+
+    # M = A['Theta0']
+    # A['Theta0'] = 0
+    # A['Theta1'] = A['Theta1']-M
+    # A['Theta2'] = A['Theta2']-M
+    # A['Theta3'] = A['Theta3']-M
+    # A['Theta4'] = A['Theta4']-M
+
+    ###################################################################
+    ## Profiling
+
+    # N = TOOTHGEO['Resolution']
+    # apoints  = []
+    # anormals = []
+
+    ## Top half top of tooth
+    # for i in range(2*N):
+        # th = (A['Theta1'] - A['Theta0'])*i/(2*N-1) + A['Theta0']
+        # apoints.append ([R['Bottom']*cos(th),
+                        # R['Bottom']*sin(th)])
+        # anormals.append([cos(th),
+                        # sin(th)])
+
+    ## Bottom Bevel
+    # xc = R['Base']*cos(A['Theta1'])
+    # yc = R['Base']*sin(A['Theta1'])
+    # Aw = pi/2.0 + A['Theta2'] - A['Theta1']
+    # for i in range(N):
+        # th = (Aw)*(i+1)/(N) + pi + A['Theta1']
+        # apoints.append ([xc + TOOTHGEO['Fillet']*cos(th),
+                        # yc + TOOTHGEO['Fillet']*sin(th)])
+        # anormals.append([-cos(th),
+                        # -sin(th)])
+
+    ## Tooth Involute
+    # for i in range(4*N):
+        # r = (R['Ded'] - R['Base'])*(i+1)/(4*N) + R['Base']
+        # u = sqrt(r*r/(R['Base']*R['Base'])-1)
+        # xp = R['Base']*(cos(u)+u*sin(u))
+        # yp = - R['Base']*(sin(u)-u*cos(u))
+        # apoints.append ([xp*cos(A['Theta2'])-yp*sin(A['Theta2']),
+                        # +xp*sin(A['Theta2'])+yp*cos(A['Theta2'])])
+        # anormals.append([sin(u),
+                        # cos(u)])
+
+    ## Tooth Bevel
+    # auxth = -u
+    # auxth = auxth + ThetaA3 + pi/2.0
+    # m     = tan(auxth)
+    # P0    = apoints[len(apoints)-1]
+    # rA    = TOOTHGEO['Bevel']/(1-cos(auxth-A['Theta4']))
+    # xc    = P0[0] - rA*cos(auxth)
+    # yc    = P0[1] - rA*sin(auxth)
+    # for i in range(N):
+        # th = (A['Theta4'] - auxth)*(i+1)/(N) + auxth
+        # apoints.append ([xc + rA*cos(th),
+                        # yc +rA*sin(th)])
+        # anormals.append([cos(th),
+                        # sin(th)])
+
+    ## Tooth Top
+    # P0    = apoints[len(apoints)-1]
+    # A['Theta4'] = atan (P0[1]/P0[0])
+    # Ra = sqrt(P0[0]*P0[0]+P0[1]*P0[1])
+    # for i in range(N):
+        # th = (-M - A['Theta4'])*(i+1)/(N) + A['Theta4']
+        # apoints.append ([Ra*cos(th),
+                        # Ra*sin(th)])
+        # anormals.append([cos(th),
+                        # sin(th)])
+    # points = []
+    # normals = []
+    # N = len(apoints)
+    # for i in range(N):
+        # points.append(apoints[N-1-i])
+        # normals.append(anormals[N-1-i])
+
+    ## Mirrors this!
+    # N = len(points)
+    # for i in range(N-1):
+        # P = points[N-2-i]
+        # points.append([P[0],-P[1]])
+        # V = normals[N-2-i]
+        # normals.append([V[0],-V[1]])
+
+    # return points           #,normals       process nromals later
+
+class shape_object(object):
+
+    def rframe(self, pos=[0,0], width=1, height=None, rotate=0, thickness=None,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        if height is None:
+            height = width
+        if thickness is None: thickness = min(height, width) * .2
+        else: thickness = min(height, width) * thickness * 2
+        outer = self.rectangle(pos=pos, width=width, height=height)
+        inner = self.rectangle(pos=pos, width=width - thickness, height=height - thickness)
+        if rotate != 0:
+            outer = rotatecp(outer, pos=pos, rotate=rotate)
+            inner = rotatecp(inner, pos=pos, rotate=rotate)
+        if xscale != 1 or yscale != 1:
+            outer = scalecp(outer, xscale=xscale, yscale=yscale)
+            inner = scalecp(inner, xscale=xscale, yscale=yscale)
+        if roundness > 0:
+            outer = roundc(outer, roundness=roundness, invert=invert)
+            inner = roundc(inner, roundness=roundness, invert=invert)
+        return [ outer, inner ]
+
+    def rectangle(self, pos=[0,0], width=1, height=None, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        if height is None:
+            height = width
+        if thickness == 0:
+            cp = []
+            w2 = width / 2
+            h2 = height / 2
+            cp = [ [ w2, -h2 ], [ w2, h2 ], [ -w2, h2 ], [ -w2, -h2 ], [ w2, -h2 ] ]
+            cp = addpos(cp, pos=pos)
+            if rotate != 0: cp = rotatecp(cp, pos, rotate)
+            if scale != 1: xscale = yscale = scale
+            if xscale != 1 or yscale != 1: cp = scalecp(cp, xscale, yscale)
+            if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        else:
+            cp = self.rframe(pos=pos, width=width, height=height, rotate=rotate, thickness=thickness,
+                    roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+        return cp
+
+    def cross(self, pos=[0,0], width=1, rotate=0, thickness=0.2,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        wtp = (width + thickness) / 2
+        w2 = width / 2
+        t2 = thickness / 2
+        cp = [ [ w2, -t2 ], [ w2, t2 ], [ t2, t2 ], [ t2, w2 ], [ -t2, w2 ], [ -t2, t2 ], [ -w2, t2 ],
+               [ -w2, -t2 ], [ -t2, -t2 ], [ -t2, -w2 ], [ t2, -w2 ], [ t2, -t2 ], [ w2, -t2 ] ]
+        cp = addpos(cp, pos=pos)
+        if rotate != 0: cp = rotatecp(cp, pos=pos, rotate=rotate)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1: cp = scalecp(cp, xscale=xscale, yscale=yscale)
+        if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        return cp
+
+    def trframe(self, pos=[0,0], width=2, height=1, top=None, rotate=0, thickness=None,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        if top is None: top = width / 2
+        if thickness is None:
+            thickness = min(height, top) * .2
+        else:
+            thickness = min(height, top) * thickness * 2
+
+        outer = self.trapezoid(pos=pos, width=width, height=height, top=top)
+        angle = atan((width - top) / 2 / height)
+        db = thickness / cos(angle)
+        inner = self.trapezoid(pos=pos, width=width - db - thickness * tan(angle),
+                                height=height - thickness, top=top - (db - thickness * tan(angle)))
+        outer = addpos(outer, pos=pos)
+        inner = addpos(inner, pos=pos)
+        if rotate != 0:
+            outer = rotatecp(outer, pos=pos, rotate=rotate)
+            inner = rotatecp(inner, pos=pos, rotate=rotate)
+
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1:
+            outer = scalecp(outer, xscale=xscale, yscale=yscale)
+            inner = scalecp(inner, xscale=xscale, yscale=yscale)
+
+        if roundness > 0:
+            outer = roundc(outer, roundness=roundness, invert=invert)
+            inner = roundc(inner, roundness=roundness, invert=invert)
+
+        return [ outer, inner ]
+
+    def trapezoid(self, pos=[0,0], width=2, height=1, top=None, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        w2 = width / 2
+        h2 = height / 2
+        if top is None: top = w2
+        t2 = top / 2
+        if thickness == 0:
+            cp = [ [ w2, -h2 ], [ t2, h2 ], [ -t2, h2 ], [ -w2, -h2 ], [ w2, -h2 ] ]
+            cp = addpos(cp, pos=pos)
+            if rotate != 0: cp = rotatecp(cp, pos=pos, rotate=rotate)
+            if scale != 1: xscale = yscale = scale
+            if xscale != 1 or yscale != 1: cp = scalecp(cp, xscale=xscale, yscale=yscale)
+            if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        else:
+            cp = self.trframe(pos=pos, width=width, height=height, top=top, rotate=rotate, thickness=thickness,
+                    roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+        return cp
+
+    def circframe(self, pos=[0,0], radius=0.5, np=npdefault, rotate=0, iradius=None,
+                    angle1=0, angle2=2*pi, scale=1, xscale=1, yscale=1):
+        thickness = 0
+        if iradius is None: iradius = radius * .8
+        outer = self.circle(pos=pos, radius=radius, np=np, rotate=rotate, iradius=iradius,
+                       angle1=angle1, angle2=angle2, scale=scale, xscale=xscale, yscale=yscale)
+        if angle1 == 0 and angle2 == 2*pi:
+            radius = iradius
+            inner = self.circle(pos=pos, radius=radius, np=np, rotate=rotate, thickness=thickness,
+                       angle1=angle1, angle2=angle2, scale=scale, xscale=xscale, yscale=yscale)
+        else:
+            t = radius - iradius
+            angle = (angle1 + angle2)/2 # pos and center lie on this line
+            offset = t/sin((angle2-angle1)/2)
+            corner = [pos[0]+offset*cos(angle), pos[1]+offset*sin(angle)]
+            dangle = asin(t/iradius)
+            angle1 = angle1 + dangle
+            angle2 = angle2 - dangle
+            radius = iradius
+            inner = self.circle(pos=pos, radius=radius, np=np, rotate=rotate, thickness=thickness, corner=corner,
+                       angle1=angle1, angle2=angle2, scale=scale, xscale=xscale, yscale=yscale)
+        if rotate != 0:
+            outer = rotatecp(outer, pos=pos, rotate=rotate)
+            inner = rotatecp(inner, pos=pos, rotate=rotate)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1:
+            outer = scalecp(outer, xscale=xscale, yscale=yscale)
+            inner = scale(inner, xscale=xscale, yscale=yscale)
+        return [ outer, inner ]
+
+    def circle(self, pos=[0,0], radius=0.5, np=npdefault, rotate=0, thickness=0, corner=None, iradius=None,
+                    angle1=0, angle2=2*pi, scale=1, xscale=1, yscale=1):
+        if corner is None: corner = pos # where the two straight edges meet
+        cp = []
+        if thickness > 0:
+            iradius = radius - radius*thickness
+            cp = self.circframe(pos=pos, radius=radius, np=np, rotate=rotate, iradius=iradius,
+                    angle1=angle1, angle2=angle2, scale=scale, xscale=xscale, yscale=yscale)
+        else:
+            if angle1 != 0 or angle2 != 2 *pi:
+                cp.append([ corner[0], corner[1] ])
+            seg = 2 * pi / np
+            nseg = int(floor(abs((angle2 - angle1) / seg + .5)))
+            seg = (angle2 - angle1) / nseg
+            if angle1 != 0 or angle2 != 2 * pi: nseg += 1
+            c = radius * cos(angle1)
+            s = radius * sin(angle1)
+            dc = cos(seg)
+            ds = sin(seg)
+            x0 = pos[0]
+            y0 = pos[1]
+            cp.append([ x0 + c, y0 + s ])
+            for i in range(nseg-1):
+                c2 = c * dc - s * ds
+                s2 = s * dc + c * ds
+                cp.append([ x0 + c2, y0 + s2 ])
+                c = c2
+                s = s2
+            cp.append(cp[0])
+            if rotate != 0: cp = rotatecp(cp, pos=pos, rotate=rotate)
+            if scale != 1: xscale = yscale = scale
+            if xscale != 1 or yscale != 1: cp = scalecp(cp, xscale=xscale, yscale=yscale)
+        return cp
+
+    def arc(self, pos=[0,0], radius=0.5, np=npdefault, rotate=0, thickness=None,
+                    angle1=0, angle2=2*pi, scale=1, xscale=1, yscale=1, path=False):
+        if thickness is None: thickness = .01 * radius
+        cp = []  # outer arc
+        cpi = [] # inner arc
+        seg = 2 * pi / np
+        nseg = int(floor(abs(angle2 - angle1) / seg) + 1)
+        seg = (angle2 - angle1) / nseg
+        for i in range(nseg+1):
+            x = cos(angle1 + i * seg)
+            y = sin(angle1 + i * seg)
+            cp.append([radius * x + pos[0], radius * y + pos[1]])
+            if not path: cpi.append([(radius - thickness) * x + pos[0],
+                                      (radius - thickness) * y + pos[1]])
+        if not path:
+            cpi.reverse()
+            for i in range(len(cpi)): cp.append(cpi[i])
+            cp.append(cp[0])
+        if rotate != 0: cp = rotatecp(cp, pos, rotate)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1: scalecp(cp, xscale, yscale)
+        return cp
+
+    def ellipse(self, pos=[0,0], width=1, height=None, np=npdefault, rotate=0, thickness=0,
+                    angle1=0, angle2=2*pi, scale=1, xscale=1, yscale=1):
+        if height is None: height = .5 * width
+        yscale *= height/width
+        radius = width
+        return self.circle(pos=pos, radius=radius, np=np, rotate=rotate,
+                    angle1=angle1, angle2=angle2, scale=scale, xscale=xscale, yscale=yscale)
+
+    # line is not called by paths.line()
+    def line(self, pos=[0,0], width=1, height=None, np=2, rotate=0, thickness=None,
+                    start=[0,0], end=[0,1], scale=1, xscale=1, yscale=1):
+        v = vec(end[0] - start[0], end[1] - start[1], 0)
+        if thickness is None: thickness = .01 * mag(v)
+        dv = thickness * norm(vec(0, 0, 1).cross(v))
+        dx = dv.x
+        dy = dv.y
+        cp = []   # outer line
+        cpi = []  # inner line
+        vstart = vec(start[0], start[1], 0)
+        v = vec(end[0]-start[0], end[1]-start[1], 0)
+        vline = v/(floor(np-1))
+        for i in range(np):
+            v = i*vline
+            x = start[0] + v.x
+            y = start[1] + v.y
+            cp.append([x + pos[0], y + pos[1]])
+            cpi.append([x + pos[0] + dx, y + pos[1] + dy])
+
+        cpi.reverse()
+        for i in range(len(cpi)): cp.append(cpi[i])
+        cp.append(cp[0])
+        if rotate != 0: cp = rotatecp(cp, pos, rotate)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1: scalecp(cp, xscale, yscale)
+        return cp
+
+    def nframe(self, pos=[0,0], length=1, rotate=0, thickness=None, np=3,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        if thickness is None:
+            thickness = length * .1
+        else:
+            thickness = length * thickness
+
+        outer = self.ngon(pos=pos, np=np, length=length)
+        angle = pi * (.5 - 1 / np)
+        length2 = length - 2 * thickness / tan(angle)
+        inner = self.ngon(pos=pos, np=np, length=length2)
+        if rotate != 0:
+            outer = rotatecp(outer, pos, rotate)
+            inner = rotatecp(inner, pos, rotate)
+
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1:
+            outer = scale(outer, xscale, yscale)
+            inner = scale(inner, xscale, yscale)
+
+        if roundness > 0:
+            outer = roundc(outer, roundness=roundness, invert=invert)
+            inner = roundc(inner, roundness=roundness, invert=invert)
+
+        return [ outer, inner ]
+
+    def ngon(self, pos=[0,0], length=1, rotate=0, thickness=0, np=None,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        cp = []
+        if np is None:  raise AttributeError("must specify np for ngon shape")
+        if np < 3: raise AttributeError("number of sides can not be less than 3")
+        angle = 2 * pi / np
+        radius = length / 2 / sin(angle / 2)
+        if thickness == 0:
+            seg = 2 * pi / np
+            angle = 0
+            for i in range(np):
+                x = radius * cos(angle) + pos[0]
+                y = radius * sin(angle) + pos[1]
+                cp.append([ x, y ])
+                angle += seg
+            cp.append(cp[0])
+            if rotate != 0: cp = rotatecp(cp, pos, rotate)
+            if scale != 1: xscale = yscale = scale
+            if xscale != 1 or yscale != 1: scalecp(cp, xscale, yscale)
+            if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        else:
+            cp = self.nframe(pos=pos, length=length, rotate=rotate, thickness=thickness, np=np,
+                    roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+        return cp
+
+    def triangle(self, pos=[0,0], length=1, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        return self.ngon(pos=pos, np=3, length=length, rotate=rotate-pi/6,
+                   roundness=roundness, invert=invert, scale=scale,
+                   xscale=xscale, yscale=yscale, thickness=thickness)
+
+    def pentagon(self, pos=[0,0], length=1, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        return self.ngon(pos=pos, np=5, length=length, rotate=rotate-pi/10,
+                   roundness=roundness, invert=invert, scale=scale,
+                   xscale=xscale, yscale=yscale, thickness=thickness)
+
+    def hexagon(self, pos=[0,0], length=1, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        return self.ngon(pos=pos, np=6, length=length, rotate=rotate,
+                   roundness=roundness, invert=invert, scale=scale,
+                   xscale=xscale, yscale=yscale, thickness=thickness)
+
+    def octagon(self, pos=[0,0], length=1, rotate=0, thickness=0,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        return self.ngon(pos=pos, np=8, length=length, rotate=rotate+pi/8,
+                   roundness=roundness, invert=invert, scale=scale,
+                   xscale=xscale, yscale=yscale, thickness=thickness)
+
+    def sframe(self, pos=[0,0], rotate=0, thickness=None, radius=1, n=5, iradius=None,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        if iradius is None:
+            iradius = .5 * radius
+        if thickness is None:
+            thickness = .2 * radius
+        else:
+            thickness = thickness * 2 * iradius
+
+        outer = self.star(pos=pos, n=n, radius=radius, iradius=iradius)
+        inner = self.star(pos=pos, n=n, radius=radius - thickness, iradius=(radius - thickness) * iradius / radius)
+        if rotate != 0:
+            outer = rotatecp(outer, pos, rotate)
+            inner = rotatecp(inner, pos, rotate)
+
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1:
+            outer = scale(outer, xscale, yscale)
+            inner = scale(inner, xscale, yscale)
+
+        if roundness > 0:
+            outer = roundc(outer, roundness=roundness, invert=invert)
+            inner = roundc(inner, roundness=roundness, invert=invert)
+
+        return [ outer, inner ]
+
+    def star(self, pos=[0,0], rotate=0, thickness=0, radius=1, n=5, iradius=None,
+                    roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        ## radius is from center to outer point of the star
+        ## iradius is from center to inner corners of the star
+        if iradius is None: iradius = radius * .5
+        if thickness == 0:
+            cp = []
+            dtheta = pi / n
+            theta = 0
+            for i in range(2*n+1):
+                if i % 2 == 0:
+                    cp.append([ -radius * sin(theta), radius * cos(theta) ])
+                else:
+                    cp.append([ -iradius * sin(theta), iradius * cos(theta) ])
+                theta += dtheta
+            cp = addpos(cp, pos)
+            cp[-1] = cp[0] # take care of possible rounding errors
+            if rotate != 0: cp = rotatecp(cp, pos, rotate)
+            if scale != 1: xscale = yscale = scale
+            if xscale != 1 or yscale != 1: scalecp(cp, xscale, yscale)
+            if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        else:
+            cp = self.sframe(pos=pos, rotate=rotate, thickness=thickness, radius=radius, iradius=iradius,
+                    n=n, roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+        return cp
+
+    def points(self, pos=[], rotate=0, path=False, roundness=0, invert=False, scale=1, xscale=1, yscale=1):
+        cp = pos
+        closed = cp[-1][0] == cp[0][0] and cp[-1][1] == cp[0][1]
+        if not closed and not path: cp.append(cp[0])
+        if len(cp) > 0 and rotate != 0: cp = rotatecp(cp, [0,0], rotate)
+        if scale != 1: xscale = yscale = scale
+        if xscale != 1 or yscale != 1: scalecp(cp, xscale, yscale)
+        if roundness > 0: cp = roundc(cp, roundness=roundness, invert=invert)
+        return cp
+
+    def gear(self, pos=[0,0], n=20, radius=1, phi=20, addendum=None, dedendum=None,
+                fradius=None, rotate=0, scale=1, res=1, bevel=0):
+            if addendum is None: addendum = 0.08*radius
+            if dedendum is None: dedendum = 0.1*radius
+            if fradius is None: fradius = 0.02*radius
+            tooth = ToothOutline(n=n, res=res, phi=phi, radius=radius,
+                        addendum=addendum, dedendum=dedendum, fradius=fradius, bevel=0)
+            g = []
+            for i in range(n):
+                rotan = -i * 2 * pi / n
+                rtooth = []
+                for j in range(len(tooth)):
+                    p = tooth[j]
+                    x = p[0]
+                    y = p[1]
+                    rx = x * cos(rotan) - y * sin(rotan) +  pos[0]
+                    ry = x * sin(rotan) + y * cos(rotan) +  pos[1]
+                    rtooth.append([rx, ry])
+                g.extend(rtooth)
+            if scale != 1: g = scalecp(g, scale, scale)
+            if rotate != 0: g = rotatecp(g, pos, rotate)
+            pts = []
+            i = 0
+            while i < len(g):
+                ### must eliminate neighboring repeated points and collinear points; poly2tri.js chokes on them
+                g1 = g[i]
+                pts.append(g1)
+                if i == len(g)-1: break
+                g2 = g[i+1]
+                if i < len(g)-2:
+                    g3 = g[i+2]
+                    # check for a-b-a instance of collinear points
+                    if abs(g3[0]-g1[0]) < .001*radius and abs(g3[1]-g1[1]) < .001*radius: i += 2
+                    g2 = g[i]
+                    if abs(g1[0] - g2[0]) < .001*radius and abs(g1[1] - g2[1]) < .001*radius:
+                        i += 1
+                if abs(g1[0] - g2[0]) < .001*radius and abs(g1[1] - g2[1]) < .001*radius:
+                    i += 1
+                i += 1
+            g1 = pts[0]
+            g2 = pts[-1]
+            if not (g1[0] == g2[0] and g1[1] == g2[1]): pts.append(g1)
+            return pts
+
+    def rackgear(self, pos=(0,0), n=30, radius=5., phi=20., addendum=0.4, dedendum=0.5,
+             fradius=0.1, rotate=0, scale=1.0, length=10*pi, res=1, bevel=0.05, depth=(0.4+0.6+0.1)):
+            if addendum is None: addendum = 0.08*radius
+            if dedendum is None: dedendum = 0.1*radius
+            if fradius is None: fradius = 0.02*radius
+            tooth = RackOutline(n=n, res=res, phi=phi, radius=radius,
+                        addendum=addendum, dedendum=dedendum, fradius=fradius, bevel=bevel)
+            toothl = tooth[0][1] - tooth[-1][1]
+            nt = int(floor(length / toothl))
+            flength = nt * toothl
+            g = []
+            lastx = lasty = 1e9
+            for i in range(nt):
+                ntooth = []
+                for j in range(len(tooth)):
+                    p = tooth[j]
+                    x = p[0]
+                    y = p[1]
+                    if x == lastx or y == lasty: continue
+                    nx = x + pos[0]
+                    ny = -i * toothl + y + pos[1]
+                    ntooth.append([nx, ny])
+                    lastx = x
+                    lasty = y
+                g.extend(ntooth)
+
+            g.append([g[-1][0] - depth, g[-1][1]])
+            g.append([g[0][0] - depth, g[0][1]])
+            g.append(g[0])
+            left = 1e9
+            right = -1e9
+            bottom = 1e9
+            top = -1e9
+            for i in range(len(g)):
+                g1 = g[i]
+                x = g1[0]
+                y = g1[1]
+                if x < left: left = x
+                if x > right: right = x
+                if y < bottom: bottom = y
+                if y > top: top = y
+
+            center = [ (left + right) / 2, (bottom + top) / 2 ]
+            dx = pos[0] - center[0]
+            dy = pos[1] - center[1]
+            g2 = []
+            for i in range(len(g)):
+                temp = g[i]
+                g2.append([ temp[0] + dx, temp[1] + dy ])
+            if scale != 1: g2 = scalecp(g2, scale, scale)
+            if rotate != 0: g2 = rotatecp(g2, pos, rotate)
+            a1 = g2[0]
+            a2 = g2[-1]
+            if not a1[0] == a2[0] and a1[1] == a2[1]: g2.append(a1)
+            return g2
+
+def convert(pos=(0,0,0), up=(0,1,0), points=None, closed=True):
+        pos = vector(pos)
+        up = norm(vector(up))
+        up0 = vector(0,1,0)
+        angle = acos(up.dot(up0))
+        reorient = (angle > 0.0)
+        axis = up0.cross(up)
+        pts = []
+        for pt in points:
+            newpt = vector(pt[0],0,-pt[1])
+            if reorient: newpt = newpt.rotate(angle=angle, axis=axis)
+            pts.append(pos+newpt)
+        if closed and not pts[-1].equals(pts[0]): pts.append(pts[0])
+        return pts
+
+class path_object(object):
+
+    def rectangle(self, pos=vec(0,0,0), width=6, height=None, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if height == None: height = width
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a rectangular path")
+            c = shapes.rectangle(width=width, height=height, rotate=rotate, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def cross(self, pos=vec(0,0,0), width=5, thickness=2, rotate=0.0,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            c = shapes.cross(width=width, rotate=rotate, thickness=thickness,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def trapezoid(self, pos=vec(0,0,0), width=6, height=3, top=None, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if height == None: height = width
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a trapezoidal path")
+            c = shapes.trapezoid(width=width, height=height, top=top, rotate=rotate, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def circle(self, pos=vec(0,0,0), radius=3, np=32, thickness=None,
+                      scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a circular path")
+            c = shapes.circle(radius=radius, np=np, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def line(self, start=vec(0,0,0), end=vec(0,0,-1), np=2):
+            if np < 2:
+                raise AttributeError("The minimum value of np is 2 (one segment)")
+            start = vector(start)
+            end = vector(end)
+            vline = (end-start)/(np-1)
+            pos = []
+            for i in range(np):
+                pos.append(start + i*vline)
+            return pos
+
+    def arc(self, pos=vec(0,0,0), radius=3, np=32, rotate=0.0, angle1=0, angle2=pi, thickness=None,
+                      scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a circular path")
+            c = shapes.arc(radius=radius, angle1=angle1, angle2=angle2, rotate=rotate, np=np,
+                       scale=scale, xscale=xscale, yscale=yscale, path=True)
+            return convert(pos=pos, up=up, points=c, closed=False)
+
+    def ellipse(self, pos=vec(0,0,0), width=6, height=None, np=32, thickness=None,
+                      scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in an elliptical path")
+            c = shapes.ellipse(width=width, height=height, np=np, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def ngon(self, pos=vec(0,0,0), np=3, length=6, radius=3.0, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in an ngon path")
+            c = shapes.ngon(np=np, length=length, radius=radius, rotate=rotate, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def triangle(self, pos=vec(0,0,0), np=3, length=6, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a triangular path")
+            c = shapes.ngon(np=np, length=length, rotate=rotate-pi/6.0, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def pentagon(self, pos=vec(0,0,0), np=5, length=6, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a pentagonal path")
+            c = shapes.ngon(np=np, length=length, rotate=rotate+pi/10, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def hexagon(self, pos=vec(0,0,0), np=6, length=6, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a hexagonal path")
+            c = shapes.ngon(np=np, length=length, rotate=rotate, thickness=0,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def star(self, pos=vec(0,0,0), radius=3, n=5, iradius=None, rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a star path")
+            c = shapes.star(n=n, radius=radius, iradius=iradius, rotate=rotate,
+                      roundness=roundness, invert=invert, scale=scale, xscale=xscale, yscale=yscale)
+            return convert(pos=pos, up=up, points=c)
+
+    def pointlist(self, pos=[], rotate=0.0, thickness=None,
+                      roundness=0.0, invert=False, scale=1.0, xscale=1.0, yscale=1.0, up=vec(0,1,0)):
+            if thickness is not None:
+                raise AttributeError("Thickness is not allowed in a pointlist path")
+            # pos may be either a list of points or a Polygon object
+            try:
+                points = pos.contour(0)
+                if len(pos) > 1:
+                    raise AttributeError("pointlist can deal with only a single contour.")
+            except:
+                points = pos[:]
+            closed = (points[-1] == points[0])
+            if not closed:
+                points.append(points[0])
+            c = shapes.pointlist(pos=points, rotate=rotate, roundness=roundness, invert=invert,
+                             scale=scale, xscale=xscale, yscale=yscale, path=True)
+            return convert(pos=(0,0,0), up=up, points=c, closed=closed)
+
+shapes = shape_object()
+paths = path_object()
+# === 이식 코드 끝 ===
+# 원본의 paths.pointlist는 존재하지 않는 shapes.pointlist를 부른다 — shapes.points와 같은 뜻이므로 별칭을 둔다 (VPyLab 보정)
+shape_object.pointlist = shape_object.points
 
 
 # === frame 별칭 (compound와 동일) ===
@@ -2667,6 +5199,8 @@ def _before_wait():
         _process_pending_events()
     if _attached_arrows:
         _update_attached_arrows()
+    if _attached_followers:
+        _update_attached_followers()
     _heartbeat()
 
 
@@ -3355,4 +5889,8 @@ def _reset_runtime_state():
     _pending_tasks.clear()
     _task_errors.clear()
     _scene_objects.clear()
+    _attached_followers.clear()
+    _notices_shown.clear()
+    global _canvas_calls
+    _canvas_calls = 0
     scene._reset()

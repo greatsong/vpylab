@@ -37,7 +37,7 @@ log1p log2 erf erfc lgamma copysign fabs fmod frexp ldexp dist prod isqrt perm c
 COMMON_API = {'sphere', 'box', 'vector', 'rate', 'color', 'arrow', 'cylinder', 'label', 'curve', 'scene', 'graph', 'gcurve'}
 
 # 화면에 무언가 만들어야 하는 호출 — 이 호출이 있는데 커맨드가 0개면 '무반응'
-DRAW_CALL = re.compile(r'\b(sphere|box|cylinder|arrow|cone|ring|helix|pyramid|ellipsoid|label|text|curve|points|compound|extrusion|'
+DRAW_CALL = re.compile(r'(?<![\w.])(sphere|box|cylinder|arrow|cone|ring|helix|pyramid|ellipsoid|label|text|curve|points|compound|extrusion|'
                        r'local_light|distant_light|graph|gcurve|gdots|gvbars|ghbars|slider|button|checkbox|radio|menu|winput|triangle|quad)\s*\(')
 
 

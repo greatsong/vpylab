@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import useAppStore from '../../stores/appStore';
 import CameraSystem from '../../engine/camera-system';
 import { postCameraState, postEvent, postMouseState, postPressedKeys } from '../../engine/pyodide-singleton';
-import { isEventBound } from '../../engine/vpython-bridge';
+import { isEventBound, updateBillboards } from '../../engine/vpython-bridge';
 import useFullscreen from '../../hooks/useFullscreen';
 import { useOptionalI18n } from '../../i18n/useI18n';
 
@@ -193,19 +193,50 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
     dirLight.userData.vpDefaultLight = 'distant';
     scene.add(dirLight);
 
-    // scene.title / scene.caption — 캔버스 위·아래 글자 (textContent만 사용)
-    const setText = (ref, text) => {
-      const el = ref.current;
+    // scene.title / scene.caption — 캔버스 위·아래 글자. wtext()는 같은 영역에 span으로 놓인다.
+    // (텍스트 노드와 textContent만 사용한다 — innerHTML 금지)
+    const overlayText = { title: '', caption: '' };
+    const widgetTexts = new Map(); // wtext id → { span, anchor: 'title' | 'caption' }
+    const refOf = (anchor) => (anchor === 'title' ? titleRef : captionRef);
+    const renderOverlay = (anchor) => {
+      const el = refOf(anchor).current;
       if (!el) return;
-      el.textContent = text;
-      el.style.display = text ? '' : 'none';
+      el.replaceChildren(document.createTextNode(overlayText[anchor]));
+      let hasContent = Boolean(overlayText[anchor]);
+      for (const item of widgetTexts.values()) {
+        if (item.anchor !== anchor) continue;
+        el.appendChild(item.span);
+        hasContent = true;
+      }
+      el.style.display = hasContent ? '' : 'none';
     };
     scene._overlay = {
-      setTitle: (text) => setText(titleRef, text),
-      setCaption: (text) => setText(captionRef, text),
-      appendTitle: (text) => setText(titleRef, (titleRef.current?.textContent || '') + text),
-      appendCaption: (text) => setText(captionRef, (captionRef.current?.textContent || '') + text),
-      clear: () => { setText(titleRef, ''); setText(captionRef, ''); },
+      setTitle: (text) => { overlayText.title = text; renderOverlay('title'); },
+      setCaption: (text) => { overlayText.caption = text; renderOverlay('caption'); },
+      appendTitle: (text) => { overlayText.title += text; renderOverlay('title'); },
+      appendCaption: (text) => { overlayText.caption += text; renderOverlay('caption'); },
+      setWidgetText: (id, text, anchor) => {
+        let item = widgetTexts.get(id);
+        if (!item) {
+          item = { span: document.createElement('span'), anchor: anchor === 'title' ? 'title' : 'caption' };
+          widgetTexts.set(id, item);
+        }
+        item.span.textContent = String(text ?? '');
+        renderOverlay(item.anchor);
+      },
+      removeWidgetText: (id) => {
+        const item = widgetTexts.get(id);
+        if (!item) return;
+        widgetTexts.delete(id);
+        renderOverlay(item.anchor);
+      },
+      clear: () => {
+        overlayText.title = '';
+        overlayText.caption = '';
+        widgetTexts.clear();
+        renderOverlay('title');
+        renderOverlay('caption');
+      },
     };
 
     // 그리드 (바닥 기준선) — 기본 숨김
@@ -240,6 +271,8 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       camSystem.update();
 
       controls.update();
+      // billboard=True 인 3D 글자를 카메라 쪽으로 돌린다 (Group에는 onBeforeRender가 오지 않는다)
+      updateBillboards(camera);
       renderer.render(scene, camera);
 
       // 카메라 상태를 Python 쪽에 알림 (6프레임마다, 약 10Hz)

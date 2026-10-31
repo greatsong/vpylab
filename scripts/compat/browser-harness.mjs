@@ -183,7 +183,7 @@ const SNAPSHOT_CODE = `print('[compat] ready')
 `;
 const RESET_CODE = `pass
 `;
-const DRAW_CALL = /\b(sphere|box|cylinder|arrow|cone|ring|helix|pyramid|ellipsoid|label|text|curve|points|compound|extrusion|local_light|distant_light|graph|gcurve|gdots|gvbars|ghbars|slider|button|checkbox|radio|menu|winput|triangle|quad)\s*\(/;
+const DRAW_CALL = /(?<![\w.])(sphere|box|cylinder|arrow|cone|ring|helix|pyramid|ellipsoid|label|text|curve|points|compound|extrusion|local_light|distant_light|graph|gcurve|gdots|gvbars|ghbars|slider|button|checkbox|radio|menu|winput|triangle|quad)\s*\(/;
 
 async function logSince(page, mark) {
   return page.evaluate((m) => window.__compat.log.slice(m), mark);
