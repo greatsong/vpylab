@@ -7,6 +7,8 @@ import useAuthStore from '../stores/authStore';
 import { ensureAudioReady } from '../engine/sound-system';
 import { createPosterThumbnail, isThumbnailUsable } from '../engine/thumbnail';
 import { useI18n } from '../i18n/useI18n';
+import { copyEmbedCode } from '../utils/embed';
+import QRCodeModal from '../components/share/QRCodeModal';
 
 const GalleryPreview = lazy(() => import('../components/gallery/GalleryPreview'));
 
@@ -47,7 +49,7 @@ function DetailStat({ label, value, children }) {
 export default function GalleryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { locale: lang } = useI18n();
+  const { locale: lang, t } = useI18n();
   const { currentWork, loading, fetchWork, toggleLike, checkIfLiked, forkWork, republishWork } = useGalleryStore();
   const user = useAuthStore(s => s.user);
   const getGitHubToken = useAuthStore(s => s.getGitHubToken);
@@ -58,6 +60,8 @@ export default function GalleryDetail() {
   const [showPreview, setShowPreview] = useState(false);
   const [forking, setForking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const [detailThumbnail, setDetailThumbnail] = useState(null);
   const [makingPublic, setMakingPublic] = useState(false);
   const [repoStatus, setRepoStatus] = useState(null); // { repo, broken }
@@ -108,10 +112,10 @@ export default function GalleryDetail() {
     repo: currentWork?.github_repo,
     author,
   }), [author, currentWork?.category, currentWork?.code, currentWork?.description, currentWork?.github_repo, currentWork?.title]);
-  const stageThumbnail = detailThumbnail?.id === currentWork?.id && detailThumbnail.src
-    ? detailThumbnail.src
-    : posterThumbnail;
-  const hasStageCapturedThumbnail = detailThumbnail?.id === currentWork?.id && !!detailThumbnail.src;
+  // 로딩 중에는 둘 다 null이라 id 비교가 참이 되어 null.src를 읽던 오류를 막습니다.
+  const stageMatches = !!detailThumbnail && !!currentWork && detailThumbnail.id === currentWork.id;
+  const stageThumbnail = stageMatches && detailThumbnail.src ? detailThumbnail.src : posterThumbnail;
+  const hasStageCapturedThumbnail = stageMatches && !!detailThumbnail.src;
 
   useEffect(() => {
     let alive = true;
@@ -146,7 +150,7 @@ export default function GalleryDetail() {
       <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
         <Header />
         <main className="gallery-detail-page">
-          <div className="gallery-loading">{lang === 'ko' ? '작품을 불러오는 중입니다.' : 'Loading work.'}</div>
+          <div className="gallery-loading">{t('gallery.loadingWork')}</div>
         </main>
       </div>
     );
@@ -217,6 +221,13 @@ export default function GalleryDetail() {
     alert(lang === 'ko'
       ? '작품이 갤러리에 공개되었습니다. 이제 누구나 실행하고 Remix할 수 있습니다.'
       : 'Your work is now public in the gallery.');
+  };
+
+  const handleCopyEmbed = async () => {
+    const ok = await copyEmbedCode(id);
+    if (!ok) return;
+    setEmbedCopied(true);
+    setTimeout(() => setEmbedCopied(false), 1400);
   };
 
   const handleCopyCode = async () => {
@@ -326,7 +337,7 @@ export default function GalleryDetail() {
             <div className="gallery-detail-actions">
               <button className="gallery-detail-action primary" onClick={handleRun} type="button">
                 <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5 2l9 6-9 6V2z" /></svg>
-                VPyLab에서 실행
+                {t('gallery.runInVPyLab')}
               </button>
               {isMyWork && currentWork.is_public === false && (
                 <button
@@ -341,16 +352,16 @@ export default function GalleryDetail() {
                 </button>
               )}
               <button className="gallery-detail-action" onClick={() => navigate(`/sandbox?remix=${id}`)} type="button">
-                Remix 프로젝트
+                {t('gallery.remixProject')}
               </button>
               {isMyWork && currentWork.github_repo && (
                 <button className="gallery-detail-action" onClick={() => navigate(`/sandbox?edit=${id}`)} type="button">
-                  수정하기
+                  {t('gallery.edit')}
                 </button>
               )}
               {!isMyWork && currentWork.github_repo && (
                 <button className="gallery-detail-action" onClick={handleFork} disabled={forking} type="button">
-                  {forking ? 'Fork 준비 중' : 'GitHub Fork'}
+                  {forking ? t('gallery.forking') : t('gallery.fork')}
                 </button>
               )}
             </div>
@@ -376,22 +387,32 @@ export default function GalleryDetail() {
               </a>
             )}
             {issuesUrl && (
-              <a href={issuesUrl} target="_blank" rel="noopener noreferrer">Issue 남기기</a>
+              <a href={issuesUrl} target="_blank" rel="noopener noreferrer">{t('gallery.openIssue')}</a>
             )}
             <button onClick={() => setShowCode(value => !value)} type="button">
-              {showCode ? '코드 닫기' : '코드 보기'}
+              {showCode ? t('gallery.closeCode') : t('gallery.viewCode')}
             </button>
             <button onClick={() => setShowPreview(value => !value)} type="button">
-              {showPreview ? '미리보기 닫기' : '3D 미리보기'}
+              {showPreview ? t('gallery.closePreview') : t('gallery.preview')}
+            </button>
+            <button onClick={handleCopyEmbed} type="button" data-testid="gallery-copy-embed">
+              {embedCopied ? t('embed.embedCopied') : t('embed.copyEmbed')}
+            </button>
+            <button onClick={() => setShowQr(true)} type="button" data-testid="gallery-show-qr">
+              ▦ {t('qr.show')}
             </button>
           </div>
         </section>
+
+        {showQr && (
+          <QRCodeModal url={`${window.location.origin}/gallery/${id}`} title={currentWork.title} onClose={() => setShowQr(false)} />
+        )}
 
         {showCode && (
           <section className="gallery-code-panel">
             <div className="gallery-code-panel-head">
               <span>main.py</span>
-              <button onClick={handleCopyCode} type="button">{copied ? '복사됨' : '코드 복사'}</button>
+              <button onClick={handleCopyCode} type="button">{copied ? t('gallery.codeCopied') : t('gallery.copyCode')}</button>
             </div>
             <pre><code>{currentWork.code}</code></pre>
           </section>
@@ -399,7 +420,7 @@ export default function GalleryDetail() {
 
         {showPreview && (
           <section className="gallery-preview-panel">
-            <Suspense fallback={<div className="gallery-preview-loading">Python 엔진을 준비하고 있습니다.</div>}>
+            <Suspense fallback={<div className="gallery-preview-loading">{t('gallery.enginePreparing')}</div>}>
               <GalleryPreview code={currentWork.code} />
             </Suspense>
           </section>

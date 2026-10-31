@@ -46,7 +46,19 @@
     "free": "Free",
     "featured": "Featured",
     "remixes": "Remixes inspired by this project",
-    "preview": "3D Preview"
+    "preview": "3D Preview",
+    "runInVPyLab": "Run in VPyLab",
+    "remixProject": "Remix project",
+    "edit": "Edit",
+    "fork": "GitHub Fork",
+    "forking": "Preparing fork",
+    "openIssue": "Open an issue",
+    "closeCode": "Hide code",
+    "closePreview": "Close preview",
+    "copyCode": "Copy code",
+    "codeCopied": "Copied",
+    "loadingWork": "Loading work.",
+    "enginePreparing": "Preparing the Python engine."
   },
   "home": {
     "serverConnected": "Server connected",
@@ -125,7 +137,8 @@
     "copyLink": "Copy Link",
     "copied": "Copied!",
     "externalCode": "This code was shared externally. Please review before running.",
-    "tooLarge": "Code is too large (exceeds 50KB)"
+    "tooLarge": "Code is too large (exceeds 50KB)",
+    "failed": "Could not create a share link"
   },
   "errors": {
     "syntaxError": "Syntax Error",
@@ -304,5 +317,54 @@
     "newCodeReceived": "Teacher sent new code",
     "clickToOpen": "Click to open inbox",
     "open": "Open"
+  },
+  "pwa": {
+    "install": "Install app",
+    "installTitle": "Install VPyLab on your home screen or desktop",
+    "iosHint": "On iPhone or iPad, tap Safari's Share button and choose 'Add to Home Screen' to use VPyLab like an app.",
+    "dismiss": "Dismiss",
+    "androidInAppHint": "In-app browsers can't install apps. Open this page in Chrome to install."
+  },
+  "embed": {
+    "openInVPyLab": "Open in VPyLab",
+    "enableSound": "Enable sound",
+    "copyEmbed": "Copy embed code",
+    "embedCopied": "Embed code copied",
+    "notFound": "Work not found",
+    "loading": "Loading work",
+    "preparing": "Preparing the Python engine",
+    "mute": "Mute",
+    "unmute": "Unmute"
+  },
+  "qr": {
+    "show": "Show QR",
+    "title": "Open with a QR code",
+    "hint": "Put it on the projector so students can open it with their phone camera.",
+    "download": "Download PNG",
+    "copyLink": "Copy link",
+    "copied": "Copied",
+    "close": "Close",
+    "failed": "Could not generate QR"
+  },
+  "shareLink": {
+    "title": "Share link",
+    "created": "Link created and copied to the clipboard.",
+    "open": "Open"
+  },
+  "viewport": {
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "autoFit": "Auto",
+    "follow": "Follow",
+    "lockZoom": "Lock zoom",
+    "axes": "XYZ",
+    "autoFitTip": "Zoom automatically so every object fits",
+    "followTip": "Follow the center of moving objects",
+    "lockZoomTip": "Keep the current camera distance"
+  },
+  "sharedCode": {
+    "loading": "Loading code...",
+    "notFound": "Code not found",
+    "backHome": "Back to home"
   }
 }

@@ -3,7 +3,7 @@
  * 개발 서버에서는 Service Worker를 만들지 않습니다(소스 변경이 캐시에 가려지지 않게).
  */
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PYODIDE_VERSION } from './pyodide-assets.mjs';
@@ -11,17 +11,27 @@ import { PYODIDE_VERSION } from './pyodide-assets.mjs';
 const clientRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TEMPLATE = resolve(clientRoot, 'src/sw/service-worker.js');
 
-/** 미리 저장할 산출물: JS·CSS·HTML·글꼴·SVG. 소스맵과 sw.js 자체는 제외합니다. */
-export function buildPrecacheManifest(bundle) {
+/** public/에서 그대로 복사되는 파일 가운데 함께 미리 저장할 것. 번들 밖이라 따로 넣습니다. */
+export const PUBLIC_PRECACHE = ['manifest.webmanifest'];
+
+function revisionOf(source) {
+  return createHash('sha256').update(typeof source === 'string' ? source : Buffer.from(source)).digest('hex').slice(0, 16);
+}
+
+/** 미리 저장할 산출물: JS·CSS·HTML·글꼴·SVG와 public/의 웹 매니페스트. 소스맵과 sw.js 자체는 제외합니다. */
+export function buildPrecacheManifest(bundle, { publicDir = resolve(clientRoot, 'public'), publicFiles = PUBLIC_PRECACHE } = {}) {
   const manifest = [];
   for (const [fileName, output] of Object.entries(bundle)) {
     if (fileName === 'sw.js' || fileName.endsWith('.map')) continue;
     if (!/\.(js|css|html|woff2?|svg)$/.test(fileName)) continue;
     const source = output.type === 'chunk' ? output.code : output.source;
-    const revision = /-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/.test(fileName)
-      ? null
-      : createHash('sha256').update(typeof source === 'string' ? source : Buffer.from(source)).digest('hex').slice(0, 16);
+    const revision = /-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/.test(fileName) ? null : revisionOf(source);
     manifest.push({ url: fileName, revision });
+  }
+  for (const fileName of publicFiles) {
+    const path = resolve(publicDir, fileName);
+    if (!existsSync(path)) continue;
+    manifest.push({ url: fileName, revision: revisionOf(readFileSync(path)) });
   }
   manifest.sort((a, b) => a.url.localeCompare(b.url));
   return manifest;

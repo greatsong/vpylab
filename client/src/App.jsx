@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { I18nProvider } from './i18n';
+import { useI18n } from './i18n/useI18n';
 import Home from './pages/Home';
 import AuthCallback from './pages/AuthCallback';
 import AuthModal from './components/auth/AuthModal';
@@ -31,9 +32,11 @@ const SharedCodeLoader = lazyWithRetry(() => import('./pages/SharedCodeLoader'))
 const Docs = lazyWithRetry(() => import('./pages/Docs'));
 const Guide = lazyWithRetry(() => import('./pages/Guide'));
 const Privacy = lazyWithRetry(() => import('./pages/Privacy'));
+const Embed = lazyWithRetry(() => import('./pages/Embed'));
 
 function AppContent() {
   const initialize = useAuthStore((s) => s.initialize);
+  const { t } = useI18n();
 
   useEffect(() => {
     const cleanup = initialize();
@@ -46,7 +49,7 @@ function AppContent() {
       <Suspense fallback={
         <div className="h-screen flex items-center justify-center"
           style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)' }}>
-          로딩 중...
+          {t('common.loading')}
         </div>
       }>
         <Routes>
@@ -65,6 +68,7 @@ function AppContent() {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/gallery/:id" element={<GalleryDetail />} />
           <Route path="/s/:id" element={<SharedCodeLoader />} />
+          <Route path="/embed/:id" element={<Embed />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
         </Routes>

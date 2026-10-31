@@ -7,6 +7,7 @@ import useAuthStore from '../../stores/authStore';
 import { prewarm } from '../../engine/pyodide-singleton';
 import { LAN_MODE } from '../../lib/api-base.js';
 import BrandLogo from '../shared/BrandLogo';
+import { InstallButton, IosInstallHint } from './InstallPrompt';
 
 export default function Header() {
   const { theme, setTheme, locale, setLocale, THEMES, THEME_META } = useAppStore();
@@ -68,7 +69,7 @@ export default function Header() {
     >
       {/* 로고 */}
       <Link to="/" className="text-base no-underline" aria-label="VPyLab 홈">
-        <BrandLogo size={28} inverse={theme === 'deep-dark'} />
+        <BrandLogo size={28} inverse={!!THEME_META[theme]?.dark} />
       </Link>
 
       {/* 네비게이션 (데스크톱) */}
@@ -131,7 +132,7 @@ export default function Header() {
           >
             {/* 메뉴 헤더 */}
             <div className="flex items-center justify-between mb-6 px-1">
-              <Link to="/" className="text-sm no-underline" aria-label="VPyLab 홈" onClick={() => setMobileMenuOpen(false)}><BrandLogo size={24} inverse={theme === 'deep-dark'} /></Link>
+              <Link to="/" className="text-sm no-underline" aria-label="VPyLab 홈" onClick={() => setMobileMenuOpen(false)}><BrandLogo size={24} inverse={!!THEME_META[theme]?.dark} /></Link>
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer"
@@ -190,6 +191,7 @@ export default function Header() {
 
       {/* 컨트롤 */}
       <div className="flex items-center gap-1.5">
+        <InstallButton />
         <button
           onClick={() => setLocale(locale === 'ko' ? 'en' : 'ko')}
           className="text-xs px-2 py-1.5 rounded-md transition-all cursor-pointer border"
@@ -320,6 +322,7 @@ export default function Header() {
           </button>
         )}
       </div>
+      <IosInstallHint />
     </header>
   );
 }

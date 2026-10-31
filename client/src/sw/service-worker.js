@@ -13,7 +13,7 @@
  *     Worker가 준비를 마치면 메인 스레드가 WARM_PYODIDE 메시지로 빠진 파일을 채웁니다.
  *   - 글꼴(Google Fonts·Fontshare) 요청은 건드리지 않습니다. sw.js의 CSP connect-src에 글꼴 출처가
  *     없어 Service Worker 안에서 fetch하면 막히고, 페이지에 ERR_FAILED로 전달됩니다.
- *   - 페이지 이동(navigate): 네트워크 우선, 끊기면 저장한 앱 셸
+ *   - 페이지 이동(navigate): 네트워크 우선, 끊기면 저장한 앱 셸. /embed/ 경로는 헤더가 달라 별도 키에 저장
  *   - 그 밖의 요청(API, Supabase 등)은 건드리지 않습니다.
  *
  * Pyodide Worker 안에서 fetch를 지우는 보안 정책은 Worker 전역에만 적용되며,
@@ -50,17 +50,24 @@ async function cacheFirst(cacheName, request) {
   return response;
 }
 
-async function networkFirstShell(request) {
+// /embed/ 응답은 frame-ancestors가 다르므로(다른 사이트에 넣을 수 있음) 일반 앱 셸과 따로 저장합니다.
+const EMBED_SHELL = '__vpylab-embed-shell__';
+
+function shellKeyFor(url) {
+  return url.pathname.startsWith('/embed/') ? EMBED_SHELL : APP_SHELL;
+}
+
+async function networkFirstShell(request, shellKey = APP_SHELL) {
   try {
     const response = await fetch(request);
     if (cacheable(response)) {
       const cache = await caches.open(APP_CACHE);
-      await cache.put(APP_SHELL, response.clone());
+      await cache.put(shellKey, response.clone());
     }
     return response;
   } catch (error) {
     const cache = await caches.open(APP_CACHE);
-    const shell = await cache.match(APP_SHELL);
+    const shell = (await cache.match(shellKey)) || (shellKey !== APP_SHELL ? null : undefined);
     if (shell) return shell;
     throw error;
   }
@@ -108,7 +115,7 @@ self.addEventListener('fetch', (event) => {
   if (isPyodideUrl(url)) { event.respondWith(cacheFirst(PYODIDE_CACHE, request)); return; }
   if (url.origin !== self.location.origin) return;
 
-  if (request.mode === 'navigate') { event.respondWith(networkFirstShell(request)); return; }
+  if (request.mode === 'navigate') { event.respondWith(networkFirstShell(request, shellKeyFor(url))); return; }
   if (url.pathname.startsWith('/assets/')) { event.respondWith(cacheFirst(APP_CACHE, request)); return; }
   if (PRECACHE_MANIFEST.some(({ url: path }) => url.pathname === `/${path}`)) { event.respondWith(cacheFirst(APP_CACHE, request)); }
 });
