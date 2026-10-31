@@ -1,10 +1,10 @@
 {
- "generatedAt": "2026-10-29T23:57:12.843Z",
+ "generatedAt": "2026-10-31T02:24:23.020Z",
  "base": "http://127.0.0.1:4095",
- "count": 579,
+ "count": 586,
  "summary": {
-  "stopped": 102,
-  "pass": 429,
+  "stopped": 106,
+  "pass": 432,
   "error": 47,
   "hang": 1
  },
@@ -29,7 +29,7 @@
     "lights": 3
    },
    "commands": {
-    "total": 5083,
+    "total": 4587,
     "createTypes": {
      "sphere": 9,
      "local_light": 1
@@ -37,8 +37,8 @@
     "actions": {
      "create": 10,
      "scene": 1,
-     "update": 2536,
-     "trail_update": 2536
+     "update": 2288,
+     "trail_update": 2288
     }
    },
    "stdout": "",
@@ -49,7 +49,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6423,
+   "elapsed": 6461,
    "hardStopped": false
   },
   {
@@ -61,25 +61,25 @@
    "progress": false,
    "status": "stopped",
    "error": null,
-   "meshes": 107,
+   "meshes": 106,
    "sceneCounts": {
     "found": true,
-    "meshes": 107,
+    "meshes": 106,
     "sprites": 0,
-    "lines": 9,
+    "lines": 8,
     "lights": 2
    },
    "commands": {
-    "total": 1396,
+    "total": 1293,
     "createTypes": {
-     "sphere": 107
+     "sphere": 106
     },
     "actions": {
      "scene": 1,
-     "create": 107,
-     "sound": 7,
-     "update": 771,
-     "trail_update": 510
+     "create": 106,
+     "sound": 6,
+     "update": 710,
+     "trail_update": 470
     }
    },
    "stdout": "",
@@ -90,7 +90,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6844,
+   "elapsed": 6755,
    "hardStopped": false
   },
   {
@@ -129,7 +129,7 @@
     "실행 중",
     "DNA 이중나선 완성!"
    ],
-   "elapsed": 297,
+   "elapsed": 691,
    "hardStopped": false
   },
   {
@@ -150,7 +150,7 @@
     "lights": 3
    },
    "commands": {
-    "total": 38403,
+    "total": 39123,
     "createTypes": {
      "sphere": 241,
      "local_light": 1
@@ -158,7 +158,7 @@
     "actions": {
      "scene": 1,
      "create": 242,
-     "update": 38160
+     "update": 38880
     }
    },
    "stdout": "",
@@ -169,7 +169,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 7231,
+   "elapsed": 8587,
    "hardStopped": false
   },
   {
@@ -190,7 +190,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 9697,
+    "total": 8934,
     "createTypes": {
      "box": 1,
      "cylinder": 30
@@ -198,8 +198,8 @@
     "actions": {
      "scene": 1,
      "create": 31,
-     "update": 9600,
-     "sound": 65
+     "update": 8857,
+     "sound": 45
     }
    },
    "stdout": "",
@@ -210,7 +210,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6542,
+   "elapsed": 6659,
    "hardStopped": false
   },
   {
@@ -251,7 +251,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6481,
+   "elapsed": 6566,
    "hardStopped": false
   },
   {
@@ -292,7 +292,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6495,
+   "elapsed": 6405,
    "hardStopped": false
   },
   {
@@ -313,7 +313,7 @@
     "lights": 14
    },
    "commands": {
-    "total": 7912,
+    "total": 7533,
     "createTypes": {
      "sphere": 12,
      "local_light": 12
@@ -321,8 +321,8 @@
     "actions": {
      "scene": 1,
      "create": 24,
-     "update": 7824,
-     "sound": 63
+     "update": 7440,
+     "sound": 68
     }
    },
    "stdout": "",
@@ -333,7 +333,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6544,
+   "elapsed": 6534,
    "hardStopped": false
   },
   {
@@ -354,7 +354,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 290,
+    "total": 286,
     "createTypes": {
      "sphere": 5,
      "box": 1
@@ -362,8 +362,8 @@
     "actions": {
      "scene": 1,
      "create": 6,
-     "update": 219,
-     "sound": 64
+     "update": 217,
+     "sound": 62
     }
    },
    "stdout": "",
@@ -374,7 +374,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6413,
+   "elapsed": 6425,
    "hardStopped": false
   },
   {
@@ -395,7 +395,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 714,
+    "total": 681,
     "createTypes": {
      "sphere": 203,
      "arrow": 1
@@ -405,8 +405,8 @@
      "sound": 1,
      "create": 204,
      "trail_attach": 1,
-     "update": 338,
-     "trail_update": 169
+     "update": 316,
+     "trail_update": 158
     }
    },
    "stdout": "",
@@ -417,7 +417,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6552,
+   "elapsed": 6652,
    "hardStopped": false
   },
   {
@@ -461,7 +461,7 @@
     "실행 중",
     "비거리: 6.9m"
    ],
-   "elapsed": 1447,
+   "elapsed": 1746,
    "hardStopped": false
   },
   {
@@ -500,7 +500,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 7544,
+   "elapsed": 9749,
    "hardStopped": false
   },
   {
@@ -535,7 +535,7 @@
     "실행 중",
     "sin(x) × cos(y) 함수\n빨간색 = 양수, 파란색 = 음수"
    ],
-   "elapsed": 511,
+   "elapsed": 1031,
    "hardStopped": false
   },
   {
@@ -556,7 +556,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 1984,
+    "total": 1829,
     "createTypes": {
      "box": 1,
      "cylinder": 3,
@@ -566,9 +566,9 @@
     "actions": {
      "scene": 1,
      "create": 6,
-     "update": 1476,
-     "trail_update": 492,
-     "sound": 9
+     "update": 1362,
+     "trail_update": 454,
+     "sound": 6
     }
    },
    "stdout": "",
@@ -579,7 +579,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6431,
+   "elapsed": 6504,
    "hardStopped": false
   },
   {
@@ -591,25 +591,25 @@
    "progress": false,
    "status": "stopped",
    "error": null,
-   "meshes": 120,
+   "meshes": 90,
    "sceneCounts": {
     "found": true,
-    "meshes": 120,
+    "meshes": 90,
     "sprites": 0,
-    "lines": 122,
+    "lines": 92,
     "lights": 2
    },
    "commands": {
-    "total": 14855,
+    "total": 14584,
     "createTypes": {
-     "sphere": 120
+     "sphere": 90
     },
     "actions": {
      "scene": 1,
-     "sound": 4,
-     "create": 120,
-     "update": 11070,
-     "trail_update": 3660
+     "sound": 3,
+     "create": 90,
+     "update": 10890,
+     "trail_update": 3600
     }
    },
    "stdout": "",
@@ -620,7 +620,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6588,
+   "elapsed": 6747,
    "hardStopped": false
   },
   {
@@ -641,7 +641,7 @@
     "lights": 23
    },
    "commands": {
-    "total": 1228,
+    "total": 1208,
     "createTypes": {
      "cylinder": 1,
      "cone": 3,
@@ -652,7 +652,7 @@
      "scene": 1,
      "sound": 1,
      "create": 46,
-     "update": 1180
+     "update": 1160
     }
    },
    "stdout": "",
@@ -663,7 +663,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6415,
+   "elapsed": 6545,
    "hardStopped": false
   },
   {
@@ -684,14 +684,14 @@
     "lights": 2
    },
    "commands": {
-    "total": 7897,
+    "total": 7465,
     "createTypes": {
      "sphere": 24
     },
     "actions": {
      "scene": 1,
      "create": 24,
-     "update": 7872
+     "update": 7440
     }
    },
    "stdout": "",
@@ -702,7 +702,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6519,
+   "elapsed": 6703,
    "hardStopped": false
   },
   {
@@ -714,23 +714,23 @@
    "progress": false,
    "status": "pass",
    "error": null,
-   "meshes": 80,
+   "meshes": 82,
    "sceneCounts": {
     "found": true,
-    "meshes": 80,
+    "meshes": 82,
     "sprites": 0,
     "lines": 2,
     "lights": 32
    },
    "commands": {
-    "total": 111,
+    "total": 113,
     "createTypes": {
-     "box": 80,
+     "box": 82,
      "local_light": 30
     },
     "actions": {
      "scene": 1,
-     "create": 110
+     "create": 112
     }
    },
    "stdout": "네온 도시 야경",
@@ -741,7 +741,7 @@
     "실행 중",
     "네온 도시 야경"
    ],
-   "elapsed": 1668,
+   "elapsed": 1801,
    "hardStopped": false
   },
   {
@@ -762,7 +762,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 1930,
+    "total": 1796,
     "createTypes": {
      "box": 6,
      "sphere": 1
@@ -770,9 +770,9 @@
     "actions": {
      "scene": 1,
      "create": 7,
-     "update": 961,
-     "trail_update": 954,
-     "sound": 7
+     "update": 894,
+     "trail_update": 888,
+     "sound": 6
     }
    },
    "stdout": "",
@@ -783,7 +783,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6391,
+   "elapsed": 6453,
    "hardStopped": false
   },
   {
@@ -793,7 +793,7 @@
    "title": "예제 행성 충돌",
    "origin": "client/src/data/examples.js#planet-collision",
    "progress": false,
-   "status": "pass",
+   "status": "stopped",
    "error": null,
    "meshes": 132,
    "sceneCounts": {
@@ -824,7 +824,7 @@
     "실행 중",
     "행성 충돌! 새로운 성운이 탄생했습니다."
    ],
-   "elapsed": 5859,
+   "elapsed": 36376,
    "hardStopped": false
   },
   {
@@ -864,7 +864,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 292,
+   "elapsed": 306,
    "hardStopped": false
   },
   {
@@ -903,7 +903,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 3347,
+   "elapsed": 3617,
    "hardStopped": false
   },
   {
@@ -942,7 +942,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 303,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -982,7 +982,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6446,
+   "elapsed": 6399,
    "hardStopped": false
   },
   {
@@ -1003,7 +1003,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 642,
+    "total": 598,
     "createTypes": {
      "box": 4,
      "sphere": 1,
@@ -1013,8 +1013,8 @@
      "scene": 1,
      "create": 6,
      "scene_bind": 1,
-     "update": 317,
-     "trail_update": 317
+     "update": 295,
+     "trail_update": 295
     }
    },
    "stdout": "",
@@ -1025,7 +1025,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6429,
+   "elapsed": 6513,
    "hardStopped": false
   },
   {
@@ -1065,7 +1065,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6413,
+   "elapsed": 6378,
    "hardStopped": false
   },
   {
@@ -1103,7 +1103,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -1142,7 +1142,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 289,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -1180,7 +1180,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 301,
+   "elapsed": 317,
    "hardStopped": false
   },
   {
@@ -1222,7 +1222,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6563,
+   "elapsed": 6622,
    "hardStopped": false
   },
   {
@@ -1243,7 +1243,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 643,
+    "total": 589,
     "createTypes": {
      "sphere": 1,
      "label": 1,
@@ -1252,8 +1252,8 @@
     "actions": {
      "scene": 3,
      "create": 4,
-     "update": 318,
-     "trail_update": 318
+     "update": 291,
+     "trail_update": 291
     }
    },
    "stdout": "",
@@ -1264,7 +1264,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6490,
+   "elapsed": 6466,
    "hardStopped": false
   },
   {
@@ -1306,7 +1306,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6461,
+   "elapsed": 6528,
    "hardStopped": false
   },
   {
@@ -1335,15 +1335,15 @@
      "graph_series_plot": 62
     }
    },
-   "stdout": "회귀식: y = 2.291 · x + 3.716\n빨간 점 = 데이터, 파란 선 = 회귀, 회색 선 = 진짜 식",
+   "stdout": "회귀식: y = 1.914 · x + 5.683\n빨간 점 = 데이터, 파란 선 = 회귀, 회색 선 = 진짜 식",
    "stderr": "",
    "bridgeWarnings": [],
    "pageConsole": [],
    "consoleLines": [
     "실행 중",
-    "회귀식: y = 2.291 · x + 3.716\n빨간 점 = 데이터, 파란 선 = 회귀, 회색 선 = 진짜 식"
+    "회귀식: y = 1.914 · x + 5.683\n빨간 점 = 데이터, 파란 선 = 회귀, 회색 선 = 진짜 식"
    ],
-   "elapsed": 294,
+   "elapsed": 307,
    "hardStopped": false
   },
   {
@@ -1364,7 +1364,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 779,
+    "total": 704,
     "createTypes": {
      "sphere": 2,
      "cylinder": 1,
@@ -1374,8 +1374,8 @@
      "scene": 2,
      "create": 5,
      "trail_attach": 1,
-     "update": 514,
-     "trail_update": 257
+     "update": 464,
+     "trail_update": 232
     }
    },
    "stdout": "",
@@ -1386,7 +1386,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6476,
+   "elapsed": 6380,
    "hardStopped": false
   },
   {
@@ -1426,7 +1426,7 @@
     "실행 중",
     "낮은 도 261Hz → 높은 도 523Hz: 정확히 2배 차이입니다!"
    ],
-   "elapsed": 4362,
+   "elapsed": 4437,
    "hardStopped": false
   },
   {
@@ -1468,7 +1468,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6322,
+   "elapsed": 6477,
    "hardStopped": false
   },
   {
@@ -1509,7 +1509,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6346,
+   "elapsed": 6351,
    "hardStopped": false
   },
   {
@@ -1530,7 +1530,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 336,
+    "total": 330,
     "createTypes": {
      "box": 2,
      "sphere": 1,
@@ -1539,10 +1539,10 @@
     "actions": {
      "scene": 1,
      "create": 5,
-     "update": 110,
-     "trail_update": 110,
+     "update": 108,
+     "trail_update": 108,
      "trail_clear": 2,
-     "sound": 108
+     "sound": 106
     }
    },
    "stdout": "",
@@ -1553,7 +1553,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6316,
+   "elapsed": 6406,
    "hardStopped": false
   },
   {
@@ -1596,7 +1596,7 @@
     "둘째 음: 미(E4, 329.63 Hz)",
     "두 음을 동시에 — 화음으로 들리지만 사실은 합성파입니다"
    ],
-   "elapsed": 2509,
+   "elapsed": 2549,
    "hardStopped": false
   },
   {
@@ -1617,7 +1617,7 @@
     "lights": 3
    },
    "commands": {
-    "total": 3173,
+    "total": 2903,
     "createTypes": {
      "sphere": 6,
      "local_light": 1,
@@ -1627,8 +1627,8 @@
     "actions": {
      "scene": 1,
      "create": 13,
-     "update": 1575,
-     "trail_update": 1575,
+     "update": 1440,
+     "trail_update": 1440,
      "sound": 9
     }
    },
@@ -1640,7 +1640,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6438,
+   "elapsed": 6567,
    "hardStopped": false
   },
   {
@@ -1680,7 +1680,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6444,
+   "elapsed": 6436,
    "hardStopped": false
   },
   {
@@ -1719,7 +1719,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6435,
+   "elapsed": 6337,
    "hardStopped": false
   },
   {
@@ -1740,7 +1740,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 76,
+    "total": 73,
     "createTypes": {
      "sphere": 1,
      "box": 1,
@@ -1753,8 +1753,8 @@
     "actions": {
      "scene": 3,
      "create": 7,
-     "sound": 22,
-     "update": 44
+     "sound": 21,
+     "update": 42
     }
    },
    "stdout": "",
@@ -1765,7 +1765,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6430,
+   "elapsed": 6409,
    "hardStopped": false
   },
   {
@@ -1805,7 +1805,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6423,
+   "elapsed": 6591,
    "hardStopped": false
   },
   {
@@ -1844,7 +1844,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6430,
+   "elapsed": 6487,
    "hardStopped": false
   },
   {
@@ -1886,7 +1886,7 @@
     "💡 팁: 건반을 클릭해 멜로디를 만들고, 악기를 바꿔가며 ▶ 재생 해보세요.\n💡 같은 멜로디가 피아노/플루트/기타/칩튠 등으로 완전히 다르게 들립니다.",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6465,
+   "elapsed": 6477,
    "hardStopped": false
   },
   {
@@ -1898,24 +1898,24 @@
    "progress": false,
    "status": "stopped",
    "error": null,
-   "meshes": 20,
+   "meshes": 21,
    "sceneCounts": {
     "found": true,
-    "meshes": 20,
+    "meshes": 21,
     "sprites": 1,
     "lines": 2,
     "lights": 2
    },
    "commands": {
-    "total": 44,
+    "total": 46,
     "createTypes": {
      "label": 1,
-     "sphere": 20
+     "sphere": 21
     },
     "actions": {
      "scene": 3,
-     "create": 21,
-     "sound": 20
+     "create": 22,
+     "sound": 21
     }
    },
    "stdout": "",
@@ -1926,7 +1926,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6395,
+   "elapsed": 6458,
    "hardStopped": false
   },
   {
@@ -1947,7 +1947,7 @@
     "lights": 17
    },
    "commands": {
-    "total": 56928,
+    "total": 50638,
     "createTypes": {
      "label": 2,
      "sphere": 110,
@@ -1957,7 +1957,7 @@
     "actions": {
      "scene": 2,
      "create": 128,
-     "update": 56795,
+     "update": 50505,
      "sound": 3
     }
    },
@@ -1969,7 +1969,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 7453,
+   "elapsed": 7958,
    "hardStopped": false
   },
   {
@@ -1990,7 +1990,7 @@
     "lights": 10
    },
    "commands": {
-    "total": 11546,
+    "total": 12424,
     "createTypes": {
      "label": 9,
      "cylinder": 8,
@@ -2000,8 +2000,8 @@
     "actions": {
      "scene": 2,
      "create": 109,
-     "update": 11425,
-     "sound": 10
+     "update": 12302,
+     "sound": 11
     }
    },
    "stdout": "",
@@ -2012,7 +2012,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6804,
+   "elapsed": 8152,
    "hardStopped": false
   },
   {
@@ -2033,7 +2033,7 @@
     "lights": 13
    },
    "commands": {
-    "total": 18427,
+    "total": 14925,
     "createTypes": {
      "label": 2,
      "box": 81,
@@ -2044,9 +2044,9 @@
     "actions": {
      "scene": 2,
      "create": 149,
-     "update": 16210,
-     "trail_update": 2052,
-     "sound": 14
+     "update": 13101,
+     "trail_update": 1662,
+     "sound": 11
     }
    },
    "stdout": "",
@@ -2057,7 +2057,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 7873,
+   "elapsed": 6812,
    "hardStopped": false
   },
   {
@@ -2099,7 +2099,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6728,
+   "elapsed": 6383,
    "hardStopped": false
   },
   {
@@ -2140,7 +2140,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6513,
+   "elapsed": 6561,
    "hardStopped": false
   },
   {
@@ -2161,7 +2161,7 @@
     "lights": 3
    },
    "commands": {
-    "total": 36898,
+    "total": 32748,
     "createTypes": {
      "label": 4,
      "sphere": 30,
@@ -2173,8 +2173,8 @@
      "create": 36,
      "scene_bind": 2,
      "widget_create": 3,
-     "update": 36844,
-     "sound": 10
+     "update": 32696,
+     "sound": 8
     }
    },
    "stdout": "",
@@ -2185,7 +2185,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 7033,
+   "elapsed": 7250,
    "hardStopped": false
   },
   {
@@ -2206,7 +2206,7 @@
     "lights": 3
    },
    "commands": {
-    "total": 433325,
+    "total": 321725,
     "createTypes": {
      "label": 1,
      "sphere": 1320,
@@ -2215,7 +2215,7 @@
     "actions": {
      "scene": 2,
      "create": 1322,
-     "update": 432000,
+     "update": 320400,
      "sound": 1
     }
    },
@@ -2227,7 +2227,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 13267,
+   "elapsed": 15468,
    "hardStopped": false
   },
   {
@@ -2248,7 +2248,7 @@
     "lights": 3
    },
    "commands": {
-    "total": 49294,
+    "total": 44464,
     "createTypes": {
      "label": 1,
      "box": 1,
@@ -2258,8 +2258,8 @@
     "actions": {
      "scene": 2,
      "create": 103,
-     "update": 49001,
-     "sound": 188
+     "update": 44200,
+     "sound": 159
     }
    },
    "stdout": "",
@@ -2270,7 +2270,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 8099,
+   "elapsed": 8863,
    "hardStopped": false
   },
   {
@@ -2282,26 +2282,26 @@
    "progress": false,
    "status": "stopped",
    "error": null,
-   "meshes": 27,
+   "meshes": 31,
    "sceneCounts": {
     "found": true,
-    "meshes": 27,
+    "meshes": 31,
     "sprites": 1,
     "lines": 2,
     "lights": 3
    },
    "commands": {
-    "total": 7284,
+    "total": 7474,
     "createTypes": {
      "label": 1,
-     "sphere": 27,
+     "sphere": 31,
      "local_light": 1
     },
     "actions": {
      "scene": 2,
-     "create": 29,
-     "update": 7222,
-     "sound": 31
+     "create": 33,
+     "update": 7406,
+     "sound": 33
     }
    },
    "stdout": "",
@@ -2312,7 +2312,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6625,
+   "elapsed": 6751,
    "hardStopped": false
   },
   {
@@ -2352,7 +2352,274 @@
     "실행 중",
     "✨ 20종 프리셋 + 3종 외부 URL 텍스처 표시 완료"
    ],
-   "elapsed": 4540,
+   "elapsed": 4799,
+   "hardStopped": false
+  },
+  {
+   "id": "internal:course:beg-first-steps:beg-first-steps-1",
+   "source": "internal",
+   "kind": "program",
+   "title": "코스 [object Object] / [object Object]",
+   "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-1",
+   "progress": false,
+   "status": "pass",
+   "error": null,
+   "meshes": 0,
+   "sceneCounts": {
+    "found": true,
+    "meshes": 0,
+    "sprites": 0,
+    "lines": 2,
+    "lights": 2
+   },
+   "commands": {
+    "total": 1,
+    "createTypes": {},
+    "actions": {
+     "sound": 1
+    }
+   },
+   "stdout": "",
+   "stderr": "",
+   "bridgeWarnings": [],
+   "pageConsole": [],
+   "consoleLines": [
+    "실행 중"
+   ],
+   "elapsed": 814,
+   "hardStopped": false
+  },
+  {
+   "id": "internal:course:beg-first-steps:beg-first-steps-2",
+   "source": "internal",
+   "kind": "program",
+   "title": "코스 [object Object] / [object Object]",
+   "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-2",
+   "progress": false,
+   "status": "pass",
+   "error": null,
+   "meshes": 1,
+   "sceneCounts": {
+    "found": true,
+    "meshes": 1,
+    "sprites": 0,
+    "lines": 2,
+    "lights": 3
+   },
+   "commands": {
+    "total": 4,
+    "createTypes": {
+     "sphere": 1,
+     "local_light": 1
+    },
+    "actions": {
+     "scene": 1,
+     "create": 2,
+     "sound": 1
+    }
+   },
+   "stdout": "",
+   "stderr": "",
+   "bridgeWarnings": [],
+   "pageConsole": [],
+   "consoleLines": [
+    "실행 중"
+   ],
+   "elapsed": 299,
+   "hardStopped": false
+  },
+  {
+   "id": "internal:course:beg-first-steps:beg-first-steps-3",
+   "source": "internal",
+   "kind": "program",
+   "title": "코스 [object Object] / [object Object]",
+   "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-3",
+   "progress": false,
+   "status": "pass",
+   "error": null,
+   "meshes": 7,
+   "sceneCounts": {
+    "found": true,
+    "meshes": 7,
+    "sprites": 0,
+    "lines": 2,
+    "lights": 2
+   },
+   "commands": {
+    "total": 15,
+    "createTypes": {
+     "sphere": 7
+    },
+    "actions": {
+     "create": 7,
+     "sound": 8
+    }
+   },
+   "stdout": "",
+   "stderr": "",
+   "bridgeWarnings": [],
+   "pageConsole": [],
+   "consoleLines": [
+    "실행 중"
+   ],
+   "elapsed": 2378,
+   "hardStopped": false
+  },
+  {
+   "id": "internal:course:beg-first-steps:beg-first-steps-4",
+   "source": "internal",
+   "kind": "program",
+   "title": "코스 [object Object] / [object Object]",
+   "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-4",
+   "progress": false,
+   "status": "stopped",
+   "error": null,
+   "meshes": 2,
+   "sceneCounts": {
+    "found": true,
+    "meshes": 2,
+    "sprites": 0,
+    "lines": 2,
+    "lights": 2
+   },
+   "commands": {
+    "total": 299,
+    "createTypes": {
+     "box": 1,
+     "sphere": 1
+    },
+    "actions": {
+     "scene": 1,
+     "create": 2,
+     "update": 291,
+     "sound": 5
+    }
+   },
+   "stdout": "",
+   "stderr": "",
+   "bridgeWarnings": [],
+   "pageConsole": [],
+   "consoleLines": [
+    "실행 중",
+    "⚠⏹ 실행 중지됨"
+   ],
+   "elapsed": 6452,
+   "hardStopped": false
+  },
+  {
+   "id": "internal:course:beg-first-steps:beg-first-steps-5",
+   "source": "internal",
+   "kind": "program",
+   "title": "코스 [object Object] / [object Object]",
+   "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-5",
+   "progress": false,
+   "status": "pass",
+   "error": null,
+   "meshes": 30,
+   "sceneCounts": {
+    "found": true,
+    "meshes": 30,
+    "sprites": 0,
+    "lines": 2,
+    "lights": 2
+   },
+   "commands": {
+    "total": 60,
+    "createTypes": {
+     "sphere": 30
+    },
+    "actions": {
+     "create": 30,
+     "sound": 30
+    }
+   },
+   "stdout": "",
+   "stderr": "",
+   "bridgeWarnings": [],
+   "pageConsole": [],
+   "consoleLines": [
+    "실행 중"
+   ],
+   "elapsed": 3436,
+   "hardStopped": false
+  },
+  {
+   "id": "internal:course:beg-first-steps:beg-first-steps-6",
+   "source": "internal",
+   "kind": "program",
+   "title": "코스 [object Object] / [object Object]",
+   "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-6",
+   "progress": false,
+   "status": "pass",
+   "error": null,
+   "meshes": 7,
+   "sceneCounts": {
+    "found": true,
+    "meshes": 7,
+    "sprites": 0,
+    "lines": 2,
+    "lights": 2
+   },
+   "commands": {
+    "total": 28,
+    "createTypes": {
+     "box": 7
+    },
+    "actions": {
+     "create": 7,
+     "update": 14,
+     "sound": 7
+    }
+   },
+   "stdout": "",
+   "stderr": "",
+   "bridgeWarnings": [],
+   "pageConsole": [],
+   "consoleLines": [
+    "실행 중"
+   ],
+   "elapsed": 3134,
+   "hardStopped": false
+  },
+  {
+   "id": "internal:course:beg-first-steps:beg-first-steps-7",
+   "source": "internal",
+   "kind": "program",
+   "title": "코스 [object Object] / [object Object]",
+   "origin": "client/src/data/courses.js#beg-first-steps/beg-first-steps-7",
+   "progress": false,
+   "status": "stopped",
+   "error": null,
+   "meshes": 1,
+   "sceneCounts": {
+    "found": true,
+    "meshes": 1,
+    "sprites": 0,
+    "lines": 2,
+    "lights": 3
+   },
+   "commands": {
+    "total": 324,
+    "createTypes": {
+     "sphere": 1,
+     "local_light": 1
+    },
+    "actions": {
+     "scene": 1,
+     "create": 2,
+     "update": 312,
+     "sound": 9
+    }
+   },
+   "stdout": "",
+   "stderr": "",
+   "bridgeWarnings": [],
+   "pageConsole": [],
+   "consoleLines": [
+    "실행 중",
+    "⚠⏹ 실행 중지됨"
+   ],
+   "elapsed": 6453,
    "hardStopped": false
   },
   {
@@ -2389,7 +2656,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -2503,7 +2770,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 302,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -2542,7 +2809,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -2579,7 +2846,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -2616,7 +2883,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 222,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -2654,7 +2921,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 549,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -2691,7 +2958,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 321,
+   "elapsed": 221,
    "hardStopped": false
   },
   {
@@ -2728,7 +2995,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 302,
+   "elapsed": 303,
    "hardStopped": false
   },
   {
@@ -2766,7 +3033,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 316,
    "hardStopped": false
   },
   {
@@ -2800,7 +3067,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 2884,
+   "elapsed": 2949,
    "hardStopped": false
   },
   {
@@ -2834,7 +3101,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 3084,
+   "elapsed": 2997,
    "hardStopped": false
   },
   {
@@ -2868,7 +3135,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 3497,
+   "elapsed": 3527,
    "hardStopped": false
   },
   {
@@ -2902,7 +3169,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 5015,
+   "elapsed": 5091,
    "hardStopped": false
   },
   {
@@ -2940,7 +3207,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 3950,
+   "elapsed": 3942,
    "hardStopped": false
   },
   {
@@ -2976,7 +3243,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 304,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -3014,7 +3281,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 320,
+   "elapsed": 300,
    "hardStopped": false
   },
   {
@@ -3052,7 +3319,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 291,
    "hardStopped": false
   },
   {
@@ -3088,7 +3355,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 303,
+   "elapsed": 305,
    "hardStopped": false
   },
   {
@@ -3126,7 +3393,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 316,
+   "elapsed": 304,
    "hardStopped": false
   },
   {
@@ -3164,7 +3431,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 308,
    "hardStopped": false
   },
   {
@@ -3203,7 +3470,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 5747,
+   "elapsed": 5592,
    "hardStopped": false
   },
   {
@@ -3243,7 +3510,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 1687,
+   "elapsed": 1579,
    "hardStopped": false
   },
   {
@@ -3283,7 +3550,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 1923,
+   "elapsed": 1902,
    "hardStopped": false
   },
   {
@@ -3304,7 +3571,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 578,
+    "total": 584,
     "createTypes": {
      "box": 2,
      "sphere": 1
@@ -3312,8 +3579,8 @@
     "actions": {
      "scene": 1,
      "create": 3,
-     "update": 287,
-     "trail_update": 287
+     "update": 290,
+     "trail_update": 290
     }
    },
    "stdout": "",
@@ -3324,7 +3591,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6489,
+   "elapsed": 6450,
    "hardStopped": false
   },
   {
@@ -3345,7 +3612,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 1454,
+    "total": 1469,
     "createTypes": {
      "sphere": 2,
      "curve": 1
@@ -3353,10 +3620,10 @@
     "actions": {
      "scene": 1,
      "create": 3,
-     "update": 290,
-     "trail_update": 290,
-     "curve_clear": 290,
-     "curve_append": 580
+     "update": 293,
+     "trail_update": 293,
+     "curve_clear": 293,
+     "curve_append": 586
     }
    },
    "stdout": "",
@@ -3367,7 +3634,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6753,
+   "elapsed": 6453,
    "hardStopped": false
   },
   {
@@ -3388,15 +3655,15 @@
     "lights": 2
    },
    "commands": {
-    "total": 757,
+    "total": 759,
     "createTypes": {
      "sphere": 2
     },
     "actions": {
      "scene": 1,
      "create": 2,
-     "update": 377,
-     "trail_update": 377
+     "update": 378,
+     "trail_update": 378
     }
    },
    "stdout": "",
@@ -3407,7 +3674,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6769,
+   "elapsed": 6440,
    "hardStopped": false
   },
   {
@@ -3443,7 +3710,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 426,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -3480,7 +3747,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 250,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -3519,7 +3786,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 310,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -3556,7 +3823,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 593,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -3593,7 +3860,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 423,
+   "elapsed": 519,
    "hardStopped": false
   },
   {
@@ -3630,7 +3897,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 2486,
+   "elapsed": 521,
    "hardStopped": false
   },
   {
@@ -3669,7 +3936,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 4165,
+   "elapsed": 3902,
    "hardStopped": false
   },
   {
@@ -3703,7 +3970,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 5823,
+   "elapsed": 5522,
    "hardStopped": false
   },
   {
@@ -3742,7 +4009,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 301,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -3781,7 +4048,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -3820,7 +4087,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 1927,
+   "elapsed": 1794,
    "hardStopped": false
   },
   {
@@ -3841,15 +4108,15 @@
     "lights": 2
    },
    "commands": {
-    "total": 583,
+    "total": 595,
     "createTypes": {
      "sphere": 2
     },
     "actions": {
      "scene": 1,
      "create": 2,
-     "update": 290,
-     "trail_update": 290
+     "update": 296,
+     "trail_update": 296
     }
    },
    "stdout": "",
@@ -3860,7 +4127,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6605,
+   "elapsed": 6463,
    "hardStopped": false
   },
   {
@@ -3899,7 +4166,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 324,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -3939,7 +4206,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 223,
+   "elapsed": 294,
    "hardStopped": false
   },
   {
@@ -3975,7 +4242,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 330,
+   "elapsed": 305,
    "hardStopped": false
   },
   {
@@ -4010,7 +4277,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 222,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -4044,7 +4311,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 2482,
+   "elapsed": 2451,
    "hardStopped": false
   },
   {
@@ -4083,7 +4350,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -4117,7 +4384,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -4154,7 +4421,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -4193,7 +4460,7 @@
     "실행 중",
     "신호등 완성"
    ],
-   "elapsed": 711,
+   "elapsed": 811,
    "hardStopped": false
   },
   {
@@ -4232,7 +4499,7 @@
     "실행 중",
     "신호등 완성"
    ],
-   "elapsed": 1231,
+   "elapsed": 1228,
    "hardStopped": false
   },
   {
@@ -4269,7 +4536,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 307,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -4306,7 +4573,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -4338,7 +4605,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 305,
+   "elapsed": 300,
    "hardStopped": false
   },
   {
@@ -4374,7 +4641,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -4410,7 +4677,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 1028,
+   "elapsed": 1029,
    "hardStopped": false
   },
   {
@@ -4448,7 +4715,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 1088,
+   "elapsed": 1086,
    "hardStopped": false
   },
   {
@@ -4485,7 +4752,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 238,
    "hardStopped": false
   },
   {
@@ -4522,7 +4789,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 202,
    "hardStopped": false
   },
   {
@@ -4559,7 +4826,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 203,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -4596,7 +4863,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 302,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -4632,7 +4899,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 304,
    "hardStopped": false
   },
   {
@@ -4668,7 +4935,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 209,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -4704,7 +4971,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 319,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -4776,7 +5043,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -4813,7 +5080,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 303,
    "hardStopped": false
   },
   {
@@ -4849,7 +5116,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -4885,7 +5152,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -4921,7 +5188,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 445,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -4958,7 +5225,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 386,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -4994,7 +5261,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 236,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -5031,7 +5298,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 212,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -5068,7 +5335,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 304,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -5105,7 +5372,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 289,
    "hardStopped": false
   },
   {
@@ -5142,7 +5409,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 229,
+   "elapsed": 303,
    "hardStopped": false
   },
   {
@@ -5179,7 +5446,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 305,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -5215,7 +5482,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 203,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -5252,7 +5519,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 245,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -5289,7 +5556,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 379,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -5326,7 +5593,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 241,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -5366,7 +5633,7 @@
     "실행 중",
     "캐릭터 리믹스 시작!"
    ],
-   "elapsed": 477,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -5406,7 +5673,7 @@
     "실행 중",
     "캐릭터 리믹스 시작!"
    ],
-   "elapsed": 549,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -5444,7 +5711,7 @@
     "실행 중",
     "작은 방 완성"
    ],
-   "elapsed": 478,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -5482,7 +5749,7 @@
     "실행 중",
     "작은 방 완성"
    ],
-   "elapsed": 223,
+   "elapsed": 294,
    "hardStopped": false
   },
   {
@@ -5523,7 +5790,7 @@
     "실행 중",
     "복합 객체 리믹스 완료"
    ],
-   "elapsed": 1779,
+   "elapsed": 1773,
    "hardStopped": false
   },
   {
@@ -5564,7 +5831,7 @@
     "실행 중",
     "복합 객체 리믹스 완료"
    ],
-   "elapsed": 1880,
+   "elapsed": 1773,
    "hardStopped": false
   },
   {
@@ -5605,7 +5872,7 @@
     "실행 중",
     "조명 무대 완성"
    ],
-   "elapsed": 305,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -5646,7 +5913,7 @@
     "실행 중",
     "조명 무대 완성"
    ],
-   "elapsed": 294,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -5685,7 +5952,7 @@
     "실행 중",
     "리믹스 포인트: 색, 리듬, 개수"
    ],
-   "elapsed": 2608,
+   "elapsed": 2633,
    "hardStopped": false
   },
   {
@@ -5724,7 +5991,7 @@
     "실행 중",
     "리믹스 포인트: 색, 리듬, 개수"
    ],
-   "elapsed": 2629,
+   "elapsed": 2659,
    "hardStopped": false
   },
   {
@@ -5763,7 +6030,7 @@
     "실행 중",
     "빨강=x, 초록=y, 파랑=z"
    ],
-   "elapsed": 296,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -5802,7 +6069,7 @@
     "실행 중",
     "빨강=x, 초록=y, 파랑=z"
    ],
-   "elapsed": 297,
+   "elapsed": 300,
    "hardStopped": false
   },
   {
@@ -5839,7 +6106,7 @@
     "실행 중",
     "정다각형 생성 완료"
    ],
-   "elapsed": 295,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -5876,7 +6143,7 @@
     "실행 중",
     "정다각형 생성 완료"
    ],
-   "elapsed": 292,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -5913,7 +6180,7 @@
     "실행 중",
     "사인파 리본 완성"
    ],
-   "elapsed": 297,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -5950,7 +6217,7 @@
     "실행 중",
     "사인파 리본 완성"
    ],
-   "elapsed": 298,
+   "elapsed": 312,
    "hardStopped": false
   },
   {
@@ -5987,7 +6254,7 @@
     "실행 중",
     "함수 지형 완성"
    ],
-   "elapsed": 309,
+   "elapsed": 311,
    "hardStopped": false
   },
   {
@@ -6024,7 +6291,7 @@
     "실행 중",
     "함수 지형 완성"
    ],
-   "elapsed": 294,
+   "elapsed": 351,
    "hardStopped": false
   },
   {
@@ -6061,7 +6328,7 @@
     "실행 중",
     "피보나치 꽃밭 완성"
    ],
-   "elapsed": 296,
+   "elapsed": 427,
    "hardStopped": false
   },
   {
@@ -6098,7 +6365,7 @@
     "실행 중",
     "피보나치 꽃밭 완성"
    ],
-   "elapsed": 290,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -6137,7 +6404,7 @@
     "실행 중",
     "속도 실험 완료"
    ],
-   "elapsed": 3361,
+   "elapsed": 3379,
    "hardStopped": false
   },
   {
@@ -6176,7 +6443,7 @@
     "실행 중",
     "속도 실험 완료"
    ],
-   "elapsed": 3466,
+   "elapsed": 3266,
    "hardStopped": false
   },
   {
@@ -6215,7 +6482,7 @@
     "실행 중",
     "중력 비교 완료"
    ],
-   "elapsed": 2826,
+   "elapsed": 2579,
    "hardStopped": false
   },
   {
@@ -6254,7 +6521,7 @@
     "실행 중",
     "중력 비교 완료"
    ],
-   "elapsed": 2850,
+   "elapsed": 2537,
    "hardStopped": false
   },
   {
@@ -6295,7 +6562,7 @@
     "실행 중",
     "튕김 실험 완료"
    ],
-   "elapsed": 4596,
+   "elapsed": 4106,
    "hardStopped": false
   },
   {
@@ -6336,7 +6603,7 @@
     "실행 중",
     "튕김 실험 완료"
    ],
-   "elapsed": 4503,
+   "elapsed": 4181,
    "hardStopped": false
   },
   {
@@ -6376,7 +6643,7 @@
     "실행 중",
     "용수철 실험 완료"
    ],
-   "elapsed": 4982,
+   "elapsed": 4632,
    "hardStopped": false
   },
   {
@@ -6416,7 +6683,7 @@
     "실행 중",
     "용수철 실험 완료"
    ],
-   "elapsed": 4960,
+   "elapsed": 4552,
    "hardStopped": false
   },
   {
@@ -6426,7 +6693,7 @@
    "title": "미션 궤도 실험실 (starter)",
    "origin": "client/src/data/missions.js#SC-5",
    "progress": false,
-   "status": "pass",
+   "status": "stopped",
    "error": null,
    "meshes": 2,
    "sceneCounts": {
@@ -6456,7 +6723,7 @@
     "실행 중",
     "궤도 실험 완료"
    ],
-   "elapsed": 5828,
+   "elapsed": 36841,
    "hardStopped": false
   },
   {
@@ -6496,7 +6763,7 @@
     "실행 중",
     "궤도 실험 완료"
    ],
-   "elapsed": 5833,
+   "elapsed": 6052,
    "hardStopped": false
   },
   {
@@ -6535,7 +6802,7 @@
     "실행 중",
     "숨쉬는 구름 완성"
    ],
-   "elapsed": 3459,
+   "elapsed": 5493,
    "hardStopped": false
   },
   {
@@ -6574,7 +6841,7 @@
     "실행 중",
     "숨쉬는 구름 완성"
    ],
-   "elapsed": 3611,
+   "elapsed": 6883,
    "hardStopped": false
   },
   {
@@ -6612,7 +6879,7 @@
     "실행 중",
     "무지개 파동 완성"
    ],
-   "elapsed": 3160,
+   "elapsed": 3540,
    "hardStopped": false
   },
   {
@@ -6650,7 +6917,7 @@
     "실행 중",
     "무지개 파동 완성"
    ],
-   "elapsed": 2967,
+   "elapsed": 3563,
    "hardStopped": false
   },
   {
@@ -6688,7 +6955,7 @@
     "실행 중",
     "별자리 생성 완료"
    ],
-   "elapsed": 429,
+   "elapsed": 466,
    "hardStopped": false
   },
   {
@@ -6726,7 +6993,7 @@
     "실행 중",
     "별자리 생성 완료"
    ],
-   "elapsed": 404,
+   "elapsed": 958,
    "hardStopped": false
   },
   {
@@ -6768,7 +7035,7 @@
     "실행 중",
     "음악 조명 무대 완료"
    ],
-   "elapsed": 3865,
+   "elapsed": 3993,
    "hardStopped": false
   },
   {
@@ -6810,7 +7077,7 @@
     "실행 중",
     "음악 조명 무대 완료"
    ],
-   "elapsed": 3891,
+   "elapsed": 4030,
    "hardStopped": false
   },
   {
@@ -6849,7 +7116,7 @@
     "실행 중",
     "VJ 루프 완성"
    ],
-   "elapsed": 3116,
+   "elapsed": 3875,
    "hardStopped": false
   },
   {
@@ -6888,7 +7155,7 @@
     "실행 중",
     "VJ 루프 완성"
    ],
-   "elapsed": 3208,
+   "elapsed": 3943,
    "hardStopped": false
   },
   {
@@ -6927,7 +7194,7 @@
     "실행 중",
     "알림음 완성"
    ],
-   "elapsed": 1327,
+   "elapsed": 1871,
    "hardStopped": false
   },
   {
@@ -6966,7 +7233,7 @@
     "실행 중",
     "알림음 완성"
    ],
-   "elapsed": 1340,
+   "elapsed": 1431,
    "hardStopped": false
   },
   {
@@ -7004,7 +7271,7 @@
     "실행 중",
     "리듬 패턴 완성"
    ],
-   "elapsed": 2165,
+   "elapsed": 2198,
    "hardStopped": false
   },
   {
@@ -7042,7 +7309,7 @@
     "실행 중",
     "리듬 패턴 완성"
    ],
-   "elapsed": 2307,
+   "elapsed": 2382,
    "hardStopped": false
   },
   {
@@ -7081,7 +7348,7 @@
     "실행 중",
     "화음 비교 완료"
    ],
-   "elapsed": 2575,
+   "elapsed": 2748,
    "hardStopped": false
   },
   {
@@ -7120,7 +7387,7 @@
     "실행 중",
     "화음 비교 완료"
    ],
-   "elapsed": 4157,
+   "elapsed": 4373,
    "hardStopped": false
   },
   {
@@ -7161,7 +7428,7 @@
     "실행 중",
     "효과음 스토리보드 완료"
    ],
-   "elapsed": 1876,
+   "elapsed": 1911,
    "hardStopped": false
   },
   {
@@ -7202,7 +7469,7 @@
     "실행 중",
     "효과음 스토리보드 완료"
    ],
-   "elapsed": 1784,
+   "elapsed": 1827,
    "hardStopped": false
   },
   {
@@ -7242,7 +7509,7 @@
     "실행 중",
     "BGM 멜로디 완성"
    ],
-   "elapsed": 3334,
+   "elapsed": 3331,
    "hardStopped": false
   },
   {
@@ -7282,7 +7549,7 @@
     "실행 중",
     "BGM 멜로디 완성"
    ],
-   "elapsed": 3942,
+   "elapsed": 3821,
    "hardStopped": false
   },
   {
@@ -7320,7 +7587,7 @@
     "실행 중",
     "빛나는 타이포 패턴 완성"
    ],
-   "elapsed": 332,
+   "elapsed": 465,
    "hardStopped": false
   },
   {
@@ -7358,7 +7625,7 @@
     "실행 중",
     "빛나는 타이포 패턴 완성"
    ],
-   "elapsed": 316,
+   "elapsed": 512,
    "hardStopped": false
   },
   {
@@ -7398,7 +7665,7 @@
     "실행 중",
     "리듬 막대 완성"
    ],
-   "elapsed": 4746,
+   "elapsed": 4997,
    "hardStopped": false
   },
   {
@@ -7438,7 +7705,7 @@
     "실행 중",
     "리듬 막대 완성"
    ],
-   "elapsed": 4811,
+   "elapsed": 4758,
    "hardStopped": false
   },
   {
@@ -7476,7 +7743,7 @@
     "실행 중",
     "입자 붓질 완성"
    ],
-   "elapsed": 340,
+   "elapsed": 248,
    "hardStopped": false
   },
   {
@@ -7514,7 +7781,7 @@
     "실행 중",
     "입자 붓질 완성"
    ],
-   "elapsed": 1030,
+   "elapsed": 414,
    "hardStopped": false
   },
   {
@@ -7555,7 +7822,7 @@
     "실행 중",
     "장면 전환 루프 완성"
    ],
-   "elapsed": 2526,
+   "elapsed": 1732,
    "hardStopped": false
   },
   {
@@ -7596,7 +7863,7 @@
     "실행 중",
     "장면 전환 루프 완성"
    ],
-   "elapsed": 2117,
+   "elapsed": 2110,
    "hardStopped": false
   },
   {
@@ -7633,7 +7900,7 @@
     "실행 중",
     "데이터 조각 공원 완성"
    ],
-   "elapsed": 261,
+   "elapsed": 578,
    "hardStopped": false
   },
   {
@@ -7670,7 +7937,7 @@
     "실행 중",
     "데이터 조각 공원 완성"
    ],
-   "elapsed": 318,
+   "elapsed": 276,
    "hardStopped": false
   },
   {
@@ -7708,7 +7975,7 @@
     "실행 중",
     "확률 구름 완성"
    ],
-   "elapsed": 391,
+   "elapsed": 360,
    "hardStopped": false
   },
   {
@@ -7746,7 +8013,7 @@
     "실행 중",
     "확률 구름 완성"
    ],
-   "elapsed": 676,
+   "elapsed": 584,
    "hardStopped": false
   },
   {
@@ -7784,7 +8051,7 @@
     "실행 중",
     "확산 모델 완성"
    ],
-   "elapsed": 2442,
+   "elapsed": 4118,
    "hardStopped": false
   },
   {
@@ -7822,7 +8089,7 @@
     "실행 중",
     "확산 모델 완성"
    ],
-   "elapsed": 2296,
+   "elapsed": 4208,
    "hardStopped": false
   },
   {
@@ -7860,7 +8127,7 @@
     "실행 중",
     "악기 비교 완료"
    ],
-   "elapsed": 3689,
+   "elapsed": 4969,
    "hardStopped": false
   },
   {
@@ -7898,7 +8165,7 @@
     "실행 중",
     "악기 비교 완료"
    ],
-   "elapsed": 4582,
+   "elapsed": 4690,
    "hardStopped": false
   },
   {
@@ -7936,7 +8203,7 @@
     "실행 중",
     "콜 앤 리스폰스 완성"
    ],
-   "elapsed": 2067,
+   "elapsed": 2271,
    "hardStopped": false
   },
   {
@@ -7974,7 +8241,7 @@
     "실행 중",
     "콜 앤 리스폰스 완성"
    ],
-   "elapsed": 2043,
+   "elapsed": 2174,
    "hardStopped": false
   },
   {
@@ -8012,7 +8279,7 @@
     "실행 중",
     "드럼머신 패턴 완성"
    ],
-   "elapsed": 1745,
+   "elapsed": 3098,
    "hardStopped": false
   },
   {
@@ -8050,7 +8317,7 @@
     "실행 중",
     "드럼머신 패턴 완성"
    ],
-   "elapsed": 1750,
+   "elapsed": 1800,
    "hardStopped": false
   },
   {
@@ -8088,7 +8355,7 @@
     "실행 중",
     "멜로디 색 번역 완료"
    ],
-   "elapsed": 2268,
+   "elapsed": 2367,
    "hardStopped": false
   },
   {
@@ -8126,7 +8393,7 @@
     "실행 중",
     "멜로디 색 번역 완료"
    ],
-   "elapsed": 2258,
+   "elapsed": 2265,
    "hardStopped": false
   },
   {
@@ -8166,7 +8433,7 @@
     "실행 중",
     "사운드 로고 완성"
    ],
-   "elapsed": 2059,
+   "elapsed": 2111,
    "hardStopped": false
   },
   {
@@ -8206,7 +8473,7 @@
     "실행 중",
     "사운드 로고 완성"
    ],
-   "elapsed": 2058,
+   "elapsed": 2162,
    "hardStopped": false
   },
   {
@@ -8243,7 +8510,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 240,
    "hardStopped": false
   },
   {
@@ -8280,7 +8547,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 216,
    "hardStopped": false
   },
   {
@@ -8317,7 +8584,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 210,
    "hardStopped": false
   },
   {
@@ -8349,7 +8616,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 289,
+   "elapsed": 225,
    "hardStopped": false
   },
   {
@@ -8381,7 +8648,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 253,
    "hardStopped": false
   },
   {
@@ -8413,7 +8680,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 288,
+   "elapsed": 228,
    "hardStopped": false
   },
   {
@@ -8445,7 +8712,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 209,
    "hardStopped": false
   },
   {
@@ -8478,7 +8745,7 @@
     "실행 중",
     "<11, 22, 33>"
    ],
-   "elapsed": 300,
+   "elapsed": 232,
    "hardStopped": false
   },
   {
@@ -8510,7 +8777,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 204,
    "hardStopped": false
   },
   {
@@ -8546,7 +8813,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 351,
    "hardStopped": false
   },
   {
@@ -8579,7 +8846,7 @@
     "실행 중",
     "tuple pos rejected: TypeError"
    ],
-   "elapsed": 297,
+   "elapsed": 586,
    "hardStopped": false
   },
   {
@@ -8611,7 +8878,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 438,
    "hardStopped": false
   },
   {
@@ -8647,7 +8914,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 477,
    "hardStopped": false
   },
   {
@@ -8684,7 +8951,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 302,
+   "elapsed": 1129,
    "hardStopped": false
   },
   {
@@ -8722,7 +8989,7 @@
     "실행 중",
     "<1, 0, 0>"
    ],
-   "elapsed": 290,
+   "elapsed": 640,
    "hardStopped": false
   },
   {
@@ -8759,7 +9026,7 @@
     "실행 중",
     "<2, 2, 2>"
    ],
-   "elapsed": 296,
+   "elapsed": 431,
    "hardStopped": false
   },
   {
@@ -8796,7 +9063,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 304,
+   "elapsed": 333,
    "hardStopped": false
   },
   {
@@ -8833,7 +9100,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 236,
    "hardStopped": false
   },
   {
@@ -8870,7 +9137,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 283,
+   "elapsed": 258,
    "hardStopped": false
   },
   {
@@ -8907,7 +9174,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 520,
    "hardStopped": false
   },
   {
@@ -8944,7 +9211,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 292,
+   "elapsed": 360,
    "hardStopped": false
   },
   {
@@ -8981,7 +9248,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 367,
    "hardStopped": false
   },
   {
@@ -9018,7 +9285,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 292,
+   "elapsed": 1241,
    "hardStopped": false
   },
   {
@@ -9030,10 +9297,10 @@
    "progress": false,
    "status": "pass",
    "error": null,
-   "meshes": 1,
+   "meshes": 0,
    "sceneCounts": {
     "found": true,
-    "meshes": 1,
+    "meshes": 0,
     "sprites": 0,
     "lines": 2,
     "lights": 2
@@ -9056,7 +9323,7 @@
     "실행 중",
     "3.0 1.0"
    ],
-   "elapsed": 308,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -9095,7 +9362,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 372,
    "hardStopped": false
   },
   {
@@ -9132,7 +9399,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 261,
    "hardStopped": false
   },
   {
@@ -9169,7 +9436,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 361,
    "hardStopped": false
   },
   {
@@ -9209,7 +9476,7 @@
     "실행 중",
     "<1, 1, 1>"
    ],
-   "elapsed": 295,
+   "elapsed": 332,
    "hardStopped": false
   },
   {
@@ -9248,7 +9515,7 @@
     "실행 중",
     "<1.25, 0, 0>"
    ],
-   "elapsed": 302,
+   "elapsed": 247,
    "hardStopped": false
   },
   {
@@ -9284,7 +9551,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 339,
    "hardStopped": false
   },
   {
@@ -9316,7 +9583,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 283,
+   "elapsed": 815,
    "hardStopped": false
   },
   {
@@ -9353,7 +9620,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 353,
    "hardStopped": false
   },
   {
@@ -9389,7 +9656,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 820,
    "hardStopped": false
   },
   {
@@ -9428,7 +9695,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 419,
    "hardStopped": false
   },
   {
@@ -9464,7 +9731,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 305,
+   "elapsed": 242,
    "hardStopped": false
   },
   {
@@ -9496,7 +9763,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 290,
+   "elapsed": 215,
    "hardStopped": false
   },
   {
@@ -9529,7 +9796,7 @@
     "실행 중",
     "<0, 0.8, 0>"
    ],
-   "elapsed": 286,
+   "elapsed": 216,
    "hardStopped": false
   },
   {
@@ -9566,7 +9833,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 210,
    "hardStopped": false
   },
   {
@@ -9604,7 +9871,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 303,
+   "elapsed": 236,
    "hardStopped": false
   },
   {
@@ -9636,11 +9903,14 @@
    "stdout": "",
    "stderr": "",
    "bridgeWarnings": [],
-   "pageConsole": [],
+   "pageConsole": [
+    "[error] Failed to load resource: the server responded with a status of 403 ()",
+    "[warning] [texture] 로드 실패: https://i.imgur.com/example.jpg Event"
+   ],
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 999,
    "hardStopped": false
   },
   {
@@ -9677,7 +9947,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 284,
    "hardStopped": false
   },
   {
@@ -9715,7 +9985,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 245,
    "hardStopped": false
   },
   {
@@ -9751,7 +10021,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 259,
    "hardStopped": false
   },
   {
@@ -9787,7 +10057,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 813,
    "hardStopped": false
   },
   {
@@ -9824,7 +10094,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 612,
    "hardStopped": false
   },
   {
@@ -9862,7 +10132,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 301,
+   "elapsed": 199,
    "hardStopped": false
   },
   {
@@ -9899,7 +10169,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -9936,7 +10206,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 302,
+   "elapsed": 220,
    "hardStopped": false
   },
   {
@@ -9973,7 +10243,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 292,
+   "elapsed": 320,
    "hardStopped": false
   },
   {
@@ -10012,7 +10282,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 636,
    "hardStopped": false
   },
   {
@@ -10050,7 +10320,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 497,
    "hardStopped": false
   },
   {
@@ -10090,7 +10360,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 305,
+   "elapsed": 248,
    "hardStopped": false
   },
   {
@@ -10126,7 +10396,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 289,
+   "elapsed": 233,
    "hardStopped": false
   },
   {
@@ -10164,7 +10434,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 199,
    "hardStopped": false
   },
   {
@@ -10201,7 +10471,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 223,
    "hardStopped": false
   },
   {
@@ -10239,7 +10509,7 @@
     "실행 중",
     "<0, 0, 10>"
    ],
-   "elapsed": 298,
+   "elapsed": 316,
    "hardStopped": false
   },
   {
@@ -10274,7 +10544,7 @@
     "실행 중",
     "5.0 <0, 1, 0> <0, -0.7071, -0.7071>"
    ],
-   "elapsed": 296,
+   "elapsed": 223,
    "hardStopped": false
   },
   {
@@ -10313,7 +10583,7 @@
     "실행 중",
     "0"
    ],
-   "elapsed": 299,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -10347,7 +10617,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 214,
    "hardStopped": false
   },
   {
@@ -10381,7 +10651,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 292,
+   "elapsed": 300,
    "hardStopped": false
   },
   {
@@ -10413,7 +10683,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 302,
+   "elapsed": 310,
    "hardStopped": false
   },
   {
@@ -10452,7 +10722,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 293,
+   "elapsed": 217,
    "hardStopped": false
   },
   {
@@ -10490,7 +10760,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 425,
    "hardStopped": false
   },
   {
@@ -10524,7 +10794,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 231,
    "hardStopped": false
   },
   {
@@ -10549,15 +10819,15 @@
     "createTypes": {},
     "actions": {}
    },
-   "stdout": "0.01394282761176045",
+   "stdout": "0.014012497775758064",
    "stderr": "",
    "bridgeWarnings": [],
    "pageConsole": [],
    "consoleLines": [
     "실행 중",
-    "0.01394282761176045"
+    "0.014012497775758064"
    ],
-   "elapsed": 297,
+   "elapsed": 231,
    "hardStopped": false
   },
   {
@@ -10570,7 +10840,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: _GSeriesBase.plot() got an unexpected keyword argument 'pos'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 6, in <module>\nTypeError: _GSeriesBase.plot() got an unexpected keyword argument 'pos'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 6, in <module>\nTypeError: _GSeriesBase.plot() got an unexpected keyword argument 'pos'\n",
     "details": null
    },
    "meshes": 0,
@@ -10598,7 +10868,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다_GSeriesBase.plot()에는 'pos'라는 옵션이 없습니다. 옵션 이름의 철자가 다르거나 다른 객체의 옵션을 썼을 때 생깁니다.→'pos'의 철자를 확인하고 있는 옵션 이름으로 고칩니다.6번 줄: gc.plot(pos=(11, 121))6번 줄 · TypeError: _GSeriesBase.plot() got an unexpected keyword argument 'pos'"
    ],
-   "elapsed": 306,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -10635,7 +10905,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 212,
    "hardStopped": false
   },
   {
@@ -10673,7 +10943,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 306,
    "hardStopped": false
   },
   {
@@ -10707,7 +10977,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -10741,7 +11011,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -10775,7 +11045,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 309,
    "hardStopped": false
   },
   {
@@ -10812,7 +11082,7 @@
     "실행 중",
     "False False False"
    ],
-   "elapsed": 294,
+   "elapsed": 392,
    "hardStopped": false
   },
   {
@@ -10844,7 +11114,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 301,
+   "elapsed": 228,
    "hardStopped": false
   },
   {
@@ -10883,7 +11153,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6334,
+   "elapsed": 6503,
    "hardStopped": false
   },
   {
@@ -10919,7 +11189,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6435,
+   "elapsed": 6645,
    "hardStopped": false
   },
   {
@@ -10960,7 +11230,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6348,
+   "elapsed": 6785,
    "hardStopped": false
   },
   {
@@ -10996,7 +11266,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 445,
    "hardStopped": false
   },
   {
@@ -11032,7 +11302,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 714,
    "hardStopped": false
   },
   {
@@ -11067,7 +11337,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 393,
    "hardStopped": false
   },
   {
@@ -11103,7 +11373,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 211,
    "hardStopped": false
   },
   {
@@ -11138,7 +11408,7 @@
     "실행 중",
     ""
    ],
-   "elapsed": 300,
+   "elapsed": 216,
    "hardStopped": false
   },
   {
@@ -11174,7 +11444,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -11209,7 +11479,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 265,
    "hardStopped": false
   },
   {
@@ -11230,13 +11500,13 @@
     "lights": 2
    },
    "commands": {
-    "total": 440,
+    "total": 475,
     "createTypes": {
      "sphere": 1
     },
     "actions": {
      "create": 1,
-     "update": 439
+     "update": 474
     }
    },
    "stdout": "",
@@ -11247,7 +11517,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6471,
+   "elapsed": 6481,
    "hardStopped": false
   },
   {
@@ -11285,7 +11555,7 @@
     "실행 중",
     "done 0.20000000000000004"
    ],
-   "elapsed": 809,
+   "elapsed": 790,
    "hardStopped": false
   },
   {
@@ -11323,7 +11593,7 @@
     "실행 중",
     "<0.1, 0, 0>"
    ],
-   "elapsed": 393,
+   "elapsed": 411,
    "hardStopped": false
   },
   {
@@ -11360,7 +11630,7 @@
     "실행 중",
     "after sleep"
    ],
-   "elapsed": 390,
+   "elapsed": 331,
    "hardStopped": false
   },
   {
@@ -11394,7 +11664,7 @@
     "⚠⏹ 실행 중지됨",
     "✔Python 엔진 준비 완료!"
    ],
-   "elapsed": 10410,
+   "elapsed": 10340,
    "hardStopped": true
   },
   {
@@ -11432,7 +11702,7 @@
     "실행 중",
     "<0.999, 0, 0>"
    ],
-   "elapsed": 299,
+   "elapsed": 315,
    "hardStopped": false
   },
   {
@@ -11469,7 +11739,7 @@
     "실행 중",
     "3.7416573867739413"
    ],
-   "elapsed": 300,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -11505,7 +11775,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 285,
    "hardStopped": false
   },
   {
@@ -11541,7 +11811,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 291,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -11574,7 +11844,7 @@
     "실행 중",
     "197.92699081698726 1 2.57 3 1"
    ],
-   "elapsed": 290,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -11606,7 +11876,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 283,
+   "elapsed": 285,
    "hardStopped": false
   },
   {
@@ -11631,15 +11901,15 @@
     "createTypes": {},
     "actions": {}
    },
-   "stdout": "0.07150801866945156 3 0.8032500077815151 1\n3 0.05946329431090824",
+   "stdout": "0.6340854512416412 2 0.7681735713727285 1\n1 0.040504798218477744",
    "stderr": "",
    "bridgeWarnings": [],
    "pageConsole": [],
    "consoleLines": [
     "실행 중",
-    "0.07150801866945156 3 0.8032500077815151 1\n3 0.05946329431090824"
+    "0.6340854512416412 2 0.7681735713727285 1\n1 0.040504798218477744"
    ],
-   "elapsed": 297,
+   "elapsed": 294,
    "hardStopped": false
   },
   {
@@ -11672,7 +11942,7 @@
     "실행 중",
     "1.0 1.0"
    ],
-   "elapsed": 296,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -11697,15 +11967,15 @@
     "createTypes": {},
     "actions": {}
    },
-   "stdout": "1793319011121.0 -1 10",
+   "stdout": "1793414388074.0 -1 10",
    "stderr": "",
    "bridgeWarnings": [],
    "pageConsole": [],
    "consoleLines": [
     "실행 중",
-    "1793319011121.0 -1 10"
+    "1793414388074.0 -1 10"
    ],
-   "elapsed": 299,
+   "elapsed": 290,
    "hardStopped": false
   },
   {
@@ -11738,7 +12008,7 @@
     "실행 중",
     "3.14 3.1 3.142\na-b!\n<1, 2, 3> 3.7416573867739413\n<1, 2, 3>"
    ],
-   "elapsed": 295,
+   "elapsed": 287,
    "hardStopped": false
   },
   {
@@ -11774,7 +12044,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6432,
+   "elapsed": 6302,
    "hardStopped": false
   },
   {
@@ -11811,7 +12081,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 212,
    "hardStopped": false
   },
   {
@@ -11849,7 +12119,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 387,
+   "elapsed": 397,
    "hardStopped": false
   },
   {
@@ -11887,7 +12157,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 405,
+   "elapsed": 300,
    "hardStopped": false
   },
   {
@@ -11923,7 +12193,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 302,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -11955,7 +12225,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 292,
    "hardStopped": false
   },
   {
@@ -11989,7 +12259,7 @@
     "⚠⚠️ 2번 줄: lambda 안의 rate()은 기다릴 수 없습니다. def로 바꾸세요.",
     "ok"
    ],
-   "elapsed": 292,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -12026,7 +12296,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 293,
+   "elapsed": 290,
    "hardStopped": false
   },
   {
@@ -12064,7 +12334,7 @@
     "실행 중",
     "<0, 1, 0>"
    ],
-   "elapsed": 295,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -12101,7 +12371,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 204,
    "hardStopped": false
   },
   {
@@ -12134,7 +12404,7 @@
     "실행 중",
     "pos=<1.23, 2, 3>"
    ],
-   "elapsed": 289,
+   "elapsed": 311,
    "hardStopped": false
   },
   {
@@ -12170,7 +12440,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 292,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -12208,7 +12478,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -12242,7 +12512,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -12280,7 +12550,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 291,
    "hardStopped": false
   },
   {
@@ -12293,7 +12563,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'get_library' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 2, in <module>\nNameError: name 'get_library' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 2, in <module>\nNameError: name 'get_library' is not defined\n",
     "details": null
    },
    "meshes": 0,
@@ -12317,7 +12587,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'get_library'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→2번 줄보다 위쪽에 \"get_library = 값\" 또는 \"def get_library():\"가 있는지, 철자가 같은지 확인합니다.2번 줄: print(callable(get_library), callable(read_local_file))2번 줄 · NameError: name 'get_library' is not defined"
    ],
-   "elapsed": 304,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -12352,7 +12622,7 @@
     "실행 중",
     "[canvas] VPyLab은 캔버스를 하나만 지원합니다. 새 canvas()는 기존 scene을 그대로 돌려줍니다."
    ],
-   "elapsed": 292,
+   "elapsed": 446,
    "hardStopped": false
   },
   {
@@ -12373,14 +12643,17 @@
     "lights": 2
    },
    "commands": {
-    "total": 5,
+    "total": 11,
     "createTypes": {
      "box": 1,
-     "sphere": 1
+     "sphere": 2,
+     "local_light": 1,
+     "curve": 1
     },
     "actions": {
-     "create": 2,
-     "scene": 3
+     "create": 5,
+     "scene": 4,
+     "update": 2
     }
    },
    "stdout": "",
@@ -12390,7 +12663,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 457,
    "hardStopped": false
   },
   {
@@ -12402,24 +12675,24 @@
    "progress": false,
    "status": "pass",
    "error": null,
-   "meshes": 2,
+   "meshes": 3,
    "sceneCounts": {
     "found": true,
-    "meshes": 2,
+    "meshes": 3,
     "sprites": 0,
     "lines": 2,
     "lights": 2
    },
    "commands": {
-    "total": 21,
+    "total": 28,
     "createTypes": {
-     "group": 1,
-     "box": 1,
+     "group": 2,
+     "box": 2,
      "sphere": 1
     },
     "actions": {
-     "create": 3,
-     "update": 18
+     "create": 5,
+     "update": 23
     }
    },
    "stdout": "",
@@ -12429,7 +12702,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 308,
+   "elapsed": 348,
    "hardStopped": false
   },
   {
@@ -12470,7 +12743,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 606,
    "hardStopped": false
   },
   {
@@ -12482,24 +12755,24 @@
    "progress": false,
    "status": "pass",
    "error": null,
-   "meshes": 4,
+   "meshes": 6,
    "sceneCounts": {
     "found": true,
-    "meshes": 4,
+    "meshes": 6,
     "sprites": 0,
     "lines": 2,
     "lights": 2
    },
    "commands": {
-    "total": 19,
+    "total": 25,
     "createTypes": {
-     "box": 2,
+     "box": 4,
      "sphere": 2
     },
     "actions": {
-     "create": 4,
-     "compound": 2,
-     "update": 13
+     "create": 6,
+     "compound": 4,
+     "update": 15
     }
    },
    "stdout": "",
@@ -12546,7 +12819,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 322,
    "hardStopped": false
   },
   {
@@ -12583,7 +12856,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -12600,17 +12873,17 @@
     "found": true,
     "meshes": 0,
     "sprites": 0,
-    "lines": 3,
+    "lines": 5,
     "lights": 2
    },
    "commands": {
-    "total": 9,
+    "total": 16,
     "createTypes": {
-     "curve": 1
+     "curve": 3
     },
     "actions": {
-     "create": 1,
-     "curve_set": 5,
+     "create": 3,
+     "curve_set": 10,
      "update": 3
     }
    },
@@ -12621,7 +12894,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 254,
    "hardStopped": false
   },
   {
@@ -12659,7 +12932,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 314,
    "hardStopped": false
   },
   {
@@ -12695,7 +12968,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 294,
    "hardStopped": false
   },
   {
@@ -12731,7 +13004,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -12768,7 +13041,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 442,
+   "elapsed": 825,
    "hardStopped": false
   },
   {
@@ -12808,7 +13081,7 @@
     "실행 중",
     "[text] 번들 글꼴에 없는 글자(한글 등)가 있어 입체 글자 대신 카메라를 향하는 2D 라벨로 표시합니다."
    ],
-   "elapsed": 294,
+   "elapsed": 496,
    "hardStopped": false
   },
   {
@@ -12825,21 +13098,21 @@
     "found": true,
     "meshes": 1,
     "sprites": 0,
-    "lines": 5,
+    "lines": 6,
     "lights": 2
    },
    "commands": {
-    "total": 17,
+    "total": 19,
     "createTypes": {
      "sphere": 1,
      "points": 1,
-     "curve": 1
+     "curve": 2
     },
     "actions": {
-     "create": 3,
+     "create": 4,
      "trail_attach": 1,
      "trail_clear": 1,
-     "curve_append": 6,
+     "curve_append": 7,
      "update": 3,
      "trail_update": 3
     }
@@ -12851,7 +13124,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -12872,13 +13145,14 @@
     "lights": 4
    },
    "commands": {
-    "total": 13,
+    "total": 15,
     "createTypes": {
      "sphere": 1,
      "local_light": 2
     },
     "actions": {
      "create": 3,
+     "scene": 2,
      "update": 10
     }
    },
@@ -12889,7 +13163,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 300,
    "hardStopped": false
   },
   {
@@ -12959,7 +13233,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 302,
+   "elapsed": 229,
    "hardStopped": false
   },
   {
@@ -12980,7 +13254,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 180874,
+    "total": 126602,
     "createTypes": {
      "sphere": 216,
      "helix": 240
@@ -12988,7 +13262,7 @@
     "actions": {
      "scene": 2,
      "create": 456,
-     "update": 180416
+     "update": 126144
     }
    },
    "stdout": "",
@@ -12999,7 +13273,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 8522,
+   "elapsed": 10192,
    "hardStopped": false
   },
   {
@@ -13039,7 +13313,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 360,
+   "elapsed": 408,
    "hardStopped": false
   },
   {
@@ -13060,15 +13334,15 @@
     "lights": 2
    },
    "commands": {
-    "total": 3284,
+    "total": 3440,
     "createTypes": {
      "sphere": 2
     },
     "actions": {
      "scene": 2,
      "create": 2,
-     "update": 1640,
-     "trail_update": 1640
+     "update": 1718,
+     "trail_update": 1718
     }
    },
    "stdout": "",
@@ -13079,7 +13353,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6495,
+   "elapsed": 6536,
    "hardStopped": false
   },
   {
@@ -13100,7 +13374,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 1625,
+    "total": 1639,
     "createTypes": {
      "box": 5,
      "sphere": 1
@@ -13108,8 +13382,8 @@
     "actions": {
      "scene": 1,
      "create": 6,
-     "update": 809,
-     "trail_update": 809
+     "update": 816,
+     "trail_update": 816
     }
    },
    "stdout": "",
@@ -13120,7 +13394,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6612,
+   "elapsed": 6936,
    "hardStopped": false
   },
   {
@@ -13141,7 +13415,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 1647,
+    "total": 2029,
     "createTypes": {
      "box": 5,
      "sphere": 1
@@ -13149,8 +13423,8 @@
     "actions": {
      "scene": 1,
      "create": 6,
-     "update": 820,
-     "trail_update": 820
+     "update": 1011,
+     "trail_update": 1011
     }
    },
    "stdout": "",
@@ -13161,7 +13435,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6512,
+   "elapsed": 8634,
    "hardStopped": false
   },
   {
@@ -13182,7 +13456,7 @@
     "lights": 5
    },
    "commands": {
-    "total": 3096,
+    "total": 3614,
     "createTypes": {
      "arrow": 2,
      "box": 1,
@@ -13193,7 +13467,7 @@
     "actions": {
      "scene": 2,
      "create": 8,
-     "update": 3086
+     "update": 3604
     }
    },
    "stdout": "",
@@ -13204,7 +13478,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6494,
+   "elapsed": 7647,
    "hardStopped": false
   },
   {
@@ -13243,7 +13517,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 344,
    "hardStopped": false
   },
   {
@@ -13264,7 +13538,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 1916,
+    "total": 1776,
     "createTypes": {
      "box": 1,
      "cone": 1,
@@ -13275,7 +13549,7 @@
      "scene": 7,
      "widget_create": 7,
      "create": 4,
-     "update": 1897,
+     "update": 1757,
      "wtext_create": 1
     }
    },
@@ -13287,7 +13561,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 7030,
+   "elapsed": 6543,
    "hardStopped": false
   },
   {
@@ -13324,7 +13598,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 424,
    "hardStopped": false
   },
   {
@@ -13345,7 +13619,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 6036,
+    "total": 5581,
     "createTypes": {
      "ring": 5,
      "cylinder": 15,
@@ -13356,7 +13630,7 @@
     "actions": {
      "scene": 4,
      "create": 27,
-     "update": 5999,
+     "update": 5544,
      "compound": 5,
      "widget_create": 1
     }
@@ -13369,7 +13643,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6581,
+   "elapsed": 6787,
    "hardStopped": false
   },
   {
@@ -13410,7 +13684,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 413,
    "hardStopped": false
   },
   {
@@ -13448,7 +13722,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 390,
    "hardStopped": false
   },
   {
@@ -13486,7 +13760,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 292,
+   "elapsed": 1027,
    "hardStopped": false
   },
   {
@@ -13530,7 +13804,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 14343,
+   "elapsed": 12481,
    "hardStopped": false
   },
   {
@@ -13551,7 +13825,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 15354,
+    "total": 13680,
     "createTypes": {
      "extrusion": 307,
      "sphere": 49,
@@ -13561,7 +13835,7 @@
     "actions": {
      "scene": 3,
      "create": 384,
-     "update": 14947,
+     "update": 13273,
      "compound": 19,
      "widget_create": 1
     }
@@ -13574,7 +13848,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 7246,
+   "elapsed": 7710,
    "hardStopped": false
   },
   {
@@ -13618,7 +13892,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6825,
+   "elapsed": 6877,
    "hardStopped": false
   },
   {
@@ -13654,7 +13928,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 1658,
+   "elapsed": 1865,
    "hardStopped": false
   },
   {
@@ -13700,7 +13974,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6424,
+   "elapsed": 6396,
    "hardStopped": false
   },
   {
@@ -13721,7 +13995,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 31273,
+    "total": 27655,
     "createTypes": {
      "curve": 6,
      "sphere": 200
@@ -13733,8 +14007,8 @@
      "graph_create": 1,
      "graph_series_create": 2,
      "graph_series_plot": 302,
-     "update": 30600,
-     "trail_update": 153
+     "update": 27000,
+     "trail_update": 135
     }
    },
    "stdout": "",
@@ -13745,7 +14019,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6858,
+   "elapsed": 7035,
    "hardStopped": false
   },
   {
@@ -13758,7 +14032,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'MathJax' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 7, in <module>\nNameError: name 'MathJax' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 7, in <module>\nNameError: name 'MathJax' is not defined\n",
     "details": null
    },
    "meshes": 1,
@@ -13787,7 +14061,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'MathJax'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→7번 줄보다 위쪽에 \"MathJax = 값\" 또는 \"def MathJax():\"가 있는지, 철자가 같은지 확인합니다.7번 줄: MathJax.Hub.Queue([\"Typeset\",MathJax.Hub])7번 줄 · NameError: name 'MathJax' is not defined"
    ],
-   "elapsed": 296,
+   "elapsed": 322,
    "hardStopped": false
   },
   {
@@ -13800,7 +14074,7 @@
    "status": "error",
    "error": {
     "message": "SyntaxError: invalid syntax",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5771, in _vpylab_run\n  File \"<vpylab-transform>\", line 730, in compile_student_code\n  File \"<vpylab-transform>\", line 720, in transform_student_code\n  File \"/lib/python312.zip/ast.py\", line 52, in parse\n    return compile(source, filename, mode, flags,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<student>\", line 114\n    $( \"body\" ).append(s)\n    ^\nSyntaxError: invalid syntax\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5844, in _vpylab_run\n  File \"<vpylab-transform>\", line 730, in compile_student_code\n  File \"<vpylab-transform>\", line 720, in transform_student_code\n  File \"/lib/python312.zip/ast.py\", line 52, in parse\n    return compile(source, filename, mode, flags,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<student>\", line 114\n    $( \"body\" ).append(s)\n    ^\nSyntaxError: invalid syntax\n",
     "details": null
    },
    "meshes": 0,
@@ -13824,7 +14098,7 @@
     "실행 중",
     "✖문법이 맞지 않습니다이 줄을 파이썬 문법대로 읽을 수 없습니다. 괄호나 따옴표가 짝이 맞지 않거나, 쉼표나 콜론(:)이 빠졌거나, 영어가 아닌 기호가 섞였을 때 생깁니다.→표시된 위치 주변의 괄호·따옴표·쉼표·콜론을 확인하고, 바로 위 줄도 살펴봅니다.114번 줄: $( \"body\" ).append(s)114번 줄 · SyntaxError: invalid syntax"
    ],
-   "elapsed": 282,
+   "elapsed": 326,
    "hardStopped": false
   },
   {
@@ -13870,7 +14144,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 283,
+   "elapsed": 522,
    "hardStopped": false
   },
   {
@@ -13911,7 +14185,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6507,
+   "elapsed": 6572,
    "hardStopped": false
   },
   {
@@ -13932,7 +14206,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 241005,
+    "total": 205005,
     "createTypes": {
      "box": 1000
     },
@@ -13940,7 +14214,7 @@
      "scene": 4,
      "create": 1000,
      "scene_bind": 1,
-     "update": 240000
+     "update": 204000
     }
    },
    "stdout": "",
@@ -13951,7 +14225,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 10299,
+   "elapsed": 10681,
    "hardStopped": false
   },
   {
@@ -13972,7 +14246,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 296,
+    "total": 298,
     "createTypes": {
      "curve": 1
     },
@@ -13980,7 +14254,7 @@
      "scene": 5,
      "widget_create": 1,
      "create": 1,
-     "update": 289
+     "update": 291
     }
    },
    "stdout": "",
@@ -13991,7 +14265,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6514,
+   "elapsed": 6448,
    "hardStopped": false
   },
   {
@@ -14012,12 +14286,12 @@
     "lights": 2
    },
    "commands": {
-    "total": 291,
+    "total": 292,
     "createTypes": {
      "points": 1
     },
     "actions": {
-     "scene": 289,
+     "scene": 290,
      "widget_create": 1,
      "create": 1
     }
@@ -14030,7 +14304,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6570,
+   "elapsed": 6294,
    "hardStopped": false
   },
   {
@@ -14043,7 +14317,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: vertex.__init__() got an unexpected keyword argument 'texpos'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 33, in <module>\nTypeError: vertex.__init__() got an unexpected keyword argument 'texpos'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 33, in <module>\nTypeError: vertex.__init__() got an unexpected keyword argument 'texpos'\n",
     "details": null
    },
    "meshes": 0,
@@ -14069,7 +14343,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다vertex()에는 'texpos'라는 옵션이 없습니다. 옵션 이름의 철자가 다르거나 다른 객체의 옵션을 썼을 때 생깁니다. 자주 쓰는 옵션은 pos, radius, size, axis, color, opacity, length입니다.→'texpos'의 철자를 확인하고 있는 옵션 이름으로 고칩니다.33번 줄: verts[y].append(vertex(pos=vector(-0.5+x*dx,-0.5+y*dy,0), normal=vector(0,0,1), texpos=vector(x/w,y/h,0), shininess= 0))33번 줄 · TypeError: vertex.__init__() got an unexpected keyword argument 'texpos'"
    ],
-   "elapsed": 327,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -14082,7 +14356,7 @@
    "status": "error",
    "error": {
     "message": "SyntaxError: invalid syntax",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5771, in _vpylab_run\n  File \"<vpylab-transform>\", line 730, in compile_student_code\n  File \"<vpylab-transform>\", line 720, in transform_student_code\n  File \"/lib/python312.zip/ast.py\", line 52, in parse\n    return compile(source, filename, mode, flags,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<student>\", line 10\n    T = $('<textarea/>').val('Click above.\\n').appendTo(scene.caption_anchor).css('width', '250px').css('height', '90px').css('font-family', 'sans-serif').css('font-size', '14px')\n        ^\nSyntaxError: invalid syntax\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5844, in _vpylab_run\n  File \"<vpylab-transform>\", line 730, in compile_student_code\n  File \"<vpylab-transform>\", line 720, in transform_student_code\n  File \"/lib/python312.zip/ast.py\", line 52, in parse\n    return compile(source, filename, mode, flags,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<student>\", line 10\n    T = $('<textarea/>').val('Click above.\\n').appendTo(scene.caption_anchor).css('width', '250px').css('height', '90px').css('font-family', 'sans-serif').css('font-size', '14px')\n        ^\nSyntaxError: invalid syntax\n",
     "details": null
    },
    "meshes": 0,
@@ -14106,7 +14380,7 @@
     "실행 중",
     "✖문법이 맞지 않습니다이 줄을 파이썬 문법대로 읽을 수 없습니다. 괄호나 따옴표가 짝이 맞지 않거나, 쉼표나 콜론(:)이 빠졌거나, 영어가 아닌 기호가 섞였을 때 생깁니다.→표시된 위치 주변의 괄호·따옴표·쉼표·콜론을 확인하고, 바로 위 줄도 살펴봅니다.10번 줄: T = $('<textarea/>').val('Click above.\\n').appendTo(scene.caption_anchor).css('width', '250px').css('height', '90px').css('font-family', 'sans-serif').css('font-size', '14px')10번 줄 · SyntaxError: invalid syntax"
    ],
-   "elapsed": 526,
+   "elapsed": 216,
    "hardStopped": false
   },
   {
@@ -14127,7 +14401,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 14304,
+    "total": 14784,
     "createTypes": {
      "curve": 3,
      "sphere": 20
@@ -14136,8 +14410,8 @@
      "scene": 4,
      "create": 23,
      "curve_append": 6,
-     "update": 7158,
-     "trail_update": 7103,
+     "update": 7398,
+     "trail_update": 7343,
      "trail_clear": 10
     }
    },
@@ -14149,7 +14423,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 7119,
+   "elapsed": 6647,
    "hardStopped": false
   },
   {
@@ -14162,7 +14436,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'Date' is not defined. Did you mean: 'rate'?",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 116, in <module>\n  File \"<student>\", line 45, in __init__\n  File \"<student>\", line 48, in update\n  File \"<student>\", line 25, in hourminute\nNameError: name 'Date' is not defined. Did you mean: 'rate'?\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 116, in <module>\n  File \"<student>\", line 45, in __init__\n  File \"<student>\", line 48, in update\n  File \"<student>\", line 25, in hourminute\nNameError: name 'Date' is not defined. Did you mean: 'rate'?\n",
     "details": null
    },
    "meshes": 40,
@@ -14197,7 +14471,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'Date'이라는 이름이 없습니다. 철자가 비슷한 'rate'를 쓰려던 것으로 보입니다.→'Date'을 'rate'로 고칩니다.25번 줄: d = Date()25번 줄 · NameError: name 'Date' is not defined. Did you mean: 'rate'?"
    ],
-   "elapsed": 1112,
+   "elapsed": 489,
    "hardStopped": false
   },
   {
@@ -14239,7 +14513,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6426,
+   "elapsed": 6298,
    "hardStopped": false
   },
   {
@@ -14277,7 +14551,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 302,
+   "elapsed": 362,
    "hardStopped": false
   },
   {
@@ -14298,7 +14572,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 1081,
+    "total": 1035,
     "createTypes": {
      "sphere": 2,
      "label": 1,
@@ -14317,7 +14591,7 @@
      "scene_bind": 3,
      "scene": 6,
      "curve_append": 239,
-     "update": 820
+     "update": 774
     }
    },
    "stdout": "",
@@ -14328,7 +14602,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6415,
+   "elapsed": 6539,
    "hardStopped": false
   },
   {
@@ -14366,7 +14640,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 217,
+   "elapsed": 309,
    "hardStopped": false
   },
   {
@@ -14404,7 +14678,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 214,
+   "elapsed": 305,
    "hardStopped": false
   },
   {
@@ -14417,7 +14691,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: attach_light.__init__() missing 1 required positional argument: 'obj'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: attach_light.__init__() missing 1 required positional argument: 'obj'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: attach_light.__init__() missing 1 required positional argument: 'obj'\n",
     "details": null
    },
    "meshes": 6,
@@ -14446,7 +14720,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다attach_light()를 부를 때 꼭 필요한 값 'obj'을(를) 넣지 않았습니다.→attach_light(obj) 처럼 빠진 값을 괄호 안에 넣습니다.14번 줄: attach_light()14번 줄 · TypeError: attach_light.__init__() missing 1 required positional argument: 'obj'"
    ],
-   "elapsed": 284,
+   "elapsed": 310,
    "hardStopped": false
   },
   {
@@ -14484,7 +14758,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 292,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -14523,7 +14797,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 305,
    "hardStopped": false
   },
   {
@@ -14536,7 +14810,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: attach_arrow.__init__() missing 2 required positional arguments: 'obj' and 'attr'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: attach_arrow.__init__() missing 2 required positional arguments: 'obj' and 'attr'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: attach_arrow.__init__() missing 2 required positional arguments: 'obj' and 'attr'\n",
     "details": null
    },
    "meshes": 6,
@@ -14565,7 +14839,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다attach_arrow()를 부를 때 꼭 필요한 값 'obj' and 'attr'을(를) 넣지 않았습니다.→attach_arrow(obj, attr) 처럼 빠진 값을 괄호 안에 넣습니다.14번 줄: attach_arrow()14번 줄 · TypeError: attach_arrow.__init__() missing 2 required positional arguments: 'obj' and 'attr'"
    ],
-   "elapsed": 291,
+   "elapsed": 305,
    "hardStopped": false
   },
   {
@@ -14603,7 +14877,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 308,
    "hardStopped": false
   },
   {
@@ -14640,7 +14914,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 290,
    "hardStopped": false
   },
   {
@@ -14677,7 +14951,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -14715,7 +14989,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 218,
+   "elapsed": 300,
    "hardStopped": false
   },
   {
@@ -14753,7 +15027,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 216,
+   "elapsed": 308,
    "hardStopped": false
   },
   {
@@ -14791,7 +15065,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 289,
    "hardStopped": false
   },
   {
@@ -14829,7 +15103,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 506,
+   "elapsed": 230,
    "hardStopped": false
   },
   {
@@ -14867,7 +15141,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 303,
    "hardStopped": false
   },
   {
@@ -14904,7 +15178,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -14941,7 +15215,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 232,
    "hardStopped": false
   },
   {
@@ -14979,7 +15253,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 301,
+   "elapsed": 300,
    "hardStopped": false
   },
   {
@@ -15017,7 +15291,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -15054,7 +15328,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -15091,7 +15365,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -15112,7 +15386,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 464,
+    "total": 440,
     "createTypes": {
      "sphere": 2,
      "box": 5
@@ -15120,7 +15394,7 @@
     "actions": {
      "create": 7,
      "widget_create": 1,
-     "update": 456
+     "update": 432
     }
    },
    "stdout": "",
@@ -15131,7 +15405,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6441,
+   "elapsed": 6398,
    "hardStopped": false
   },
   {
@@ -15169,7 +15443,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -15206,7 +15480,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 203,
    "hardStopped": false
   },
   {
@@ -15219,7 +15493,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'hsv' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 16, in <module>\nNameError: name 'hsv' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 16, in <module>\nNameError: name 'hsv' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -15248,7 +15522,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'hsv'이라는 변수가 없습니다. 글자 그대로 출력하거나 비교하려면 따옴표로 감싸 문자열로 만들어야 합니다.→문자열이면 \"hsv\"처럼 따옴표를 붙이고, 변수면 먼저 hsv = 값 으로 만듭니다.16번 줄: print(hsv) # vector(0.16667, 1, 1)16번 줄 · NameError: name 'hsv' is not defined"
    ],
-   "elapsed": 284,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -15261,7 +15535,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'c' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'c' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'c' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -15290,7 +15564,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'c'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"c = 값\" 또는 \"def c():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: color.rgb_to_hsv(c)14번 줄 · NameError: name 'c' is not defined"
    ],
-   "elapsed": 284,
+   "elapsed": 307,
    "hardStopped": false
   },
   {
@@ -15303,7 +15577,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'c' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'c' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'c' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -15332,7 +15606,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'c'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"c = 값\" 또는 \"def c():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: color.hsv_to_rgb(c)14번 줄 · NameError: name 'c' is not defined"
    ],
-   "elapsed": 403,
+   "elapsed": 318,
    "hardStopped": false
   },
   {
@@ -15372,7 +15646,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 289,
+   "elapsed": 290,
    "hardStopped": false
   },
   {
@@ -15410,7 +15684,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 293,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -15423,7 +15697,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: compound.__init__() missing 1 required positional argument: 'objects'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: compound.__init__() missing 1 required positional argument: 'objects'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: compound.__init__() missing 1 required positional argument: 'objects'\n",
     "details": null
    },
    "meshes": 6,
@@ -15452,7 +15726,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다compound()를 부를 때 꼭 필요한 값 'objects'을(를) 넣지 않았습니다.→compound(objects) 처럼 빠진 값을 괄호 안에 넣습니다.14번 줄: compound(canvas=mycanvas, emissive=False)14번 줄 · TypeError: compound.__init__() missing 1 required positional argument: 'objects'"
    ],
-   "elapsed": 285,
+   "elapsed": 303,
    "hardStopped": false
   },
   {
@@ -15490,7 +15764,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 306,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -15528,7 +15802,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 213,
    "hardStopped": false
   },
   {
@@ -15567,7 +15841,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -15606,7 +15880,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 291,
    "hardStopped": false
   },
   {
@@ -15644,7 +15918,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 290,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -15682,7 +15956,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 283,
+   "elapsed": 303,
    "hardStopped": false
   },
   {
@@ -15719,7 +15993,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -15756,7 +16030,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 308,
    "hardStopped": false
   },
   {
@@ -15794,7 +16068,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 289,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -15832,7 +16106,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 291,
    "hardStopped": false
   },
   {
@@ -15870,7 +16144,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 292,
    "hardStopped": false
   },
   {
@@ -15908,7 +16182,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 289,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -15946,7 +16220,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -15984,7 +16258,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 290,
    "hardStopped": false
   },
   {
@@ -16022,7 +16296,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 292,
    "hardStopped": false
   },
   {
@@ -16060,7 +16334,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -16098,7 +16372,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 308,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -16136,7 +16410,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 346,
    "hardStopped": false
   },
   {
@@ -16174,7 +16448,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 806,
    "hardStopped": false
   },
   {
@@ -16212,7 +16486,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 312,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -16225,7 +16499,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'get_library' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'get_library' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'get_library' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -16267,7 +16541,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'read_local_file' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'read_local_file' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'read_local_file' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -16296,7 +16570,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'read_local_file'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"read_local_file = 값\" 또는 \"def read_local_file():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: myfile = read_local_file(scene.title_anchor)14번 줄 · NameError: name 'read_local_file' is not defined"
    ],
-   "elapsed": 297,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -16309,7 +16583,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'download' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'download' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'download' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -16338,7 +16612,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'download'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"download = 값\" 또는 \"def download():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: download(filename, data)14번 줄 · NameError: name 'download' is not defined"
    ],
-   "elapsed": 329,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -16378,7 +16652,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 1768,
+   "elapsed": 1876,
    "hardStopped": false
   },
   {
@@ -16416,7 +16690,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -16429,7 +16703,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'mygraph' is not defined. Did you mean: 'graph'?",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'mygraph' is not defined. Did you mean: 'graph'?\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'mygraph' is not defined. Did you mean: 'graph'?\n",
     "details": null
    },
    "meshes": 6,
@@ -16458,7 +16732,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'mygraph'이라는 이름이 없습니다. 철자가 비슷한 'graph'를 쓰려던 것으로 보입니다.→'mygraph'을 'graph'로 고칩니다.14번 줄: mygraph.select()14번 줄 · NameError: name 'mygraph' is not defined. Did you mean: 'graph'?"
    ],
-   "elapsed": 294,
+   "elapsed": 365,
    "hardStopped": false
   },
   {
@@ -16471,7 +16745,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'mygraph' is not defined. Did you mean: 'graph'?",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'mygraph' is not defined. Did you mean: 'graph'?\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'mygraph' is not defined. Did you mean: 'graph'?\n",
     "details": null
    },
    "meshes": 6,
@@ -16500,7 +16774,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'mygraph'이라는 이름이 없습니다. 철자가 비슷한 'graph'를 쓰려던 것으로 보입니다.→'mygraph'을 'graph'로 고칩니다.14번 줄: mygraph.delete()14번 줄 · NameError: name 'mygraph' is not defined. Did you mean: 'graph'?"
    ],
-   "elapsed": 351,
+   "elapsed": 290,
    "hardStopped": false
   },
   {
@@ -16513,7 +16787,7 @@
    "status": "error",
    "error": {
     "message": "AttributeError: type object 'graph' has no attribute 'get_selected'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nAttributeError: type object 'graph' has no attribute 'get_selected'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nAttributeError: type object 'graph' has no attribute 'get_selected'\n",
     "details": null
    },
    "meshes": 6,
@@ -16542,7 +16816,7 @@
     "실행 중",
     "✖그런 속성이 없습니다값에 없는 속성이나 메서드를 사용했습니다. 파이썬 메시지는 \"type object 'graph' has no attribute 'get_selected'\"입니다.→점(.) 뒤의 이름 철자와 점 앞 값의 종류를 확인합니다.14번 줄: current = graph.get_selected()14번 줄 · AttributeError: type object 'graph' has no attribute 'get_selected'"
    ],
-   "elapsed": 283,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -16581,7 +16855,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 357,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -16594,7 +16868,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'gc' is not defined. Did you forget to import 'gc'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'gc' is not defined. Did you forget to import 'gc'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'gc' is not defined. Did you forget to import 'gc'\n",
     "details": null
    },
    "meshes": 6,
@@ -16623,7 +16897,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'gc'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"gc = 값\" 또는 \"def gc():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: gc.plot(x, y)14번 줄 · NameError: name 'gc' is not defined. Did you forget to import 'gc'"
    ],
-   "elapsed": 293,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -16636,7 +16910,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'gc' is not defined. Did you forget to import 'gc'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'gc' is not defined. Did you forget to import 'gc'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'gc' is not defined. Did you forget to import 'gc'\n",
     "details": null
    },
    "meshes": 6,
@@ -16665,7 +16939,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'gc'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"gc = 값\" 또는 \"def gc():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: gc.delete()14번 줄 · NameError: name 'gc' is not defined. Did you forget to import 'gc'"
    ],
-   "elapsed": 317,
+   "elapsed": 305,
    "hardStopped": false
   },
   {
@@ -16704,7 +16978,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 301,
+   "elapsed": 382,
    "hardStopped": false
   },
   {
@@ -16743,7 +17017,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 292,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -16782,7 +17056,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 293,
+   "elapsed": 347,
    "hardStopped": false
   },
   {
@@ -16820,7 +17094,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 293,
+   "elapsed": 308,
    "hardStopped": false
   },
   {
@@ -16833,7 +17107,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'mygroup' is not defined. Did you mean: 'group'?",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'mygroup' is not defined. Did you mean: 'group'?\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'mygroup' is not defined. Did you mean: 'group'?\n",
     "details": null
    },
    "meshes": 6,
@@ -16862,7 +17136,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'mygroup'이라는 이름이 없습니다. 철자가 비슷한 'group'를 쓰려던 것으로 보입니다.→'mygroup'을 'group'로 고칩니다.14번 줄: mygroup.rotate( angle=a, axis=vec(0,1,0) )14번 줄 · NameError: name 'mygroup' is not defined. Did you mean: 'group'?"
    ],
-   "elapsed": 300,
+   "elapsed": 374,
    "hardStopped": false
   },
   {
@@ -16900,7 +17174,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 319,
+   "elapsed": 300,
    "hardStopped": false
   },
   {
@@ -16938,7 +17212,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 297,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -16978,7 +17252,7 @@
     "실행 중",
     "✖<student>:20: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?"
    ],
-   "elapsed": 298,
+   "elapsed": 340,
    "hardStopped": false
   },
   {
@@ -17016,7 +17290,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 288,
+   "elapsed": 268,
    "hardStopped": false
   },
   {
@@ -17054,7 +17328,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 324,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -17067,7 +17341,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'MathJax' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 17, in <module>\nNameError: name 'MathJax' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 17, in <module>\nNameError: name 'MathJax' is not defined\n",
     "details": null
    },
    "meshes": 7,
@@ -17097,7 +17371,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'MathJax'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→17번 줄보다 위쪽에 \"MathJax = 값\" 또는 \"def MathJax():\"가 있는지, 철자가 같은지 확인합니다.17번 줄: MathJax.Hub.Queue([\"Typeset\",MathJax.Hub])17번 줄 · NameError: name 'MathJax' is not defined"
    ],
-   "elapsed": 664,
+   "elapsed": 317,
    "hardStopped": false
   },
   {
@@ -17110,7 +17384,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'MathJax' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 15, in <module>\nNameError: name 'MathJax' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 15, in <module>\nNameError: name 'MathJax' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -17140,7 +17414,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'MathJax'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→15번 줄보다 위쪽에 \"MathJax = 값\" 또는 \"def MathJax():\"가 있는지, 철자가 같은지 확인합니다.15번 줄: MathJax.Hub.Queue([\"Typeset\",MathJax.Hub,scene.title])15번 줄 · NameError: name 'MathJax' is not defined"
    ],
-   "elapsed": 309,
+   "elapsed": 307,
    "hardStopped": false
   },
   {
@@ -17177,7 +17451,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 293,
+   "elapsed": 208,
    "hardStopped": false
   },
   {
@@ -17215,7 +17489,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -17253,7 +17527,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 294,
+   "elapsed": 289,
    "hardStopped": false
   },
   {
@@ -17290,7 +17564,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 323,
+   "elapsed": 259,
    "hardStopped": false
   },
   {
@@ -17327,7 +17601,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 315,
    "hardStopped": false
   },
   {
@@ -17365,7 +17639,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 308,
+   "elapsed": 323,
    "hardStopped": false
   },
   {
@@ -17405,7 +17679,7 @@
     "실행 중",
     "✖<student>:20: SyntaxWarning: \"is\" with 'int' literal. Did you mean \"==\"?\n<student>:22: SyntaxWarning: \"is\" with 'int' literal. Did you mean \"==\"?\n<student>:24: SyntaxWarning: \"is\" with 'int' literal. Did you mean \"==\"?"
    ],
-   "elapsed": 298,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -17443,7 +17717,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 283,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -17481,7 +17755,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -17518,7 +17792,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 281,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -17531,7 +17805,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: _Scene.waitfor() missing 1 required positional argument: 'event_names'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: _Scene.waitfor() missing 1 required positional argument: 'event_names'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: _Scene.waitfor() missing 1 required positional argument: 'event_names'\n",
     "details": null
    },
    "meshes": 6,
@@ -17560,7 +17834,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다_Scene.waitfor()를 부를 때 꼭 필요한 값 'event_names'을(를) 넣지 않았습니다.→_Scene.waitfor(event_names) 처럼 빠진 값을 괄호 안에 넣습니다.14번 줄: scene.waitfor()14번 줄 · TypeError: _Scene.waitfor() missing 1 required positional argument: 'event_names'"
    ],
-   "elapsed": 284,
+   "elapsed": 449,
    "hardStopped": false
   },
   {
@@ -17573,7 +17847,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: '_MouseState' object is not callable",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: '_MouseState' object is not callable\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: '_MouseState' object is not callable\n",
     "details": null
    },
    "meshes": 6,
@@ -17602,7 +17876,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다_MouseState 값은 함수가 아닌데 뒤에 괄호 ()를 붙였습니다. 함수와 같은 이름의 변수를 만들어 함수를 덮어썼을 때 자주 생깁니다.→괄호 앞 이름이 변수인지 함수인지 확인하고, 함수 이름(list, sphere, print 등)을 변수 이름으로 쓰지 않습니다.14번 줄: scene.mouse()14번 줄 · TypeError: '_MouseState' object is not callable"
    ],
-   "elapsed": 303,
+   "elapsed": 215,
    "hardStopped": false
   },
   {
@@ -17639,7 +17913,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 705,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -17681,7 +17955,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6287,
+   "elapsed": 6401,
    "hardStopped": false
   },
   {
@@ -17721,7 +17995,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6413,
+   "elapsed": 6363,
    "hardStopped": false
   },
   {
@@ -17734,7 +18008,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: '_MouseState' object is not callable",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: '_MouseState' object is not callable\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: '_MouseState' object is not callable\n",
     "details": null
    },
    "meshes": 6,
@@ -17763,7 +18037,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다_MouseState 값은 함수가 아닌데 뒤에 괄호 ()를 붙였습니다. 함수와 같은 이름의 변수를 만들어 함수를 덮어썼을 때 자주 생깁니다.→괄호 앞 이름이 변수인지 함수인지 확인하고, 함수 이름(list, sphere, print 등)을 변수 이름으로 쓰지 않습니다.14번 줄: mickey = scene.mouse()14번 줄 · TypeError: '_MouseState' object is not callable"
    ],
-   "elapsed": 299,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -17800,7 +18074,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 291,
    "hardStopped": false
   },
   {
@@ -17813,7 +18087,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'newcolor' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'newcolor' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'newcolor' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -17842,7 +18116,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'newcolor'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"newcolor = 값\" 또는 \"def newcolor():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: scene.bind('click', newcolor)14번 줄 · NameError: name 'newcolor' is not defined"
    ],
-   "elapsed": 290,
+   "elapsed": 292,
    "hardStopped": false
   },
   {
@@ -17880,7 +18154,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -17922,7 +18196,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6436,
+   "elapsed": 6397,
    "hardStopped": false
   },
   {
@@ -17960,7 +18234,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 289,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -17998,7 +18272,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 294,
    "hardStopped": false
   },
   {
@@ -18035,7 +18309,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 294,
    "hardStopped": false
   },
   {
@@ -18072,7 +18346,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 293,
+   "elapsed": 288,
    "hardStopped": false
   },
   {
@@ -18109,7 +18383,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 301,
+   "elapsed": 283,
    "hardStopped": false
   },
   {
@@ -18146,7 +18420,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 208,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -18184,7 +18458,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 302,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -18222,7 +18496,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 236,
    "hardStopped": false
   },
   {
@@ -18261,7 +18535,7 @@
     "실행 중",
     "✖<student>:17: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n<student>:19: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?\n<student>:21: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?"
    ],
-   "elapsed": 294,
+   "elapsed": 307,
    "hardStopped": false
   },
   {
@@ -18299,7 +18573,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 206,
    "hardStopped": false
   },
   {
@@ -18338,7 +18612,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 4677,
+   "elapsed": 5041,
    "hardStopped": false
   },
   {
@@ -18351,7 +18625,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: rate() missing 1 required positional argument: 'fps'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: rate() missing 1 required positional argument: 'fps'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: rate() missing 1 required positional argument: 'fps'\n",
     "details": null
    },
    "meshes": 6,
@@ -18380,7 +18654,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다rate()를 부를 때 꼭 필요한 값 'fps'을(를) 넣지 않았습니다.→rate(fps) 처럼 빠진 값을 괄호 안에 넣습니다.14번 줄: rate()14번 줄 · TypeError: rate() missing 1 required positional argument: 'fps'"
    ],
-   "elapsed": 292,
+   "elapsed": 307,
    "hardStopped": false
   },
   {
@@ -18417,7 +18691,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -18430,7 +18704,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'make_trail' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'make_trail' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'make_trail' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -18459,7 +18733,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'make_trail'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"make_trail = 값\" 또는 \"def make_trail():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: make_trail and rate()14번 줄 · NameError: name 'make_trail' is not defined"
    ],
-   "elapsed": 298,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -18497,7 +18771,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 389,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -18535,7 +18809,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 291,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -18573,7 +18847,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -18611,7 +18885,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 301,
+   "elapsed": 300,
    "hardStopped": false
   },
   {
@@ -18649,7 +18923,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -18662,7 +18936,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'x0' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'x0' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'x0' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -18691,7 +18965,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'x0'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"x0 = 값\" 또는 \"def x0():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: [ [x0,y0], [x1,y1], [x2,y2], ... ]14번 줄 · NameError: name 'x0' is not defined"
    ],
-   "elapsed": 286,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -18704,7 +18978,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'x0' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'x0' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'x0' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -18733,7 +19007,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'x0'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"x0 = 값\" 또는 \"def x0():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: [ vec(x0,y0,z0), vec(x1,y1,z1), ... ]14번 줄 · NameError: name 'x0' is not defined"
    ],
-   "elapsed": 284,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -18770,7 +19044,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 292,
    "hardStopped": false
   },
   {
@@ -18807,7 +19081,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -18844,7 +19118,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 244,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -18881,7 +19155,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 295,
+   "elapsed": 385,
    "hardStopped": false
   },
   {
@@ -18918,7 +19192,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 309,
+   "elapsed": 306,
    "hardStopped": false
   },
   {
@@ -18955,7 +19229,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 303,
    "hardStopped": false
   },
   {
@@ -18992,7 +19266,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 289,
+   "elapsed": 223,
    "hardStopped": false
   },
   {
@@ -19029,7 +19303,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 203,
    "hardStopped": false
   },
   {
@@ -19066,7 +19340,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -19103,7 +19377,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 305,
    "hardStopped": false
   },
   {
@@ -19140,7 +19414,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 305,
    "hardStopped": false
   },
   {
@@ -19251,7 +19525,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 300,
+   "elapsed": 288,
    "hardStopped": false
   },
   {
@@ -19288,7 +19562,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 283,
+   "elapsed": 294,
    "hardStopped": false
   },
   {
@@ -19325,7 +19599,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -19362,7 +19636,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 283,
+   "elapsed": 295,
    "hardStopped": false
   },
   {
@@ -19399,7 +19673,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 290,
    "hardStopped": false
   },
   {
@@ -19412,7 +19686,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'outer' is not defined. Did you mean: 'iter'?",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'outer' is not defined. Did you mean: 'iter'?\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'outer' is not defined. Did you mean: 'iter'?\n",
     "details": null
    },
    "meshes": 6,
@@ -19441,7 +19715,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'outer'이라는 이름이 없습니다. 철자가 비슷한 'iter'를 쓰려던 것으로 보입니다.→'outer'을 'iter'로 고칩니다.14번 줄: extrusion(path=[vec(0,0,0), vec(0,0,0.2)], shape=[outer, inner])14번 줄 · NameError: name 'outer' is not defined. Did you mean: 'iter'?"
    ],
-   "elapsed": 286,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -19481,7 +19755,7 @@
     "실행 중",
     "✖<student>:18: SyntaxWarning: \"is\" with 'str' literal. Did you mean \"==\"?"
    ],
-   "elapsed": 284,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -19519,7 +19793,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 282,
+   "elapsed": 324,
    "hardStopped": false
   },
   {
@@ -19532,7 +19806,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: rate() missing 1 required positional argument: 'fps'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: rate() missing 1 required positional argument: 'fps'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nTypeError: rate() missing 1 required positional argument: 'fps'\n",
     "details": null
    },
    "meshes": 6,
@@ -19561,7 +19835,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다rate()를 부를 때 꼭 필요한 값 'fps'을(를) 넣지 않았습니다.→rate(fps) 처럼 빠진 값을 괄호 안에 넣습니다.14번 줄: rate()14번 줄 · TypeError: rate() missing 1 required positional argument: 'fps'"
    ],
-   "elapsed": 285,
+   "elapsed": 292,
    "hardStopped": false
   },
   {
@@ -19635,7 +19909,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 293,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -19673,7 +19947,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 299,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -19711,7 +19985,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 285,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -19751,7 +20025,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6366,
+   "elapsed": 6372,
    "hardStopped": false
   },
   {
@@ -19790,7 +20064,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 380,
+   "elapsed": 479,
    "hardStopped": false
   },
   {
@@ -19830,7 +20104,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6413,
+   "elapsed": 6369,
    "hardStopped": false
   },
   {
@@ -19868,7 +20142,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 321,
+   "elapsed": 310,
    "hardStopped": false
   },
   {
@@ -19909,7 +20183,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6366,
+   "elapsed": 6408,
    "hardStopped": false
   },
   {
@@ -19946,7 +20220,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 331,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -19986,7 +20260,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6358,
+   "elapsed": 6369,
    "hardStopped": false
   },
   {
@@ -20023,7 +20297,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 357,
    "hardStopped": false
   },
   {
@@ -20065,7 +20339,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6415,
+   "elapsed": 6374,
    "hardStopped": false
   },
   {
@@ -20103,7 +20377,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 304,
+   "elapsed": 330,
    "hardStopped": false
   },
   {
@@ -20141,7 +20415,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6390,
+   "elapsed": 6507,
    "hardStopped": false
   },
   {
@@ -20183,7 +20457,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6374,
+   "elapsed": 6395,
    "hardStopped": false
   },
   {
@@ -20223,7 +20497,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6645,
+   "elapsed": 6409,
    "hardStopped": false
   },
   {
@@ -20236,7 +20510,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'key_pressed' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'key_pressed' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'key_pressed' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -20265,7 +20539,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'key_pressed'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"key_pressed = 값\" 또는 \"def key_pressed():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: scene.bind('keydown', key_pressed)14번 줄 · NameError: name 'key_pressed' is not defined"
    ],
-   "elapsed": 804,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -20303,7 +20577,7 @@
     "실행 중",
     "<11, 22, 33>"
    ],
-   "elapsed": 447,
+   "elapsed": 314,
    "hardStopped": false
   },
   {
@@ -20341,7 +20615,7 @@
     "실행 중",
     "<2, 4, 6>"
    ],
-   "elapsed": 489,
+   "elapsed": 288,
    "hardStopped": false
   },
   {
@@ -20379,7 +20653,7 @@
     "실행 중",
     "3.7416573867739413\n37.416573867739416"
    ],
-   "elapsed": 484,
+   "elapsed": 307,
    "hardStopped": false
   },
   {
@@ -20417,7 +20691,7 @@
     "실행 중",
     "<0.2673, 0.5345, 0.8018>\n<0.2673, 0.5345, 0.8018>"
    ],
-   "elapsed": 370,
+   "elapsed": 288,
    "hardStopped": false
   },
   {
@@ -20455,7 +20729,7 @@
     "실행 중",
     "140.0\n<0, 0, 0>"
    ],
-   "elapsed": 1608,
+   "elapsed": 294,
    "hardStopped": false
   },
   {
@@ -20493,7 +20767,7 @@
     "실행 중",
     "1.2490457723982544"
    ],
-   "elapsed": 571,
+   "elapsed": 290,
    "hardStopped": false
   },
   {
@@ -20531,7 +20805,7 @@
     "실행 중",
     "<0, 1, 0>"
    ],
-   "elapsed": 535,
+   "elapsed": 298,
    "hardStopped": false
   },
   {
@@ -20569,7 +20843,7 @@
     "실행 중",
     "1.0"
    ],
-   "elapsed": 370,
+   "elapsed": 314,
    "hardStopped": false
   },
   {
@@ -20582,7 +20856,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'myvec1' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'myvec1' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'myvec1' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -20611,7 +20885,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'myvec1'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"myvec1 = 값\" 또는 \"def myvec1():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: myvec2 = rotate( myvec1, angle=a, axis=vector(x,y,z) )14번 줄 · NameError: name 'myvec1' is not defined"
    ],
-   "elapsed": 495,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -20649,7 +20923,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 259,
+   "elapsed": 297,
    "hardStopped": false
   },
   {
@@ -20686,7 +20960,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 422,
+   "elapsed": 303,
    "hardStopped": false
   },
   {
@@ -20699,7 +20973,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'myvertex0' is not defined. Did you mean: 'vertex'?",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'myvertex0' is not defined. Did you mean: 'vertex'?\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'myvertex0' is not defined. Did you mean: 'vertex'?\n",
     "details": null
    },
    "meshes": 6,
@@ -20728,7 +21002,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'myvertex0'이라는 이름이 없습니다. 철자가 비슷한 'vertex'를 쓰려던 것으로 보입니다.→'myvertex0'을 'vertex'로 고칩니다.14번 줄: T = triangle( v0=myvertex0, v1=myvertex1, v2=myvertex2 )14번 줄 · NameError: name 'myvertex0' is not defined. Did you mean: 'vertex'?"
    ],
-   "elapsed": 294,
+   "elapsed": 289,
    "hardStopped": false
   },
   {
@@ -20741,7 +21015,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'myvertexlist' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'myvertexlist' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'myvertexlist' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -20770,7 +21044,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'myvertexlist'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"myvertexlist = 값\" 또는 \"def myvertexlist():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: T = triangle( vs = myvertexlist )14번 줄 · NameError: name 'myvertexlist' is not defined"
    ],
-   "elapsed": 296,
+   "elapsed": 290,
    "hardStopped": false
   },
   {
@@ -20783,7 +21057,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'c' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'c' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'c' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -20825,7 +21099,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'c' is not defined",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'c' is not defined\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'c' is not defined\n",
     "details": null
    },
    "meshes": 6,
@@ -20854,7 +21128,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'c'이라는 변수나 함수를 파이썬이 알지 못합니다. 아직 만들지 않았거나, 철자나 대소문자가 다르거나, 만든 줄보다 먼저 사용했을 때 생깁니다.→14번 줄보다 위쪽에 \"c = 값\" 또는 \"def c():\"가 있는지, 철자가 같은지 확인합니다.14번 줄: Q = quad( v0 = a, v1 = b, v2 = c, v3 = d )14번 줄 · NameError: name 'c' is not defined"
    ],
-   "elapsed": 304,
+   "elapsed": 292,
    "hardStopped": false
   },
   {
@@ -20867,7 +21141,7 @@
    "status": "error",
    "error": {
     "message": "NameError: name 'vslider' is not defined. Did you mean: 'slider'?",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'vslider' is not defined. Did you mean: 'slider'?\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 14, in <module>\nNameError: name 'vslider' is not defined. Did you mean: 'slider'?\n",
     "details": null
    },
    "meshes": 6,
@@ -20896,7 +21170,7 @@
     "실행 중",
     "✖이름을 찾을 수 없습니다'vslider'이라는 이름이 없습니다. 철자가 비슷한 'slider'를 쓰려던 것으로 보입니다.→'vslider'을 'slider'로 고칩니다.14번 줄: myspeedtxt.text = f'omega = {vslider.value:.1e} radians/s'14번 줄 · NameError: name 'vslider' is not defined. Did you mean: 'slider'?"
    ],
-   "elapsed": 294,
+   "elapsed": 299,
    "hardStopped": false
   },
   {
@@ -20917,7 +21191,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 98205,
+    "total": 98664,
     "createTypes": {
      "sphere": 125,
      "helix": 108
@@ -20925,7 +21199,7 @@
     "actions": {
      "scene": 2,
      "create": 233,
-     "update": 97970
+     "update": 98429
     }
    },
    "stdout": "",
@@ -20936,7 +21210,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 8100,
+   "elapsed": 8471,
    "hardStopped": false
   },
   {
@@ -20976,7 +21250,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 272,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -20997,15 +21271,15 @@
     "lights": 2
    },
    "commands": {
-    "total": 3615,
+    "total": 3311,
     "createTypes": {
      "sphere": 2
     },
     "actions": {
      "scene": 1,
      "create": 2,
-     "update": 1806,
-     "trail_update": 1806
+     "update": 1654,
+     "trail_update": 1654
     }
    },
    "stdout": "",
@@ -21016,7 +21290,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6761,
+   "elapsed": 6392,
    "hardStopped": false
   },
   {
@@ -21037,7 +21311,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 1883,
+    "total": 1669,
     "createTypes": {
      "box": 5,
      "sphere": 1
@@ -21045,8 +21319,8 @@
     "actions": {
      "scene": 1,
      "create": 6,
-     "update": 938,
-     "trail_update": 938
+     "update": 831,
+     "trail_update": 831
     }
    },
    "stdout": "",
@@ -21057,7 +21331,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6683,
+   "elapsed": 6774,
    "hardStopped": false
   },
   {
@@ -21078,7 +21352,7 @@
     "lights": 5
    },
    "commands": {
-    "total": 3446,
+    "total": 3180,
     "createTypes": {
      "arrow": 2,
      "box": 1,
@@ -21089,7 +21363,7 @@
     "actions": {
      "scene": 1,
      "create": 8,
-     "update": 3437
+     "update": 3171
     }
    },
    "stdout": "",
@@ -21100,7 +21374,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6528,
+   "elapsed": 6443,
    "hardStopped": false
   },
   {
@@ -21113,7 +21387,7 @@
    "status": "error",
    "error": {
     "message": "ModuleNotFoundError: No module named 'ipywidgets'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 1, in <module>\nModuleNotFoundError: No module named 'ipywidgets'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 1, in <module>\nModuleNotFoundError: No module named 'ipywidgets'\n",
     "details": null
    },
    "meshes": 0,
@@ -21137,7 +21411,7 @@
     "실행 중",
     "✖모듈을 찾을 수 없습니다'ipywidgets' 모듈은 브라우저 안의 파이썬에서 쓸 수 없습니다. 표준 라이브러리(math, random, time, json, statistics, itertools, collections, datetime 등)와 numpy, pandas, matplotlib, scipy, sympy, sklearn는 쓸 수 있습니다.→import ipywidgets 줄을 지우고, 3D·소리·그래프는 VPyLab의 내장 함수(sphere, play_note, graph 등)를 사용합니다.1번 줄: import ipywidgets as wd1번 줄 · ModuleNotFoundError: No module named 'ipywidgets'"
    ],
-   "elapsed": 297,
+   "elapsed": 296,
    "hardStopped": false
   },
   {
@@ -21150,7 +21424,7 @@
    "status": "error",
    "error": {
     "message": "ModuleNotFoundError: No module named 'ipywidgets'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 1, in <module>\nModuleNotFoundError: No module named 'ipywidgets'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 1, in <module>\nModuleNotFoundError: No module named 'ipywidgets'\n",
     "details": null
    },
    "meshes": 0,
@@ -21174,7 +21448,7 @@
     "실행 중",
     "✖모듈을 찾을 수 없습니다'ipywidgets' 모듈은 브라우저 안의 파이썬에서 쓸 수 없습니다. 표준 라이브러리(math, random, time, json, statistics, itertools, collections, datetime 등)와 numpy, pandas, matplotlib, scipy, sympy, sklearn는 쓸 수 있습니다.→import ipywidgets 줄을 지우고, 3D·소리·그래프는 VPyLab의 내장 함수(sphere, play_note, graph 등)를 사용합니다.1번 줄: import ipywidgets as wd1번 줄 · ModuleNotFoundError: No module named 'ipywidgets'"
    ],
-   "elapsed": 293,
+   "elapsed": 303,
    "hardStopped": false
   },
   {
@@ -21195,7 +21469,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 1960,
+    "total": 1792,
     "createTypes": {
      "box": 1,
      "cone": 1,
@@ -21206,7 +21480,7 @@
      "scene": 7,
      "widget_create": 7,
      "create": 4,
-     "update": 1941,
+     "update": 1773,
      "wtext_create": 1
     }
    },
@@ -21218,7 +21492,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6451,
+   "elapsed": 6623,
    "hardStopped": false
   },
   {
@@ -21255,7 +21529,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 283,
+   "elapsed": 305,
    "hardStopped": false
   },
   {
@@ -21268,7 +21542,7 @@
    "status": "error",
    "error": {
     "message": "ModuleNotFoundError: No module named 'ipywidgets'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5779, in _vpylab_run\n  File \"<student>\", line 1, in <module>\nModuleNotFoundError: No module named 'ipywidgets'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5852, in _vpylab_run\n  File \"<student>\", line 1, in <module>\nModuleNotFoundError: No module named 'ipywidgets'\n",
     "details": null
    },
    "meshes": 0,
@@ -21292,7 +21566,7 @@
     "실행 중",
     "✖모듈을 찾을 수 없습니다'ipywidgets' 모듈은 브라우저 안의 파이썬에서 쓸 수 없습니다. 표준 라이브러리(math, random, time, json, statistics, itertools, collections, datetime 등)와 numpy, pandas, matplotlib, scipy, sympy, sklearn는 쓸 수 있습니다.→import ipywidgets 줄을 지우고, 3D·소리·그래프는 VPyLab의 내장 함수(sphere, play_note, graph 등)를 사용합니다.1번 줄: import ipywidgets as wd1번 줄 · ModuleNotFoundError: No module named 'ipywidgets'"
    ],
-   "elapsed": 300,
+   "elapsed": 301,
    "hardStopped": false
   },
   {
@@ -21331,7 +21605,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 298,
+   "elapsed": 302,
    "hardStopped": false
   },
   {
@@ -21369,7 +21643,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 287,
+   "elapsed": 312,
    "hardStopped": false
   },
   {
@@ -21407,7 +21681,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 292,
+   "elapsed": 316,
    "hardStopped": false
   },
   {
@@ -21428,7 +21702,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 141563,
+    "total": 132953,
     "createTypes": {
      "box": 5,
      "cylinder": 2
@@ -21436,7 +21710,7 @@
     "actions": {
      "scene": 3,
      "create": 7,
-     "update": 141553
+     "update": 132943
     }
    },
    "stdout": "",
@@ -21447,7 +21721,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 10970,
+   "elapsed": 9432,
    "hardStopped": false
   },
   {
@@ -21468,7 +21742,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 14490,
+    "total": 13437,
     "createTypes": {
      "extrusion": 307,
      "sphere": 49,
@@ -21478,7 +21752,7 @@
     "actions": {
      "scene": 3,
      "create": 384,
-     "update": 14083,
+     "update": 13030,
      "compound": 19,
      "widget_create": 1
     }
@@ -21491,7 +21765,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 7153,
+   "elapsed": 7094,
    "hardStopped": false
   },
   {
@@ -21512,7 +21786,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 3878,
+    "total": 3534,
     "createTypes": {
      "extrusion": 5,
      "ring": 1,
@@ -21521,7 +21795,7 @@
     "actions": {
      "scene": 5,
      "create": 7,
-     "update": 3865,
+     "update": 3521,
      "widget_create": 1
     }
    },
@@ -21533,7 +21807,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6818,
+   "elapsed": 6987,
    "hardStopped": false
   },
   {
@@ -21577,7 +21851,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6368,
+   "elapsed": 6404,
    "hardStopped": false
   },
   {
@@ -21622,7 +21896,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6427,
+   "elapsed": 6419,
    "hardStopped": false
   },
   {
@@ -21643,7 +21917,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 6190,
+    "total": 5560,
     "createTypes": {
      "cylinder": 2,
      "sphere": 3,
@@ -21653,8 +21927,8 @@
      "scene": 2,
      "create": 7,
      "compound": 1,
-     "update": 5296,
-     "trail_update": 883,
+     "update": 4756,
+     "trail_update": 793,
      "trail_clear": 1
     }
    },
@@ -21666,7 +21940,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6743,
+   "elapsed": 6507,
    "hardStopped": false
   },
   {
@@ -21687,7 +21961,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 32740,
+    "total": 29811,
     "createTypes": {
      "curve": 6,
      "sphere": 100
@@ -21699,8 +21973,8 @@
      "graph_create": 1,
      "graph_series_create": 2,
      "graph_series_plot": 302,
-     "update": 32000,
-     "trail_update": 320
+     "update": 29100,
+     "trail_update": 291
     }
    },
    "stdout": "",
@@ -21711,7 +21985,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6984,
+   "elapsed": 7115,
    "hardStopped": false
   },
   {
@@ -21753,7 +22027,7 @@
     "📦 numpy 설치 중...",
     "✅ numpy 설치 완료!"
    ],
-   "elapsed": 1929,
+   "elapsed": 2120,
    "hardStopped": false
   },
   {
@@ -21791,7 +22065,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 286,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -21837,7 +22111,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 296,
+   "elapsed": 618,
    "hardStopped": false
   },
   {
@@ -21877,7 +22151,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6465,
+   "elapsed": 6592,
    "hardStopped": false
   },
   {
@@ -21898,14 +22172,14 @@
     "lights": 2
    },
    "commands": {
-    "total": 243002,
+    "total": 233002,
     "createTypes": {
      "box": 1000
     },
     "actions": {
      "scene": 2,
      "create": 1000,
-     "update": 242000
+     "update": 232000
     }
    },
    "stdout": "",
@@ -21916,7 +22190,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 10365,
+   "elapsed": 11327,
    "hardStopped": false
   },
   {
@@ -21937,7 +22211,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 292,
+    "total": 275,
     "createTypes": {
      "curve": 1
     },
@@ -21945,7 +22219,7 @@
      "scene": 4,
      "widget_create": 1,
      "create": 1,
-     "update": 286
+     "update": 269
     }
    },
    "stdout": "",
@@ -21956,7 +22230,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6473,
+   "elapsed": 6527,
    "hardStopped": false
   },
   {
@@ -21995,7 +22269,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6549,
+   "elapsed": 6449,
    "hardStopped": false
   },
   {
@@ -22008,7 +22282,7 @@
    "status": "error",
    "error": {
     "message": "TypeError: vertex.__init__() got an unexpected keyword argument 'texpos'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 37, in <module>\nTypeError: vertex.__init__() got an unexpected keyword argument 'texpos'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 37, in <module>\nTypeError: vertex.__init__() got an unexpected keyword argument 'texpos'\n",
     "details": null
    },
    "meshes": 0,
@@ -22034,7 +22308,7 @@
     "실행 중",
     "✖값의 종류가 맞지 않습니다vertex()에는 'texpos'라는 옵션이 없습니다. 옵션 이름의 철자가 다르거나 다른 객체의 옵션을 썼을 때 생깁니다. 자주 쓰는 옵션은 pos, radius, size, axis, color, opacity, length입니다.→'texpos'의 철자를 확인하고 있는 옵션 이름으로 고칩니다.37번 줄: verts[y].append(vertex(pos=vector(-0.5+x*dx,-0.5+y*dy,0), normal=vector(0,0,1), texpos=vector(x/w,y/h,0), shininess= 0))37번 줄 · TypeError: vertex.__init__() got an unexpected keyword argument 'texpos'"
    ],
-   "elapsed": 373,
+   "elapsed": 305,
    "hardStopped": false
   },
   {
@@ -22055,7 +22329,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 15216,
+    "total": 13455,
     "createTypes": {
      "curve": 3,
      "sphere": 20
@@ -22064,9 +22338,9 @@
      "scene": 4,
      "create": 23,
      "curve_append": 6,
-     "update": 7614,
-     "trail_update": 7559,
-     "trail_clear": 10
+     "update": 6733,
+     "trail_update": 6681,
+     "trail_clear": 8
     }
    },
    "stdout": "",
@@ -22077,7 +22351,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6730,
+   "elapsed": 6663,
    "hardStopped": false
   },
   {
@@ -22128,7 +22402,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6551,
+   "elapsed": 6329,
    "hardStopped": false
   },
   {
@@ -22141,7 +22415,7 @@
    "status": "error",
    "error": {
     "message": "ModuleNotFoundError: No module named 'ipywidgets'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 1, in <module>\nModuleNotFoundError: No module named 'ipywidgets'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 1, in <module>\nModuleNotFoundError: No module named 'ipywidgets'\n",
     "details": null
    },
    "meshes": 0,
@@ -22165,7 +22439,7 @@
     "실행 중",
     "✖모듈을 찾을 수 없습니다'ipywidgets' 모듈은 브라우저 안의 파이썬에서 쓸 수 없습니다. 표준 라이브러리(math, random, time, json, statistics, itertools, collections, datetime 등)와 numpy, pandas, matplotlib, scipy, sympy, sklearn는 쓸 수 있습니다.→import ipywidgets 줄을 지우고, 3D·소리·그래프는 VPyLab의 내장 함수(sphere, play_note, graph 등)를 사용합니다.1번 줄: import ipywidgets as wd1번 줄 · ModuleNotFoundError: No module named 'ipywidgets'"
    ],
-   "elapsed": 291,
+   "elapsed": 293,
    "hardStopped": false
   },
   {
@@ -22178,7 +22452,7 @@
    "status": "error",
    "error": {
     "message": "ModuleNotFoundError: No module named 'ipywidgets'",
-    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5781, in _vpylab_run\n  File \"<student>\", line 1, in <module>\nModuleNotFoundError: No module named 'ipywidgets'\n",
+    "raw": "Traceback (most recent call last):\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 597, in eval_code_async\n    await CodeRunner(\n  File \"/lib/python312.zip/_pyodide/_base.py\", line 413, in run_async\n    await coroutine\n  File \"<vpylab-runner>\", line 1, in <module>\n  File \"<vpython-api>\", line 5854, in _vpylab_run\n  File \"<student>\", line 1, in <module>\nModuleNotFoundError: No module named 'ipywidgets'\n",
     "details": null
    },
    "meshes": 0,
@@ -22244,7 +22518,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6376,
+   "elapsed": 6385,
    "hardStopped": false
   },
   {
@@ -22282,7 +22556,7 @@
    "consoleLines": [
     "실행 중"
    ],
-   "elapsed": 441,
+   "elapsed": 433,
    "hardStopped": false
   },
   {
@@ -22303,7 +22577,7 @@
     "lights": 2
    },
    "commands": {
-    "total": 1074,
+    "total": 1004,
     "createTypes": {
      "label": 1,
      "box": 2,
@@ -22321,7 +22595,7 @@
      "scene": 5,
      "create": 12,
      "curve_append": 239,
-     "update": 818
+     "update": 748
     }
    },
    "stdout": "",
@@ -22332,7 +22606,7 @@
     "실행 중",
     "⚠⏹ 실행 중지됨"
    ],
-   "elapsed": 6511,
+   "elapsed": 6394,
    "hardStopped": false
   }
  ]
