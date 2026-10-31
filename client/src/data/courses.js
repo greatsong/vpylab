@@ -20,6 +20,123 @@
 
 const courses = [
   // ════════════════════════════════════════════════════════
+  // [입문 0] 처음 파이썬 — 소리와 빛으로 시작하기 (7단계, 1~2줄에서 시작)
+  // ════════════════════════════════════════════════════════
+  {
+    id: 'beg-first-steps',
+    track: 'beginner',
+    level: 1,
+    title: { ko: '처음 파이썬: 소리와 빛으로 시작', en: 'First Python: Start with Sound and Light' },
+    subject: '코딩',
+    description:
+      '2줄짜리 소리 내기로 시작해, 주어진 코드에서 값 하나씩 바꿔 보며 빛·반복문·조건문·랜덤·리스트를 체험한다. 모든 코드는 15줄 이하.',
+    targetGrade: '중1~고1',
+    sessions: 7,
+    icon: '🔔',
+    color: 'amber',
+    starlightTheme: 'amber',
+    lessons: [
+      {
+        id: 'beg-first-steps-1',
+        title: { ko: '1단계 소리 내기', en: 'Step 1: Make a Sound' },
+        summary: '두 줄로 "도" 소리를 낸다. 따옴표 안의 음 이름만 "미"나 "솔5"로 바꿔 본다(5는 높은 옥타브).',
+        code: `from vpython import *
+음표("도")
+`,
+      },
+      {
+        id: 'beg-first-steps-2',
+        title: { ko: '2단계 빛 켜기', en: 'Step 2: Turn on a Light' },
+        summary: '기본 조명을 끄고 빨간 빛 하나로 회색 공을 비춘다. 색 이름(\'하늘\', \'노랑\', \'보라\')이나 pos의 첫 숫자(좌우)를 바꿔 어디가 밝아지는지 본다.',
+        code: `from vpython import *
+scene.lights = []
+sphere(color=색상['회색'])
+local_light(pos=vector(2, 2, 2), color=색상['빨강'], intensity=50)
+효과음("coin")
+`,
+      },
+      {
+        id: 'beg-first-steps-3',
+        title: { ko: '3단계 반복문: 무지개 계이름', en: 'Step 3: Loop the Rainbow Scale' },
+        summary: 'for가 7번 돌며 공을 하나씩 놓고 계이름을 하나씩 낸다. i는 0부터 6까지 변한다. 0.3을 0.1이나 0.6으로 바꿔 연주 속도를 비교한다(7은 색과 글자 개수라 그대로 둔다).',
+        code: `from vpython import *
+for i in range(7):
+    sphere(pos=vector(i - 3, 0, 0), radius=0.4, color=무지개[i])
+    음표("도레미파솔라시"[i], 0.3)
+효과음("levelup")
+`,
+      },
+      {
+        id: 'beg-first-steps-4',
+        title: { ko: '4단계 조건문: 튀는 공', en: 'Step 4: If the Ball Hits the Floor' },
+        summary: 'while로 공을 계속 떨어뜨리고, if로 바닥에 닿는 순간을 잡아 튀어 오르며 소리를 낸다. 0.3을 0.2나 0.5로 바꿔 튀는 높이를 비교한다. 끝나지 않는 프로그램이니 정지 버튼으로 멈춘다.',
+        code: `from vpython import *
+scene.range = 4
+box(pos=vector(0, -3, 0), size=vector(6, 0.2, 3), color=색상['회색'])
+공 = sphere(pos=vector(0, 3, 0), radius=0.5, color=색상['노랑'])
+속도 = 0
+while True:
+    rate(60)
+    속도 = 속도 - 0.01
+    공.pos.y = 공.pos.y + 속도
+    if 공.pos.y < -2.4:
+        속도 = 0.3
+        효과음("jump")
+`,
+      },
+      {
+        id: 'beg-first-steps-5',
+        title: { ko: '5단계 랜덤: 별과 소리', en: 'Step 5: Random Stars and Sounds' },
+        summary: 'random.uniform은 범위 안의 아무 수, random.choice는 목록에서 아무 하나를 고른다. 실행할 때마다 다른 밤하늘이 나온다. 30을 100으로 바꿔 본다.',
+        code: `from vpython import *
+import random
+for i in range(30):
+    x = random.uniform(-5, 5)
+    y = random.uniform(-3, 3)
+    sphere(pos=vector(x, y, 0), radius=0.2, color=random.choice(무지개))
+    소리(random.randint(300, 900), 0.1)
+    sleep(0.1)
+`,
+      },
+      {
+        id: 'beg-first-steps-6',
+        title: { ko: '6단계 리스트: 멜로디 건반', en: 'Step 6: A Melody List on Keys' },
+        summary: '멜로디는 음 이름 7개를 담은 리스트, 건반들은 상자 7개를 담은 리스트다. 번호 i로 둘을 같이 꺼낸다. 멜로디의 음을 바꿔 좋아하는 노래를 만든다(개수는 7개로 유지).',
+        code: `from vpython import *
+멜로디 = ["도", "미", "솔", "도5", "솔", "미", "도"]
+건반들 = []
+for i in range(7):
+    건반 = box(pos=vector(i - 3, 0, 0), size=vector(0.9, 0.3, 2), color=색상['흰색'])
+    건반들.append(건반)
+for i in range(7):
+    건반들[i].color = 무지개[i]
+    음표(멜로디[i], 0.4)
+    건반들[i].color = 색상['흰색']
+`,
+      },
+      {
+        id: 'beg-first-steps-7',
+        title: { ko: '7단계 빛과 소리 쇼', en: 'Step 7: Light and Sound Show' },
+        summary: '반 초마다(프레임 % 30 == 0) 랜덤 음을 내고, 그때 빛 색이 바뀌며 공이 커졌다가 줄어든다. 30을 15로 바꾸면 박자가 빨라진다. 멜로디는 4개로 유지한다.',
+        code: `from vpython import *
+import random
+scene.lights = []
+공 = sphere(radius=1, color=색상['회색'])
+빛 = local_light(pos=vector(0, 2, 2), color=색상['보라'], intensity=60)
+멜로디 = ["도", "미", "솔", "도5"]
+for 프레임 in range(1, 601):
+    rate(60)
+    if 프레임 % 30 == 0:
+        음번호 = random.randint(0, 3)
+        play_note(멜로디[음번호], 0.4)
+        빛.color = 무지개[음번호 * 2]
+        공.radius = 1.4
+    공.radius = 공.radius - (공.radius - 1) * 0.1
+`,
+      },
+    ],
+  },
+  // ════════════════════════════════════════════════════════
   // [입문 1] 도형 친구들 만나기 — 첫 3D 객체와 좌표
   // ════════════════════════════════════════════════════════
   {

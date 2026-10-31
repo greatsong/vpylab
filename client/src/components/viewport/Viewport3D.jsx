@@ -5,6 +5,8 @@ import useAppStore from '../../stores/appStore';
 import CameraSystem from '../../engine/camera-system';
 import { postCameraState, postEvent, postMouseState, postPressedKeys } from '../../engine/pyodide-singleton';
 import { isEventBound } from '../../engine/vpython-bridge';
+import useFullscreen from '../../hooks/useFullscreen';
+import { useOptionalI18n } from '../../i18n/useI18n';
 
 const THEME_BG = {
   'creative-light': 0xf8fafc,
@@ -18,8 +20,17 @@ const THEME_BG = {
   'cyber-neon': 0x0a0a0f,
 };
 
-export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPosition }) {
+/**
+ * @param {object} props
+ * @param {{ onRun?: () => void, onStop?: () => void, isRunning?: boolean, isReady?: boolean }} [props.controls]
+ *   전체 화면 안에서도 실행·정지할 수 있게 부모가 넘기는 핸들러. 전체 화면일 때만 화면에 그립니다.
+ */
+export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPosition, controls }) {
   const containerRef = useRef(null);
+  const wrapperRef = useRef(null);
+  const fullscreen = useFullscreen(wrapperRef);
+  // 교실 앱은 I18nProvider 없이 이 구성 요소를 쓰므로 선택적 훅을 씁니다.
+  const { t } = useOptionalI18n();
   const rendererRef = useRef(null);
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
@@ -334,13 +345,37 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
     }
   });
 
+  const overlayButtonStyle = {
+    color: 'var(--color-text-muted)',
+    backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
+    border: '1px solid transparent',
+  };
+
   return (
     <div
+      ref={wrapperRef}
       className="w-full h-full relative"
-      style={{ touchAction: 'none' }}
+      style={{
+        touchAction: 'none',
+        // 전체 화면 API가 없는 브라우저(iOS Safari)는 화면을 채우는 고정 배치로 대체합니다.
+        ...(fullscreen.pseudo ? { position: 'fixed', inset: 0, zIndex: 9999, width: '100vw', height: '100vh', backgroundColor: 'var(--color-bg-primary)' } : {}),
+      }}
       data-vpylab-viewport=""
+      data-fullscreen={fullscreen.active ? 'true' : undefined}
     >
       <div ref={containerRef} className="w-full h-full" />
+
+      {/* 전체 화면 안의 실행·정지 — 부모 도구 모음이 가려지므로 여기서 그립니다. */}
+      {fullscreen.active && controls && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2" data-vpylab-fullscreen-controls="">
+          {controls.isRunning ? (
+            <button type="button" onClick={controls.onStop} className="toolbar-btn --stop">{t('editor.stop')}</button>
+          ) : (
+            <button type="button" onClick={controls.onRun} disabled={controls.isReady === false} className="toolbar-btn --run">{t('editor.run')}</button>
+          )}
+          <button type="button" onClick={() => { void fullscreen.exit(); }} className="toolbar-btn">{t('viewport.exitFullscreen')} (Esc)</button>
+        </div>
+      )}
 
       {/* scene.title / scene.caption */}
       <div
@@ -358,6 +393,19 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
 
       {/* 카메라 모드 표시 + 옵션 토글 */}
       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+        {/* 전체 화면 */}
+        <button
+          type="button"
+          onClick={() => { void fullscreen.toggle(); }}
+          className="text-xs px-2 py-0.5 rounded cursor-pointer"
+          style={fullscreen.active ? { ...overlayButtonStyle, color: 'var(--color-accent)', border: '1px solid var(--color-accent)' } : overlayButtonStyle}
+          title={fullscreen.active ? t('viewport.exitFullscreen') : t('viewport.fullscreen')}
+          aria-label={fullscreen.active ? t('viewport.exitFullscreen') : t('viewport.fullscreen')}
+          aria-pressed={fullscreen.active}
+          data-vpylab-fullscreen-toggle=""
+        >
+          {fullscreen.active ? '✕ ' : '⛶ '}{t('viewport.fullscreen')}
+        </button>
         {/* 카메라 모드 선택 */}
         <div className="flex gap-0.5">
           <button
@@ -373,9 +421,9 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
               backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
               border: cameraMode === 'auto-fit' ? '1px solid var(--color-accent)' : '1px solid transparent',
             }}
-            title="전체 물체가 화면에 담기도록 자동 줌"
+            title={t('viewport.autoFitTip')}
           >
-            자동
+            {t('viewport.autoFit')}
           </button>
           <button
             onClick={() => {
@@ -390,9 +438,9 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
               backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
               border: cameraMode === 'follow' ? '1px solid var(--color-accent)' : '1px solid transparent',
             }}
-            title="움직이는 물체 중심을 따라감"
+            title={t('viewport.followTip')}
           >
-            추적
+            {t('viewport.follow')}
           </button>
         </div>
 
@@ -403,7 +451,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
             backgroundColor: 'color-mix(in srgb, var(--color-bg-secondary) 80%, transparent)',
             border: lockFollowZoom ? '1px solid var(--color-accent)' : 'none',
           }}
-          title="카메라 줌 거리를 현재 상태로 고정합니다"
+          title={t('viewport.lockZoomTip')}
         >
           <input
             type="checkbox"
@@ -411,7 +459,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
             onChange={(e) => setLockFollowZoom(e.target.checked)}
             className="accent-current"
           />
-          줌 고정
+          {t('viewport.lockZoom')}
         </label>
 
         {/* 축 토글 */}
@@ -428,7 +476,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
             onChange={(e) => setShowAxes(e.target.checked)}
             className="accent-current"
           />
-          XYZ
+          {t('viewport.axes')}
         </label>
       </div>
     </div>

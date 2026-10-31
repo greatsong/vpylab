@@ -323,7 +323,7 @@ export default function MissionPlay() {
             className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex w-full`}
             style={{ height: '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
-            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} />
+            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning, isReady }} />
           </div>
           <div
             className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex flex-col w-full`}

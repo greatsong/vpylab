@@ -11,7 +11,9 @@ import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
 import { runSound, errorSound, stopBgm, stopAllSounds, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
 import { captureThumbnail } from '../engine/thumbnail';
-import { copyCodeLink, decodeCodeFromURL } from '../utils/share';
+import { createShareLink, decodeCodeFromURL } from '../utils/share';
+import ShareLinkDialog from '../components/share/ShareLinkDialog';
+import { isViewportFullscreen } from '../hooks/useFullscreen';
 import {
   shouldForceDetailed,
   markDetailedSaved,
@@ -64,6 +66,7 @@ export default function Sandbox() {
   const [activeTab, setActiveTab] = useState('editor');
   const [mobileMore, setMobileMore] = useState(false);
   const [shareMsg, setShareMsg] = useState('');
+  const [shareDialog, setShareDialog] = useState(null); // { url, id } | null
   const [saveMsg, setSaveMsg] = useState('');
   const [showTeam, setShowTeam] = useState(false);
   const [showSavedCodes, setShowSavedCodes] = useState(false);
@@ -563,7 +566,8 @@ export default function Sandbox() {
   const handleStop = () => {
     stopExecution();
     stopBgm();  // 실행 정지 시 BGM 자동 정지
-    setActiveTab('editor');  // 정지 시 코드 에디터로 복귀
+    // 정지 시 코드 에디터로 복귀. 모바일 전체 화면(CSS 대체 모드) 중에는 탭을 바꾸면 전체 화면이 풀리므로 유지합니다.
+    if (!isViewportFullscreen()) setActiveTab('editor');
     addOutput('⏹ 실행 중지됨', 'warning');
   };
 
@@ -684,10 +688,32 @@ export default function Sandbox() {
     })();
   }, [addOutput, openProjectInEditor, setSearchParams, teamInviteCode, user]);
 
+  // 공유 카드 제목: 프로젝트 제목 → 코드 첫 줄 주석 → 기본 문구
+  const shareTitle = () => {
+    const projectTitle = activeProject?.title?.trim();
+    if (projectTitle) return projectTitle.slice(0, 80);
+    const firstComment = String(codeRef.current || '').split('\n').map((line) => line.trim()).find((line) => line.startsWith('#'));
+    const fromComment = firstComment ? firstComment.replace(/^#+\s*/, '').trim() : '';
+    return (fromComment || 'VPyLab 코드').slice(0, 80);
+  };
+
   const handleShare = async () => {
-    const ok = await copyCodeLink(codeRef.current);
-    setShareMsg(ok ? t('share.copied') : 'Failed');
+    const title = shareTitle();
+    const { url, error } = await createShareLink(codeRef.current, title);
+    if (error || !url) {
+      setShareMsg(t('share.failed'));
+      setTimeout(() => setShareMsg(''), 2000);
+      return;
+    }
+    // 예전처럼 바로 복사해 두고, 링크·QR·임베드를 한곳에서 고를 수 있게 대화상자를 엽니다.
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareMsg(t('share.copied'));
+    } catch {
+      setShareMsg(t('share.copyLink'));
+    }
     setTimeout(() => setShareMsg(''), 2000);
+    setShareDialog({ url, id: url.slice(url.lastIndexOf('/s/') + 3), title });
   };
 
   const handleExport = async () => {
@@ -979,7 +1005,7 @@ export default function Sandbox() {
 
     return (
       <div className="h-screen w-screen relative" style={{ backgroundColor: '#000' }}>
-        <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} />
+        <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning, isReady }} />
 
         {/* 클릭하여 시작 오버레이 */}
         {theaterWaiting && (
@@ -1042,6 +1068,9 @@ export default function Sandbox() {
   return (
     <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
+      {shareDialog && (
+        <ShareLinkDialog url={shareDialog.url} shareId={shareDialog.id} title={shareDialog.title} onClose={() => setShareDialog(null)} />
+      )}
 
       {/* 툴바 */}
       <div
@@ -1275,7 +1304,7 @@ export default function Sandbox() {
             className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex w-full`}
             style={{ height: '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
-            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} />
+            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning, isReady }} />
           </div>
 
           {/* 리사이저 (데스크톱) */}
