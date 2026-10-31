@@ -9,10 +9,10 @@ import * as THREE from 'three';
 vi.mock('./chart-system', () => ({ renderChart: vi.fn(), clearCharts: vi.fn() }));
 vi.mock('./sound-system', () => ({ processSoundCommand: vi.fn(), setNotePlayCallback: vi.fn(), setSoundEventCallback: vi.fn() }));
 
-import { clearScene, getMesh, processBatch } from './vpython-bridge';
+import { clearScene, getMesh, processBatch, updateBillboards } from './vpython-bridge';
 import { getSnapshot } from './object-registry';
 import { buildExtrusionGeometry } from './extrusion-geometry';
-import { whenTextReady, setTextFontLoader, hasMissingGlyph } from './text3d-system';
+import { whenTextReady, setTextFontLoader, hasMissingGlyph, billboardCount } from './text3d-system';
 
 // 테스트용 최소 글꼴 — 라틴 글자 몇 개만 가진 가짜 Font (TextGeometry는 실제 모듈)
 const FAKE_FONT_DATA = {
@@ -238,6 +238,27 @@ describe('GlowScript 호환 객체 브릿지', () => {
       expect(colors.count).toBe(built.geometry.getAttribute('position').count);
     });
 
+    it('scale=0은 1이 아니라 0으로 적용되고, 정점 상한을 넘으면 오류를 던진다', () => {
+      const built = buildExtrusionGeometry([[0, 0, 0], [1, 0, 0], [2, 0, 0]], [[square]], { scale: [1, 0, 1] });
+      const pos = built.geometry.getAttribute('position');
+      // 가운데 고리(x=1)의 모든 정점이 경로 점으로 모인다
+      let collapsed = 0;
+      for (let i = 0; i < pos.count; i++) {
+        if (Math.abs(pos.getX(i) - 1) < 1e-9 && Math.abs(pos.getY(i)) < 1e-9 && Math.abs(pos.getZ(i)) < 1e-9) collapsed++;
+      }
+      expect(collapsed).toBeGreaterThan(0);
+      expect(() => buildExtrusionGeometry([[0, 0, 0], [1, 0, 0]], [[square]], { maxVertices: 10 }))
+        .toThrow(/extrusion이 너무 큽니다/);
+      // 브릿지는 오류를 삼키고 그리지 않는다
+      const warn = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const bigPath = Array.from({ length: 2000 }, (_, i) => [i * 0.01, 0, 0]);
+      const bigShape = [Array.from({ length: 400 }, (_, i) => [Math.cos(i / 400 * 2 * Math.PI), Math.sin(i / 400 * 2 * Math.PI)])];
+      create(scene, { id: 'ebig', type: 'extrusion', path: bigPath, shape: [bigShape] });
+      expect(getMesh('ebig')).toBeUndefined();
+      expect(warn).toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
     it('create 커맨드는 pos를 메시 위치로, axis/up을 방향으로 쓰고 clone 뒤 rotate가 적용된다', () => {
       const e = create(scene, {
         id: 'e1', type: 'extrusion', pos: [1, 0, 0],
@@ -301,6 +322,57 @@ describe('GlowScript 호환 객체 브릿지', () => {
       expect(dir.z).toBeCloseTo(-1, 6);
       const [snap] = getSnapshot().filter((o) => o.id === 't3');
       expect(snap.props.text).toBe('Ha');
+    });
+
+    it('billboard 글자는 updateBillboards(camera)로 카메라를 향하고 씬을 비우면 목록에서 빠진다', async () => {
+      const t = create(scene, { id: 'tb', type: 'text', text: 'Hi', pos: [0, 0, 0], height: 1, billboard: true, latin: true });
+      await whenTextReady(t);
+      expect(billboardCount()).toBe(1);
+      const camera = new THREE.PerspectiveCamera();
+      camera.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 3);
+      updateBillboards(camera);
+      expect(t.quaternion.angleTo(camera.quaternion)).toBeCloseTo(0, 6);
+      processBatch([{ action: 'update', id: 'tb', billboard: false }], scene);
+      await whenTextReady(t);
+      expect(billboardCount()).toBe(0);
+      processBatch([{ action: 'update', id: 'tb', billboard: true }], scene);
+      await whenTextReady(t);
+      clearScene(scene);
+      expect(billboardCount()).toBe(0);
+    });
+
+    it('글꼴을 기다리는 동안 바뀐 색·투명도가 완성된 글자에 반영된다', async () => {
+      let release;
+      const gate = new Promise((resolve) => { release = resolve; });
+      const real = Promise.all([
+        import('three/addons/loaders/FontLoader.js'),
+        import('three/addons/geometries/TextGeometry.js'),
+      ]).then(([{ Font }, { TextGeometry }]) => ({ font: new Font(FAKE_FONT_DATA), TextGeometry }));
+      setTextFontLoader(gate.then(() => real));
+      const t = create(scene, { id: 'td', type: 'text', text: 'Hi', pos: [0, 0, 0], height: 1, latin: true, color: [1, 1, 1] });
+      expect(t.children.length).toBe(0);
+      processBatch([{ action: 'update', id: 'td', color: [1, 0, 0], opacity: 0.5 }], scene);
+      release();
+      await whenTextReady(t);
+      const mesh = t.children[0];
+      expect(mesh.isMesh).toBe(true);
+      expect(mesh.material.color.r).toBeCloseTo(1, 6);
+      expect(mesh.material.color.g).toBeCloseTo(0, 6);
+      expect(mesh.material.opacity).toBeCloseTo(0.5, 6);
+      expect(mesh.material.transparent).toBe(true);
+    });
+
+    it('글꼴 로딩이 실패하면 2D 라벨로 대체하고, 한글은 글꼴을 기다리지 않는다', async () => {
+      setTextFontLoader(Promise.reject(new Error('network')));
+      const t = create(scene, { id: 'tf', type: 'text', text: 'Hi', pos: [0, 0, 0], height: 1, latin: true });
+      await whenTextReady(t);
+      expect(t.userData.textFallback).toBe(true);
+      expect(t.children[0].isSprite).toBe(true);
+      // 한글: 글꼴 로딩 없이 즉시 라벨
+      setTextFontLoader(new Promise(() => {}));   // 영원히 끝나지 않는 로더
+      const k = create(scene, { id: 'tk', type: 'text', text: '안녕', pos: [0, 0, 0], height: 1, latin: false });
+      expect(k.children[0].isSprite).toBe(true);
+      expect(k.userData.textFallback).toBe(true);
     });
 
     it('hasMissingGlyph는 글꼴 밖 글자를 찾는다', () => {

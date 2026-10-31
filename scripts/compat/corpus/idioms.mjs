@@ -799,6 +799,14 @@ scene.visible = False
 scene.visible = True
 scene.delete()
 assert len(scene.objects) == 0
+ball = sphere()
+L = attach_light(ball)
+f = attach_trail(lambda: ball.pos)
+scene.delete()
+assert scene.lights == []
+for i in range(2):
+    rate(100)
+    ball.pos = vector(i, 0, 0)   # 지워진 객체를 갱신하려는 부착물이 없어야 한다
 ` },
   { id: 'group-basic', title: 'group()과 box(group=g), g.pos·g.rotate()·g.visible', doc: 'group', code: `from vpython import *
 g = group()
@@ -814,6 +822,14 @@ assert abs(b.pos.z + 1) < 1e-9 and abs(b.pos.x) < 1e-9   # GlowScript처럼 하�
 assert g.group_to_world(b.pos) == b.pos + g.pos
 g.color = color.green
 assert s.color == color.green
+g2 = group()
+b2 = box(group=g2, pos=vector(1, 0, 0))
+g2.axis = vector(-1, 0, 0)                  # 정반대 축: 자식이 π 회전한다
+assert abs(b2.pos.x + 1) < 1e-9
+b2.visible = False
+g2.visible = False
+g2.visible = True
+assert b2.visible is False               # 묶음 visible은 자식의 값을 덮어쓰지 않는다
 g.rotate(angle=0.1, axis=vector(0, 1, 0), origin=vector(0, 0, 0))
 g.visible = False
 b.color = color.blue
@@ -843,7 +859,11 @@ c2 = c.clone(pos=vector(0, 3, 0), color=color.red)
 assert c2.pos == vector(0, 3, 0) and c2.color == color.red
 c2.texture = textures.metal
 c2.emissive = True
-assert len(scene.objects) == 2
+c3 = compound([box()], size=vector(5, 6, 7))
+assert c3.size == vector(5, 6, 7) and abs(c3.length - 5) < 1e-9
+c4 = compound([box()], length=3)
+assert abs(c4.size.x - 3) < 1e-9
+assert len(scene.objects) == 4
 ` },
   { id: 'extrusion-clone-rotate', title: 'extrusion.clone()·rotate()·pos 기본값(경로 중심)', doc: 'extrusion', code: `from vpython import *
 e = extrusion(path=[vector(0, 0, 0), vector(2, 0, 0)], shape=shapes.circle(radius=0.5))
@@ -880,6 +900,19 @@ last = c.pop()
 assert last['pos'] == vector(4, 0, 0)
 c.shift()
 assert c.npoints == 3
+s = curve([vector(i, 0, 0) for i in range(4)])
+s.splice(-1, 1, vector(9, 0, 0))             # 음수 start: 마지막 점 교체
+assert s.npoints == 4 and s.point(3)['pos'].x == 9
+s.splice(10, 5, vector(7, 0, 0))            # 범위 밖 start: 끝에 추가
+assert s.npoints == 5 and s.point(4)['pos'].x == 7
+s.splice(1, 99)                              # howmany가 넘치면 끝까지
+assert s.npoints == 1
+r = curve(pos=[vector(i, 0, 0) for i in range(5)], retain=2)
+assert r.npoints == 2 and r.point(0)['pos'].x == 3   # 생성 시 retain
+r.unshift(vector(-1, 0, 0))
+assert r.npoints == 2
+r.splice(0, 0, vector(8, 0, 0), vector(9, 0, 0))
+assert r.npoints == 2
 c.rotate(angle=0.005, axis=vector(0, 1, 0))
 c.origin = vector(0, 1, 0)
 assert c.pos == vector(0, 1, 0)
@@ -981,10 +1014,12 @@ h.start()
 h.clear()
 f = attach_trail(lambda: b.pos + vector(0, 1, 0), type='points', radius=0.05)
 g = attach_trail(lambda: b.pos * 2, color=color.cyan, pps=0)
+k = attach_trail(lambda: b.pos, interval=3)
 for i in range(3):
     rate(100)
     b.pos = vector(i, 0, 0)
 assert f.trail.npoints >= 2 and g.trail.npoints >= 2
+assert k.trail.npoints == 1   # interval=3: rate 3번에 한 점
 f.stop()
 ` },
   { id: 'attach-light-follow', title: 'attach_light(obj, offset=, color=) — 객체를 따라다니는 광원', doc: 'attach_light', code: `from vpython import *
@@ -992,6 +1027,9 @@ b = sphere(pos=vector(1, 0, 0), color=color.magenta, emissive=True)
 L = attach_light(b, offset=vector(0, 1, 0), color=color.green)
 assert L.light.pos == vector(1, 1, 0)
 assert attach_light(b).color == b.color   # color 기본값은 객체의 색 (vpython-jupyter)
+scene.lights = [L]
+assert scene.lights == [L]
+scene.lights = []
 L.offset = vector(0, 2, 0)
 assert L.light.pos == vector(1, 2, 0)
 L.color = color.red

@@ -130,6 +130,7 @@ obj.rotate(angle, axis=None, origin=None)
 # origin 중심으로 axis 축으로 angle(라디안)만큼 회전.
 # origin 미지정: 자기 위치(self.pos)
 # axis 미지정: 객체 자신의 axis (GlowScript와 같음). axis가 없는 sphere·ring 등은 vector(0, 1, 0)
+#   cylinder·cone처럼 axis가 대칭축인 객체는 축을 생략하면 모양 변화가 보이지 않는다 — 이때는 axis=를 적는다
 # axis 속성을 가진 객체는 그 방향도 함께 회전.
 
 obj.attach_trail(color=None, retain=10000, type='curve', pps=0, radius=0, interval=1)
@@ -172,7 +173,8 @@ car = compound([...]).clone(pos=vector(0, 2, 0), group=g)    # compound·text·c
 
 g.pos = vector(-10, 0, 0)                     # 묶음 전체 이동 (g.pos.x += 0.1 도 된다)
 g.rotate(angle=0.1, axis=vector(0, 1, 0))     # g.pos를 중심으로 회전 (origin= 으로 중심 지정). 하위 객체의 상대 pos·axis가 함께 돈다
-g.visible = False                             # g.color·g.up도 하위 객체 모두에 적용된다
+g.visible = False                             # 묶음 전체 숨김. 하위 객체 각각의 visible 값은 그대로 둔다 (먼저 숨긴 자식은 숨긴 채로 남는다)
+                                              # g.color·g.up은 하위 객체 모두에 적용된다
 head.color = color.blue                       # compound와 달리 하위 객체를 나중에 바꿀 수 있다
 print(len(g.objects)); g.group_to_world(head.pos); g.world_to_group(vector(0, 0, 0))
 ```
@@ -240,8 +242,9 @@ f = attach_trail(lambda: ball.pos + vector(0, 1, 0))     # 함수 값이 궤적�
 p = attach_trail(ball, type='points', pps=10, radius=0.05) # 점 궤적, 초당 10점까지
 ball = sphere(make_trail=True, trail_type='points', interval=10)   # 생성 시 지정도 된다
 
-L = attach_light(ball, offset=vector(0, 1, 0), color=color.green)  # 객체를 따라다니는 점광원
+L = attach_light(ball, offset=vector(0, 1, 0), color=color.green)  # 객체를 따라다니는 점광원 (color 기본값은 객체의 색)
 L.offset = vector(1, 0, 0); L.color = color.red; L.visible = False
+scene.lights = [L]               # 조명 목록에 넣을 수 있다. scene.lights = [] 는 붙인 조명도 끈다 (GlowScript와 같음)
 
 attach_arrow(ball, 'velocity', scale=0.5)                 # 벡터 속성을 따라다니는 화살표
 ```
@@ -255,7 +258,7 @@ scene = canvas(width=600, height=300, background=color.white, title='제목', ce
 scene.width, scene.height         # 값은 기억하지만 화면 크기는 레이아웃이 정한다
 scene.visible = False             # 3D 화면 전체 숨기기 (객체는 남는다)
 for o in scene.objects: o.visible = False
-scene.delete()                    # 3D 객체 모두 지우기 (위젯·그래프는 남는다)
+scene.delete()                    # 3D 객체 모두 지우기. 사용자 조명(local_light·attach_light)과 부착물(attach_arrow·attach_trail)도 지워지고 위젯·그래프는 남는다
 canvas.get_selected() is scene    # True
 scene.select()                    # 할 일 없음 (캔버스가 하나)
 ```
@@ -385,6 +388,7 @@ extrusion(path=[vector(t, 0, 0) for t in range(-3, 4)], shape=star, color=color.
 - `color`: 색 하나 또는 경로 점마다의 색 목록. `scale`: 숫자 또는 경로 점마다의 배율 목록.
 - `start_face_color` / `end_face_color` / `show_start_face` / `show_end_face`: 열린 경로의 끝면.
 - `twist`·`smooth`·`xscale`·`yscale`은 받아 두기만 합니다.
+- 크기 상한: 경로 점 2000개, 단면 점 2000개, 두 수의 곱 2,000,000까지입니다(넘으면 `ValueError`). 정점이 300만 개를 넘는 조합은 브릿지가 그리지 않고 콘솔에 오류를 남깁니다.
 
 ### shapes / paths — 단면과 경로 생성기
 

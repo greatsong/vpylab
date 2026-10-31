@@ -14,6 +14,9 @@ import * as THREE from 'three';
 
 const EPS = 1e-9;
 
+/** 한 extrusion이 만들 수 있는 정점 수 상한 (경로 2000점 × 단면 250점 정도) */
+export const MAX_EXTRUSION_VERTICES = 3_000_000;
+
 /** 외곽선 끝에 반복된 첫 점을 떼고 숫자 쌍으로 맞춘다. */
 function cleanContour(contour) {
   const pts = (contour || [])
@@ -112,10 +115,15 @@ export function buildExtrusionGeometry(path, solids, options = {}) {
   upRef.normalize();
   const frames = buildFrames(P, closed, upRef);
 
+  // scale: 없으면 1, 주어진 값은 0도 그대로 (Number(v) || 1 로 쓰면 0이 1이 된다)
+  const asScale = (v) => {
+    const n = Number(v);
+    return v === undefined || v === null || !Number.isFinite(n) ? 1 : n;
+  };
   const scaleAt = (i) => {
     const s = options.scale;
-    if (Array.isArray(s)) return Number(s[Math.min(i, s.length - 1)]) || 1;
-    return Number(s) || 1;
+    if (Array.isArray(s)) return asScale(s[Math.min(i, s.length - 1)]);
+    return asScale(s);
   };
   const baseColor = Array.isArray(options.color) ? options.color : [1, 1, 1];
   const colorAt = (i) => {
@@ -150,6 +158,19 @@ export function buildExtrusionGeometry(path, solids, options = {}) {
 
   const segmentCount = closed ? n : n - 1;
   const cleanedSolids = (solids || []).map((solid) => (solid || []).map(cleanContour).filter((c) => c.length >= 3));
+
+  // 정점 수 상한 — 메인 스레드에서 만드는 지오메트리가 너무 커지지 않게 한다
+  const contourPoints = cleanedSolids.reduce((sum, solid) => sum + solid.reduce((s2, c) => s2 + c.length, 0), 0);
+  const estimatedVertices = segmentCount * contourPoints * 6 + (closed ? 0 : contourPoints * 6);
+  const limit = options.maxVertices ?? MAX_EXTRUSION_VERTICES;
+  if (estimatedVertices > limit) {
+    const error = new Error(
+      `extrusion이 너무 큽니다: 정점 약 ${estimatedVertices.toLocaleString()}개 (상한 ${limit.toLocaleString()}개). `
+      + 'path 점 수나 shape의 np를 줄이세요.',
+    );
+    error.code = 'EXTRUSION_TOO_LARGE';
+    throw error;
+  }
 
   for (const solid of cleanedSolids) {
     // --- 옆면: 외곽선과 구멍 모두 ---

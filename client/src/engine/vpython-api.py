@@ -671,7 +671,8 @@ class _GObject(_VectorOwner):
     def rotate(self, angle, axis=None, origin=None):
         """원점을 중심으로 axis 축으로 angle(라디안)만큼 객체를 회전.
         - origin 미지정: 객체 자기 위치(self.pos)를 중심으로 회전
-        - axis 미지정: y축(0,1,0)
+        - axis 미지정: 객체 자신의 axis (GlowScript와 같음). axis가 없는 sphere·ring 등은 y축(0,1,0).
+          cylinder·cone처럼 axis가 대칭축인 객체는 축을 생략하면 모양 변화가 보이지 않는다.
         객체에 axis 속성이 있으면(cylinder, arrow, cone 등) 함께 회전"""
         _rotate_object(self, angle, axis, origin)
 
@@ -1557,6 +1558,7 @@ class _PointList(_VectorOwner):
         self._radius_list = []
         for item in _point_items(list(args) + [kwargs.get('pos')]):
             self._store(item)
+        self._trim_retain()
 
         cmd = {
             "action": "create",
@@ -1675,16 +1677,25 @@ class _PointList(_VectorOwner):
         """append와 같다 (GlowScript 별칭)"""
         self.append(*args, **kwargs)
 
-    def unshift(self, *args):
-        """맨 앞에 점을 끼워 넣는다."""
-        items = _point_items(args)
+    def _build_items(self, items):
+        """점 항목들을 (pos 목록, color 목록, radius 목록)으로 만든다 (기존 목록은 건드리지 않는다)."""
         saved = (self._pos_list, self._color_list, self._radius_list)
         self._pos_list, self._color_list, self._radius_list = [], [], []
-        for it in items:
-            self._store(it)
-        self._pos_list += saved[0]
-        self._color_list += saved[1]
-        self._radius_list += saved[2]
+        try:
+            for it in items:
+                self._store(it)
+            built = (self._pos_list, self._color_list, self._radius_list)
+        finally:
+            self._pos_list, self._color_list, self._radius_list = saved
+        return built
+
+    def unshift(self, *args):
+        """맨 앞에 점을 끼워 넣는다."""
+        new_pos, new_col, new_rad = self._build_items(_point_items(args))
+        self._pos_list[0:0] = new_pos
+        self._color_list[0:0] = new_col
+        self._radius_list[0:0] = new_rad
+        self._trim_retain()
         self._send_all()
 
     def modify(self, index, *args, **kwargs):
@@ -1739,17 +1750,18 @@ class _PointList(_VectorOwner):
         return self.pop(0)
 
     def splice(self, start, howmany, *items):
-        """start부터 howmany개를 지우고 그 자리에 items를 넣는다."""
-        pts = _point_items(items)
-        tail = (self._pos_list[start + howmany:], self._color_list[start + howmany:], self._radius_list[start + howmany:])
-        del self._pos_list[start:]
-        del self._color_list[start:]
-        del self._radius_list[start:]
-        for it in pts:
-            self._store(it)
-        self._pos_list += tail[0]
-        self._color_list += tail[1]
-        self._radius_list += tail[2]
+        """start부터 howmany개를 지우고 그 자리에 items를 넣는다. 음수 start는 끝에서 센다 (JavaScript splice와 같음)."""
+        n = len(self._pos_list)
+        start = int(start)
+        if start < 0:
+            start = max(n + start, 0)
+        start = min(start, n)
+        end = min(start + max(int(howmany), 0), n)
+        new_pos, new_col, new_rad = self._build_items(_point_items(items))
+        self._pos_list[start:end] = new_pos
+        self._color_list[start:end] = new_col
+        self._radius_list[start:end] = new_rad
+        self._trim_retain()
         self._send_all()
 
     def clear(self):
@@ -1760,8 +1772,10 @@ class _PointList(_VectorOwner):
         _add_command({"action": "curve_clear", "id": self._id})
 
     def rotate(self, angle, axis=None, origin=None):
-        """origin을 지나는 axis 축으로 전체를 회전한다 (점 좌표는 그대로 두고 방향만 바꾼다)."""
-        axis = _coerce_vector(axis, vector(0, 1, 0)) if axis is not None else vector(0, 1, 0)
+        """origin을 지나는 axis(기본: 자기 axis) 축으로 전체를 회전한다 (점 좌표는 그대로 두고 방향만 바꾼다)."""
+        if axis is None:
+            axis = self._axis.clone() if self._axis.mag > 0 else vector(0, 1, 0)
+        axis = _coerce_vector(axis, vector(0, 1, 0))
         origin = _coerce_vector(origin, vector(0, 0, 0)) if origin is not None else self._origin
         rel = self._origin - origin
         self._origin = origin + rel.rotate(angle, axis=axis)
@@ -2011,6 +2025,12 @@ class compound(_VectorOwner):
             cmd['group'] = self._group._id
         _add_command(cmd)
         _track_scene_object(self)
+        # 생성 시 size / length / height / width — 만든 뒤 setter 경로로 배율을 적용한다
+        if kwargs.get('size') is not None:
+            self.size = kwargs['size']
+        for name in ('length', 'height', 'width'):
+            if kwargs.get(name) is not None:
+                setattr(self, name, kwargs[name])
 
     def __getitem__(self, index):
         """compound[0] — 인덱스로 하위 객체 접근"""
@@ -2290,7 +2310,13 @@ class group(_VectorOwner):
         if old_axis.mag > 0 and new_axis.mag > 0:
             ang = old_axis.diff_angle(new_axis)
             ax = old_axis.cross(new_axis)
-            if ang > 1e-12 and ax.mag > 1e-12:
+            if ang > 1e-12 and ax.mag < 1e-12:
+                # 정반대 방향(외적이 0) — 옛 축에 수직인 축으로 π 회전
+                ax = old_axis.cross(vector(0, 1, 0))
+                if ax.mag < 1e-12:
+                    ax = old_axis.cross(vector(1, 0, 0))
+                ang = math.pi
+            if ang > 1e-12:
                 self._rotate_children(ang, ax, self._pos)
                 self._up = self._up.rotate(ang, axis=ax)
         self._axis = new_axis
@@ -2325,10 +2351,9 @@ class group(_VectorOwner):
 
     @visible.setter
     def visible(self, value):
+        """묶음 전체를 숨기거나 보인다. 하위 객체 각각의 visible 값은 그대로 두므로(GlowScript와 다른 점),
+        먼저 숨겨 둔 하위 객체는 묶음을 다시 보여도 숨겨진 채로 남는다."""
         self._visible = bool(value)
-        for obj in self._objects:
-            if hasattr(obj, 'visible'):
-                obj.visible = self._visible
         _add_command({"action": "update", "id": self._id, "visible": self._visible})
 
     def _rotate_children(self, angle, axis, origin):
@@ -2569,6 +2594,12 @@ def _normalize_shape(shape):
     return solids
 
 
+# extrusion 입력 상한 — 정점 수가 경로 점 수 × 단면 점 수 × 6에 비례한다
+_EXTRUSION_MAX_PATH_POINTS = 2000
+_EXTRUSION_MAX_SHAPE_POINTS = 2000
+_EXTRUSION_MAX_PRODUCT = 2_000_000
+
+
 def _normalize_path(path):
     """extrusion의 path 인자 → [[x, y, z], ...]"""
     pts = []
@@ -2602,6 +2633,17 @@ class extrusion(_GObject):
         self._path = _normalize_path(path)
         self._shape = _normalize_shape(shape)
         pathlength = len(self._path)
+        # 정점 수는 경로 점 수 × 단면 점 수에 비례하므로 상한을 둔다 (브라우저가 멈추지 않도록)
+        shape_points = sum(len(contour) for solid in self._shape for contour in solid)
+        if pathlength > _EXTRUSION_MAX_PATH_POINTS:
+            raise ValueError(f"extrusion의 path 점은 {_EXTRUSION_MAX_PATH_POINTS}개까지입니다 (받은 값: {pathlength}개)")
+        if shape_points > _EXTRUSION_MAX_SHAPE_POINTS:
+            raise ValueError(f"extrusion의 shape 점은 모두 합쳐 {_EXTRUSION_MAX_SHAPE_POINTS}개까지입니다 (받은 값: {shape_points}개)")
+        if pathlength * shape_points > _EXTRUSION_MAX_PRODUCT:
+            raise ValueError(
+                f"extrusion이 너무 큽니다: path 점 수 × shape 점 수가 {_EXTRUSION_MAX_PRODUCT:,}을 넘을 수 없습니다 "
+                f"(받은 값: {pathlength} × {shape_points} = {pathlength * shape_points:,}). np나 점 개수를 줄이세요."
+            )
         for attr in ['scale', 'xscale', 'yscale', 'twist', 'color']:
             value = kwargs.get(attr)
             if isinstance(value, (list, tuple)) and attr != 'color' and len(value) != pathlength:
@@ -3482,13 +3524,22 @@ class _Scene(_VectorOwner):
         _add_command({"action": "scene", "property": "visible", "value": self._visible})
 
     def delete(self):
-        """3D 화면의 객체를 모두 지운다 (GlowScript의 canvas.delete()). 위젯·그래프는 남는다."""
+        """3D 화면의 객체를 모두 지운다 (GlowScript의 canvas.delete()). 사용자가 만든 조명(local_light·distant_light·
+        attach_light)과 부착물(attach_arrow·attach_trail)도 함께 지워지고, 위젯·그래프·캡션은 남는다."""
         for obj in list(_scene_objects):
             try:
                 obj._visible = False
             except Exception:
                 pass
         _scene_objects.clear()
+        # 지워진 객체를 rate()마다 갱신하려는 부착물도 함께 정리한다
+        _user_lights.clear()
+        _attached_arrows.clear()
+        for item in list(_attached_followers):
+            if hasattr(item, 'stop'):
+                item.stop()
+        _attached_followers.clear()
+        self._lights = None
         _add_command({"action": "scene", "property": "delete", "value": True})
 
     def select(self):
@@ -3747,10 +3798,12 @@ def _update_attached_followers():
 
 class _FunctionTrail:
     """attach_trail(함수, ...) — rate()·sleep()을 지날 때마다 함수가 돌려준 벡터를 궤적에 더한다."""
-    def __init__(self, fn, color=None, radius=0, retain=-1, type='curve', pps=0):
+    def __init__(self, fn, color=None, radius=0, retain=-1, type='curve', pps=0, interval=1):
         self.fn = fn
         self._active = True
         self._pps = float(pps or 0)
+        self._interval = max(1, int(interval or 1))   # interval=n: n번째 갱신마다 한 점
+        self._counter = 0
         self._last_time = None
         kwargs = {'color': color if color is not None else vector(1, 1, 1), 'retain': int(retain)}
         if type == 'points':
@@ -3765,6 +3818,9 @@ class _FunctionTrail:
 
     def update(self):
         if not self._active:
+            return
+        self._counter += 1
+        if self._interval > 1 and self._counter % self._interval != 0:
             return
         if self._pps > 0:
             import time as _time
@@ -3794,7 +3850,7 @@ def attach_trail(obj, color=None, radius=0, retain=-1, type='curve', pps=0, inte
     if hasattr(obj, 'attach_trail'):
         return obj.attach_trail(color=color, retain=retain, type=type, pps=pps, radius=radius, interval=interval)
     if callable(obj):
-        return _FunctionTrail(obj, color=color, radius=radius, retain=retain, type=type, pps=pps)
+        return _FunctionTrail(obj, color=color, radius=radius, retain=retain, type=type, pps=pps, interval=interval)
     raise TypeError("attach_trail의 첫 인자는 3D 객체이거나 벡터를 돌려주는 함수여야 합니다")
 
 
@@ -3816,6 +3872,23 @@ class attach_light:
         self._visible = True
         self._last = None
         _attached_followers.append(self)
+
+    @property
+    def _id(self):
+        """scene.lights = [L] 처럼 조명 목록에 넣을 수 있도록 광원의 id를 돌려준다."""
+        return self.light._id
+
+    @property
+    def pos(self):
+        return self.light.pos
+
+    @property
+    def intensity(self):
+        return self.light.intensity
+
+    @intensity.setter
+    def intensity(self, value):
+        self.light.intensity = value
 
     def update(self):
         if not self._visible:

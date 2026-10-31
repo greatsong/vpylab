@@ -444,7 +444,7 @@ ball.clear_trail()    # 궤적 초기화`,
     category: 'objects',
     title: { ko: '묶음 (group)', en: 'group' },
     description: {
-      ko: 'box(group=g)처럼 객체를 묶습니다. compound와 달리 하위 객체를 나중에 따로 바꿀 수 있고, g.pos·g.rotate()·g.visible로 한꺼번에 움직입니다. 하위 객체의 pos는 g.pos 기준 상대 위치입니다.',
+      ko: 'box(group=g)처럼 객체를 묶습니다. compound와 달리 하위 객체를 나중에 따로 바꿀 수 있고, g.pos·g.rotate()·g.visible로 한꺼번에 움직입니다(g.visible은 하위 객체 각각의 값을 덮어쓰지 않습니다). 하위 객체의 pos는 g.pos 기준 상대 위치입니다.',
       en: 'Groups objects created with group=g. Unlike compound, children stay editable; move all with g.pos, g.rotate(), g.visible. Child pos is relative to g.pos.',
     },
     signature: "g = group(pos=vector(0,0,0), axis=vector(1,0,0), up=vector(0,1,0), visible=True)\nbox(group=g, ...)  g.objects  g.rotate(angle=, axis=, origin=)",

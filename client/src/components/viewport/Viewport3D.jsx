@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import useAppStore from '../../stores/appStore';
 import CameraSystem from '../../engine/camera-system';
 import { postCameraState, postEvent, postMouseState, postPressedKeys } from '../../engine/pyodide-singleton';
-import { isEventBound } from '../../engine/vpython-bridge';
+import { isEventBound, updateBillboards } from '../../engine/vpython-bridge';
 import useFullscreen from '../../hooks/useFullscreen';
 import { useOptionalI18n } from '../../i18n/useI18n';
 
@@ -271,6 +271,8 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       camSystem.update();
 
       controls.update();
+      // billboard=True 인 3D 글자를 카메라 쪽으로 돌린다 (Group에는 onBeforeRender가 오지 않는다)
+      updateBillboards(camera);
       renderer.render(scene, camera);
 
       // 카메라 상태를 Python 쪽에 알림 (6프레임마다, 약 10Hz)

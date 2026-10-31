@@ -483,6 +483,8 @@ sys.stderr = _VPLBoundedOutput('stderr')
       }
       return;
     }
+    // 오류로 끝난 코드의 클릭·키·위젯 콜백이 계속 돌지 않도록 핸들러를 비운다 (정상 종료는 그대로 둔다)
+    try { await pyodide.runPythonAsync('_event_handlers.clear()'); } catch { /* 무시 */ }
     const errorMsg = formatPythonError(msg);
     isRunningCode = false;
     sendRunMessage(runId, 'error', { error: errorMsg, raw: msg, detail: parsePythonTraceback(msg, err.type) });

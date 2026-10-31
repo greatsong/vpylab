@@ -32,7 +32,12 @@ import {
   clearGraphs2D,
 } from './graph2d-system';
 import { buildExtrusionGeometry } from './extrusion-geometry';
-import { pickTextSpec, rebuildText3D, applyTextLength } from './text3d-system';
+import {
+  pickTextSpec, rebuildText3D, applyTextLength, applyTextAppearance, unregisterText3D, updateBillboards,
+} from './text3d-system';
+
+// 뷰포트가 renderer.render 직전에 부른다 — billboard 글자가 카메라를 향하게 한다
+export { updateBillboards };
 
 // 메인 스레드에서 디스패치 활성화된 이벤트 이름들
 const sceneBoundEvents = new Set();
@@ -120,6 +125,10 @@ function disposeObject(mesh) {
     mesh.traverse?.((child) => {
       if (child !== mesh) disposeOne(child);
     });
+  }
+  if (mesh.userData?.vpType === 'text') {
+    unregisterText3D(mesh);
+    mesh.userData.textMaterial?.dispose?.();
   }
 }
 
@@ -634,17 +643,25 @@ function createObject(cmd, scene) {
       } else if (solids.length > 0 && Array.isArray(solids[0]) && Array.isArray(solids[0][0]) && typeof solids[0][0][0] === 'number') {
         solids = [solids];
       }
-      const built = buildExtrusionGeometry(path, solids, {
-        scale: cmd.scale,
-        colors: cmd.colors,
-        color: cmd.color,
-        up: [0, 1, 0],
-        showStartFace: cmd.show_start_face,
-        showEndFace: cmd.show_end_face,
-        startFaceColor: cmd.start_face_color,
-        endFaceColor: cmd.end_face_color,
-        center: pathCenter(path),
-      });
+      let built = null;
+      try {
+        built = buildExtrusionGeometry(path, solids, {
+          scale: cmd.scale,
+          colors: cmd.colors,
+          color: cmd.color,
+          up: [0, 1, 0],
+          showStartFace: cmd.show_start_face,
+          showEndFace: cmd.show_end_face,
+          startFaceColor: cmd.start_face_color,
+          endFaceColor: cmd.end_face_color,
+          center: pathCenter(path),
+        });
+      } catch (err) {
+        // 정점 상한 초과 등 — 그리지 않고 한국어 오류만 남긴다
+        console.error(`[extrusion] ${err?.message || err}`);
+        material.dispose();
+        return;
+      }
       if (built) {
         geometry = built.geometry;
         material.side = THREE.DoubleSide;
@@ -981,8 +998,19 @@ function updateMesh(cmd) {
     mesh.geometry = newGeom;
   }
 
-  // 3D 글자 — 글자·높이·두께·정렬이 바뀌면 다시 만들고, 길이만 바뀌면 가로 배율만 바꾼다
+  // 3D 글자 — 글자·높이·두께·정렬이 바뀌면 다시 만들고, 길이만 바뀌면 가로 배율만 바꾼다.
+  // 색·투명도는 공유 재질(textMaterial)에 바로 적용되므로 글꼴을 기다리는 동안 바뀐 값도 완성된 글자에 반영된다.
   if (mesh.userData?.vpType === 'text') {
+    const textMaterial = mesh.userData.textMaterial;
+    if (textMaterial) {
+      if (cmd.color) updateMaterialColor(textMaterial, toThreeColor(cmd.color));
+      if (cmd.opacity !== undefined) {
+        textMaterial.opacity = cmd.opacity;
+        textMaterial.transparent = cmd.opacity < 1;
+      }
+      if (cmd.emissive !== undefined) setMaterialEmissive(textMaterial, cmd.emissive);
+    }
+    applyTextAppearance(mesh, cmd);
     const rebuildKeys = ['text', 'height', 'depth', 'align', 'billboard', 'latin', 'start_face_color', 'end_face_color'];
     const needsRebuild = rebuildKeys.some((key) => cmd[key] !== undefined);
     if (cmd.text !== undefined) registryUpdates.text = cmd.text;
