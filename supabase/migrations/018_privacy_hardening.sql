@@ -101,9 +101,11 @@ REVOKE SELECT ON public.vpylab_profiles FROM anon;
 GRANT SELECT (id, display_name, avatar_url) ON public.vpylab_profiles TO anon;
 
 -- ========================================
--- 3. 역할 자가 변경 차단
---    기존 UPDATE 정책은 행만 확인해서 본인이 role을 admin으로 바꿀 수 있었습니다.
+-- 3. role과 class_id 자가 변경 차단
+--    기존 UPDATE 정책은 행만 확인해서 본인이 role을 admin으로, class_id를 다른 학급으로 바꿀 수 있었습니다.
 --    vpylab_set_user_role은 SECURITY DEFINER라 current_user가 API 역할이 아니므로 통과합니다.
+--    운영에서 class_id가 있는 프로필은 0건입니다. 초대 코드 조회는 RLS로 이미 동작하지 않습니다.
+--    학급 가입을 다시 열 때는 초대 코드를 확인하는 SECURITY DEFINER RPC를 추가합니다.
 -- ========================================
 CREATE OR REPLACE FUNCTION public.vpylab_profiles_guard_role()
 RETURNS trigger
@@ -114,8 +116,10 @@ BEGIN
   IF current_user IN ('anon', 'authenticated') THEN
     IF TG_OP = 'INSERT' THEN
       NEW.role := 'student';
-    ELSIF NEW.role IS DISTINCT FROM OLD.role THEN
-      RAISE EXCEPTION 'role은 직접 변경할 수 없습니다' USING ERRCODE = '42501';
+      NEW.class_id := NULL;
+    ELSIF NEW.role IS DISTINCT FROM OLD.role
+       OR NEW.class_id IS DISTINCT FROM OLD.class_id THEN
+      RAISE EXCEPTION 'role과 class_id는 직접 변경할 수 없습니다' USING ERRCODE = '42501';
     END IF;
   END IF;
   RETURN NEW;
@@ -126,6 +130,13 @@ DROP TRIGGER IF EXISTS vpylab_profiles_guard_role ON public.vpylab_profiles;
 CREATE TRIGGER vpylab_profiles_guard_role
   BEFORE INSERT OR UPDATE ON public.vpylab_profiles
   FOR EACH ROW EXECUTE FUNCTION public.vpylab_profiles_guard_role();
+
+-- ========================================
+-- 4. 프로젝트 멤버 직접 INSERT 금지
+--    기존 정책은 자신이나 임의의 사용자를 프로젝트에 넣을 수 있어서 위의 프로필 제한을 우회합니다.
+--    앱은 소유자 트리거와 초대 RPC(모두 SECURITY DEFINER)로만 멤버를 추가합니다.
+-- ========================================
+DROP POLICY IF EXISTS "vpylab_project_members_insert" ON public.vpylab_project_members;
 
 COMMIT;
 
