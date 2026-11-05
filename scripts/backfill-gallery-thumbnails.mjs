@@ -67,7 +67,10 @@ async function supabaseFetch(env, pathAndQuery, options = {}) {
     ...options,
     headers: {
       apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      // 새 sb_secret_ 키는 JWT가 아니므로 Authorization에 넣지 않습니다.
+      ...(env.SUPABASE_SERVICE_ROLE_KEY.startsWith('eyJ')
+        ? { Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }
+        : {}),
       'Content-Type': 'application/json',
       ...options.headers,
     },

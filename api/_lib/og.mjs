@@ -81,6 +81,16 @@ export function requestQuery(req) {
   }
 }
 
+/**
+ * Supabase 요청 인증 헤더입니다. 예전 JWT 키(eyJ…)는 Authorization에도 넣고,
+ * 새 키(sb_publishable_, sb_secret_)는 JWT가 아니므로 apikey 헤더로만 보냅니다.
+ */
+export function supabaseAuthHeaders(key) {
+  return key.startsWith('eyJ')
+    ? { apikey: key, Authorization: `Bearer ${key}` }
+    : { apikey: key };
+}
+
 /** Supabase REST에서 한 행을 읽습니다. 실패·시간 초과·없음은 모두 null입니다. */
 export async function fetchRow({ table, id, select, filter = '', env, cwd, fetchImpl = globalThis.fetch }) {
   const supabase = supabaseEnv(env, cwd);
@@ -90,7 +100,7 @@ export async function fetchRow({ table, id, select, filter = '', env, cwd, fetch
   try {
     const url = `${supabase.url}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=${encodeURIComponent(select)}${filter}&limit=1`;
     const res = await fetchImpl(url, {
-      headers: { apikey: supabase.key, Authorization: `Bearer ${supabase.key}`, Accept: 'application/json' },
+      headers: { ...supabaseAuthHeaders(supabase.key), Accept: 'application/json' },
       signal: controller.signal,
     });
     if (!res.ok) return null;
