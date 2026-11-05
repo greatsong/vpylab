@@ -1,13 +1,8 @@
--- VPyLab: 학생 개인정보 노출 차단과 권한 상승 차단 (2026-11-05 점검)
+-- VPyLab: 비로그인 프로필 전체 노출과 role 자가 변경 차단 (2026-11-05 점검)
 --
--- 이 파일은 아직 운영 DB에 적용하지 않았습니다. 적용 전에 아래를 확인합니다.
---   1. 운영에서는 비로그인 anon 키로 vpylab_profiles 115행이 모두 읽힙니다.
---      001~017을 그대로 적용한 DB에서는 같은 요청이 재귀 오류로 실패하므로 운영 정책은 저장소와 다릅니다.
---      그래서 이름을 추측하지 않고 vpylab_profiles의 정책을 모두 지운 뒤 다시 만듭니다.
---   2. 적용 뒤 anon이 읽을 수 있는 프로필은 공개 작품을 낸 학생의 id, display_name, avatar_url뿐입니다.
---
--- 되돌리기가 필요하면 적용 전에 아래 조회 결과를 저장해 둡니다.
---   select * from pg_policies where tablename = 'vpylab_profiles';
+-- 운영에는 저장소에 없는 정책 vpylab_profiles_select_public(USING true)이 있어서 anon이 전체 행을 읽었습니다.
+-- 이 파일은 프로필 표의 정책을 모두 지운 뒤 앱이 필요로 하는 정책만 다시 만듭니다.
+-- 적용 뒤 anon이 읽을 수 있는 프로필은 공개 작품을 낸 학생의 id, display_name, avatar_url뿐입니다.
 
 BEGIN;
 
@@ -131,57 +126,6 @@ DROP TRIGGER IF EXISTS vpylab_profiles_guard_role ON public.vpylab_profiles;
 CREATE TRIGGER vpylab_profiles_guard_role
   BEFORE INSERT OR UPDATE ON public.vpylab_profiles
   FOR EACH ROW EXECUTE FUNCTION public.vpylab_profiles_guard_role();
-
--- 갤러리 관리자 수정 정책도 헬퍼로 바꿉니다(프로필과 갤러리 사이의 재귀 제거).
-DROP POLICY IF EXISTS "gallery_update_admin" ON public.vpylab_gallery;
-CREATE POLICY "gallery_update_admin" ON public.vpylab_gallery
-  FOR UPDATE USING (public.vpylab_is_admin());
-
--- ========================================
--- 4. 초대 코드 없이 프로젝트에 들어가는 경로 차단
---    기존 정책은 user_id = auth.uid()이면 어느 프로젝트에도 자신을 넣을 수 있었습니다.
---    앱은 초대 RPC(vpylab_join_project_by_invite)와 소유자 트리거로만 멤버를 추가합니다.
--- ========================================
-DROP POLICY IF EXISTS "vpylab_project_members_insert" ON public.vpylab_project_members;
-CREATE POLICY "vpylab_project_members_insert" ON public.vpylab_project_members
-  FOR INSERT WITH CHECK (
-    public.vpylab_project_owner_id(project_id) = auth.uid()
-  );
-
--- ========================================
--- 5. 좋아요를 누른 사용자 목록 비공개
---    앱은 본인의 좋아요 여부만 조회합니다(galleryStore.checkIfLiked). 개수는 like_count를 사용합니다.
--- ========================================
-DROP POLICY IF EXISTS "likes_select" ON public.vpylab_gallery_likes;
-CREATE POLICY "likes_select" ON public.vpylab_gallery_likes
-  FOR SELECT USING (auth.uid() = user_id);
-
--- ========================================
--- 6. 뷰가 RLS를 우회하지 않게 변경
---    앱은 이 뷰를 사용하지 않습니다. 소유자 권한으로 실행되어 anon에게 전체 코드 id가 보였습니다.
--- ========================================
-ALTER VIEW public.vpylab_code_revision_summary SET (security_invoker = true);
-REVOKE ALL ON public.vpylab_code_revision_summary FROM anon;
-
--- ========================================
--- 7. SECURITY DEFINER 함수 정리
--- ========================================
-ALTER FUNCTION public.vpylab_increment_view(uuid) SET search_path = public;
-ALTER FUNCTION public.vpylab_toggle_like(uuid) SET search_path = public;
-ALTER FUNCTION public.vpylab_increment_remix(uuid) SET search_path = public;
-ALTER FUNCTION public.vpylab_set_user_role(uuid, text) SET search_path = public;
-ALTER FUNCTION public.vpylab_projects_add_owner_as_member() SET search_path = public;
-ALTER FUNCTION public.vpylab_join_project_by_invite(text) SET search_path = public;
-
--- 로그인이 필요한 RPC는 anon이 호출하지 못하게 합니다. 조회수(vpylab_increment_view)는 비로그인도 사용합니다.
-REVOKE EXECUTE ON FUNCTION public.vpylab_toggle_like(uuid) FROM PUBLIC, anon;
-REVOKE EXECUTE ON FUNCTION public.vpylab_increment_remix(uuid) FROM PUBLIC, anon;
-REVOKE EXECUTE ON FUNCTION public.vpylab_set_user_role(uuid, text) FROM PUBLIC, anon;
-REVOKE EXECUTE ON FUNCTION public.vpylab_join_project_by_invite(text) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.vpylab_toggle_like(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.vpylab_increment_remix(uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.vpylab_set_user_role(uuid, text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.vpylab_join_project_by_invite(text) TO authenticated;
 
 COMMIT;
 
