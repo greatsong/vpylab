@@ -15,6 +15,10 @@ DROP POLICY IF EXISTS "likes_select" ON public.vpylab_gallery_likes;
 CREATE POLICY "likes_select" ON public.vpylab_gallery_likes
   FOR SELECT USING (auth.uid() = user_id);
 
+-- 앱은 좋아요를 vpylab_toggle_like로만 바꿉니다. 직접 쓰면 like_count와 어긋나므로 정책을 없앱니다.
+DROP POLICY IF EXISTS "likes_insert" ON public.vpylab_gallery_likes;
+DROP POLICY IF EXISTS "likes_delete_own" ON public.vpylab_gallery_likes;
+
 -- ========================================
 -- 6. 뷰가 RLS를 우회하지 않게 변경
 --    앱은 이 뷰를 사용하지 않습니다. 소유자 권한으로 실행되어 anon에게 전체 코드 id가 보였습니다.
