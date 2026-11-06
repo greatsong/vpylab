@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2026-11-06T23:47:56.346Z",
+  "url": "http://127.0.0.1:4035",
+  "results": [
+    {
+      "name": "standalone-dumpling",
+      "passed": true,
+      "meshes": 15
+    },
+    {
+      "name": "standalone-flashlight",
+      "passed": true,
+      "meshes": 14
+    },
+    {
+      "name": "standalone-toolbox",
+      "passed": true,
+      "meshes": 15
+    },
+    {
+      "name": "standalone-kirby",
+      "passed": true,
+      "meshes": 15
+    },
+    {
+      "name": "sandbox-real-pyodide-dumpling",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-flashlight",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-toolbox",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-kirby",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Real Python/Three rendering. Export CDN dependencies substituted with matching installed assets; Sandbox uses actual application loading. No authentication or live DB writes."
+}

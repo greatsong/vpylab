@@ -7,7 +7,8 @@ import { createWelcomeModel } from './welcome-geometry';
 
 export default function WelcomeFriends({ko=true}){
  const [id,setId]=useState('dumpling'),[webgl,setWebgl]=useState(true),[wave,setWave]=useState(0),[motionAllowed,setMotionAllowed]=useState(()=>typeof matchMedia==='function'&&!matchMedia('(prefers-reduced-motion: reduce)').matches);
- const host=useRef(null),runtime=useRef(null),friend=welcomeFriends.find(f=>f.id===id);
+ const host=useRef(null),runtime=useRef(null),friend=welcomeFriends.find(f=>f.id===id)||welcomeFriends.at(-1);
+ const selectedId=friend.id;
  useEffect(()=>{
   let renderer;
   try{renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});}catch{queueMicrotask(()=>setWebgl(false));return;}
@@ -25,16 +26,16 @@ export default function WelcomeFriends({ko=true}){
   const lost=e=>{e.preventDefault();cancelAnimationFrame(state.frame);setWebgl(false);};renderer.domElement.addEventListener('webglcontextlost',lost);
   return()=>{cancelAnimationFrame(state.frame);observer?.disconnect();window.removeEventListener('resize',resize);if(reduced.removeEventListener)reduced.removeEventListener('change',motionChanged);else reduced.removeListener?.(motionChanged);renderer.domElement.removeEventListener('webglcontextlost',lost);state.model?.dispose();shadow.geometry.dispose();shadow.material.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();runtime.current=null;};
  },[]);
- useEffect(()=>{const r=runtime.current;if(!r)return;cancelAnimationFrame(r.frame);if(r.model){r.scene.remove(r.model.group);r.model.dispose();}r.model=createWelcomeModel(id);r.scene.add(r.model.group);r.play();},[id]);
+ useEffect(()=>{const r=runtime.current;if(!r)return;cancelAnimationFrame(r.frame);if(r.model){r.scene.remove(r.model.group);r.model.dispose();}r.model=createWelcomeModel(selectedId);r.scene.add(r.model.group);r.play();},[selectedId]);
  useEffect(()=>{if(wave)runtime.current?.play();},[wave]);
  return <section className="welcome-friends" aria-label={ko?'코드로 만든 환영 친구':'A welcome friend made with code'}>
   <p className="welcome-hello" aria-live="polite">{friend.line[ko?'ko':'en']}</p>
-  <div className="welcome-stage" data-welcome-friend={id} data-welcome-renderer={webgl?'webgl':'svg'} role="img" aria-label={friend.label[ko?'ko':'en']}>
+  <div className="welcome-stage" data-welcome-friend={selectedId} data-welcome-renderer={webgl?'webgl':'svg'} role="img" aria-label={friend.label[ko?'ko':'en']}>
    <div ref={host} className="welcome-canvas" style={{visibility:webgl?'visible':'hidden'}}/>
-   {!webgl&&<StillFriend id={id}/>}
+   {!webgl&&<StillFriend id={selectedId}/>}
   </div>
-  <div className="welcome-choices" role="group" aria-label={ko?'맞이할 친구 고르기':'Choose a welcome friend'}>{welcomeFriends.map(f=><button key={f.id} onClick={()=>setId(f.id)} aria-pressed={f.id===id}><span style={{background:f.color}} aria-hidden="true"/>{f.label[ko?'ko':'en'].replace(' 친구','')}</button>)}</div>
-  <div className="welcome-actions"><button disabled={!webgl||!motionAllowed} onClick={()=>setWave(n=>n+1)}>{!webgl||!motionAllowed?(ko?'정적인 인사':'A still hello'):(ko?'손 흔들기':'Wave hello')} <span aria-hidden="true">↗</span></button><Link to={'/tutorials/welcome-friend?step='+id}>{ko?'이 친구, 내 코드로 만들기':'Build this friend with code'} →</Link></div>
+  <div className="welcome-choices" role="group" aria-label={ko?'맞이할 친구 고르기':'Choose a welcome friend'}>{welcomeFriends.map(f=><button key={f.id} onClick={()=>setId(f.id)} aria-pressed={f.id===selectedId}><span style={{background:f.color}} aria-hidden="true"/>{f.label[ko?'ko':'en'].replace(' 친구','')}</button>)}</div>
+  <div className="welcome-actions"><button disabled={!webgl||!motionAllowed} onClick={()=>setWave(n=>n+1)}>{!webgl||!motionAllowed?(ko?'정적인 인사':'A still hello'):(ko?'손 흔들기':'Wave hello')} <span aria-hidden="true">↗</span></button><Link to={'/tutorials/welcome-friend?step='+selectedId}>{ko?'이 친구, 내 코드로 만들기':'Build this friend with code'} →</Link></div>
   <p className="welcome-note">{ko?'작은 도형을 모으면 친구가 돼요. 나도 만들어 볼까요?':'Small shapes make a friend. Try making one yourself.'}</p>
  </section>;
 }

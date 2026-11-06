@@ -4,13 +4,28 @@ export const welcomeFriends=[
   {id:'dumpling',label:text('만두 친구','Dumpling'),color:'#ffe4b9',line:text('작은 코드부터, 같이 만들어 볼까?','Let’s make something with a little code!')},
   {id:'flashlight',label:text('손전등 친구','Flashlight'),color:'#b8b2ee',line:text('궁금한 곳을 코드로 비춰 보자!','Let’s shine a light on a new idea!')},
   {id:'toolbox',label:text('공구상자 친구','Toolbox'),color:'#f59282',line:text('만들고, 움직이고, 함께 고쳐 보자!','Let’s build, move, and improve it together!')},
-  {id:'cloud',label:text('구름 친구','Cloud'),color:'#e4e6ff',line:text('처음이어도 괜찮아. 하나씩 해 보자!','New to coding? Let’s try one thing at a time!')},
+  {id:'kirby',label:text('분홍 친구','Pink friend'),color:'#f5a4c2',line:text('반가워! 같이 만들어 볼까?','Hello! Let’s make something together!')},
 ];
 const ink='#293342',cheek='#f3a6ae',mint='#a7d7c4';
 export function welcomeParts(id='dumpling'){
   const parts=[];
   const egg=(name,pos,size,color,angle=0)=>parts.push({name,type:'ellipsoid',pos,size,color,angle});
   const solid=(name,type,props,color)=>parts.push({name,type,...props,color});
+  if(id==='kirby'){
+    const pink='#f5a4c2';
+    solid('body','sphere',{pos:[0,0,0],radius:.86},pink);
+    egg('left_foot',[-.38,-.81,.16],[.62,.33,.8],'#df3460');egg('right_foot',[.38,-.81,.16],[.62,.33,.8],'#df3460');
+    egg('left_hand',[-.88,-.07,0],[.46,.46,.46],pink);egg('right_hand',[.86,.13,0],[.43,.5,.5],pink,-.6);
+    for(const side of [-1,1]){
+      egg('eye_'+side,[side*.24,.22,.804],[.115,.29,.08],'#242840');
+      egg('eye_blue_'+side,[side*.24,.145,.851],[.078,.095,.02],'#365aa5');
+      egg('eye_shine_'+side,[side*.24-.012,.29,.854],[.046,.08,.02],'#ffffff');
+      egg('cheek_'+side,[side*.48,0,.718],[.21,.08,.035],'#eb759e');
+    }
+    egg('mouth',[0,-.18,.844],[.16,.18,.04],'#813652');
+    egg('tongue',[0,-.215,.866],[.085,.045,.02],'#f4a1bc');
+    return parts;
+  }
   let faceY=0,faceZ=.54,feetY=-.83;
   if(id==='flashlight'){
     solid('body','cylinder',{pos:[0,-.73,0],axis:[0,1.4,0],radius:.46},'#b8b2ee');
@@ -26,16 +41,12 @@ export function welcomeParts(id='dumpling'){
     solid('lid','box',{pos:[0,.47,0],size:[1.8,.26,.98]},'#f8a18e');
     solid('clasp','box',{pos:[0,.35,.53],size:[.32,.28,.12]},'#f2d28a');
     faceY=-.07;faceZ=.44;feetY=-.72;
-  }else if(id==='cloud'){
-    egg('top',[0,.33,0],[1.22,1.32,1.03],'#f3f2ff');
-    egg('left_puff',[-.56,-.02,0],[1.04,1.0,.98],'#f3f2ff');egg('right_puff',[.56,-.02,0],[1.04,1.0,.98],'#f3f2ff');
-    egg('base',[0,-.28,0],[1.8,.63,1.02],'#f3f2ff');faceY=-.08;faceZ=.525;feetY=-.7;
   }else{
     egg('body',[0,-.12,0],[1.85,1.36,1.1],'#ffe4b9');
     for(let i=-2;i<=2;i++)egg('fold_'+(i+2),[i*.21,.43+(2-Math.abs(i))*.055,0],[.18,.43,.66],'#f8d6a4',-i*.16);
   }
   egg('left_foot',[-.39,feetY,.09],[.32,.22,.43],mint);egg('right_foot',[.39,feetY,.09],[.32,.22,.43],mint);
-  const armX=id==='flashlight'?.57:id==='cloud'?1.05:.96;
+  const armX=id==='flashlight'?.57:.96;
   egg('left_hand',[-armX,-.22,0],[.22,.48,.24],id==='flashlight'?'#b8b2ee':mint,-.48);
   egg('right_hand',[armX,.25,0],[.23,.55,.25],id==='flashlight'?'#b8b2ee':mint,-.5);
   for(const side of [-1,1]){
@@ -46,7 +57,7 @@ export function welcomeParts(id='dumpling'){
   return parts;
 }
 export const welcomeWaveAngle=frame=>{let angle=0;for(let i=0;i<=frame;i++)angle+=.06*Math.cos(i*Math.PI/12);return angle;};
-export const welcomeWavePivot=id=>[id==='flashlight'?.51:id==='cloud'?.94:.85,.02,0];
+export const welcomeWavePivot=id=>[id==='flashlight'?.51:id==='kirby'?.72:.85,.02,0];
 export const rgb=hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255);
 const n=value=>Number(value.toFixed(5));
 const vec=values=>'vector('+values.map(n).join(', ')+')';
@@ -60,5 +71,5 @@ export function welcomeCode(id='dumpling'){
   lines.push('', '# 손을 조금씩 돌려 인사합니다. 반복 횟수와 각도를 바꿔 보세요.', 'for frame in range(72):','    rate(30)','    angle = 0.06 * cos(frame * pi / 12)','    right_hand.rotate(angle=angle, axis=vector(0, 0, 1),', '                      origin='+vec(welcomeWavePivot(id))+')');
   return lines.join('\n')+'\n';
 }
-export const welcomeTutorial={id:'welcome-friend',kind:'lab',duration:text('3~5분 · 기본 도형으로 인사하기','3–5 min · Say hello with shapes'),title:text('첫 화면의 친구를 내 코드로','Build the welcome friend with code'),description:text('만두·손전등·공구상자·구름을 기본 도형으로 만들고 손을 흔들어 봅니다.','Build a dumpling, flashlight, toolbox, or cloud with simple shapes and make it wave.'),change:text('도형 한 줄의 color나 발의 size 중 하나를 바꾸고 다시 실행하세요.','Change one shape’s color or a foot’s size and run it again.'),reflect:text('right_hand.rotate의 angle을 바꾸면 인사가 어떻게 달라지나요?','How does changing the angle in right_hand.rotate change the wave?')};
+export const welcomeTutorial={id:'welcome-friend',kind:'lab',duration:text('3~5분 · 기본 도형으로 인사하기','3–5 min · Say hello with shapes'),title:text('첫 화면의 친구를 내 코드로','Build the welcome friend with code'),description:text('만두·손전등·공구상자·분홍 친구를 기본 도형으로 만들고 손을 흔들어 봅니다.','Build a dumpling, flashlight, toolbox, or pink friend with simple shapes and make it wave.'),change:text('도형 한 줄의 color나 발의 size 중 하나를 바꾸고 다시 실행하세요.','Change one shape’s color or a foot’s size and run it again.'),reflect:text('right_hand.rotate의 angle을 바꾸면 인사가 어떻게 달라지나요?','How does changing the angle in right_hand.rotate change the wave?')};
 export function getWelcomeTutorial(id,step){if(id!==welcomeTutorial.id)return undefined;const friend=welcomeFriends.find(f=>f.id===step)||welcomeFriends[0];return {...welcomeTutorial,code:welcomeCode(friend.id),activeStep:friend.id,variants:welcomeFriends.map(f=>({id:f.id,title:f.label})),stepNote:text('이름은 아직 정하지 않았어요. 먼저 내 색과 모양으로 바꿔 보세요.','No name yet. Start by changing the shapes and colors.'),usesSound:false};}

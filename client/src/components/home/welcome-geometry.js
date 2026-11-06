@@ -6,7 +6,8 @@ export function createWelcomeModel(id){
  const group=new THREE.Group(),pivot=new THREE.Group();pivot.position.fromArray(welcomeWavePivot(id));group.add(pivot);
  for(const p of welcomeParts(id)){
   let geometry;
-  if(p.type==='ellipsoid'){geometry=new THREE.SphereGeometry(1,32,24);geometry.scale(...p.size.map(x=>x/2));}
+  if(p.type==='sphere')geometry=new THREE.SphereGeometry(p.radius,32,24);
+  else if(p.type==='ellipsoid'){geometry=new THREE.SphereGeometry(1,32,24);geometry.scale(...p.size.map(x=>x/2));}
   else if(p.type==='curve'){geometry=new THREE.BufferGeometry().setFromPoints(p.pos.map(v=>new THREE.Vector3(...v)));}
   else if(p.type==='box')geometry=new THREE.BoxGeometry(...p.size);
   else if(p.type==='ring')geometry=new THREE.TorusGeometry(p.radius,p.thickness,12,48);
