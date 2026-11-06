@@ -3,6 +3,7 @@ import Editor, { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import useAppStore from '../../stores/appStore';
+import { registerVpylabCompletions } from './vpylab-completions';
 
 // Monaco Web Worker 설정 — 누락 시 "MonacoEnvironment.getWorker" 오류 발생
 self.MonacoEnvironment = {
@@ -47,6 +48,8 @@ export default function CodeEditor({ code, onChange, fontSize = 14, readOnly = f
 
   const handleMount = useCallback((editor) => {
     editorRef.current = editor;
+    // VPyLab 전용 자동 완성(색·음·효과음·API)은 첫 마운트 때 한 번만 등록된다
+    registerVpylabCompletions(monaco);
     editor.focus();
     // 폰트 합자 명시적 OFF — props만으로 안 먹는 환경 방어
     editor.updateOptions({ fontLigatures: false });
@@ -74,15 +77,25 @@ export default function CodeEditor({ code, onChange, fontSize = 14, readOnly = f
           tabSize: 4,
           insertSpaces: true,
           automaticLayout: true,
+          // 편집기 칸이 좁을 때 제안 목록이 칸 밖으로 잘리지 않게 고정 위치에 그린다
+          fixedOverflowWidgets: true,
           wordWrap: 'on',
           bracketPairColorization: { enabled: true },
           renderLineHighlight: 'line',
           cursorBlinking: 'smooth',
           cursorSmoothCaretAnimation: 'on',
           smoothScrolling: true,
+          // 문자열 안(색상['빨, 음표("도)에서도 제안이 뜨도록 strings 를 켠다
+          quickSuggestions: { other: true, comments: false, strings: true },
+          quickSuggestionsDelay: 50,
+          suggestOnTriggerCharacters: true,
+          acceptSuggestionOnEnter: 'on',
           suggest: {
             showKeywords: true,
             showSnippets: true,
+            // 스니펫 탭 정지 안(sphere(color=|))에서도 자동 제안이 뜨게
+            snippetsPreventQuickSuggestions: false,
+            preview: false,
           },
         }}
       />
