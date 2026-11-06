@@ -243,10 +243,11 @@ async function commitFile(owner, repo, path, content, message, token, branch = '
 
 const COMMIT_RETRY_DELAYS_MS = [200, 500, 1200];
 
-async function commitFilesAtomic(owner, repo, files, message, token, branch = 'main') {
+async function commitFilesAtomic(owner, repo, files, message, token, branch = 'main', assertCurrent = null) {
   const cleanFiles = (files || [])
     .filter((file) => file?.path && typeof file.content === 'string');
   if (cleanFiles.length === 0) return null;
+  if (assertCurrent) await assertCurrent();
 
   const headSha = await getBranchHeadSha(owner, repo, token, branch);
   const baseTreeSha = await getCommitTreeSha(owner, repo, headSha, token);
@@ -294,6 +295,7 @@ async function commitFilesAtomic(owner, repo, files, message, token, branch = 'm
     },
   );
 
+  if (assertCurrent) await assertCurrent();
   await ghFetch(
     `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(branch)}`,
     token,
@@ -307,12 +309,12 @@ async function commitFilesAtomic(owner, repo, files, message, token, branch = 'm
   return commitResult.sha;
 }
 
-async function commitGeneratedFiles(owner, repo, token, message, buildFiles, branch = 'main') {
+async function commitGeneratedFiles(owner, repo, token, message, buildFiles, branch = 'main', assertCurrent = null) {
   let lastErr = null;
   for (let attempt = 0; attempt <= COMMIT_RETRY_DELAYS_MS.length; attempt++) {
     const built = await buildFiles();
     try {
-      const commitSha = await commitFilesAtomic(owner, repo, built.files, message, token, branch);
+      const commitSha = await commitFilesAtomic(owner, repo, built.files, message, token, branch, assertCurrent);
       return { ...built, commitSha };
     } catch (e) {
       lastErr = e;
@@ -810,17 +812,24 @@ async function getStaleCodeRevisionInfo({ revisionId, projectId, codeId }) {
       .select('id, project_id, code_id, created_at')
       .eq('id', revisionId)
       .maybeSingle();
-    if (revisionError || !revision?.code_id) {
-      if (revisionError) console.warn('[projects/commit] revision 조회 실패:', revisionError.message);
-      return null;
+    if (revisionError) {
+      throw new Error('저장 이력을 확인하지 못했습니다.');
+    }
+    if (!revision?.code_id) {
+      throw Object.assign(new Error('이 저장 이력을 찾을 수 없습니다. 코드를 새로 저장한 뒤 다시 시도해주세요.'), {
+        status: 409, code: 'revision_not_found',
+      });
     }
 
-    if (projectId && revision.project_id && revision.project_id !== projectId) {
+    if (projectId && revision.project_id !== projectId) {
       return {
         stale: true,
         reason: 'project_mismatch',
         latestRevisionId: null,
       };
+    }
+    if (codeId && revision.code_id !== codeId) {
+      return { stale: true, reason: 'code_mismatch', latestRevisionId: null };
     }
 
     const targetCodeId = codeId || revision.code_id;
@@ -832,8 +841,7 @@ async function getStaleCodeRevisionInfo({ revisionId, projectId, codeId }) {
       .limit(1)
       .maybeSingle();
     if (latestError || !latest?.id) {
-      if (latestError) console.warn('[projects/commit] 최신 revision 조회 실패:', latestError.message);
-      return null;
+      throw new Error('최신 저장 이력을 확인하지 못했습니다.');
     }
 
     return latest.id !== revisionId
@@ -845,8 +853,11 @@ async function getStaleCodeRevisionInfo({ revisionId, projectId, codeId }) {
         }
       : null;
   } catch (e) {
+    if (e.code === 'revision_not_found') throw e;
     console.warn('[projects/commit] stale revision 확인 실패:', e.message);
-    return null;
+    throw Object.assign(new Error('저장 이력을 확인하지 못해 GitHub 반영을 보류했습니다. 잠시 후 다시 저장해주세요.'), {
+      status: 503, code: 'revision_check_unavailable',
+    });
   }
 }
 
@@ -931,6 +942,7 @@ function versionedPagesUrl(owner, repo, sha) {
 }
 
 function isRetryablePagesActivationError(error) {
+  if (error?.code === 'pages_source_mismatch') return false;
   const status = error?.status;
   const text = [
     error?.message,
@@ -948,6 +960,7 @@ function isRetryablePagesActivationError(error) {
 
 function getPagesActivationWarning(error) {
   if (!error) return null;
+  if (error.code === 'pages_source_mismatch') return error.message;
   if (error.status === 401) {
     return 'GitHub 로그인이 만료되어 Pages 배포 확인을 마치지 못했습니다. VPyLab 저장은 완료됐고, GitHub로 다시 로그인한 뒤 저장하면 Pages를 다시 확인합니다.';
   }
@@ -960,11 +973,16 @@ function getPagesActivationWarning(error) {
   return 'GitHub Pages 배포 확인이 아직 끝나지 않았습니다. README 링크가 404로 보이면 1~2분 뒤 새로고침하거나, VPyLab에서 GitHub로 다시 로그인한 뒤 저장해주세요.';
 }
 
-async function ensurePagesEnabledOnce(owner, repo, token) {
+async function ensurePagesEnabledOnce(owner, repo, token, branch = 'main') {
   try {
     const page = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/pages`, token, {
       timeoutMs: GITHUB_PAGES_API_TIMEOUT_MS,
     });
+    if (page.source && (page.source.branch !== branch || page.source.path !== '/')) {
+      throw Object.assign(new Error('GitHub 코드는 저장됐지만 Pages의 브랜치 또는 폴더가 다릅니다. 저장소 Settings → Pages에서 실행할 브랜치와 루트 폴더를 확인해주세요.'), {
+        status: 409, code: 'pages_source_mismatch',
+      });
+    }
     return {
       active: true,
       status: page.status || null,
@@ -975,7 +993,7 @@ async function ensurePagesEnabledOnce(owner, repo, token) {
     const page = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/pages`, token, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: { branch: 'main', path: '/' } }),
+      body: JSON.stringify({ source: { branch, path: '/' } }),
       timeoutMs: GITHUB_PAGES_API_TIMEOUT_MS,
     });
     return {
@@ -986,13 +1004,13 @@ async function ensurePagesEnabledOnce(owner, repo, token) {
   }
 }
 
-async function ensurePagesEnabled(owner, repo, token) {
+async function ensurePagesEnabled(owner, repo, token, branch = 'main') {
   let lastError = null;
   for (let attempt = 0; attempt < PAGES_ENABLE_RETRY_DELAYS_MS.length; attempt += 1) {
     const waitMs = PAGES_ENABLE_RETRY_DELAYS_MS[attempt];
     if (waitMs) await sleep(waitMs);
     try {
-      const page = await ensurePagesEnabledOnce(owner, repo, token);
+      const page = await ensurePagesEnabledOnce(owner, repo, token, branch);
       if (attempt > 0) {
         console.log(`[pages] ${owner}/${repo} 활성화 확인 성공 (재시도 ${attempt}회)`);
       }
@@ -1670,7 +1688,7 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
     if (recordOnly && !voyageEntry) {
       return res.status(400).json({ error: '기록만 저장하려면 항해 일지 내용이 필요합니다.', code: 'missing_voyage_entry' });
     }
-    if (!recordOnly && !code) return res.status(400).json({ error: '코드 비어있음' });
+    if (!recordOnly && (!code || typeof code !== 'string')) return res.status(400).json({ error: '코드 형식이 올바르지 않습니다.' });
     if (!recordOnly && Buffer.byteLength(code, 'utf-8') > MAX_CODE_BYTES)
       return res.status(413).json({ error: `코드가 너무 큽니다 (최대 ${MAX_CODE_BYTES / 1024}KB).` });
     if (!recordOnly && htmlContent != null && typeof htmlContent !== 'string')
@@ -1687,6 +1705,10 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
 
     const { owner, repo } = parsed;
     const access = await getRepoAccess(owner, repo, githubToken);
+    const branch = access.defaultBranch;
+    if (access.fullName.toLowerCase() !== repoFullName.toLowerCase()) {
+      return res.status(409).json({ error: 'GitHub 저장소 이름이 바뀌었습니다. 연결 정보를 확인해주세요.', code: 'repo_moved' });
+    }
     if (!access.canPush) {
       return res.status(403).json({
         error: `${access.fullName}에 커밋할 GitHub 쓰기 권한이 없습니다. VPyLab 초대 코드와 GitHub collaborator 권한은 별도입니다. 저장소 소유자가 GitHub Collaborators에 이 계정을 추가해야 합니다.`,
@@ -1695,9 +1717,9 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
     }
 
     if (!recordOnly && revisionId) {
-      const staleInfo = await getStaleCodeRevisionInfo({ revisionId, projectId, codeId });
+      const staleInfo = await getStaleCodeRevisionInfo({ revisionId, projectId: projectId || req.authorizedProjectId, codeId });
       if (staleInfo?.stale) {
-        const headSha = await getBranchHeadSha(owner, repo, githubToken).catch(() => null);
+        const headSha = await getBranchHeadSha(owner, repo, githubToken, branch).catch(() => null);
         console.log(
           `[projects/commit] 오래된 revision 반영 생략: ${owner}/${repo} `
           + `revision=${revisionId} latest=${staleInfo.latestRevisionId || 'unknown'}`,
@@ -1744,12 +1766,12 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
           `📔 voyage: ${finalMsg}`,
           async () => {
             const enriched = { ...voyageEntry, authorLabel, revisionId };
-            const voyageUpdate = await buildVoyageFileUpdate(owner, repo, enriched, githubToken);
+            const voyageUpdate = await buildVoyageFileUpdate(owner, repo, enriched, githubToken, branch);
             const files = [voyageUpdate.file];
             let indexUpdated = false;
 
             if (voyageUpdate.isNewDay) {
-              const indexUpdate = await buildHistoryIndexFileUpdate(owner, repo, voyageEntry.localDate, githubToken);
+              const indexUpdate = await buildHistoryIndexFileUpdate(owner, repo, voyageEntry.localDate, githubToken, branch);
               if (indexUpdate.file) {
                 files.push(indexUpdate.file);
                 indexUpdated = true;
@@ -1758,6 +1780,7 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
 
             return { files, voyageUpdate, indexUpdated };
           },
+          branch,
         );
         voyageInfo = {
           path: recordCommit.voyageUpdate.path,
@@ -1812,22 +1835,29 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
 
           if (voyageEntry) {
             const enriched = { ...voyageEntry, authorLabel, revisionId };
-            voyageUpdate = await buildVoyageFileUpdate(owner, repo, enriched, githubToken);
+            voyageUpdate = await buildVoyageFileUpdate(owner, repo, enriched, githubToken, branch);
             files.push(voyageUpdate.file);
             if (voyageUpdate.isNewDay) {
-              const indexUpdate = await buildHistoryIndexFileUpdate(owner, repo, voyageEntry.localDate, githubToken);
+              const indexUpdate = await buildHistoryIndexFileUpdate(owner, repo, voyageEntry.localDate, githubToken, branch);
               if (indexUpdate.file) {
                 files.push(indexUpdate.file);
                 indexUpdated = true;
               }
             }
           } else {
-            files.push(await buildHistoryFileUpdate(owner, repo, { message: finalMsg, authorLabel, source, revisionId }, githubToken));
+            files.push(await buildHistoryFileUpdate(owner, repo, { message: finalMsg, authorLabel, source, revisionId }, githubToken, branch));
             historyIncluded = true;
           }
 
           return { files, pageIncluded, historyIncluded, voyageUpdate, indexUpdated };
         },
+        branch,
+        revisionId ? async () => {
+          const staleInfo = await getStaleCodeRevisionInfo({ revisionId, projectId: projectId || req.authorizedProjectId, codeId });
+          if (staleInfo?.stale) {
+            throw Object.assign(new Error('더 최신 코드가 저장됐습니다.'), { code: 'stale_revision', staleInfo });
+          }
+        } : null,
       );
 
       mainSha = codeCommit.commitSha;
@@ -1846,7 +1876,7 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
 
       if (updateIndex) {
         try {
-          pagesInfo = await ensurePagesEnabled(owner, repo, githubToken);
+          pagesInfo = await ensurePagesEnabled(owner, repo, githubToken, branch);
           const build = await requestPagesBuild(owner, repo, githubToken);
           pagesBuildRequested = build.requested;
         } catch (e) {
@@ -1905,6 +1935,25 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
     });
   } catch (e) {
     console.error('[projects/commit]', e.message);
+    if (e.code === 'revision_not_found') {
+      return res.status(409).json({ error: e.message, code: e.code });
+    }
+    if (e.code === 'revision_check_unavailable') {
+      return res.status(503).json({ error: e.message, code: e.code });
+    }
+    if (e.code === 'stale_revision') {
+      const { repoFullName, githubToken } = req.body;
+      const { owner, repo } = parseRepoFullName(repoFullName);
+      const access = await getRepoAccess(owner, repo, githubToken);
+      const headSha = await getBranchHeadSha(owner, repo, githubToken, access.defaultBranch).catch(() => null);
+      return res.json({
+        success: true, skipped: true, staleRevision: true,
+        staleReason: e.staleInfo.reason, latestRevisionId: e.staleInfo.latestRevisionId,
+        commitSha: headSha, repoUrl: `https://github.com/${owner}/${repo}`,
+        pagesUrl: versionedPagesUrl(owner, repo, headSha),
+        pagesWarning: '더 최신 코드 저장이 있어 이전 코드의 GitHub 덮어쓰기를 건너뛰었습니다.',
+      });
+    }
     if (e.status === 401) return res.status(401).json({ error: 'GitHub 인증이 만료되었습니다.', code: 'github_auth_required' });
     if (e.status === 403 && isGithubTwoFactorRequired(e)) {
       const failure = getGithubTwoFactorFailure('GitHub 코드 반영');

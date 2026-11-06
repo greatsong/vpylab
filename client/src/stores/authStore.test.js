@@ -1,24 +1,103 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn(), signInWithOAuth: vi.fn(), linkIdentity: vi.fn(), signOut: vi.fn() }));
 vi.mock('../lib/supabase', () => ({
   AUTH_STORAGE_KEY: 'vpylab-auth',
-  supabase: { auth: { getSession: mocks.getSession, onAuthStateChange: mocks.onAuthStateChange } },
+  supabase: { auth: { getSession: mocks.getSession, onAuthStateChange: mocks.onAuthStateChange,
+    signInWithOAuth: mocks.signInWithOAuth, linkIdentity: mocks.linkIdentity, signOut: mocks.signOut } },
 }));
 
 import useAuthStore from './authStore';
 
-const originalProfileActions = { upsertProfile: useAuthStore.getState().upsertProfile, fetchProfile: useAuthStore.getState().fetchProfile };
+const originalProfileActions = { upsertProfile: useAuthStore.getState().upsertProfile, fetchProfile: useAuthStore.getState().fetchProfile, _cleanupStoresOnSignOut: useAuthStore.getState()._cleanupStoresOnSignOut };
 
 const githubUser = { id: 'student-a', app_metadata: { provider: 'github' } };
 
 beforeEach(() => {
   localStorage.clear();
-  useAuthStore.setState({ user: githubUser, githubTokenExpired: false });
+  vi.clearAllMocks();
+  useAuthStore.setState({ user: githubUser, githubTokenExpired: false, githubAuthError: '' });
+  mocks.signInWithOAuth.mockResolvedValue({ data: {}, error: null });
+  mocks.linkIdentity.mockResolvedValue({ data: {}, error: null });
   mocks.getSession.mockResolvedValue({ data: { session: { user: githubUser } } });
 });
 
 describe('GitHub 연결에 쓰는 현재 계정 인증', () => {
+  it('로그아웃 listener가 지연되거나 종료가 실패해도 다른 계정의 개인 상태와 저장 인증을 정리한다', async () => {
+    const cleanup = vi.fn().mockResolvedValue();
+    useAuthStore.setState({ user: githubUser, profile: { display_name: '다른 계정' }, _cleanupStoresOnSignOut: cleanup });
+    localStorage.setItem('vpylab-auth', 'test-session');
+    localStorage.setItem('vpylab-auth-user', 'test-user');
+    localStorage.setItem('vpylab-github-auth', 'test-github');
+    mocks.signOut.mockResolvedValue({ error: { message: 'network failure' } });
+    const result = await useAuthStore.getState().endMismatchedOAuth();
+    expect(result.error.message).toBe('network failure');
+    expect(cleanup).toHaveBeenCalledOnce();
+    expect(mocks.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(useAuthStore.getState().user).toBeNull();
+    expect(useAuthStore.getState().profile).toBeNull();
+    expect(localStorage.getItem('vpylab-auth')).toBeNull();
+    expect(localStorage.getItem('vpylab-auth-user')).toBeNull();
+    expect(localStorage.getItem('vpylab-github-auth')).toBeNull();
+  });
+  it('Google 로그인 중에는 기존 계정에 identity를 연결하고 다른 계정으로 로그인하지 않는다', async () => {
+    useAuthStore.setState({ user: { id: 'google-user', app_metadata: { provider: 'google' } } });
+    await useAuthStore.getState().signInWithGitHub({ returnCode: 'print("작품")', returnProjectId: 'project-a', returnPath: '/sandbox' });
+    expect(mocks.linkIdentity).toHaveBeenCalledWith(expect.objectContaining({ provider: 'github', options: expect.objectContaining({ scopes: 'public_repo' }) }));
+    expect(mocks.signInWithOAuth).not.toHaveBeenCalled();
+    expect(localStorage.getItem('vpylab-oauth-link-user')).toBe('google-user');
+    expect(localStorage.getItem('vpylab-oauth-return-code')).toBe('print("작품")');
+    expect(useAuthStore.getState().user.id).toBe('google-user');
+  });
+
+  it('GitHub 로그인과 기존 GitHub 사용자의 재인증은 OAuth를 유지한다', async () => {
+    for (const user of [null, githubUser]) {
+      useAuthStore.setState({ user });
+      await useAuthStore.getState().signInWithGitHub();
+    }
+    expect(mocks.signInWithOAuth).toHaveBeenCalledTimes(2);
+    expect(mocks.linkIdentity).not.toHaveBeenCalled();
+  });
+
+  it('재인증도 원래 사용자 ID를 확인하고 이전 복귀 정보를 새 요청에 섞지 않는다', async () => {
+    localStorage.setItem('vpylab-oauth-return-project-id', 'old-project');
+    localStorage.setItem('vpylab-oauth-return-code', 'old-code');
+    await useAuthStore.getState().signInWithGitHub({ returnPath: '/sandbox' });
+    expect(localStorage.getItem('vpylab-oauth-link-user')).toBe(githubUser.id);
+    expect(localStorage.getItem('vpylab-oauth-return-project-id')).toBeNull();
+    expect(localStorage.getItem('vpylab-oauth-return-code')).toBeNull();
+  });
+
+  it('네트워크 예외도 기존 계정과 편집 중 코드를 유지하고 안내한다', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    useAuthStore.setState({ user: { id: 'google-user', app_metadata: { provider: 'google' } } });
+    mocks.linkIdentity.mockRejectedValue(new Error('network failure'));
+    const result = await useAuthStore.getState().signInWithGitHub({ returnCode: 'unsaved' });
+    expect(result.error.message).toBe('network failure');
+    expect(useAuthStore.getState().user.id).toBe('google-user');
+    expect(useAuthStore.getState().githubAuthError).toContain('작품');
+    expect(localStorage.getItem('vpylab-oauth-return-code')).toBeNull();
+  });
+
+  it('계정 연결 미지원이나 거부 시 다른 계정으로 자동 전환하지 않고 오류를 표시한다', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    useAuthStore.setState({ user: { id: 'google-user', app_metadata: { provider: 'google' } } });
+    mocks.linkIdentity.mockResolvedValue({ data: null, error: { code: 'manual_linking_disabled', message: 'disabled' } });
+    const result = await useAuthStore.getState().signInWithGitHub();
+    expect(result.error.code).toBe('manual_linking_disabled');
+    expect(mocks.signInWithOAuth).not.toHaveBeenCalled();
+    expect(useAuthStore.getState().githubAuthError).toContain('계정 연결');
+    expect(useAuthStore.getState().user.id).toBe('google-user');
+    expect(localStorage.getItem('vpylab-oauth-provider')).toBeNull();
+  });
+
+  it('계정 연결 완료의 사용자 ID가 달라지면 토큰을 연결 완료로 기록하지 않는다', () => {
+    localStorage.setItem('vpylab-oauth-provider', 'github');
+    localStorage.setItem('vpylab-oauth-link-user', 'google-user');
+    useAuthStore.getState().captureOAuthSession({ user: githubUser, provider_token: 'test-other-user' });
+    expect(localStorage.getItem('vpylab-github-auth')).toBeNull();
+    expect(useAuthStore.getState().githubAuthError).toContain('계정');
+  });
   it('실제 앱의 저장 키에서 같은 계정의 GitHub 인증을 찾는다', async () => {
     localStorage.setItem('vpylab-auth', JSON.stringify({ user: githubUser, provider_token: 'test-current-token' }));
     expect(await useAuthStore.getState().getGitHubToken()).toBe('test-current-token');

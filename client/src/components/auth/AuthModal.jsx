@@ -5,7 +5,7 @@ import { BrandMark } from '../shared/BrandLogo';
 
 export default function AuthModal() {
   const theme = useAppStore((state) => state.theme);
-  const { authModalOpen, setAuthModalOpen, signInWithGoogle, signInWithGitHub } = useAuthStore();
+  const { authModalOpen, setAuthModalOpen, signInWithGoogle, signInWithGitHub, githubAuthError } = useAuthStore();
   const { t } = useI18n();
 
   if (!authModalOpen) return null;
@@ -27,6 +27,7 @@ export default function AuthModal() {
 
         <h2 id="auth-dialog-title" className="auth-title">VPyLab {t('auth.login')}</h2>
         <p className="auth-desc">{t('auth.loginDescription')}</p>
+        {githubAuthError && <p role="alert" className="auth-desc">{githubAuthError}</p>}
 
         {/* 소셜 버튼 */}
         <div className="auth-buttons">

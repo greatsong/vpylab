@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import useAuthStore from '../stores/authStore';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const [callbackError, setCallbackError] = useState('');
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -33,7 +34,10 @@ export default function AuthCallback() {
         }
       }
       // 실패한 OAuth 뒤 남아 있는 이전 세션의 토큰에 새 provider를 붙이지 않습니다.
-      useAuthStore.getState().captureOAuthSession(callbackFailed ? null : (code ? exchangedSession : session));
+      const errorCode = params.get('error_code') || hashParams.get('error_code');
+      const capture = useAuthStore.getState().captureOAuthSession;
+      const completedSession = callbackFailed ? null : (code ? exchangedSession : session);
+      const captureResult = errorCode ? capture(completedSession, { errorCode }) : capture(completedSession);
 
       // 재인증 시 저장해둔 returnPath / returnCode 복원
       let returnPath = '/';
@@ -50,6 +54,17 @@ export default function AuthCallback() {
         localStorage.removeItem('vpylab-oauth-return-action');
         localStorage.removeItem('vpylab-oauth-return-project-id');
       } catch { /* ignore */ }
+
+      if (captureResult?.accountMismatch) {
+        // 다른 사용자의 세션으로 원래 프로젝트를 여는 일을 막고 편집 중 코드는 보존합니다.
+        const { error } = await useAuthStore.getState().endMismatchedOAuth();
+        if (error) {
+          setCallbackError('로그인 세션 정리를 완료하지 못했습니다. 새로고침한 뒤 원래 계정으로 로그인해주세요.');
+          return;
+        }
+        navigate('/sandbox', { replace: true, state: returnCode != null ? { restoredCode: returnCode } : undefined });
+        return;
+      }
 
       // returnCode가 있으면 navigate state로 전달 → Sandbox가 받아서 에디터 복원
       if (returnCode != null) {
@@ -70,7 +85,7 @@ export default function AuthCallback() {
       className="h-screen flex items-center justify-center"
       style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)' }}
     >
-      로그인 처리 중...
+      {callbackError ? <div role="alert"><p>{callbackError}</p><button onClick={() => window.location.reload()}>새로고침</button></div> : '로그인 처리 중...'}
     </div>
   );
 }

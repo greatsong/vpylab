@@ -23,7 +23,10 @@ jobs:
             server/package-lock.json
       - run: npm --prefix client ci
       - run: npm --prefix server ci
-      - run: node --test server/classroom/*.test.js server/middleware/*.test.js server/lan/*.test.js scripts/classroom/backup.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: node --test server/classroom/*.test.js server/middleware/*.test.js server/lan/*.test.js server/routes/*.test.js server/utils/*.test.js scripts/classroom/backup.test.mjs
       - run: npm --prefix client run build:classroom
       - run: node scripts/classroom/check-curriculum.mjs
 

@@ -87,22 +87,50 @@ export async function requireTeamProjectAccess(req, res, next) {
   }
 
   const projectId = req.body?.projectId || null;
-  const repoFullName = req.body?.repoFullName || null;
+  const suppliedRepos = [req.body?.repoFullName, req.body?.existingRepo].filter(value => value != null);
+  if (suppliedRepos.some(value => typeof value !== 'string'
+    || !/^[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9._-]{1,100}$/.test(value))) {
+    return res.status(400).json({ error: 'GitHub 저장소 연결 정보가 올바르지 않습니다.', code: 'missing_repo' });
+  }
+  if (suppliedRepos.length === 2 && suppliedRepos[0].toLowerCase() !== suppliedRepos[1].toLowerCase()) {
+    return res.status(400).json({ error: 'GitHub 저장소 요청 정보가 서로 다릅니다.', code: 'project_repo_mismatch' });
+  }
+  const repoFullName = suppliedRepos[0] || null;
+  req.authorizedRepo = repoFullName;
 
   try {
     const supabase = getServiceClient();
 
     // 대상 팀 프로젝트 판별: projectId 우선, 없으면 repoFullName으로 역조회
     let targetProjectId = projectId;
+    if (projectId) {
+      const { data: project, error } = await supabase.from('vpylab_projects')
+        .select('id, github_repo').eq('id', projectId).maybeSingle();
+      if (error) throw error;
+      if (!project) {
+        return res.status(403).json({ error: '프로젝트 멤버가 아닙니다.', code: 'not_project_member' });
+      }
+      if (repoFullName && project.github_repo?.toLowerCase() !== repoFullName.toLowerCase()) {
+        return res.status(403).json({ error: '프로젝트에 연결된 GitHub 저장소와 요청 대상이 다릅니다.', code: 'project_repo_mismatch' });
+      }
+      if (!project.github_repo) {
+        return res.status(409).json({ error: '프로젝트에 GitHub 저장소를 먼저 연결해주세요.', code: 'project_repo_missing' });
+      }
+      req.authorizedRepo = project.github_repo;
+    }
     if (!targetProjectId && repoFullName) {
+      const escapedRepo = repoFullName.replace(/[\\%_]/g, '\\$&');
       const { data: projRows, error: projErr } = await supabase
         .from('vpylab_projects')
         .select('id')
-        .eq('github_repo', repoFullName)
-        .limit(1);
+        .ilike('github_repo', escapedRepo)
+        .limit(2);
       if (projErr) {
         console.error('[auth] repo→프로젝트 역조회 실패:', projErr.message);
         return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+      }
+      if (projRows?.length > 1) {
+        return res.status(409).json({ error: '프로젝트를 선택한 뒤 다시 저장해주세요.', code: 'project_required' });
       }
       if (projRows && projRows.length > 0) targetProjectId = projRows[0].id;
     }
@@ -113,7 +141,7 @@ export async function requireTeamProjectAccess(req, res, next) {
     // 멤버십 확인
     const { data: membership, error } = await supabase
       .from('vpylab_project_members')
-      .select('project_id')
+      .select('project_id, role')
       .eq('project_id', targetProjectId)
       .eq('user_id', req.supabaseUser.id)
       .maybeSingle();
@@ -125,6 +153,10 @@ export async function requireTeamProjectAccess(req, res, next) {
     if (!membership) {
       return res.status(403).json({ error: '프로젝트 멤버가 아닙니다.', code: 'not_project_member' });
     }
+    if (!['owner', 'editor'].includes(membership.role)) {
+      return res.status(403).json({ error: '이 프로젝트는 읽기 전용입니다. 편집 권한을 확인해주세요.', code: 'project_read_only' });
+    }
+    req.authorizedProjectId = targetProjectId;
     return next();
   } catch (e) {
     console.error('[auth] 팀 프로젝트 접근 검증 오류:', e.message);

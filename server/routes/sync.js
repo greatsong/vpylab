@@ -27,7 +27,7 @@ const MAX_HISTORY_BYTES = 256 * 1024;     // history.md 누적 상한
 function sanitizeRepoName(title) {
   return (title || '')
     .toLowerCase()
-    .replace(/[^a-z0-9가-힣\s-]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
@@ -37,6 +37,7 @@ function sanitizeRepoName(title) {
 
 async function githubFetch(url, token, options = {}) {
   const res = await fetch(url, {
+    signal: AbortSignal.timeout(20_000),
     ...options,
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -64,11 +65,13 @@ async function commitFile(owner, repoName, path, content, message, token, branch
   let existingSha = null;
   try {
     const existing = await githubFetch(
-      `https://api.github.com/repos/${owner}/${repoName}/contents/${encodeURIComponent(path)}?ref=${branch}`,
+      `https://api.github.com/repos/${owner}/${repoName}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`,
       token,
     );
     existingSha = existing.sha;
-  } catch { /* 없으면 새로 생성 */ }
+  } catch (error) {
+    if (error.status !== 404) throw error;
+  }
 
   const body = {
     message,
@@ -96,7 +99,7 @@ async function appendHistoryEntry(owner, repoName, entry, token, branch = 'main'
   let prevContent = '';
   try {
     const existing = await githubFetch(
-      `https://api.github.com/repos/${owner}/${repoName}/contents/history.md?ref=${branch}`,
+      `https://api.github.com/repos/${owner}/${repoName}/contents/history.md?ref=${encodeURIComponent(branch)}`,
       token,
     );
     prevContent = Buffer.from(existing.content, 'base64').toString('utf-8');
@@ -104,7 +107,8 @@ async function appendHistoryEntry(owner, repoName, entry, token, branch = 'main'
       // 너무 커지면 앞쪽(오래된)을 잘라낸다
       prevContent = prevContent.slice(0, Math.floor(MAX_HISTORY_BYTES / 2));
     }
-  } catch {
+  } catch (error) {
+    if (error.status !== 404) throw error;
     prevContent = '# VPyLab — 작업 이력\n\n저장한 시점들이 시간 역순으로 쌓입니다.\n\n';
   }
 
@@ -134,7 +138,7 @@ function generateReadme(title, owner, repoName) {
 
 ## 빠르게 보기
 
-- [VPyLab에서 열기](https://vpylab.com)
+- [VPyLab에서 열기](https://vpylab.vercel.app)
 - [GitHub Pages](https://${owner}.github.io/${repoName}/) *(활성화한 경우)*
 
 ## 파일
@@ -183,11 +187,14 @@ function generateMeta(title, codeId, projectId) {
  */
 router.post('/github', requireSupabaseUser, syncLimiter, requireTeamProjectAccess, async (req, res) => {
   try {
+    if (req.authorizedProjectId) {
+      return res.status(409).json({ error: '프로젝트의 코드 저장 버튼으로 GitHub에 반영해주세요.', code: 'project_sync_required' });
+    }
     const {
       code,
       title,
       message,
-      existingRepo,
+      existingRepo: requestedRepo,
       githubToken,
       revisionId,
       codeId,
@@ -196,6 +203,7 @@ router.post('/github', requireSupabaseUser, syncLimiter, requireTeamProjectAcces
       authorLabel = '익명',
       repoKind = 'personal',
     } = req.body;
+    const existingRepo = req.authorizedRepo || requestedRepo;
 
     // === 입력 검증 ===
     if (!code || typeof code !== 'string') {
@@ -213,13 +221,13 @@ router.post('/github', requireSupabaseUser, syncLimiter, requireTeamProjectAcces
 
     // === GitHub 사용자 확인 ===
     const ghUser = await githubFetch('https://api.github.com/user', githubToken);
-    const owner = ghUser.login;
+    let owner = ghUser.login;
 
     // === 리포 이름 결정 ===
     let repoName;
     if (existingRepo) {
       const parts = existingRepo.split('/');
-      repoName = parts[1] || parts[0];
+      [owner, repoName] = parts;
     } else {
       const prefix = repoKind === 'team' ? 'vpylab-team' : 'vpylab';
       const uid = crypto.randomUUID().slice(0, 6);
@@ -228,13 +236,25 @@ router.post('/github', requireSupabaseUser, syncLimiter, requireTeamProjectAcces
 
     // === 리포 확인/생성 ===
     let repoExists = false;
+    let branch = 'main';
     try {
-      await githubFetch(`https://api.github.com/repos/${owner}/${repoName}`, githubToken);
+      const repoInfo = await githubFetch(`https://api.github.com/repos/${owner}/${repoName}`, githubToken);
+      if (repoInfo.full_name?.toLowerCase() !== `${owner}/${repoName}`.toLowerCase()) {
+        return res.status(409).json({ error: 'GitHub 저장소 이름이 바뀌었습니다. 연결 정보를 확인해주세요.', code: 'repo_moved' });
+      }
+      if (!repoInfo.permissions?.push && !repoInfo.permissions?.admin && !repoInfo.permissions?.maintain) {
+        const error = new Error('GitHub 저장소 쓰기 권한이 없습니다.');
+        error.status = 403;
+        throw error;
+      }
+      branch = repoInfo.default_branch || 'main';
       repoExists = true;
-    } catch { /* 없으면 생성 */ }
+    } catch (error) {
+      if (error.status !== 404 || existingRepo) throw error;
+    }
 
     if (!repoExists) {
-      await githubFetch('https://api.github.com/user/repos', githubToken, {
+      const created = await githubFetch('https://api.github.com/user/repos', githubToken, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -245,6 +265,7 @@ router.post('/github', requireSupabaseUser, syncLimiter, requireTeamProjectAcces
           has_wiki: false,
         }),
       });
+      branch = created.default_branch || 'main';
       // GitHub 내부 처리 대기
       await new Promise(r => setTimeout(r, 1500));
     }
@@ -254,18 +275,18 @@ router.post('/github', requireSupabaseUser, syncLimiter, requireTeamProjectAcces
     const commitMsg = `${finalMessage}\n\n— ${authorLabel} via VPyLab`;
 
     // main.py
-    const mainCommitSha = await commitFile(owner, repoName, 'main.py', code, commitMsg, githubToken);
+    const mainCommitSha = await commitFile(owner, repoName, 'main.py', code, commitMsg, githubToken, branch);
 
     // README.md (없거나 갱신 필요할 때만 — 매번 덮어쓰면 noise. 첫 생성에만 작성)
     if (!repoExists) {
       try {
-        await commitFile(owner, repoName, 'README.md', generateReadme(title, owner, repoName), '📚 README', githubToken);
+        await commitFile(owner, repoName, 'README.md', generateReadme(title, owner, repoName), '📚 README', githubToken, branch);
       } catch { /* 무시 */ }
     }
 
     // vpylab.json
     try {
-      await commitFile(owner, repoName, 'vpylab.json', generateMeta(title, codeId, projectId), '🏷️ meta', githubToken);
+      await commitFile(owner, repoName, 'vpylab.json', generateMeta(title, codeId, projectId), '🏷️ meta', githubToken, branch);
     } catch { /* 무시 */ }
 
     // history.md (누적)
@@ -275,7 +296,7 @@ router.post('/github', requireSupabaseUser, syncLimiter, requireTeamProjectAcces
         authorLabel,
         source,
         revisionId,
-      }, githubToken);
+      }, githubToken, branch);
     } catch (e) {
       console.warn('[sync/github] history.md 갱신 실패:', e.message);
     }
@@ -302,6 +323,9 @@ router.post('/github', requireSupabaseUser, syncLimiter, requireTeamProjectAcces
     }
     if (err.status === 429) {
       return res.status(429).json({ error: 'GitHub API 한도에 도달했습니다.' });
+    }
+    if (err.status === 404) {
+      return res.status(404).json({ error: '연결된 GitHub 저장소를 찾을 수 없거나 접근 권한이 없습니다.', code: 'repo_not_accessible' });
     }
     // GitHub API 유래 에러는 메시지 유지, 내부 예외는 일반 메시지로 대체
     res.status(500).json({

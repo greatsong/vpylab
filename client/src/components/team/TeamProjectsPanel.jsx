@@ -67,7 +67,7 @@ export default function TeamProjectsPanel({
   initialAction = 'browse',
   initialJoinCode = '',
 }) {
-  const { user, githubTokenExpired } = useAuthStore();
+  const { user, githubTokenExpired, githubAuthError } = useAuthStore();
   const {
     myProjects, loadingProjects, projectsError, projectCreationStatus,
     githubSetupStatusById,
@@ -321,6 +321,7 @@ export default function TeamProjectsPanel({
     <Overlay onClose={onClose}>
       <Header title="프로젝트" onClose={onClose} />
 
+      {githubAuthError && <StatusBanner tone="warning"><p role="alert">{githubAuthError}</p></StatusBanner>}
       {tokenStatus === 'missing' && (
         <StatusBanner tone="warning">
           <div className="flex-1 min-w-0">
@@ -629,7 +630,8 @@ function ProjectCard({
 }) {
   const repo = project.github_repo;
   const repoUrl = repo ? `https://github.com/${repo}` : null;
-  const pagesUrl = repo ? `https://${repo.split('/')[0]}.github.io/${repo.split('/')[1]}/` : null;
+  const pagesVersion = project.github_last_pushed_at || project.updated_at || '';
+  const pagesUrl = repo ? `https://${repo.split('/')[0]}.github.io/${repo.split('/')[1]}/?v=${encodeURIComponent(pagesVersion)}` : null;
   const pagesHelpText = '처음 연결 직후에는 GitHub Pages 배포가 1~2분 걸릴 수 있습니다. 404가 계속 보이면 GitHub로 다시 로그인한 뒤 프로젝트를 한 번 저장해주세요.';
   const lastTouched = project.activity_at || project.latest_code_updated_at || project.github_last_pushed_at || project.updated_at;
   const isOwner = project.my_role === 'owner';

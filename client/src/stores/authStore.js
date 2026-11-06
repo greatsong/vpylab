@@ -3,6 +3,8 @@ import { AUTH_STORAGE_KEY, supabase } from '../lib/supabase';
 
 const GITHUB_AUTH_KEY = 'vpylab-github-auth';
 const OAUTH_PROVIDER_KEY = 'vpylab-oauth-provider';
+const OAUTH_LINK_USER_KEY = 'vpylab-oauth-link-user';
+const OAUTH_RETURN_KEYS = ['vpylab-oauth-return-path', 'vpylab-oauth-return-code', 'vpylab-oauth-return-action', 'vpylab-oauth-return-project-id'];
 
 function hasGitHubIdentity(user) {
   return user?.app_metadata?.provider === 'github'
@@ -36,20 +38,31 @@ const useAuthStore = create((set, get) => ({
   loading: true,
   authModalOpen: false,
   githubTokenExpired: false,
+  githubAuthError: '',
 
   setAuthModalOpen: (open) => set({ authModalOpen: open }),
 
   // 요청한 OAuth provider와 돌아온 사용자 ID를 묶어 별도 보관합니다.
   // Supabase 세션 갱신이 provider_token을 지워도 GitHub 연결은 유지합니다.
-  captureOAuthSession: (session) => {
+  captureOAuthSession: (session, { errorCode } = {}) => {
     try {
       const provider = localStorage.getItem(OAUTH_PROVIDER_KEY);
       if (!provider) return;
+      const linkUserId = localStorage.getItem(OAUTH_LINK_USER_KEY);
       localStorage.removeItem(OAUTH_PROVIDER_KEY);
+      localStorage.removeItem(OAUTH_LINK_USER_KEY);
       localStorage.removeItem(GITHUB_AUTH_KEY);
+      if (provider === 'github' && linkUserId && session?.user?.id && linkUserId !== session.user.id) {
+        set({ githubAuthError: '다른 GitHub 계정으로 인증됐습니다. 원래 계정으로 다시 로그인해주세요.', authModalOpen: true });
+        return { accountMismatch: true };
+      }
       if (provider === 'github' && session?.user?.id && hasGitHubIdentity(session.user) && session.provider_token) {
         localStorage.setItem(GITHUB_AUTH_KEY, JSON.stringify({ userId: session.user.id, provider: 'github', token: session.provider_token }));
-        set({ githubTokenExpired: false });
+        set({ githubTokenExpired: false, githubAuthError: '' });
+      } else if (provider === 'github') {
+        set({ githubAuthError: errorCode === 'identity_already_exists'
+          ? '이미 다른 VPyLab 계정에 연결된 GitHub 계정입니다. 연결할 GitHub 계정을 확인해주세요.'
+          : 'GitHub 연결을 완료하지 못했습니다. 연결할 계정과 저장 권한을 확인해주세요.' });
       }
     } catch { /* 저장 불가 시 재인증으로 안내 */ }
   },
@@ -179,6 +192,8 @@ const useAuthStore = create((set, get) => ({
   signInWithGoogle: async () => {
     try {
       localStorage.removeItem(GITHUB_AUTH_KEY);
+      localStorage.removeItem(OAUTH_LINK_USER_KEY);
+      OAUTH_RETURN_KEYS.forEach(key => localStorage.removeItem(key));
       localStorage.setItem(OAUTH_PROVIDER_KEY, 'google');
     } catch { /* ignore */ }
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -193,26 +208,53 @@ const useAuthStore = create((set, get) => ({
   // returnPath, returnCode를 옵션으로 받으면 재인증 후 그 코드로 복원할 수 있도록
   // localStorage에 임시 저장한다 (Supabase는 OAuth 후 redirectTo만 보존하므로 우리가 직접 백업).
   signInWithGitHub: async ({ returnPath, returnCode, returnAction, returnProjectId } = {}) => {
-    set({ githubTokenExpired: false });
+    set({ githubTokenExpired: false, githubAuthError: '' });
+    const currentUser = get().user;
+    const linkCurrentAccount = !!currentUser?.id && !hasGitHubIdentity(currentUser);
     try {
       localStorage.removeItem(GITHUB_AUTH_KEY);
       localStorage.setItem(OAUTH_PROVIDER_KEY, 'github');
+      localStorage.removeItem(OAUTH_LINK_USER_KEY);
+      if (currentUser?.id) localStorage.setItem(OAUTH_LINK_USER_KEY, currentUser.id);
+      OAUTH_RETURN_KEYS.forEach(key => localStorage.removeItem(key));
       if (returnPath) localStorage.setItem('vpylab-oauth-return-path', returnPath);
       if (returnCode != null) localStorage.setItem('vpylab-oauth-return-code', returnCode);
       if (returnAction) localStorage.setItem('vpylab-oauth-return-action', returnAction);
       if (returnProjectId) localStorage.setItem('vpylab-oauth-return-project-id', returnProjectId);
     } catch { /* localStorage 사용 불가 환경 무시 */ }
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    // 로그인한 Google 계정을 다른 계정으로 바꾸지 않고 GitHub identity를 연결합니다.
+    const authMethod = linkCurrentAccount ? 'linkIdentity' : 'signInWithOAuth';
+    let data, error;
+    try {
+      ({ data, error } = await supabase.auth[authMethod]({
       provider: 'github',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         scopes: 'public_repo',
         skipBrowserRedirect: false,
       },
-    });
-    if (error) console.error('GitHub 로그인 오류:', error.message);
+      }));
+    } catch (requestError) {
+      error = requestError;
+    }
+    if (error) {
+      try {
+        localStorage.removeItem(OAUTH_PROVIDER_KEY);
+        localStorage.removeItem(OAUTH_LINK_USER_KEY);
+        OAUTH_RETURN_KEYS.forEach(key => localStorage.removeItem(key));
+      } catch { /* ignore */ }
+      const message = error.code === 'manual_linking_disabled'
+        ? 'GitHub 계정 연결을 사용할 수 없습니다. 관리자에게 계정 연결 설정을 확인해주세요.'
+        : error.code === 'identity_already_exists'
+          ? '이미 다른 VPyLab 계정에 연결된 GitHub 계정입니다. 연결할 GitHub 계정을 확인해주세요.'
+          : 'GitHub 연결을 완료하지 못했습니다. 현재 계정의 작품은 그대로 보관됩니다.';
+      set({ githubAuthError: message });
+      console.error('GitHub 로그인 오류:', error.message);
+      return { data: null, error };
+    }
     // 자동 리다이렉트가 안 될 경우 수동 이동
     if (data?.url) window.location.href = data.url;
+    return { data, error: null };
   },
 
   // GitHub provider_token 추출 (갤러리 발행 시 사용)
@@ -256,6 +298,22 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  // OAuth가 다른 사용자로 돌아왔을 때 listener 도착 여부와 무관하게 개인 상태를 정리합니다.
+  endMismatchedOAuth: async () => {
+    let error = null;
+    try {
+      ({ error } = await supabase.auth.signOut({ scope: 'local' }));
+    } catch (requestError) {
+      error = requestError;
+    }
+    try {
+      [AUTH_STORAGE_KEY, `${AUTH_STORAGE_KEY}-user`, GITHUB_AUTH_KEY].forEach(key => localStorage.removeItem(key));
+    } catch { /* 저장소를 사용할 수 없어도 화면의 개인 상태는 정리합니다. */ }
+    await get()._cleanupStoresOnSignOut();
+    set({ user: null, profile: null, loading: false, githubTokenExpired: false, authModalOpen: !error });
+    return { error };
+  },
+
   // 로그아웃 시 다른 스토어의 개인 상태 정리
   // codeStore/projectStore가 authStore를 import하므로 순환 import 방지를 위해 동적 import 사용
   _cleanupStoresOnSignOut: async () => {
@@ -276,10 +334,11 @@ const useAuthStore = create((set, get) => ({
     try {
       localStorage.removeItem(GITHUB_AUTH_KEY);
       localStorage.removeItem(OAUTH_PROVIDER_KEY);
+      localStorage.removeItem(OAUTH_LINK_USER_KEY);
     } catch { /* ignore */ }
     await supabase.auth.signOut();
     await get()._cleanupStoresOnSignOut();
-    set({ user: null, profile: null, githubTokenExpired: false });
+    set({ user: null, profile: null, githubTokenExpired: false, githubAuthError: '' });
   },
 
   // 프로필 업데이트

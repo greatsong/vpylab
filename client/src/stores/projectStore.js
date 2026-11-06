@@ -69,6 +69,9 @@ function classifyGithubSyncError(error) {
   }
 
   // 서버 GitHub 프록시의 프로젝트 멤버십 검증 실패 (403 code: 'not_project_member')
+  if (['project_read_only', 'project_repo_mismatch', 'project_required', 'project_repo_missing', 'repo_moved', 'revision_not_found', 'project_sync_required'].includes(code)) {
+    return { code, blocked: true, message };
+  }
   if (code === 'not_project_member') {
     return {
       code: 'not_project_member',
@@ -870,9 +873,12 @@ const useProjectStore = create((set, get) => ({
           ...state.githubSetupStatusById,
           [projectId]: {
             state: 'success',
-            message: 'GitHub 저장소와 Pages 실행 페이지가 준비되었습니다.',
+            message: gh.pagesWarning || (gh.pagesActivated
+              ? 'GitHub 저장소가 연결됐습니다. Pages 배포는 잠시 걸릴 수 있습니다.'
+              : 'GitHub 저장소가 연결됐습니다. Pages 실행 페이지는 아직 준비되지 않았습니다.'),
             repoFullName: gh.repoFullName,
             pagesUrl: gh.pagesUrl,
+            pagesWarning: gh.pagesWarning || null,
           },
         },
       }));
