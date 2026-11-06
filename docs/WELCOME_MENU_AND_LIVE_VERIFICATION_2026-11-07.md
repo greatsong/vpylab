@@ -66,3 +66,16 @@ HTML 검사는 외부 CDN 자리를 동일 버전의 로컬 Three.js/Pyodide 파
 구름 친구를 제외하고 커비를 최대한 닮도록 둥근 분홍 몸통·길쭉한 눈·파랑/흰 눈 하이라이트·짧은 팔·빨간 발의 연습형으로 교체했습니다. 정식 이름은 보류하고 화면에서는 분홍 친구로 표시합니다. 이전 구름 검토·캡처는 당시 과정 기록이며 현재 선택지에는 나오지 않습니다.
 
 분홍 친구 교체 후 관련 Python 회귀 6개와 최종 네 친구의 UI 15개, 실습/HTML 실행 8개를 다시 확인했습니다. 전체 회귀·운영 빌드 결과와 구분해 이 후속 결과를 남겼습니다.
+
+## 운영 게시 최종 확인
+
+최종 기능 버전은 `ef108509f823347691d1325b5a0f5dd0087f33a8`입니다. Vercel·Railway 모두 성공했고 서버 health도 같은 commitSha를 반환했습니다. [원격 CI의 필수 검사 7개](https://github.com/greatsong/vpylab/actions/runs/42314267336)가 모두 성공했습니다.
+
+- [운영 첫 화면](https://vpylab.vercel.app/): 메뉴·캐릭터·반응형·정적 대체 **15개 검사 통과**, 페이지 오류 0, DB 쓰기 0.
+- 운영 Pyodide 체험: 만두·손전등·공구상자·분홍 친구 **4개 실행 통과**, 페이지 오류 0.
+- PWA가 캐시한 파일을 정상 제공하므로, 지연 파일 실패 재현 검사 탭에서만 서비스워커와 캐시를 우회해 정적 대체를 확인했습니다. 제품 오류나 일반 탐색 동작 변경이 아닙니다.
+- 실제 계정 검증은 앞선 `927e1ed` 운영 버전에서 수행했습니다. 이번 환영 화면 릴리스에서 인증·모듈 등록 함수·DB 스키마는 바꾸지 않았습니다.
+
+운영 캐릭터 캡처: [만두](review-figures/2026-11-07/production-welcome-detail-dumpling.png) · [손전등](review-figures/2026-11-07/production-welcome-detail-flashlight.png) · [공구상자](review-figures/2026-11-07/production-welcome-detail-toolbox.png) · [분홍 친구](review-figures/2026-11-07/production-welcome-detail-kirby.png).
+
+마지막 증거 기록 커밋은 문서·캡처·검사 도구만 포함합니다. 운영 애플리케이션 코드는 기능 버전 이후 바꾸지 않았습니다.
