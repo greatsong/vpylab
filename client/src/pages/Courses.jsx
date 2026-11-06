@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import courses, { getCourseById } from '../data/courses';
 import { useI18n } from '../i18n/useI18n';
+import WorkbookCourse from '../components/courses/WorkbookCourse';
 
 /**
  * Courses — 한 페이지에서 3가지 모드를 라우팅 파라미터로 분기
@@ -98,86 +99,25 @@ function CourseCard({ course, lang }) {
 
 // ─── 코스 목록 ─────────────────────────────────────────────────
 function CourseList() {
-  const { t, locale: lang } = useI18n();
+  const { locale: lang } = useI18n();
   const [trackFilter, setTrackFilter] = useState(null);
-
-  const grouped = useMemo(() => {
-    const map = {};
-    for (const c of courses) (map[c.track] ||= []).push(c);
-    return map;
-  }, []);
-
-  const filtered = trackFilter
-    ? courses.filter((c) => c.track === trackFilter)
-    : courses;
-
+  const coreIds = ['beg-light-sound', 'beg-github-project'];
+  const core = coreIds.map(id => getCourseById(id));
+  const others = courses.filter(course => !coreIds.includes(course.id) && (!trackFilter || course.track === trackFilter));
   return (
-    <main className="flex-1 container-main py-8 w-full">
-      {/* 브레드크럼 + 타이틀 */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Link to="/" className="text-xs no-underline" style={{ color: 'var(--color-text-muted)' }}>
-            {t('nav.home')}
-          </Link>
-          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>/</span>
-          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-            {lang === 'ko' ? '코스' : 'Courses'}
-          </span>
+    <main className="flex-1 w-full max-w-5xl mx-auto px-6 md:px-10 py-12">
+      <h1 className="font-display text-3xl font-bold mb-3" style={{ color: 'var(--color-text-primary)' }}>{lang === 'ko' ? '하나씩 만들며 배워요' : 'Learn by making'}</h1>
+      <p className="text-sm mb-8" style={{ color: 'var(--color-text-secondary)' }}>{lang === 'ko' ? '처음이라면 빛과 소리부터. 작품을 만든 다음에는 저장과 공유를 배웁니다.' : 'Start with light and sound, then learn to save and share your work.'}</p>
+      <div className="grid sm:grid-cols-2 gap-5 mb-10">{core.map(course => <CourseCard key={course.id} course={course} lang={lang} />)}</div>
+      <details className="border-t pt-6" style={{ borderColor: 'var(--color-border)' }}>
+        <summary className="text-sm font-semibold cursor-pointer" style={{ color: 'var(--color-text-primary)' }}>{lang === 'ko' ? '다른 교재 둘러보기' : 'Explore other courses'}</summary>
+        <div className="flex flex-wrap gap-2 my-6">
+          <button className="mission-filter-btn" data-active={!trackFilter || undefined} onClick={() => setTrackFilter(null)}>{lang === 'ko' ? '전체' : 'All'}</button>
+          {TRACK_ORDER.map(track => <button key={track} className="mission-filter-btn" data-active={trackFilter === track || undefined} onClick={() => setTrackFilter(track)}>{TRACK_META[track][lang] || TRACK_META[track].ko}</button>)}
         </div>
-        <h1 className="font-display text-2xl md:text-3xl font-bold"
-          style={{ color: 'var(--color-text-primary)' }}>
-          {lang === 'ko' ? '학습 코스' : 'Learning Courses'}
-        </h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
-          {lang === 'ko'
-            ? `${courses.length}개 코스 · 입문 · 융합 · 튜토리얼`
-            : `${courses.length} courses · Beginner · Fusion · Tutorial`}
-        </p>
-      </div>
-
-      {/* 트랙 필터 — Missions와 동일한 pill */}
-      <div className="flex gap-2 flex-wrap mb-8">
-        <button
-          onClick={() => setTrackFilter(null)}
-          className="mission-filter-btn"
-          data-active={!trackFilter || undefined}
-        >
-          {lang === 'ko' ? '전체' : 'All'}
-          <span className="opacity-50 ml-1">{courses.length}</span>
-        </button>
-        {TRACK_ORDER.map((trackKey) => {
-          const list = grouped[trackKey] || [];
-          if (list.length === 0) return null;
-          const meta = TRACK_META[trackKey];
-          const active = trackFilter === trackKey;
-          return (
-            <button
-              key={trackKey}
-              onClick={() => setTrackFilter(active ? null : trackKey)}
-              className="mission-filter-btn"
-              data-active={active || undefined}
-              style={active ? { '--filter-color': meta.color } : {}}
-            >
-              {meta?.[lang] || meta?.ko}
-              <span className="opacity-50 ml-1">{list.length}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 코스 카드 그리드 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
-        style={{ alignItems: 'start' }}>
-        {filtered.map((c) => (
-          <CourseCard key={c.id} course={c} lang={lang} />
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-16" style={{ color: 'var(--color-text-muted)' }}>
-          <p className="text-sm">{lang === 'ko' ? '해당 트랙에 코스가 없습니다.' : 'No courses in this track.'}</p>
-        </div>
-      )}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{others.map(course => <CourseCard key={course.id} course={course} lang={lang} />)}</div>
+        {!others.length && <p className="text-sm py-8" style={{ color: 'var(--color-text-secondary)' }}>{lang === 'ko' ? '이 분류에는 다른 교재가 없습니다.' : 'No other courses in this group.'}</p>}
+      </details>
     </main>
   );
 }
@@ -255,6 +195,8 @@ function CourseDetail({ courseId, lessonId }) {
       </main>
     );
   }
+
+  if (course.workbook) return <WorkbookCourse course={course} lessonId={lessonId} />;
 
   const color = colorOf(course);
   const trackMeta = TRACK_META[course.track];
@@ -466,7 +408,7 @@ function CourseDetail({ courseId, lessonId }) {
 export default function Courses() {
   const { courseId, lessonId } = useParams();
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+    <div className="min-h-screen w-full min-w-0 flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
       {courseId ? (
         <CourseDetail courseId={courseId} lessonId={lessonId} />

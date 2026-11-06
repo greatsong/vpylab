@@ -1,5 +1,21 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { AUTH_STORAGE_KEY, supabase } from '../lib/supabase';
+
+const GITHUB_AUTH_KEY = 'vpylab-github-auth';
+const OAUTH_PROVIDER_KEY = 'vpylab-oauth-provider';
+
+function hasGitHubIdentity(user) {
+  return user?.app_metadata?.provider === 'github'
+    || user?.identities?.some(identity => identity.provider === 'github');
+}
+
+// 연결된 identity 목록은 현재 provider_token의 발급자를 알려주지 않습니다.
+// 기존 단일 GitHub 계정만 추론하고, 연결 계정은 OAuth 완료 시 확인한 토큰을 사용합니다.
+function isOnlyGitHub(user) {
+  const providers = new Set([user?.app_metadata?.provider,
+    ...(user?.app_metadata?.providers || []), ...(user?.identities || []).map(identity => identity.provider)].filter(Boolean));
+  return providers.size === 1 && providers.has('github');
+}
 
 function extractGitHubUsername(user) {
   const githubIdentity = user?.identities?.find((identity) => identity.provider === 'github');
@@ -23,17 +39,29 @@ const useAuthStore = create((set, get) => ({
 
   setAuthModalOpen: (open) => set({ authModalOpen: open }),
 
+  // 요청한 OAuth provider와 돌아온 사용자 ID를 묶어 별도 보관합니다.
+  // Supabase 세션 갱신이 provider_token을 지워도 GitHub 연결은 유지합니다.
+  captureOAuthSession: (session) => {
+    try {
+      const provider = localStorage.getItem(OAUTH_PROVIDER_KEY);
+      if (!provider) return;
+      localStorage.removeItem(OAUTH_PROVIDER_KEY);
+      localStorage.removeItem(GITHUB_AUTH_KEY);
+      if (provider === 'github' && session?.user?.id && hasGitHubIdentity(session.user) && session.provider_token) {
+        localStorage.setItem(GITHUB_AUTH_KEY, JSON.stringify({ userId: session.user.id, provider: 'github', token: session.provider_token }));
+        set({ githubTokenExpired: false });
+      }
+    } catch { /* 저장 불가 시 재인증으로 안내 */ }
+  },
+
   markGitHubTokenExpired: () => {
     try {
-      Object.keys(localStorage)
-        .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
-        .forEach((key) => {
-          const stored = JSON.parse(localStorage.getItem(key) || '{}');
-          if (stored?.provider_token) {
-            delete stored.provider_token;
-            localStorage.setItem(key, JSON.stringify(stored));
-          }
-        });
+      localStorage.removeItem(GITHUB_AUTH_KEY);
+      const stored = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '{}');
+      if (stored?.provider_token) {
+        delete stored.provider_token;
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(stored));
+      }
     } catch { /* localStorage 사용 불가 환경 무시 */ }
     set({ githubTokenExpired: true });
   },
@@ -67,6 +95,7 @@ const useAuthStore = create((set, get) => ({
         const { default: useAppStore } = await import('./appStore');
         useAppStore.getState().syncProgressToServer();
       } else if (event === 'SIGNED_OUT') {
+        try { localStorage.removeItem(GITHUB_AUTH_KEY); } catch { /* ignore */ }
         set({ user: null, profile: null, githubTokenExpired: false });
         get()._cleanupStoresOnSignOut();
       }
@@ -125,6 +154,10 @@ const useAuthStore = create((set, get) => ({
 
   // Google 로그인
   signInWithGoogle: async () => {
+    try {
+      localStorage.removeItem(GITHUB_AUTH_KEY);
+      localStorage.setItem(OAUTH_PROVIDER_KEY, 'google');
+    } catch { /* ignore */ }
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -139,6 +172,8 @@ const useAuthStore = create((set, get) => ({
   signInWithGitHub: async ({ returnPath, returnCode, returnAction, returnProjectId } = {}) => {
     set({ githubTokenExpired: false });
     try {
+      localStorage.removeItem(GITHUB_AUTH_KEY);
+      localStorage.setItem(OAUTH_PROVIDER_KEY, 'github');
       if (returnPath) localStorage.setItem('vpylab-oauth-return-path', returnPath);
       if (returnCode != null) localStorage.setItem('vpylab-oauth-return-code', returnCode);
       if (returnAction) localStorage.setItem('vpylab-oauth-return-action', returnAction);
@@ -163,15 +198,19 @@ const useAuthStore = create((set, get) => ({
 
     // 1차: Supabase getSession()에서 provider_token 확인
     const { data: { session } } = await supabase.auth.getSession();
-    if (session?.provider_token) return session.provider_token;
+    if (!session?.user?.id || !hasGitHubIdentity(session.user)) return null;
+    try {
+      const cached = JSON.parse(localStorage.getItem(GITHUB_AUTH_KEY) || 'null');
+      if (cached?.userId === session.user.id && cached.provider === 'github' && cached.token) return cached.token;
+    } catch { /* ignore */ }
+    if (!isOnlyGitHub(session.user)) return null;
+    if (session.provider_token) return session.provider_token;
 
     // 2차: localStorage fallback (Supabase는 세션 새로고침 시 provider_token을 잃을 수 있음)
     try {
-      const storageKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-      if (storageKey) {
-        const stored = JSON.parse(localStorage.getItem(storageKey));
-        if (stored?.provider_token) return stored.provider_token;
-      }
+      const stored = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || 'null');
+      if (stored?.user?.id === session.user.id && isOnlyGitHub(stored.user)
+        && stored.provider_token) return stored.provider_token;
     } catch { /* ignore parse errors */ }
 
     return null;
@@ -211,6 +250,10 @@ const useAuthStore = create((set, get) => ({
 
   // 로그아웃
   signOut: async () => {
+    try {
+      localStorage.removeItem(GITHUB_AUTH_KEY);
+      localStorage.removeItem(OAUTH_PROVIDER_KEY);
+    } catch { /* ignore */ }
     await supabase.auth.signOut();
     await get()._cleanupStoresOnSignOut();
     set({ user: null, profile: null, githubTokenExpired: false });

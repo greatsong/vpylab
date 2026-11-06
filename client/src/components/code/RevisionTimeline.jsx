@@ -39,8 +39,8 @@ function formatRelative(isoStr) {
   return then.toLocaleDateString();
 }
 
-export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestored }) {
-  const { revisions, loading, fetchRevisions, restoreRevision, fetchRevisionSnapshot } = useRevisionStore();
+export default function RevisionTimeline({ codeId, codeTitle, currentCode, currentCodeId, onClose, onRestored }) {
+  const { revisions, loading, restoring, fetchRevisions, restoreRevision, fetchRevisionSnapshot } = useRevisionStore();
   const { syncing, pushToGitHub } = useGithubSyncStore();
   const { t } = useI18n();
   const [pushingId, setPushingId] = useState(null);
@@ -84,20 +84,25 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
   };
 
   const handleRestore = async (rev) => {
+    if (restoring) return;
     const label = rev.message || '이 버전';
     const teamNote = rev.project_id
       ? '\n\n팀 프로젝트라면 복원 후 "코드 저장"을 한 번 눌러 GitHub 저장소에도 같은 상태를 반영할 수 있습니다.'
       : '';
-    const ok = window.confirm(`"${label}" 시점으로 되돌릴까요?\n\n현재 코드는 새로운 "복원" 기록으로 남아 사라지지 않습니다.${teamNote}`);
+    const ok = window.confirm(`"${label}" 시점으로 되돌릴까요?\n\n복원 전 코드를 이력에 보관한 뒤 VPyLab 저장 코드와 에디터를 바꿉니다.${teamNote}`);
     if (!ok) return;
 
-    const { error } = await restoreRevision(rev.id, {
+    const { error, warning } = await restoreRevision(rev.id, {
+      currentCode,
+      currentCodeId,
       onRestored: (snapshotCode) => {
         if (onRestored) onRestored(snapshotCode);
       },
     });
     if (error) {
       window.alert(`복원 실패: ${error.message || '알 수 없는 오류'}`);
+    } else if (warning) {
+      window.alert(warning);
     }
   };
 
@@ -203,7 +208,7 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
                               color: 'var(--color-success, #2f9e44)',
                             }}
                           >
-                            현재
+                            최신 기록
                           </span>
                         )}
                       </div>
@@ -259,18 +264,17 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
                         >
                           {isTeamRevision ? 'GitHub 자동' : pushingId === rev.id ? '⏳ push…' : '📤 GitHub'}
                         </button>
-                        {!isLatest && (
                           <button
                             onClick={() => handleRestore(rev)}
+                            disabled={restoring}
                             className="text-[10px] px-2 py-1 cursor-pointer border-none transition-opacity hover:opacity-80"
                             style={{
                               backgroundColor: 'var(--color-accent)',
                               color: 'var(--color-accent-text, white)',
                             }}
                           >
-                            ↶ 이 버전으로
+                            {restoring ? '복원 중…' : '↶ 이 버전으로'}
                           </button>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -289,7 +293,7 @@ export default function RevisionTimeline({ codeId, codeTitle, onClose, onRestore
           color: 'var(--color-text-muted)',
         }}
       >
-        💡 복원해도 현재 코드는 새 기록으로 보존됩니다. 팀 프로젝트는 복원 후 코드 저장을 누르면 GitHub 반영도 다시 시도됩니다.
+        💡 복원 전 코드를 이력에 보관합니다. 복원 후 코드 저장을 누르면 GitHub 반영도 다시 시도됩니다.
       </div>
     </div>
   );

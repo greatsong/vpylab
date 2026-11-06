@@ -1,0 +1,78 @@
+{
+  "date": "2026-11-06",
+  "request": "컴퓨터 유즈로 입문 교재와 GitHub 프로젝트 교재에 따라 기본 콘텐츠를 만들고 이상 여부 확인",
+  "computerUse": {
+    "method": "설치된 unified-computer-use 플러그인의 cua_repl에서 Google Chrome 앱 선택",
+    "status": "partially_verified",
+    "reportedBlocker": null,
+    "screenActionsCompleted": true,
+    "userActionRequested": "Mac 잠금을 직접 해제한 뒤 알림",
+    "note": "이번에는 native Chrome 화면 조작 성공. 첫 차시 실행·두 번째 차시 편집·HTML 내려받기·소리 제어·로그인 안내·모바일 배치 확인. 실계정 저장·GitHub는 미실행. simple-student-flow-review.json 참고."
+  },
+  "uiScenarios": [
+    {
+      "step": 1,
+      "task": "홈에서 입문 코스와 첫 소리 차시 열고 실행",
+      "status": "passed"
+    },
+    {
+      "step": 2,
+      "task": "공의 색·크기·좌표를 수정하고 실행 결과 비교",
+      "status": "passed"
+    },
+    {
+      "step": 3,
+      "task": "빛과 소리 순서·반복·조건·리스트 실험",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "task": "두 상태를 알리는 기본 작품 제작과 개선",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "task": "프로젝트 생성 후 새 탭에서 다시 열기",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "task": "GitHub 저장소 연결 및 main.py 확인",
+      "status": "pending"
+    },
+    {
+      "step": 7,
+      "task": "코드 저장·기록 남기기·이력 복원 후 재저장",
+      "status": "pending"
+    },
+    {
+      "step": 8,
+      "task": "Pages 실행 링크와 최신 저장 내용 비교",
+      "status": "pending"
+    }
+  ],
+  "independentChecks": {
+    "codeAudit": "curriculum-code-audit.json 및 curriculum-claude-cross-review.json: Claude 3회 교차 검토 후 클라이언트 621개·프로덕션 빌드 통과. 서버 115개는 이전 코드 점검 결과. 실계정과 컴퓨터 유즈 화면 검사는 별도.",
+    "runtime": {
+      "baseLessons": 8,
+      "variantsAndChallenges": 21,
+      "executed": 29,
+      "withoutErrorsOrForcedStop": 29,
+      "method": "실제 Python API와 학생 코드 변환기, 브라우저 화면 검사는 아님"
+    },
+    "regression": {
+      "files": 5,
+      "passed": 87,
+      "failed": 0
+    },
+    "productionBuild": "passed",
+    "localApp": {
+      "frontendPort": 4033,
+      "backendPort": 4034,
+      "frontendHttp": 200,
+      "apiHealth": "ok"
+    },
+    "fix": "일반 Vite 개발 서버가 연수 전용 HTML을 탐색하다 별칭 오류를 내는 문제를 optimizeDeps.entries로 일반 앱 진입점에 한정",
+    "latest": "simple-student-flow-review.json: Claude·Solar 각 두 차례 검토, 최종 클라이언트 618개 통과, 빌드 통과."
+  }
+}

@@ -231,7 +231,7 @@ export default function TeamMembersModal({ project, onClose }) {
               </p>
               <div className="mt-2 space-y-1 text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
                 <p><strong style={{ color: 'var(--color-text-secondary)' }}>추가 전:</strong> 팀장만 GitHub에 기록 가능 / <strong style={{ color: 'var(--color-text-secondary)' }}>추가 후:</strong> 팀원도 GitHub에 기록 가능</p>
-                <p><strong style={{ color: 'var(--color-text-secondary)' }}>좋아지는 점:</strong> 내 저장이 GitHub 커밋과 Pages 실행 페이지에도 남아 팀 작품을 공개 링크와 포트폴리오처럼 보여줄 수 있습니다.</p>
+                <p><strong style={{ color: 'var(--color-text-secondary)' }}>사용할 수 있는 기능:</strong> 저장한 코드를 GitHub에 반영하고, Pages 실행 페이지 링크로 팀 작품을 공유할 수 있습니다.</p>
                 <p><strong style={{ color: 'var(--color-text-secondary)' }}>팀장:</strong> Manage access → Add people → 팀원 GitHub 아이디 검색 → Invite collaborator</p>
                 <p><strong style={{ color: 'var(--color-text-secondary)' }}>팀장:</strong> Add people 단계에서 GitHub가 2FA를 요구하면 먼저 2FA 설정(휴대폰이 필요할 수 있음)을 마친 뒤 다시 초대</p>
                 <p><strong style={{ color: 'var(--color-text-secondary)' }}>팀원:</strong> GitHub 알림 또는 이메일 열기 → Accept invitation 클릭 → VPyLab에서 GitHub로 다시 로그인</p>
@@ -353,7 +353,7 @@ export default function TeamMembersModal({ project, onClose }) {
         >
           {isOwner && repoFullName && (
             <p className="mb-2 text-[10px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-              프로젝트를 삭제해도 GitHub 저장소는 포트폴리오와 공유 링크로 남습니다.
+              프로젝트를 삭제해도 연결된 GitHub 저장소는 삭제되지 않습니다.
             </p>
           )}
           <div className="flex justify-between items-center">

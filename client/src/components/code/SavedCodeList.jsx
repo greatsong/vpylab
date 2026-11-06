@@ -6,8 +6,8 @@ import useProjectStore from '../../stores/projectStore';
 import RevisionTimeline from './RevisionTimeline';
 import TeamMembersModal from '../team/TeamMembersModal';
 
-export default function SavedCodeList({ onLoadCode, onClose }) {
-  const { savedCodes, loading, fetchSavedCodes, deleteCode } = useCodeStore();
+export default function SavedCodeList({ onLoadCode, onClose, currentCode }) {
+  const { savedCodes, loading, fetchSavedCodes, deleteCode, currentCodeId } = useCodeStore();
   const { user } = useAuthStore();
   const { createProject } = useProjectStore();
   const { t } = useI18n();
@@ -151,6 +151,8 @@ export default function SavedCodeList({ onLoadCode, onClose }) {
         <RevisionTimeline
           codeId={historyTarget.id}
           codeTitle={historyTarget.title}
+          currentCode={currentCode}
+          currentCodeId={currentCodeId}
           onClose={() => setHistoryTarget(null)}
           onRestored={(snapshotCode) => {
             // 복원 후 에디터에 즉시 반영하고 패널 닫기

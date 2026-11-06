@@ -33,6 +33,10 @@ export default defineConfig({
     pyodideAssets(),
     serviceWorker(),
   ],
+  // 일반 앱에서 연수 전용 HTML의 별도 별칭까지 미리 탐색하지 않습니다.
+  optimizeDeps: {
+    entries: ['index.html'],
+  },
   build: {
     rollupOptions: {
       output: {

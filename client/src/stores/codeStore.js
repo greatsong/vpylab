@@ -32,6 +32,10 @@ const useCodeStore = create((set, get) => ({
   _saveTimer: null,
   _autoSaveInFlight: false,   // 자동 저장 요청 진행 중 가드
   _autoSavePendingArgs: null, // 진행 중에 들어온 최신 자동 저장 인자 (완료 후 재예약)
+  _autoSaveTask: null,
+  _autoSavePaused: false,
+  _autoSaveLatestArgs: null,
+  _autoSaveGeneration: 0,
 
   setPanelOpen: (open) => set({ panelOpen: open }),
   setCurrentCodeId: (id) => set({ currentCodeId: id }),
@@ -245,18 +249,22 @@ const useCodeStore = create((set, get) => ({
    * - 로그인 사용자만 동작
    */
   autoSave: (code, { title = '제목 없음', missionId = null } = {}) => {
+    if (get()._autoSavePaused) return;
     const { _saveTimer } = get();
     if (_saveTimer) clearTimeout(_saveTimer);
 
     const timer = setTimeout(() => {
+      set({ _saveTimer: null });
       get()._runAutoSave(code, { title, missionId });
     }, 2000);
 
-    set({ _saveTimer: timer, saveStatus: 'idle' });
+    // 이전 pending보다 새 타이머의 코드가 최신입니다.
+    set({ _saveTimer: timer, _autoSavePendingArgs: null, _autoSaveLatestArgs: [code, { title, missionId }], saveStatus: 'idle' });
   },
 
   // 자동 저장 실제 실행 — in-flight 가드 포함
-  _runAutoSave: async (code, { title = '제목 없음', missionId = null } = {}) => {
+  _runAutoSave: (code, { title = '제목 없음', missionId = null } = {}) => {
+    if (get()._autoSavePaused) return;
     // 진행 중이면 최신 인자만 보관했다가 완료 후 다시 예약 (요청 중복/경합 방지)
     if (get()._autoSaveInFlight) {
       set({ _autoSavePendingArgs: [code, { title, missionId }] });
@@ -264,55 +272,79 @@ const useCodeStore = create((set, get) => ({
     }
     set({ _autoSaveInFlight: true });
 
+    const task = (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        set({ saveStatus: 'saving' });
+
+        // 비동기 경계 이후 재확인 — 다른 경로(코드 열기 등)에서 id가 생겼으면 중복 INSERT 방지
+        const currentId = get().currentCodeId;
+
+        if (currentId) {
+          // 기존 레코드 업데이트 (본인 소유분만)
+          // count로 실제 갱신된 행 수를 확인하여 user_id 불일치 시 false-positive 'saved' 방지
+          const { error, count } = await supabase
+            .from('vpylab_saved_code')
+            .update({ code, updated_at: new Date().toISOString() }, { count: 'exact' })
+            .eq('id', currentId)
+            .eq('user_id', user.id);
+
+          if (error || count === 0) {
+            set({ saveStatus: 'error' });
+          } else {
+            set({ saveStatus: 'saved' });
+          }
+        } else {
+          // 새 레코드 생성
+          const { data, error } = await supabase
+            .from('vpylab_saved_code')
+            .insert({ user_id: user.id, title, code, mission_id: missionId })
+            .select()
+            .single();
+
+          if (!error && data) {
+            // INSERT 응답 대기 중 다른 경로에서 currentCodeId가 생겼으면 그 값을 유지 (중복 INSERT 결과 무시)
+            set({ currentCodeId: get().currentCodeId || data.id, saveStatus: 'saved' });
+          } else {
+            set({ saveStatus: 'error' });
+          }
+        }
+      } catch {
+        set({ saveStatus: 'error' });
+      } finally {
+        set({ _autoSaveInFlight: false });
+        // 진행 중에 들어온 최신 변경이 있으면 다음 debounce로 재예약
+        const pending = get()._autoSavePendingArgs;
+        if (pending && !get()._autoSavePaused) {
+          set({ _autoSavePendingArgs: null });
+          get().autoSave(pending[0], pending[1]);
+        }
+      }
+    })();
+    set({ _autoSaveTask: task });
+    return task;
+  },
+
+  // 복원 중에는 예약을 취소하고 이미 시작한 저장이 끝난 뒤 본문을 읽습니다.
+  // currentCodeId는 유지하며, 실패했을 때만 기존 편집본 자동저장을 다시 예약합니다.
+  pauseAutoSave: async () => {
+    const { _saveTimer, _autoSaveTask, _autoSaveLatestArgs, _autoSaveInFlight, _autoSavePendingArgs } = get();
+    const shouldResume = !!(_saveTimer || _autoSaveInFlight || _autoSavePendingArgs);
+    const generation = get()._autoSaveGeneration;
+    if (_saveTimer) clearTimeout(_saveTimer);
+    set({ _autoSavePaused: true, _saveTimer: null, _autoSavePendingArgs: null });
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      set({ saveStatus: 'saving' });
-
-      // 비동기 경계 이후 재확인 — 다른 경로(코드 열기 등)에서 id가 생겼으면 중복 INSERT 방지
-      const currentId = get().currentCodeId;
-
-      if (currentId) {
-        // 기존 레코드 업데이트 (본인 소유분만)
-        // count로 실제 갱신된 행 수를 확인하여 user_id 불일치 시 false-positive 'saved' 방지
-        const { error, count } = await supabase
-          .from('vpylab_saved_code')
-          .update({ code, updated_at: new Date().toISOString() }, { count: 'exact' })
-          .eq('id', currentId)
-          .eq('user_id', user.id);
-
-        if (error || count === 0) {
-          set({ saveStatus: 'error' });
-        } else {
-          set({ saveStatus: 'saved' });
-        }
-      } else {
-        // 새 레코드 생성
-        const { data, error } = await supabase
-          .from('vpylab_saved_code')
-          .insert({ user_id: user.id, title, code, mission_id: missionId })
-          .select()
-          .single();
-
-        if (!error && data) {
-          // INSERT 응답 대기 중 다른 경로에서 currentCodeId가 생겼으면 그 값을 유지 (중복 INSERT 결과 무시)
-          set({ currentCodeId: get().currentCodeId || data.id, saveStatus: 'saved' });
-        } else {
-          set({ saveStatus: 'error' });
-        }
-      }
-    } catch {
-      set({ saveStatus: 'error' });
-    } finally {
-      set({ _autoSaveInFlight: false });
-      // 진행 중에 들어온 최신 변경이 있으면 다음 debounce로 재예약
-      const pending = get()._autoSavePendingArgs;
-      if (pending) {
-        set({ _autoSavePendingArgs: null });
-        get().autoSave(pending[0], pending[1]);
-      }
+      if (_autoSaveTask) await withTimeout(_autoSaveTask, CODE_WRITE_TIMEOUT_MS, '자동저장이 아직 끝나지 않아 복원하지 않았습니다. 네트워크 상태를 확인한 뒤 다시 시도해주세요.');
+    } catch (error) {
+      set({ _autoSavePaused: false });
+      throw error;
     }
+    return (restored = false) => {
+      set({ _autoSavePaused: false, ...(restored ? { _autoSaveLatestArgs: null } : {}) });
+      if (!restored && shouldResume && _autoSaveLatestArgs && generation === get()._autoSaveGeneration) get().autoSave(..._autoSaveLatestArgs);
+    };
   },
 
   // 자동 저장 타이머 정리
@@ -322,6 +354,8 @@ const useCodeStore = create((set, get) => ({
     set({
       _saveTimer: null,
       _autoSavePendingArgs: null,
+      _autoSaveLatestArgs: null,
+      _autoSaveGeneration: get()._autoSaveGeneration + 1,
       currentCodeId: null,
       saveStatus: 'idle',
     });
@@ -335,6 +369,8 @@ const useCodeStore = create((set, get) => ({
       _saveTimer: null,
       _autoSaveInFlight: false,
       _autoSavePendingArgs: null,
+      _autoSaveLatestArgs: null,
+      _autoSaveGeneration: get()._autoSaveGeneration + 1,
       currentCodeId: null,
       savedCodes: [],
       saveStatus: 'idle',

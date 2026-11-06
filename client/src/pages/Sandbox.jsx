@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n/useI18n';
 import Header from '../components/layout/Header';
 import CodeEditor, { DEFAULT_CODE } from '../components/editor/CodeEditor';
+import SoundSettings from '../components/editor/SoundSettings';
 import Viewport3D from '../components/viewport/Viewport3D';
 import OutputConsole from '../components/console/OutputConsole';
 import LoadingScreen from '../components/shared/LoadingScreen';
@@ -30,6 +31,7 @@ import TeamProjectsPanel from '../components/team/TeamProjectsPanel';
 import ProjectGate from '../components/team/ProjectGate';
 import SavedCodeList from '../components/code/SavedCodeList';
 import RevisionTimeline from '../components/code/RevisionTimeline';
+import useRevisionStore from '../stores/revisionStore';
 import useProjectStore from '../stores/projectStore';
 import PublishModal from '../components/gallery/PublishModal';
 import SendCodeModal from '../components/codeshare/SendCodeModal';
@@ -71,6 +73,7 @@ export default function Sandbox() {
   const [showTeam, setShowTeam] = useState(false);
   const [showSavedCodes, setShowSavedCodes] = useState(false);
   const [historyTarget, setHistoryTarget] = useState(null);
+  const restoringRevision = useRevisionStore((s) => s.restoring);
   const [teamInitialAction, setTeamInitialAction] = useState('browse');
   const [teamInitialJoinCode, setTeamInitialJoinCode] = useState('');
   const [showProjectGate, setShowProjectGate] = useState(false);
@@ -127,6 +130,9 @@ export default function Sandbox() {
   const repoAutorun = searchParams.get('autorun') === '1';
   const playParam = searchParams.get('play');
   const teamInviteCode = (searchParams.get('team') || '').trim().toLowerCase();
+  const lessonPath = searchParams.get('lesson');
+  const lessonParts = (lessonPath || '').split('/');
+  const workbookLesson = lessonParts.length === 2 ? getLesson(lessonParts[0], lessonParts[1]) : null;
 
   const updateCode = useCallback((nextCode) => {
     setCode((prev) => {
@@ -269,12 +275,13 @@ export default function Sandbox() {
   // (프로젝트 모드에서 vpylab_saved_code 직접 갱신 시 팀 멤버의 user_id 필터로 인해
   //  실제 갱신 없이 'saved' 표시되는 문제 방지)
   useEffect(() => {
+    if (restoringRevision) return;
     if (!user || !code || code === DEFAULT_CODE) return;
     if (activeProject) return;
     // 로드 중일 때만 차단 — 'error' 상태에서 자동 저장이 영구 차단되지 않도록
     if (repoLoadStatus === 'loading') return;
     autoSave(code, { title: '자유 코딩' });
-  }, [code, user, activeProject, repoLoadStatus, autoSave]);
+  }, [code, user, activeProject, repoLoadStatus, autoSave, restoringRevision]);
 
   // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => () => clearAutoSave(), [clearAutoSave]);
@@ -324,6 +331,7 @@ export default function Sandbox() {
     const onKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
+        if (useRevisionStore.getState().restoring) return;
         handleSave();
       }
     };
@@ -428,7 +436,7 @@ export default function Sandbox() {
     const cid = lessonParam.slice(0, slash);
     const lid = lessonParam.slice(slash + 1);
     const lesson = getLesson(cid, lid);
-    if (lesson) {
+    if (lesson?.code) {
       // 다른 차시로 이동 시 이전 잔존음/실행 정리
       stopAllSounds();
       import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
@@ -437,7 +445,9 @@ export default function Sandbox() {
       initialCodeRef.current = lesson.code;  // 초기화 시 이 차시로 복귀
       addOutput(`코스 차시 "${lesson.title?.ko || lid}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
     } else {
-      addOutput(`차시를 찾을 수 없습니다: ${lessonParam}`, 'error');
+      addOutput(lesson
+        ? '이 차시는 절차 안내입니다. 학습 코스에서 교재를 열고 현재 작품으로 실습하세요.'
+        : `차시를 찾을 수 없습니다: ${lessonParam}`, lesson ? 'warning' : 'error');
     }
   }, [searchParams, addOutput, updateCode]);
 
@@ -532,7 +542,7 @@ export default function Sandbox() {
     setOutputs([]);
     setActiveTab('3d');
     runSound();
-    addOutput('실행 중', 'log');
+    addOutput('실행을 시작했습니다.', 'log');
     runCode(sourceCode);
   }, [addOutput, runCode, stopExecution]);
 
@@ -1072,179 +1082,41 @@ export default function Sandbox() {
         <ShareLinkDialog url={shareDialog.url} shareId={shareDialog.id} title={shareDialog.title} onClose={() => setShareDialog(null)} />
       )}
 
-      {/* 툴바 */}
-      <div
-        className="flex items-center gap-2 shrink-0"
-        style={{
-          backgroundColor: 'var(--color-bg-secondary)',
-          borderBottom: '1px solid var(--color-border)',
-          padding: '10px 20px',
-        }}
-      >
-        <button onClick={handleRun} disabled={!isReady || isRunning || repoLoadStatus === 'loading'} className="toolbar-btn --run">
-          {repoLoadStatus === 'loading' ? '불러오는 중' : t('editor.run')}
-        </button>
-        <button onClick={handleStop} disabled={!isRunning} className="toolbar-btn --stop">
-          {t('editor.stop')}
-        </button>
-        <button onClick={handleReset} className="toolbar-btn">
-          {t('editor.reset')}
-        </button>
-
-        <div className="hidden md:flex items-center gap-2 ml-2">
-          {editMode && (
-            <button onClick={handleUpdate} className="toolbar-btn --update" style={{ background: '#f0883e', color: 'white', fontWeight: 600 }}>
-              업데이트
-            </button>
-          )}
-          <button onClick={handleShare} className="toolbar-btn">
-            {shareMsg || t('editor.share')}
-          </button>
-          <button onClick={handleExport} className="toolbar-btn">
-            {t('editor.export')}
-          </button>
-          <button
-            onClick={handleSave}
-            className="toolbar-btn"
-            style={{ fontWeight: 600 }}
-            title={activeProjectCanEdit
-              ? '현재 코드를 저장 (Ctrl/Cmd+S). 같은 코드면 이력에 누적됩니다.'
-              : '보기 권한이라 프로젝트를 저장할 수 없습니다.'}
-          >
-            {activeProjectRole === 'viewer' ? '보기 전용' : (saveMsg || '💾 저장')}
-          </button>
-          <button onClick={handleSaveAs} className="toolbar-btn" title="새 이름으로 저장 (별도 코드로 분기)">
-            {t('code.saveAs') || '다른 이름으로 저장'}
-          </button>
-          <button onClick={handleOpenHistory} className="toolbar-btn" title="현재 코드의 저장 이력과 복원 기록 보기">
-            📜 저장 이력
-          </button>
-          <button onClick={() => setShowExamples(true)} className="toolbar-btn --examples">
-            {t('editor.examples') || '예제'}
-          </button>
-          <button onClick={() => { setTeamInitialAction('browse'); setShowTeam(true); }} className="toolbar-btn" style={{ fontWeight: activeProject ? 600 : 400 }}>
-            {activeProject ? `📁 ${activeProject.title.slice(0, 20)}${activeProject.title.length > 20 ? '…' : ''}` : '📁 프로젝트'}
-          </button>
-          <button
-            onClick={openPublishModal}
-            className="toolbar-btn --publish"
-          >
-            {t('gallery.publish') || '갤러리에 올리기'}
-          </button>
-          {/* 교사: 코드 전송 + 비우기 */}
-          {isTeacher() && (
-            <>
-              <button onClick={() => setSendModalOpen(true)} className="toolbar-btn" style={{ background: '#F59E0B', color: 'white', fontWeight: 600, border: '1px solid #F59E0B' }}>
-                {t('codeShare.sendToStudents')}
-              </button>
-              {sharedCodes.length > 0 && (
-                <button
-                  onClick={() => {
-                    if (window.confirm(t('codeShare.clearConfirm'))) {
-                      clearCodes(selectedClassId);
-                    }
-                  }}
-                  className="toolbar-btn"
-                  style={{ color: 'var(--color-error, #FF6B6B)' }}
-                >
-                  {t('codeShare.clearAll')}
-                </button>
-              )}
-            </>
-          )}
-          {/* 학생: 코드 우편함 */}
-          {!isTeacher() && profile?.class_id && sharedCodes.length > 0 && (
-            <button onClick={() => setPanelOpen(true)} className="toolbar-btn" style={{ position: 'relative' }}>
-              {t('codeShare.mailbox')}
-              {unreadCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: -4, right: -4,
-                  background: 'var(--color-error, #FF6B6B)', color: 'white',
-                  borderRadius: '50%', width: 16, height: 16,
-                  fontSize: 10, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          )}
-        </div>
-
-        {/* 모바일 더보기 메뉴 */}
-        <div className="relative md:hidden ml-1">
-          <button
-            onClick={() => setMobileMore(prev => !prev)}
-            className="toolbar-btn"
-            style={{ padding: '4px 8px', fontSize: 16 }}
-          >
-            ⋯
-          </button>
-          {mobileMore && (
-            <div
-              className="absolute right-0 top-full mt-1 w-44 rounded-xl py-1 z-50"
-              style={{
-                backgroundColor: 'var(--color-bg-panel)',
-                border: '1px solid var(--color-border)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-              }}
-            >
+      {workbookLesson && <div className="px-5 py-2 text-xs flex items-center justify-between gap-4 border-b" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}><span className="truncate">{workbookLesson.title.ko}</span><Link to={`/courses/${lessonPath}`} target="_blank" rel="noopener noreferrer" className="no-underline shrink-0" style={{ color: 'var(--color-accent)' }}>교재 보기 ↗</Link></div>}
+      <div className="flex flex-wrap items-center gap-2 shrink-0 px-4 py-3 border-b" style={{ backgroundColor: 'var(--color-bg-panel)', borderColor: 'var(--color-border)' }}>
+        <button onClick={handleRun} disabled={!isReady || isRunning || repoLoadStatus === 'loading'} className="toolbar-btn --run">{repoLoadStatus === 'loading' ? '불러오는 중' : t('editor.run')}</button>
+        {isRunning && <button onClick={handleStop} className="toolbar-btn --stop">{t('editor.stop')}</button>}
+        <button onClick={handleSave} disabled={!activeProjectCanEdit} className="toolbar-btn" title="현재 코드 저장 (Ctrl/Cmd+S)">{activeProjectRole === 'viewer' ? '보기 전용' : (saveMsg || '저장')}</button>
+        <button onClick={() => { setTeamInitialAction('browse'); setShowTeam(true); }} className="toolbar-btn max-w-36 truncate" title={activeProject?.title || '프로젝트'}>{activeProject ? activeProject.title : '프로젝트'}</button>
+        <div className="relative">
+          <button onClick={() => setMobileMore(previous => !previous)} className="toolbar-btn" aria-label="실습 도구" aria-expanded={mobileMore}>도구 <span aria-hidden="true">⌄</span></button>
+          {mobileMore && <>
+            <button type="button" aria-label="실습 도구 닫기" className="fixed inset-0 z-40 cursor-default border-0 bg-transparent" onClick={() => setMobileMore(false)} />
+            <div className="absolute right-0 top-full mt-2 w-60 max-h-[calc(100dvh-170px)] overflow-y-auto py-2 z-50 border" style={{ backgroundColor: 'var(--color-bg-panel)', borderColor: 'var(--color-border)', boxShadow: 'var(--shadow-md)' }}>
               {[
-                { label: shareMsg || t('editor.share'), action: () => { handleShare(); setMobileMore(false); } },
-                { label: t('editor.export'), action: () => { handleExport(); setMobileMore(false); } },
-                { label: activeProjectRole === 'viewer' ? '보기 전용' : (saveMsg || '💾 저장'), action: () => { handleSave(); setMobileMore(false); } },
-                { label: t('code.saveAs') || '다른 이름으로 저장', action: () => { handleSaveAs(); setMobileMore(false); } },
-                { label: '📜 저장 이력', action: () => { handleOpenHistory(); setMobileMore(false); } },
-                { label: t('editor.examples') || '예제', action: () => { setShowExamples(true); setMobileMore(false); } },
-                { label: activeProject ? `📁 ${activeProject.title}` : '📁 프로젝트', action: () => { setTeamInitialAction('browse'); setShowTeam(true); setMobileMore(false); } },
-                { label: t('gallery.publish') || '갤러리에 올리기', action: () => { openPublishModal(); setMobileMore(false); } },
-                // 교사: 코드 전송
-                ...(isTeacher() ? [
-                  { label: `📤 ${t('codeShare.sendToStudents')}`, action: () => { setSendModalOpen(true); setMobileMore(false); } },
-                ] : []),
-                // 학생: 코드 우편함
-                ...(!isTeacher() && profile?.class_id && sharedCodes.length > 0 ? [
-                  { label: `📬 ${t('codeShare.mailbox')}${unreadCount > 0 ? ` (${unreadCount})` : ''}`, action: () => { setPanelOpen(true); setMobileMore(false); } },
-                ] : []),
-              ].map((item, i) => (
-                <button
-                  key={i}
-                  onClick={item.action}
-                  className="w-full text-left px-4 py-2 text-xs cursor-pointer border-none bg-transparent transition-colors"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                >
-                  {item.label}
-                </button>
-              ))}
+                { label: '초기 코드로 돌아가기', action: handleReset },
+                { label: shareMsg || t('editor.share'), action: handleShare },
+                { label: 'HTML 내려받기', action: handleExport },
+                { label: t('code.saveAs') || '다른 이름으로 저장', action: handleSaveAs },
+                { label: '저장 이력', action: handleOpenHistory },
+                { label: t('editor.examples'), action: () => setShowExamples(true) },
+                { label: t('gallery.publish'), action: openPublishModal },
+                ...(editMode ? [{ label: '작품 업데이트', action: handleUpdate }] : []),
+                ...(isTeacher() ? [{ label: t('codeShare.sendToStudents'), action: () => setSendModalOpen(true) }] : []),
+                ...(isTeacher() && sharedCodes.length ? [{ label: t('codeShare.clearAll'), action: () => { if (window.confirm(t('codeShare.clearConfirm'))) clearCodes(selectedClassId); } }] : []),
+                ...(!isTeacher() && profile?.class_id && sharedCodes.length ? [{ label: `${t('codeShare.mailbox')}${unreadCount ? ` (${unreadCount})` : ''}`, action: () => setPanelOpen(true) }] : []),
+              ].map(item => <button key={item.label} onClick={() => { setMobileMore(false); item.action(); }} className="w-full text-left px-4 py-2.5 text-xs cursor-pointer border-0 bg-transparent" style={{ color: 'var(--color-text-primary)' }}>{item.label}</button>)}
+              <SoundSettings />
             </div>
-          )}
+          </>}
         </div>
-
-        <div className="flex-1" />
-
-        {/* 모바일 탭 */}
-        <div className="flex md:hidden gap-1">
-          {[['editor', 'Code'], ['3d', '3D'], ['console', 'Log']].map(([tab, label]) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`tab-btn ${activeTab === tab ? '--active' : ''}`}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="hidden md:flex flex-1 justify-end items-center gap-3 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+          {user && saveStatus === 'saving' && <span>저장 중…</span>}
+          {user && saveStatus === 'saved' && <span>저장됨</span>}
+          {user && saveStatus === 'error' && <span style={{ color: 'var(--color-error)' }}>자동 저장 실패 · 저장을 눌러주세요</span>}
+          <span>{isRunning ? '실행 중' : isReady ? '준비됨' : 'Python 준비 중…'}</span>
         </div>
-
-        {/* 상태 */}
-        <div className="hidden md:flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          {user && saveStatus === 'saving' && <span>저장 중...</span>}
-          {user && saveStatus === 'saved' && <span style={{ color: 'var(--color-success)' }}>저장됨 ✓</span>}
-          {user && saveStatus === 'error' && <span style={{ color: 'var(--color-error, #e03131)' }}>⚠️ 자동 저장 실패 — 수동 저장해주세요</span>}
-          <span className="flex items-center gap-1.5">
-            <span className={`status-dot ${isRunning ? '--running' : isReady ? '--ready' : '--idle'}`} />
-            {isRunning ? t('editor.run') + '...' : isReady ? 'Ready' : '...'}
-          </span>
-        </div>
+        <div className="w-full flex md:hidden gap-1 pt-1" aria-label="실습 패널">{[['editor', '코드'], ['3d', '화면'], ['console', '출력']].map(([tab, label]) => <button key={tab} onClick={() => setActiveTab(tab)} className={`tab-btn flex-1 ${activeTab === tab ? '--active' : ''}`}>{label}</button>)}</div>
       </div>
 
       {/* === 3패널 레이아웃 === */}
@@ -1254,44 +1126,7 @@ export default function Sandbox() {
           className={`${activeTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-[45%] md:min-w-[300px]`}
           style={{ borderRight: '1px solid var(--color-border)' }}
         >
-          {/* 모바일 전용: 코드 바로 위 실행/정지 — 상단 툴바가 가려지는 작은 화면 대응 */}
-          <div
-            className="md:hidden flex gap-2 shrink-0"
-            style={{
-              backgroundColor: 'var(--color-bg-secondary)',
-              borderBottom: '1px solid var(--color-border)',
-              padding: '10px 16px',
-            }}
-          >
-            {!isRunning ? (
-              <button
-                onClick={handleRun}
-                disabled={!isReady || repoLoadStatus === 'loading'}
-                className="btn-primary flex-1 !py-2.5 !text-[14px] flex items-center justify-center gap-1.5"
-                style={{ opacity: isReady && repoLoadStatus !== 'loading' ? 1 : 0.5 }}
-              >
-                <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M6 2l8 6-8 6V2z"/></svg>
-                {repoLoadStatus === 'loading' ? '불러오는 중' : t('editor.run')}
-              </button>
-            ) : (
-              <button
-                onClick={handleStop}
-                className="btn-primary flex-1 !py-2.5 !text-[14px] flex items-center justify-center gap-1.5"
-                style={{ background: 'var(--color-error, #FF6B6B)' }}
-              >
-                <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="10" height="10" rx="1"/></svg>
-                {t('editor.stop')}
-              </button>
-            )}
-            <button
-              onClick={handleReset}
-              className="btn-secondary !py-2.5 !text-[13px] !px-4"
-              title={t('editor.reset')}
-            >
-              ↺
-            </button>
-          </div>
-          <CodeEditor code={code} onChange={(val) => updateCode(val || '')} />
+          <CodeEditor code={code} readOnly={restoringRevision} onChange={(val) => { if (!useRevisionStore.getState().restoring) updateCode(val || ''); }} />
         </div>
 
         {/* 리사이저 (데스크톱) */}
@@ -1506,16 +1341,23 @@ export default function Sandbox() {
       )}
 
       {/* 현재 프로젝트/코드 저장 이력 */}
+      {restoringRevision && (
+        <div role="status" aria-live="polite" className="fixed inset-0 z-[100] flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-primary)', opacity: 0.9 }}>
+          코드를 보관하고 복원하고 있습니다. 잠시 기다려주세요.
+        </div>
+      )}
       {historyTarget && (
         <RevisionTimeline
           codeId={historyTarget.id}
           codeTitle={historyTarget.title}
+          currentCode={code}
+          currentCodeId={historyTarget.id}
           onClose={() => setHistoryTarget(null)}
           onRestored={(snapshotCode) => {
             updateCode(snapshotCode);
             initialCodeRef.current = snapshotCode;
             setHistoryTarget(null);
-            addOutput('선택한 저장 이력을 에디터로 복원했습니다. GitHub에도 맞추려면 코드 저장을 눌러주세요.', 'success');
+            addOutput('VPyLab 저장 코드와 에디터를 복원했습니다. GitHub에도 맞추려면 코드 저장을 눌러주세요.', 'success');
           }}
         />
       )}
@@ -1523,6 +1365,7 @@ export default function Sandbox() {
       {/* 저장된 코드 목록과 각 코드의 이력 */}
       {showSavedCodes && (
         <SavedCodeList
+          currentCode={code === DEFAULT_CODE ? undefined : code}
           onClose={() => setShowSavedCodes(false)}
           onLoadCode={(loadedCode, codeId) => {
             updateCode(loadedCode);

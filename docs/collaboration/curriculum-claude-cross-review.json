@@ -1,0 +1,123 @@
+{
+  "date": "2026-11-06",
+  "request": "클로드와 코드 기준 교차 검증",
+  "method": "Codex가 변경 코드를 대조·수정·실행 검사하고 실제 로컬 Claude CLI가 독립 검토와 두 차례 재검토를 수행. 외부 검토에는 코드와 가짜 인증값만 전달.",
+  "scope": "입문 교재 제작 흐름 중 GitHub 인증·자동저장·이력 복원·독립 HTML 공유",
+  "decisions": [
+    {
+      "finding": "최신 revision을 현재 코드로 단정하여 복원 버튼이 없음",
+      "decision": "채택",
+      "change": "최신 기록으로 표기하고 모든 이력의 복원 버튼 제공"
+    },
+    {
+      "finding": "복원과 진행·예약 중인 자동저장 경합",
+      "decision": "채택",
+      "change": "예약 중단, 진행 중 저장 완료 후 복원, currentCodeId 유지, 0행 갱신 충돌 안내. 실패 시 취소한 예약 복귀. 22초 대기 초과 시 복원 시작하지 않음"
+    },
+    {
+      "finding": "이전 pending 자동저장이 새 타이머의 최신 코드를 취소함",
+      "decision": "채택",
+      "change": "새 자동저장 예약이 이전 pending을 대체. 타이머 실행 시 참조 정리"
+    },
+    {
+      "finding": "연결 계정의 Google 토큰을 GitHub 토큰으로 반환할 수 있음",
+      "decision": "채택",
+      "change": "OAuth 요청 provider와 완료된 세션 사용자 ID를 묶어 GitHub 인증을 따로 보관. 발급자를 모르는 연결 계정 토큰은 사용하지 않음. 만료·로그아웃·Google 로그인 시 별도 인증 정리"
+    },
+    {
+      "finding": "복원 중 편집과 중복 클릭 가능",
+      "decision": "채택",
+      "change": "전역 복원 상태로 중복 요청 차단, 에디터 readOnly와 onChange 가드, 화면 덮개와 저장 단축키 가드"
+    },
+    {
+      "finding": "공유 화면 resize 때 수동 확대 초기화",
+      "decision": "채택",
+      "change": "화면 비율 변경 전의 실제 시야 반경과 방향·중심 보존. 실제 CameraSystem과 range 비교 및 회전 검사 추가"
+    },
+    {
+      "finding": "OAuth 실패·취소 뒤 이전 세션에 GitHub provider를 붙여 보관",
+      "decision": "재검토에서 추가 발견 후 채택",
+      "change": "query/hash 오류와 코드 교환 실패 시 인증 보관하지 않음. 성공 시 실제 교환 결과의 세션만 사용. 취소·실패·성공 경로 회귀 검사"
+    },
+    {
+      "finding": "저장 목록에서 X 또는 다른 Y 복원 시 현재 미저장 X 유실",
+      "decision": "재검토에서 추가 발견 후 채택",
+      "change": "목록에서 현재 코드와 ID를 전달. X 편집본은 X 이력에 먼저 보관. 저장 위치가 없거나 보관 실패 시 중단. 목록→타임라인→복원 전달 검사 추가"
+    },
+    {
+      "finding": "화면 이탈 후 실패한 복원이 이전 예약을 다시 생성할 수 있음",
+      "decision": "채택",
+      "change": "자동저장 정리 세대가 바뀌었으면 복원 실패 후 재예약하지 않음"
+    },
+    {
+      "finding": "공유 HTML Python 검사 도구가 stdin EOF를 기다려 종료되지 않음",
+      "decision": "Codex 실행 검사에서 발견 후 수정",
+      "change": "한 줄 JSON 입력을 읽도록 변경하고 Python 하위 프로세스 15초 제한 추가. 단독 4개와 최종 전체 621개 검사 통과"
+    }
+  ],
+  "confirmationChecks": [
+    "SavedCodeList의 currentCodeId는 useCodeStore에서 읽으며 타임라인과 복원으로 전달됨. X/X와 X/Y 두 실제 컴포넌트 경로 검사 추가.",
+    "_createRevision은 revision insert만 수행. 저장소 migrations의 revision insert trigger가 saved_code.updated_at을 바꾸는 경로는 없음. 운영 DB에 임의 추가한 트리거는 확인하지 않음.",
+    "설치된 auth-js 기본 flowType은 implicit. _getSessionFromURL의 오류 경로는 hash 정리 전 throw하고 _initialize는 기존 세션을 유지하며 반환. 콜백은 query/hash 오류를 별도로 차단.",
+    "마지막 Claude 검토는 제공 코드 기준 확정 가능한 잔여 P2가 없다고 판단. 전체 제품·운영 환경 보증이 아님."
+  ],
+  "changedFiles": [
+    "client/src/stores/authStore.js",
+    "client/src/pages/AuthCallback.jsx",
+    "client/src/stores/codeStore.js",
+    "client/src/stores/revisionStore.js",
+    "client/src/components/code/RevisionTimeline.jsx",
+    "client/src/components/code/SavedCodeList.jsx",
+    "client/src/pages/Sandbox.jsx",
+    "client/src/utils/export-html.js",
+    "client/src/stores/authStore.test.js",
+    "client/src/stores/codeStore.test.js",
+    "client/src/stores/revisionStore.test.js",
+    "client/src/pages/AuthCallback.test.jsx",
+    "client/src/components/code/RevisionTimeline.test.jsx",
+    "client/src/components/code/SavedCodeList.test.jsx",
+    "client/src/utils/export-html.test.js",
+    "client/src/test/run-export-python.py"
+  ],
+  "validation": {
+    "status": "passed",
+    "client": {
+      "files": 45,
+      "passed": 621,
+      "failed": 0,
+      "command": "npm run test:run -- --maxWorkers=4 --testTimeout=20000"
+    },
+    "relatedTests": 38,
+    "testHarnessFinding": "기본 병렬 실행 중 Python 검사 1개가 5초 제한 초과. 동시 실행 수를 줄인 재실행은 공유 HTML용 Python이 stdin EOF 대기로 정지. 시스템 스택에서 read 대기를 확인했고 해당 테스트만 종료. 공유 검사 도구를 한 줄 JSON 프로토콜로 바꾸고 spawnSync 15초 제한 추가 후 전체 통과.",
+    "build": "최종 앱 코드 Vite 프로덕션 빌드 통과. 이후 변경은 검사 코드와 이 기록뿐.",
+    "lint": "수정한 인증·콜백·자동저장·복원·목록·공유 모듈 및 검사 파일 ESLint, git diff --check 통과",
+    "server": "이전 코드 점검에서 115개 통과. 이번 프론트엔드 보완 후 서버는 변경하지 않았으며 재실행하지 않음"
+  },
+  "limits": [
+    "Claude는 코드를 정독했으며 직접 테스트나 브라우저를 실행한 것이 아님. 실행 검사는 Codex가 별도로 수행.",
+    "실제 OAuth 계정 연결, Supabase 운영 RLS·트리거, GitHub 저장소 생성·Pages 배포와 컴퓨터 유즈는 미실행.",
+    "자동저장 경합 검사는 지연 Promise와 가짜 타이머를 사용. 공유 화면은 실제 Three 카메라와 Python API를 실행하지만 WebGL·OrbitControls는 목으로 대체.",
+    "현재 implicit 인증을 기준으로 함. PKCE로 바꾸면 Supabase 자동 코드 교환과 콜백의 수동 교환을 함께 조정할 필요가 있음.",
+    "일반 코드 열기·수동 저장 전체의 기존 경합, 저장 목록에서 다른 팀 프로젝트를 여는 문맥 전환 등은 추가 화면 검사 대상."
+  ],
+  "reviews": [
+    {
+      "round": 1,
+      "reviewer": "Claude CLI (기존 모델 설정 유지)",
+      "seconds": 162.82,
+      "result": "# VPyLab 교차 검토 결과\n\nP1은 없고 P2 4건, P3 2건을 확인했습니다. diff가 없어 회귀 구분은 코드와 주석을 바탕으로 한 추정입니다. 코드 정적 검토만 수행했으며 테스트, 실계정 OAuth, GitHub, 브라우저 검증은 하지 않았습니다.\n\n## P2\n\n### 1. 최신 revision 이후의 변경을 버리고 그 버전으로 돌아갈 수 없음 (기존 코드 추정)\n- **근거:** `RevisionTimeline.jsx`는 `idx === 0`을 `현재`로 표시하고 `!isLatest`일 때만 복원 버튼을 보여 줍니다. 하지만 자동저장은 revision을 만들지 않으므로 최신 revision과 실제 코드가 다를 수 있습니다.\n- **재현:**\n  1. 코드를 저장해 v3을 만듭니다.\n  2. 코드를 수정하고 자동저장을 기다리거나, 프로젝트 모드에서 미저장 상태로 둡니다.\n  3. 이력을 열면 v3이 `현재`로 표시되고 복원 버튼이 없습니다.\n- **추가 사례:** 복원 이력 추가에 실패하면 최신 행은 `복원 전 ... 보관`입니다. 이 행이 `현재`로 잘못 표시되고, 방금 보관한 코드도 복원할 수 없습니다.\n- **수정:** 복원 버튼은 항상 노출하거나 revision 내용이 현재 코드와 같을 때만 숨기세요. `현재` 표시도 같은 기준으로 판단해야 합니다. 목록에 스냅샷이 없으므로 해시나 비교용 필드가 필요합니다.\n- **회귀검사:** 최신 revision과 현재 코드가 다를 때 버튼이 보이는지, 복원 이력 실패 후 보관본을 복원할 수 있는지 확인하세요.\n\n### 2. 복원이 대기 중인 자동저장과 경합함 (이번 복원 수정과 기존 자동저장의 결합)\n- **근거:** `restoreRevision`은 자동저장 타이머와 진행 중인 저장을 멈추지 않습니다. `updated_at` 조건이 0행이면 `.single()`이 PGRST116 오류를 내고, 원문이 `복원 실패: ...`로 표시될 수 있습니다.\n- **재현 A:**\n  1. 개인 코드를 수정합니다.\n  2. 2초 안에 이전 버전 복원을 확인합니다.\n  3. `currentRow` 조회 후 복원 update 전에 자동저장이 끝나게 지연합니다.\n  4. 학생에게 원인을 알 수 없는 오류가 표시되고, 재시도하면 보관 revision이 중복될 수 있습니다.\n- **재현 B:**\n  1. 복원 update 후 `onRestored` 전에 타이머가 실행되게 합니다.\n  2. DB는 복원 전 코드로 돌아갑니다.\n  3. 보통은 이후 자동저장이 복원본으로 다시 덮습니다. 하지만 복원 코드가 빈 문자열이거나 `DEFAULT_CODE`면 Sandbox effect가 먼저 return하므로 재저장되지 않습니다.\n- **수정:**\n  - 복원 시작 시 자동저장을 일시 중단하고, 진행 중인 저장이 끝날 때까지 기다리세요.\n  - `clearAutoSave`는 `currentCodeId`도 지우므로 재사용하면 안 되고, 별도의 `pause/cancel` 함수가 필요합니다.\n  - update는 `.maybeSingle()`로 받고 0행이면 “다른 저장이 먼저 반영되었습니다. 다시 확인해 주세요.”로 안내하세요.\n- **회귀검사:** 0행 충돌, 타이머 대기, 저장 진행 중, `DEFAULT_CODE` 복원을 각각 검사하세요.\n\n### 3. 오래된 pending 자동저장이 최신 타이머를 취소함 (기존 코드 추정)\n- **근거:** `_runAutoSave`의 `finally`는 `_autoSavePendingArgs`로 `autoSave()`를 호출합니다. `autoSave()`는 기존 타이머를 지우므로, pending 이후 예약된 더 최신 코드의 저장이 사라집니다.\n- **재현:**\n  1. 저장 A의 응답을 2초 넘게 지연합니다.\n  2. 그동안 코드 B의 타이머가 실행되어 pending에 들어갑니다.\n  3. 코드 C를 입력하거나 복원 코드 S가 반영되어 새 타이머가 생깁니다.\n  4. A가 끝나면 B가 C/S의 타이머를 취소하고, 2초 뒤 DB에 B가 저장됩니다.\n  5. 편집기는 C/S인데 상태는 `saved`로 표시될 수 있습니다.\n- **수정:** `autoSave()` 호출 시 최신 인자를 항상 기록하세요. 완료 후에는 그 최신 인자만 저장하고, 타이머 실행 시 `_saveTimer`도 비우세요.\n- **회귀검사:** 가짜 타이머와 지연 Promise로 A→B→C 순서를 재현해 DB 최종값이 C인지 확인하세요.\n\n### 4. GitHub가 연결된 계정의 Google 로그인 토큰을 GitHub 토큰으로 반환할 수 있음\n- **근거:** `getGitHubToken`은 `identities`에 GitHub가 있으면 `session.provider_token`을 반환합니다. 이 조건은 현재 토큰의 발급자가 GitHub임을 보장하지 않습니다.\n- **재현:**\n  1. Google과 GitHub identity가 연결된 계정을 준비합니다.\n  2. Google로 로그인합니다.\n  3. `getGitHubToken()`을 호출하면 Google 토큰이 반환됩니다.\n- **영향:** GitHub 연결이 실패하고, Google 토큰이 GitHub 요청 경로로 전달될 수 있습니다.\n- **테스트 공백:** 현재 테스트는 `identities`가 없는 Google 사용자만 검사합니다.\n- **수정:** 로그인 시 토큰 발급 provider를 사용자 ID와 함께 기록하고, GitHub로 기록된 토큰만 반환하세요. 로그아웃과 만료 시 기록도 함께 지워야 합니다.\n- **회귀검사:** `app_metadata.provider`가 `google`이고 `identities`에 GitHub가 함께 있는 세션을 추가하세요. 실제 세션 값 확인도 필요합니다.\n\n## P3\n\n### 5. 복원 중 재진입과 입력을 막지 않음 (이번 복원 흐름)\n- **근거:** 복원 버튼에 진행 상태가 없고, `currentCode`는 시작 시점 값으로 고정됩니다. 복원 완료 시 `updateCode(snapshotCode)`가 편집기를 덮어씁니다.\n- **재현:**\n  1. 네트워크를 지연합니다.\n  2. 복원을 확인합니다.\n  3. 완료 전에 편집기에 입력합니다.\n  4. 완료 시 새 입력이 보관 없이 사라집니다. 복원 버튼을 다시 눌러 요청을 겹칠 수도 있습니다.\n- **수정:** 복원 중에는 버튼과 편집기를 잠그세요. 또는 `onRestored` 직전에 편집기 값이 바뀌었으면 적용을 중단하세요.\n- **회귀검사:** 복원 Promise를 지연한 상태에서 중복 클릭과 입력을 검사하세요.\n\n### 6. 공유 페이지 리사이즈가 수동 확대·축소를 초기화함 (이번 수정)\n- **근거:** resize 핸들러가 `applySceneRange(explicitSceneRange)`를 다시 호출합니다. 회전 방향과 target은 유지되지만 카메라 거리는 range 기준으로 재계산됩니다.\n- **재현:**\n  1. `scene.range = 3`인 공유 페이지를 엽니다.\n  2. 휠이나 핀치로 확대합니다.\n  3. 창 크기를 바꾸거나 모바일 화면을 회전합니다.\n  4. 확대 상태가 사라집니다.\n- **수정:** 편집기의 동작이 기준입니다. 수동 시점을 유지해야 한다면 현재 거리와 `range` 기준 거리의 비율을 저장해 리사이즈 후 적용하세요.\n- **회귀검사:** 카메라 방향, target, 수동 거리 비율이 리사이즈 후 유지되는지 확인하세요. 현재 테스트의 `Controls` 목은 이 동작을 검증하지 못합니다.\n\n## 테스트가 놓치는 회귀\n- `revisionStore.test.js`의 `eq` 목은 인자를 검사하지 않습니다. `updated_at` 조건을 삭제해도 테스트가 통과합니다.\n- 복원 update 실패 시 `onRestored`가 호출되지 않는지 검사하지 않습니다.\n- `authStore.test.js`는 `AUTH_STORAGE_KEY`를 목으로 대체하므로, 실제 Supabase 클라이언트의 저장 구조는 검증하지 않습니다.\n- 공유 HTML 비교 테스트는 `hasPython()`이 거짓이면 건너뜁니다. CI에서는 Python 필수 조건을 두는 편이 안전합니다.\n- 시야 범위 테스트는 기대 공식을 직접 적었을 뿐, 편집기 구현과 비교하지 않습니다.\n- `scene.background`도 비교하지 않습니다.\n\n## 근거가 부족해 별도 확인이 필요한 가정\n- **GitHub 토큰 유지:** `auth-js`가 세션 갱신 때 `provider_token` 없는 세션을 같은 키에 저장한다면, 2차 localStorage fallback은 토큰을 복구하지 못합니다. 설치된 버전과 실제 갱신 후 저장값을 확인해야 합니다.\n- **이력 대상과 편집기 대상:** `historyTarget`을 만드는 코드가 없어 `historyTarget.id`와 `currentCodeId`가 항상 일치하는지 알 수 없습니다. 다르면 편집본이 다른 코드의 이력에 보관되거나, 복원 후 자동저장이 다른 레코드를 덮어쓸 수 있습니다.\n- **저장 목록의 복원:** `SavedCodeList`가 현재 열린 코드를 복원할 때 편집기와 `currentCodeId`를 갱신하는지 전달된 코드로는 확인할 수 없습니다.\n- **복원 후 재저장:** `saveCode`, `_createRevision`, GitHub 동기화 코드가 없어, 복원 후 내용 변경 없이 `코드 저장`을 눌렀을 때 GitHub와 Pages까지 반영되는지 판단할 수 없습니다.\n- **공유 화면 기본값:** 공유 HTML의 Three.js 배경은 `0x0d1117`이고 Python `_Scene` 기본값은 밝은색입니다. 편집기 기본값이 없어 불일치 여부는 판단하지 않았습니다.\n\n## 남은 실계정 검증\n- Google 로그인, GitHub 로그인, 두 identity가 연결된 계정 각각의 세션과 `provider_token`\n- 세션 갱신 후 GitHub 연결 유지 여부\n- 실제 RLS에서 팀원의 복원과 `updated_at` 충돌 처리\n- 복원 후 재저장, GitHub 반영, Pages 공유까지의 전체 흐름\n- 실제 브라우저와 모바일에서의 리사이즈 및 화면 회전"
+    },
+    {
+      "round": 2,
+      "reviewer": "Claude CLI (기존 모델 설정 유지)",
+      "seconds": 117.91,
+      "result": "## 결론\n\n**P1은 없고, P2는 2건입니다.** 코드를 읽고 내린 판단이며 테스트나 실계정 동작은 확인하지 않았습니다. `Sandbox`, `RevisionTimeline`, 공유 HTML 코드는 없어 설명을 전제로 봤습니다.\n\n## 이전 지적 해결 여부\n\n| 항목 | 판단 | 근거 |\n|---|---|---|\n| 최신 이력 복원 불가 | 해결(UI는 설명 기준) | 저장본이 스냅샷과 같으면 저장본 보관만 건너뛰고, 다른 편집본은 보관 후 복원합니다. |\n| 복원과 자동저장 경합 | 현재 코드 경로는 해결 | 일시정지 후 진행 중인 task를 기다린 뒤 본문을 읽고, `updated_at` 조건으로 갱신합니다. 다른 코드는 신규 P2 2 참고. |\n| pendingB가 최신C 취소 | 해결 | `autoSave`가 pending을 비우므로 A 완료 후 B가 C의 타이머를 덮어쓰지 않습니다. |\n| 연결 계정 Google 토큰 오용 | **부분 해결** | 정상 완료 경로는 막혔지만 실패·취소 경로가 남았습니다(신규 P2 1). |\n| 복원 재진입/입력 | 재진입 해결, 입력은 설명 기준 해결 | `restoring`을 첫 `await` 전에 설정합니다. 단축키는 아래 추측 참고. |\n| 수동 줌 후 resize 초기화 | 코드 미확인 | 설명한 공식 자체는 타당하지만, 코드와 실제 브라우저 동작은 확인하지 못했습니다. |\n\n## 신규 P2\n\n### 1. GitHub OAuth 취소·실패 시 Google 토큰이 GitHub 토큰으로 저장됨\n\n**근거:** `AuthCallback`은 교환 실패를 로그만 남기고, `error` 파라미터는 확인하지 않습니다. 이후 `getSession()`이 돌려준 기존 세션을 그대로 `captureOAuthSession`에 넘깁니다. 이 함수는 요청 provider가 `github`이고, 연결 계정에 GitHub identity와 `provider_token`이 있으면 토큰을 저장합니다. 그 토큰이 이번 GitHub OAuth에서 발급됐는지는 확인하지 않습니다.\n\n**재현:**\n1. Google+GitHub 연결 계정이 Google로 로그인해 세션에 Google `provider_token`이 있습니다.\n2. GitHub 재인증을 시작해 `OAUTH_PROVIDER_KEY='github'`가 저장됩니다.\n3. GitHub 동의 화면에서 거부해 `/auth/callback?error=access_denied`로 돌아옵니다. 코드 교환이 실패해도 같습니다.\n4. 기존 세션의 Google 토큰이 `{ provider: 'github', token }`으로 캐시됩니다.\n5. `getGitHubToken()`이 캐시를 먼저 읽어 Google 토큰을 반환합니다.\n\n**최소 수정:** 콜백 URL의 query와 hash에 `error`가 있거나 교환이 실패하면 `captureOAuthSession(null)`을 호출합니다. 성공 시에는 교환 결과의 `data.session`만 넘깁니다.\n\n`detectSessionInUrl`이 켜져 있으면 수동 교환 실패가 곧 OAuth 실패는 아닙니다. 이 경우 리다이렉트 전 세션의 토큰을 임시 보관하고, 콜백의 토큰이 그 값과 달라야 저장하도록 합니다. 취소 콜백 회귀 테스트도 필요합니다.\n\n### 2. 저장 목록에서 복원하면 현재 에디터의 미저장 편집본이 사라짐\n\n**근거:** 목록 경로는 `currentCode`를 넘기지 않으므로 `backups`에는 DB 저장본만 들어갑니다. 그런데 `pauseAutoSave`는 예약과 pending을 취소하고, 복원에 성공하면 `resume(true)`가 재예약 없이 `_autoSaveLatestArgs`를 지웁니다. 이어서 `onRestored`가 에디터를 교체합니다. 테스트 `다른 코드 목록에서 복원할 때도...`도 편집본이 보관되지 않는 동작을 그대로 기대합니다.\n\n**재현:**\n1. 코드 X를 수정해 2초 자동저장 타이머가 남아 있거나, 앞선 저장이 진행 중이고 pending이 있는 상태를 만듭니다.\n2. 저장 목록에서 X 또는 다른 코드 Y의 이력을 복원합니다.\n3. 예약이 취소되고 편집본은 어떤 이력에도 남지 않습니다.\n4. 에디터가 복원 코드로 바뀌어 마지막 편집이 유실됩니다.\n\n자동저장이 이미 실패한 상태라면 유실 범위는 더 커집니다. 특히 `_runAutoSave`의 `user_id` 필터 때문에 다른 멤버 소유의 팀 코드는 `count === 0`이 됩니다.\n\n**최소 수정:**\n- 대상이 `currentCodeId`와 같으면 목록 경로에서도 `currentCode`를 넘깁니다.\n- 대상이 다르면 `{ codeId: currentCodeId, code }` 형태로 현재 코드의 이력에 먼저 보관합니다. 실패하면 복원을 중단합니다.\n- `currentCodeId`가 없으면 먼저 저장하도록 안내합니다.\n- X 편집 중 Y 복원과 X 편집 중 목록에서 X 복원을 테스트로 고정합니다.\n\n## 추측 및 낮은 우선순위\n\n- **복원 오버레이 고착:** `_runAutoSave`에는 타임아웃이 없고 `pauseAutoSave`는 task를 무기한 기다립니다. 요청이 끝나지 않으면 z100 오버레이가 계속 남을 수 있습니다. 복원 경로의 Supabase 호출에도 타임아웃이 없습니다.\n- **단축키 우회:** 오버레이와 Monaco `readOnly`는 키보드 명령을 막지 못합니다. Ctrl+S 같은 저장 단축키가 있다면 `restoring` 가드가 있는지 확인이 필요합니다.\n- **화면 이탈 후 재예약:** 복원 중 뒤로 가기로 `clearAutoSave`가 실행된 뒤 복원이 실패하면, `resume(false)`가 이전 args를 다시 예약할 수 있습니다. 이때 `currentCodeId`가 비어 있으면 새 레코드가 생길 수 있으니, 일시정지 세대값으로 막는 편이 안전합니다.\n- **이력 연결 누락:** 복원 경로는 `skipParentLookup: true`라서 `parent_revision_id`가 null로 저장됩니다. 부모 체인을 쓰는 화면이 있다면 이력 연결이 끊겨 보입니다.\n\n## 테스트 공백\n\n`codeStore`와 `revisionStore`의 경합 테스트는 핵심 순서를 잘 고정합니다. 다만 `authStore` 테스트는 `captureOAuthSession`을 직접 호출해 `AuthCallback`의 실패 분기를 지나지 않습니다. `revisionStore` 테스트도 `pauseAutoSave`를 mock으로 대체해, 다른 코드 복원 시 실제 예약이 버려지는 문제를 잡지 못합니다."
+    },
+    {
+      "round": 3,
+      "reviewer": "Claude CLI (기존 모델 설정 유지)",
+      "seconds": 96.6,
+      "result": "## 결론\n\n**제공된 코드 기준으로 앞선 P2 두 건은 막힌 것으로 보이며, 재현 근거까지 확정할 수 있는 잔여 P2는 없습니다.** 다만 발췌에 없는 코드에 달린 확인 항목이 2건 있고, 그중 1번은 결과에 따라 P2 2가 다시 열립니다. 이 판단은 코드 정독 결과이며, 직접 실행하지 않았습니다.\n\n## 앞선 P2 판정\n\n**1. OAuth 실패/취소: 막힘**\n- query/hash 오류는 `capture(null)`로 처리됩니다.\n- 코드 교환 실패나 세션 없음도 `capture(null)`로 처리됩니다.\n- 코드 교환 성공 시 `getSession()` 결과가 아니라 `exchangedSession`을 쓰므로 이전 Google 세션이 섞이지 않습니다.\n- `_getSessionFromURL`의 오류 경로가 hash를 지우지 않는다면 implicit 취소도 판별됩니다. 설명과도 맞지만, 설치된 버전에서 확인이 필요합니다.\n\n**2. X/Y 복원 시 미저장 X 유실: store 기준으로 막힘**\n- `differentEditor`이면 X 편집본을 X 이력에 먼저 보관합니다.\n- 조회나 보관이 실패하면 본문 update 전에 중단합니다.\n- `_createRevision`이 throw해도 바깥 catch로 빠지고 `restored=false`가 유지됩니다.\n- `restored=true`일 때 X의 예약 자동저장은 폐기되지만, 내용이 이력에 있어 유실은 아닙니다.\n- Y 쪽 `backups`에서 `currentCode`를 제외해 X 본문이 Y 이력에 섞이지 않습니다.\n\n## 확인 필요 항목\n\n**1. `SavedCodeList`의 `currentCodeId` 출처 (P2 후보)**\n- Sandbox 발췌는 `SavedCodeList`에 `currentCodeId` prop을 넘기지 않습니다. 내부에서 `useCodeStore`로 읽는다면 문제없지만, 해당 코드가 발췌에 없습니다.\n- prop으로만 받는다면 값은 `undefined`입니다.\n- 재현: X 편집 중 목록에서 Y를 복원하면 `differentEditor=false`가 됩니다. X 편집본은 **Y 이력**에 들어가고, X 이력에는 남지 않습니다.\n- 현재 테스트는 store에 id를 직접 넘기므로 이 연결을 검증하지 못합니다. `SavedCodeList` → `RevisionTimeline` → `restoreRevision` 인자를 확인하는 테스트 1개를 권합니다.\n\n**2. `currentRow.updated_at`을 읽은 뒤 보관 revision을 만드는 순서**\n- `_createRevision`이나 DB 트리거가 `vpylab_saved_code`를 갱신해 `updated_at`이 바뀌면, 이어지는 조건부 update는 항상 0행입니다.\n- 그러면 저장본 보관이 필요한 복원이 모두 \"다른 저장이 먼저 반영\" 오류로 실패합니다. 데이터 유실은 없지만 기능이 막힙니다.\n- 목 테스트로는 잡히지 않으므로, `_createRevision` 구현과 트리거를 확인하거나 실제 DB로 1회 검증해야 합니다.\n\n## P3 (이번 단계에서 막지 않아도 됨)\n\n- **신호 없는 콜백:** code, error, access_token이 모두 없이 `/auth/callback`에 직접 접근하면 기존 세션이 `capture(session)`으로 전달됩니다. 발췌에 없는 `captureOAuthSession`에 대기 플래그 검사가 없으면 Google 토큰이 다시 캐시될 수 있습니다. 다만 일반 취소 흐름으로는 도달하기 어렵습니다.\n- **hash 토큰 대조:** hash에 `access_token`이 남아 있으면 `session.access_token`과 일치할 때만 capture하면 더 안전합니다. 초기화가 hash를 먼저 지운 경우도 고려해야 합니다.\n- **PKCE 전환 시:** `detectSessionInUrl`이 켜져 있으면 클라이언트 자동 교환 뒤 수동 교환이 실패해, 정상 로그인도 `capture(null)`이 될 수 있습니다. 현재 implicit 기본값에서는 해당하지 않고, fail-closed입니다.\n- **복원 차단 UX:** 새로고침 뒤 복구된 초안처럼 `currentCodeId=null`이고 기본 코드가 아니면, 목록 복원이 \"먼저 저장\" 메시지로 막힙니다. 안전하지만 불편할 수 있습니다.\n- **오해 소지 있는 메시지:**\n  - RLS로 0행이 갱신돼도 \"다른 저장이 먼저 반영\"으로 표시됩니다.\n  - 복원 후 목록 경로의 출력은 \"불러왔습니다\"입니다.\n  - X 편집본이 X 본문이 아닌 이력에만 있다는 안내도 없습니다.\n- **중복 이력:** 보관 후 update가 실패한 뒤 재시도하면 같은 내용의 보관 revision이 쌓입니다.\n- **테스트 공백:** implicit 성공(`#access_token`) 케이스가 없습니다.\n\n## Codex 검증 권장 순서\n\n1. `SavedCodeList`의 `currentCodeId` 출처 확인\n2. `_createRevision`과 트리거의 `updated_at` 영향 확인\n3. `captureOAuthSession`의 대기 플래그 조건 확인\n\n1번에서 값이 `undefined`로 확인되면 P2로 처리해 주세요."
+    }
+  ]
+}

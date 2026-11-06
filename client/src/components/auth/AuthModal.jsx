@@ -12,7 +12,7 @@ export default function AuthModal() {
 
   return (
     <div className="auth-modal-overlay" onClick={() => setAuthModalOpen(false)}>
-      <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title" onClick={(e) => e.stopPropagation()}>
         {/* 닫기 */}
         <button className="auth-close" onClick={() => setAuthModalOpen(false)} aria-label="닫기">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -25,17 +25,8 @@ export default function AuthModal() {
           <BrandMark size={44} inverse={theme === 'deep-dark'} />
         </div>
 
-        <h2 className="auth-title">VPyLab {t('auth.login')}</h2>
+        <h2 id="auth-dialog-title" className="auth-title">VPyLab {t('auth.login')}</h2>
         <p className="auth-desc">{t('auth.loginDescription')}</p>
-
-        {/* 가치 포인트 */}
-        <div className="auth-features">
-          <span>Python 3D</span>
-          <span>·</span>
-          <span>Web Audio</span>
-          <span>·</span>
-          <span>AI Hints</span>
-        </div>
 
         {/* 소셜 버튼 */}
         <div className="auth-buttons">

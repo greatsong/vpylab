@@ -119,14 +119,35 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
 
+  // 편집기와 같이 range는 화면의 짧은 변에 보이는 영역의 절반입니다.
+  let explicitSceneRange = null;
+  function applySceneRange(range) {
+    if (!Number.isFinite(range) || range <= 0) return;
+    explicitSceneRange = range;
+    const verticalHalfExtent = camera.aspect >= 1 ? range : range / camera.aspect;
+    const distance = verticalHalfExtent / Math.tan(camera.fov * Math.PI / 360);
+    const direction = camera.position.clone().sub(controls.target);
+    if (direction.lengthSq() < 0.000001) direction.set(0, 0, 1);
+    direction.normalize();
+    camera.position.copy(controls.target).addScaledVector(direction, distance);
+    camera.far = Math.max(1000, distance * 4);
+    camera.updateProjectionMatrix();
+    camera.lookAt(controls.target);
+    controls.update();
+  }
+
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
   const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
   dirLight.position.set(5, 10, 7);
   scene.add(dirLight);
 
   window.addEventListener('resize', () => {
+    // 사용자가 확대·회전한 시점의 범위를 보존한 채 화면 비율만 바꿉니다.
+    const currentRange = camera.position.distanceTo(controls.target)
+      * Math.tan(camera.fov * Math.PI / 360) * Math.min(1, camera.aspect);
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
+    if (explicitSceneRange !== null) applySceneRange(currentRange);
     renderer.setSize(innerWidth, innerHeight);
   });
 
@@ -777,8 +798,9 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}) {
           else { m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
         }
       }
-    } else if (cmd.action === 'scene' && cmd.property === 'background') {
-      scene.background = toColor(cmd.value);
+    } else if (cmd.action === 'scene') {
+      if (cmd.property === 'background') scene.background = toColor(cmd.value);
+      if (cmd.property === 'range') applySceneRange(cmd.value);
     } else if (cmd.action === 'trail_update') {
       updateTrail(cmd);
     } else if (cmd.action === 'trail_clear') {
@@ -1481,6 +1503,7 @@ class extrusion:
 class _Scene:
     def __init__(self):
         self._background = vector(0.97, 0.98, 0.98)
+        self._range = None
     @property
     def background(self): return self._background
     @background.setter
@@ -1488,11 +1511,11 @@ class _Scene:
         self._background = v
         _add_command({"action":"scene","property":"background","value":v.to_list()})
     @property
-    def range(self): return None
+    def range(self): return self._range
     @range.setter
     def range(self, v):
-        # standalone export에서는 카메라 자동 시스템이 없으므로 무시
-        pass
+        self._range = v
+        _add_command({"action":"scene","property":"range","value":v})
     @property
     def center(self): return vector(0,0,0)
     @center.setter

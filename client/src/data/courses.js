@@ -2,7 +2,7 @@
  * VPyLab 코스 데이터
  *
  * 코스 = 차시(lesson) 단위로 묶인 학습 트랙.
- * 입문 3종 + 융합 3종 + 튜토리얼(pro-toolkit) 1종 = 총 7개, 46차시. 차시마다 독립 실행 가능한 vpython 코드 1개.
+ * 입문·융합·튜토리얼 트랙. 코드 실습 또는 화면 절차를 안내하는 차시로 구성합니다.
  *
  * 스키마:
  *   id           : 코스 고유 ID (kebab-case)
@@ -15,10 +15,15 @@
  *   sessions     : 권장 차시 수
  *   icon         : 카드 아이콘(이모지)
  *   color        : Tailwind 색상 키 (UI 테두리)
- *   lessons      : Array<{ id, title, summary, code }>
+ *   lessons      : Array<{ id, title, summary, code?, guide? }>
  */
 
+import lightSoundCourse from './light-sound-course.js';
+import githubProjectCourse from './github-project-course.js';
+
 const courses = [
+  lightSoundCourse,
+  githubProjectCourse,
   // ════════════════════════════════════════════════════════
   // [입문 0] 처음 파이썬 — 소리와 빛으로 시작하기 (7단계, 1~2줄에서 시작)
   // ════════════════════════════════════════════════════════
