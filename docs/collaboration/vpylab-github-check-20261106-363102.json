@@ -1,0 +1,110 @@
+{
+  "runId": "vpylab-github-check-20261106-363102",
+  "checks": [
+    {
+      "name": "GitHub에 쓰기 전 검증 작품 A·B를 실제 Python API로 선실행",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "실제 사용자 JWT와 RLS로 프로젝트·코드·이력 생성",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "비로그인 GitHub 쓰기 거부",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "이전 실행에서 만든 전용 검증 저장소 재사용",
+      "status": "passed",
+      "detail": {}
+    },
+    {
+      "name": "main.py·독립 HTML의 코드·README 링크 일치",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "실제 GitHub 토큰의 저장소 쓰기 권한 확인",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "실제 초대 코드 합류와 소유자의 viewer 역할 변경",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "실제 viewer가 GitHub 쓰기 토큰을 갖고도 쓰기 거부",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "projectId 생략 시에도 저장소 역조회로 권한 검사",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "다른 저장소로 요청 대상을 바꾸는 시도 거부",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "만료·잘못된 GitHub 인증 거부",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "B 저장: main.py와 Pages HTML을 같은 커밋으로 반영",
+      "status": "passed",
+      "detail": {
+        "commit": "f573a5629aee4b7079ae99d492bddc04d7225955"
+      }
+    },
+    {
+      "name": "늦게 도착한 이전 A 저장이 최신 B를 덮어쓰지 않음",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "새 복원 이력의 A를 GitHub에 반영하고 history.md 누적",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "기록만 남기기는 main.py를 덮어쓰지 않음",
+      "status": "passed",
+      "detail": {
+        "path": "docs/voyage/2026-11-06.md"
+      }
+    },
+    {
+      "name": "중복 저장소 이름은 기존 코드를 덮어쓰지 않고 거부",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "실제 공개 Pages HTTP에서 최신 코드와 학생 코드 변환기 포함 확인",
+      "status": "passed",
+      "detail": null
+    }
+  ],
+  "repository": "greatsong/vpylab-github-check-20261106-8499ac",
+  "cleanup": [
+    {
+      "fixture": "synthetic-user",
+      "status": "removed"
+    },
+    {
+      "fixture": "synthetic-user",
+      "status": "removed"
+    }
+  ],
+  "api": "https://vpylab-server-production.up.railway.app",
+  "repoUrl": "https://github.com/greatsong/vpylab-github-check-20261106-8499ac",
+  "pagesUrl": "https://greatsong.github.io/vpylab-github-check-20261106-8499ac/?v=8d9341eb7d3a",
+  "pagesVerifiedUrl": "https://greatsong.github.io/vpylab-github-check-20261106-8499ac/?v=8d9341eb7d3a&verify=1793969528530",
+  "status": "passed"
+}

@@ -59,11 +59,16 @@
     "local_api_with_real_services": "vpylab-github-check-20261106-f3ef5e.json",
     "repository": "https://github.com/greatsong/vpylab-github-check-20261106-8499ac",
     "synthetic_users": "각 실행 후 신규 테스트 계정만 삭제, 기존 사용자 프로젝트 변경 없음",
-    "production_api": "배포 후 별도 실행 보고서로 기록"
+    "production_api": {
+      "report": "vpylab-github-check-20261106-363102.json",
+      "checks_passed": 17,
+      "synthetic_accounts_cleanup": "2 removed"
+    }
   },
   "computer_use": [
     "실제 Chrome Pages에서 시작 클릭 후 노란 구와 VPYLAB_GITHUB_A 출력 확인, 기존 RuntimeWarning 사라짐",
-    "Pages의 VPyLab에서 열기 링크로 공개 저장소의 코드를 편집기에 가져와 자동 실행 및 VPYLAB_GITHUB_A 출력 확인"
+    "Pages의 VPyLab에서 열기 링크로 공개 저장소의 코드를 편집기에 가져와 자동 실행 및 VPYLAB_GITHUB_A 출력 확인",
+    "운영 배포 후 학교 Google 로그인 → GitHub 재인증이 별도 사용자로 돌아오는 실제 상황에서 다른 계정 인증 안내와 세션 차단 확인; 학교 Google 계정으로 다시 로그인함"
   ],
   "limits": [
     "Google 계정과 기존 별도 GitHub 계정을 자동 병합하거나 기존 identity를 해제하지 않음",
@@ -73,5 +78,17 @@
     "이미 게시된 기존 정적 Pages는 다음 저장 시 실행기를 다시 생성해야 수정 반영됨",
     "GitHub 실제 타인 계정으로 collaborator 초대 메시지를 보내지 않았음",
     "CI 검사를 추가했으나 Railway 자동 배포가 CI 완료를 기다리는 보장까지 변경한 것은 아님"
-  ]
+  ],
+  "deployment": {
+    "application_commit": "599bae7badf04b791b089a949723239353b47cab",
+    "frontend": "https://vpylab.vercel.app",
+    "frontend_status": "Vercel Ready",
+    "backend": "https://vpylab-server-production.up.railway.app",
+    "health_commit": "599bae7badf0",
+    "github_ci": {
+      "status": "success",
+      "url": "https://github.com/greatsong/vpylab/actions/runs/42220739273"
+    }
+  },
+  "account_observation": "지정 학교 계정의 제공자 메타데이터를 읽기 전용으로 확인한 결과 Google·GitHub identity가 이미 함께 존재함. 브라우저에 로그인한 별도 GitHub 사용자로 재인증하면 사용자 ID가 달라져 보호 장치가 차단함. identity를 추가·해제·병합하지 않았음."
 }
