@@ -64,6 +64,7 @@ vi.mock('three', () => {
   }
 
   class Geometry {
+    translate(x,y,z) { this.translation=[x,y,z]; return this; }
     dispose() {}
   }
 

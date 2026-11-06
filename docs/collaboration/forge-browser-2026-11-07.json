@@ -1,0 +1,216 @@
+{
+  "generatedAt": "2026-11-06T21:50:29.293Z",
+  "networkOnly": false,
+  "results": [
+    {
+      "name": "forge-actual-default-pixels",
+      "passed": true,
+      "pixels": 17372,
+      "hash": 3339480164,
+      "memory": 14,
+      "camera": [
+        2.5829999999999997,
+        1.5029999999999997,
+        6.1499999999999995
+      ],
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0.9725490196078431,
+        0.6588235294117647,
+        0.8
+      ],
+      "children": []
+    },
+    {
+      "name": "forge-drag-single-undo-and-redo",
+      "passed": true
+    },
+    {
+      "name": "forge-preset-kirby",
+      "passed": true,
+      "pixels": 17372,
+      "memory": 14
+    },
+    {
+      "name": "forge-preset-doraemon",
+      "passed": true,
+      "pixels": 20979,
+      "memory": 22
+    },
+    {
+      "name": "forge-preset-chiikawa",
+      "passed": true,
+      "pixels": 14754,
+      "memory": 16
+    },
+    {
+      "name": "forge-preset-rabbit",
+      "passed": true,
+      "pixels": 18287,
+      "memory": 18
+    },
+    {
+      "name": "forge-preset-bear",
+      "passed": true,
+      "pixels": 17013,
+      "memory": 19
+    },
+    {
+      "name": "forge-preset-cat",
+      "passed": true,
+      "pixels": 19534,
+      "memory": 17
+    },
+    {
+      "name": "forge-preset-penguin",
+      "passed": true,
+      "pixels": 16411,
+      "memory": 14
+    },
+    {
+      "name": "forge-preset-monster",
+      "passed": true,
+      "pixels": 17791,
+      "memory": 13
+    },
+    {
+      "name": "forge-preset-bell",
+      "passed": true,
+      "pixels": 15020,
+      "memory": 5
+    },
+    {
+      "name": "forge-bell-shape-first",
+      "passed": true
+    },
+    {
+      "name": "forge-bell-user-gesture-audio",
+      "passed": true
+    },
+    {
+      "name": "forge-bell-wave-preview",
+      "passed": true
+    },
+    {
+      "name": "forge-preset-star",
+      "passed": true,
+      "pixels": 10939,
+      "memory": 2
+    },
+    {
+      "name": "forge-preset-heart",
+      "passed": true,
+      "pixels": 12789,
+      "memory": 2
+    },
+    {
+      "name": "forge-preset-dome",
+      "passed": true,
+      "pixels": 11102,
+      "memory": 145
+    },
+    {
+      "name": "forge-preset-cup",
+      "passed": true,
+      "pixels": 21073,
+      "memory": 3
+    },
+    {
+      "name": "forge-preset-ring",
+      "passed": true,
+      "pixels": 17046,
+      "memory": 2
+    },
+    {
+      "name": "forge-slider-resource-disposal",
+      "passed": true,
+      "before": 14,
+      "after": 14
+    },
+    {
+      "name": "forge-local-shelf-reload",
+      "passed": true
+    },
+    {
+      "name": "forge-whole-code-and-copy-failure",
+      "passed": true
+    },
+    {
+      "name": "forge-python-file-export",
+      "passed": true
+    },
+    {
+      "name": "forge-responsive-360",
+      "passed": true
+    },
+    {
+      "name": "forge-responsive-768",
+      "passed": true
+    },
+    {
+      "name": "forge-manual-copy-real-python-runtime",
+      "passed": true
+    },
+    {
+      "name": "forge-direct-object-pos-and-independent-color",
+      "passed": true
+    },
+    {
+      "name": "forge-bell-export-real-click-and-wave",
+      "passed": true
+    },
+    {
+      "name": "forge-tutorial-collect-only-player-tint",
+      "passed": true
+    },
+    {
+      "name": "glowscript-gallery-local-33-links",
+      "passed": true
+    },
+    {
+      "name": "forge-synthetic-login-draft-and-account-isolation",
+      "passed": true
+    },
+    {
+      "name": "forge-public-fork-private-record-fixture",
+      "passed": true
+    },
+    {
+      "name": "forge-republish-keeps-source-and-reference-fixture",
+      "passed": true
+    },
+    {
+      "name": "forge-storage-failure-is-visible",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "remoteWrites": 0,
+  "syntheticWrites": [
+    {
+      "method": "POST",
+      "public": false,
+      "source": "10000000-0000-4000-8000-000000000001"
+    },
+    {
+      "method": "PATCH",
+      "public": true,
+      "source": "10000000-0000-4000-8000-000000000001"
+    }
+  ],
+  "scope": "Actual WebGL/Pyodide and local files; OAuth and fork/republication use synthetic client state and intercepted responses; no live DB publish",
+  "fingerprint": {
+    "client/src/pages/Forge.jsx": "62c97b7b79bf3488d8c52547cc7a7509c2e1a7c2faa64390ccceec49f49f62f7",
+    "client/src/forge/recipes.js": "67be781942d979a883b660831598c02a3852340f088157392701ce462d7cf672",
+    "client/src/forge/modules.js": "a0a5a6e13fbf3562def71e4260bef2e26d5c3783b11707062b724908478d0696",
+    "client/src/forge/registry.js": "c09dba4c78bd8db8e6b840defaf4be7b8681d5e3726d97890172b724484627c6",
+    "client/src/components/forge/ForgePreview.jsx": "8dd55cdd93719bbd82d22b68338b66c432e1a21314619d94412dc25a05b5160b",
+    "client/src/components/forge/ForgeLibrary.jsx": "9b7011cf9e528b33ead4d2e645e0e0c6eee458db1e78622184c7d1a76d5b750c",
+    "client/src/data/forge-tutorial.js": "ffcf4e913a3ba018ff9c832e009d154280311ec2d035ddf5cf52281a61e68a3e",
+    "client/src/pages/Sandbox.jsx": "0d003b7ac30531b95c503cfe3959784561e3b74f407adb3e96c3cce3327f2e04"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "source": "Web VPython 3.2\nx = sphere(color = color.magenta, make_trail = True)\ny = sphere(color = color.cyan)\nwhile True :\n    rate(100)\n    k = keysdown()\n    if 'left' in k : \n        x.pos.x = x.pos.x - 0.1\n    if 'right' in k : \n        x.pos.x = x.pos.x + 0.1\n    if 'up' in k : \n        x.pos.y += 0.1\n    if 'down' in k : \n        x.pos.y -= 0.1\n    if mag(x.pos - y.pos) <= 2 : \n        y.color = color.red\n        y.opacity = 0.5\n    else : \n        y.color = color.cyan\n        y.opacity = 1\n    if 'q' in k : \n        break\n        \n        ",
+  "code": "from vpython import *\nx = sphere(color = color.magenta, make_trail = True)\ny = sphere(color = color.cyan)\nwhile True :\n    rate(100)\n    k = keysdown()\n    if 'left' in k : \n        x.pos.x = x.pos.x - 0.1\n    if 'right' in k : \n        x.pos.x = x.pos.x + 0.1\n    if 'up' in k : \n        x.pos.y += 0.1\n    if 'down' in k : \n        x.pos.y -= 0.1\n    if mag(x.pos - y.pos) <= 2 : \n        y.color = color.red\n        y.opacity = 0.5\n    else : \n        y.color = color.cyan\n        y.opacity = 1\n    if 'q' in k : \n        break\n        \n        ",
+  "sourceUrl": "https://www.glowscript.org/#/user/greatsong21/folder/2024vpython%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EB%AA%A8%EC%9D%8C/program/mag%ED%95%A8%EC%88%98%EC%98%88%EC%A0%9C%28%EC%84%9D%EB%A6%AC%EC%86%A1%29",
+  "originalName": "mag함수예제(석리송)",
+  "folder": "2024vpython프로젝트모음",
+  "sha256": "e86b75c69bd819545efe43ee9cb0574549cbcf9e5290278b9d8fe58cd12b8cb2"
+}

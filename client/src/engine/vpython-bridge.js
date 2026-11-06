@@ -5,6 +5,10 @@
  */
 
 import * as THREE from 'three';
+import { createPrimitiveGeometry } from '../../../server/shared/primitive-geometry.js';
+const primitiveGeometry = createPrimitiveGeometry(THREE);
+import { createCompoundAppearanceTools } from '../../../server/shared/compound-appearance.js';
+const compoundAppearance = createCompoundAppearanceTools(THREE);
 import {
   registerObject,
   updateObject,
@@ -13,7 +17,8 @@ import {
   registerSound,
 } from './object-registry';
 import { processSoundCommand, setNotePlayCallback, setSoundEventCallback } from './sound-system';
-import { resolveTexture } from './texture-system';
+import { resolveTexture, whenTexturesReady } from './texture-system';
+import { postEvent } from './pyodide-singleton';
 import {
   DEFAULT_OBJECT_PROPS, asNumber, asVectorArray, resolveBoxSize, getRegistryProps,
 } from './registry-props';
@@ -28,10 +33,11 @@ import {
 } from './widgets-system';
 import {
   createGraph, deleteGraph,
-  createSeries, deleteSeries, clearSeries, plotSeries,
+  createSeries, deleteSeries, clearSeries, plotSeries, updateSeries,
   clearGraphs2D,
 } from './graph2d-system';
 import { buildExtrusionGeometry } from './extrusion-geometry';
+import { buildMeshGeometry, configureMeshMaterial, buildHelixGeometry } from './mesh-geometry';
 import {
   pickTextSpec, rebuildText3D, applyTextLength, applyTextAppearance, unregisterText3D, updateBillboards,
 } from './text3d-system';
@@ -41,8 +47,19 @@ export { updateBillboards };
 
 // 메인 스레드에서 디스패치 활성화된 이벤트 이름들
 const sceneBoundEvents = new Set();
-export function isEventBound(name) { return sceneBoundEvents.has(name); }
+const eventKey = (name, canvasId = 'scene') => canvasId === 'scene' ? name : `${canvasId}:${name}`;
+export function isEventBound(name, canvasId = 'scene') { return sceneBoundEvents.has(eventKey(name, canvasId)); }
 export function getBoundEvents() { return new Set(sceneBoundEvents); }
+
+// 생성 명령을 받은 뒤 React가 보조 뷰포트를 준비할 때까지 해당 캔버스의 명령을 보관한다.
+export function registerCanvasScene(root, id, scene) {
+  scene._vpCanvasId = id;
+  root._canvasScenes ||= new Map([['scene', root]]);
+  root._canvasScenes.set(id, scene);
+  const pending = root._canvasPending?.get(id) || [];
+  root._canvasPending?.delete(id);
+  processBatch(pending, root);
+}
 
 // Three.js 메시 레지스트리 (id → Three.js Mesh)
 const meshRegistry = new Map();
@@ -55,7 +72,7 @@ const curveRegistry = new Map();
 
 // axis·up 기준 좌표계(basis)로 방향을 정하는 객체 종류 — box와 같은 방식으로 회전한다
 // group은 GlowScript 명세대로 Python이 하위 객체를 하나씩 돌리므로 여기 없다 (그룹 자체는 위치만 갖는다)
-const BASIS_TYPES = new Set(['box', 'compound', 'extrusion', 'text', 'curve', 'points']);
+const BASIS_TYPES = new Set(['box', 'compound', 'extrusion', 'text', 'curve', 'points', 'helix']);
 
 // 기본 재질 설정
 const DEFAULT_MATERIAL_PARAMS = {
@@ -181,24 +198,12 @@ function rebuildArrow(group, len, sw) {
   }
 }
 
-/**
- * helix Line geometry를 새 길이로 재구성 (radius/coils는 생성 시 userData 값 유지)
- */
-function rebuildHelixGeometry(line, len) {
-  const r = line.userData?.helixRadius ?? DEFAULT_OBJECT_PROPS.helix.radius;
-  const coils = line.userData?.helixCoils ?? DEFAULT_OBJECT_PROPS.helix.coils;
-  const segments = Math.max(64, coils * 32);
-  const positions = [];
-  for (let i = 0; i <= segments; i++) {
-    const t = i / segments;
-    const angle = t * coils * Math.PI * 2;
-    positions.push(t * len, r * Math.cos(angle), r * Math.sin(angle));
-  }
-  line.geometry.dispose();
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  g.computeBoundingSphere();
-  line.geometry = g;
+/** 나선 크기·단면·회전 방향·선 두께를 실제 지오메트리로 반영한다. */
+function rebuildHelixGeometry(mesh, len) {
+  const spec = mesh.userData.helixSpec;
+  spec.size[0] = len;
+  mesh.geometry.dispose();
+  mesh.geometry = buildHelixGeometry(spec);
 }
 
 /**
@@ -365,6 +370,7 @@ function createObject(cmd, scene) {
     emissive: cmd.emissive ? cloneThreeColor(col) : new THREE.Color(0, 0, 0),
     emissiveIntensity: cmd.emissive ? 0.8 : 0,
     ...DEFAULT_MATERIAL_PARAMS,
+    ...(cmd.shininess !== undefined ? { roughness: Math.max(0.05, 1-cmd.shininess) } : {}),
     transparent: cmd.opacity < 1,
     opacity: cmd.opacity ?? 1,
   });
@@ -398,7 +404,7 @@ function createObject(cmd, scene) {
       const r = cmd.radius ?? DEFAULT_OBJECT_PROPS.cylinder.radius;
       const axis = cmd.axis || DEFAULT_OBJECT_PROPS.cylinder.axis;
       const len = Math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2) || 1;
-      geometry = new THREE.CylinderGeometry(r, r, len, 32);
+      geometry = primitiveGeometry.cylinder(r, len);
       mesh = new THREE.Mesh(geometry, material);
       mesh.userData = { ...(mesh.userData || {}), vpType: 'cylinder' };
       // 실린더를 축 방향으로 회전
@@ -442,7 +448,7 @@ function createObject(cmd, scene) {
       const r = cmd.radius ?? DEFAULT_OBJECT_PROPS.cone.radius;
       const axis = cmd.axis || DEFAULT_OBJECT_PROPS.cone.axis;
       const len = Math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2) || 1;
-      geometry = new THREE.ConeGeometry(r, len, 32);
+      geometry = primitiveGeometry.cone(r, len);
       mesh = new THREE.Mesh(geometry, material);
       mesh.userData = { ...(mesh.userData || {}), vpType: 'cone' };
       const dir = new THREE.Vector3(...axis).normalize();
@@ -485,39 +491,15 @@ function createObject(cmd, scene) {
     }
 
     case 'helix': {
-      // 나선 — 파라메트릭 곡선을 BufferGeometry + Line으로
-      const r = cmd.radius ?? DEFAULT_OBJECT_PROPS.helix.radius;
-      const axis = cmd.axis || DEFAULT_OBJECT_PROPS.helix.axis;
-      const length = cmd.length ?? DEFAULT_OBJECT_PROPS.helix.length;
-      const coils = cmd.coils ?? DEFAULT_OBJECT_PROPS.helix.coils;
-      const segments = Math.max(64, coils * 32);
-
-      const positions = [];
-      for (let i = 0; i <= segments; i++) {
-        const t = i / segments;
-        const angle = t * coils * Math.PI * 2;
-        // 기본 축은 +X — 진행축 X, 반경은 Y/Z 평면
-        const x = t * length;
-        const y = r * Math.cos(angle);
-        const z = r * Math.sin(angle);
-        positions.push(x, y, z);
-      }
-      const helixGeom = new THREE.BufferGeometry();
-      helixGeom.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(positions, 3),
-      );
-      const helixMat = new THREE.LineBasicMaterial({
-        color: col,
-        transparent: cmd.opacity < 1,
-        opacity: cmd.opacity ?? 1,
-      });
-      mesh = new THREE.Line(helixGeom, helixMat);
-      mesh.userData = { ...(mesh.userData || {}), vpType: 'helix', helixRadius: r, helixCoils: coils };
-      // axis 방향으로 회전 (기본 X축 → axis)
-      const dir = new THREE.Vector3(...axis).normalize();
-      const xAxis = new THREE.Vector3(1, 0, 0);
-      mesh.quaternion.setFromUnitVectors(xAxis, dir);
+      const spec = {
+        size: cmd.size || [cmd.length ?? 1, 2*(cmd.radius ?? 1), 2*(cmd.radius ?? 1)],
+        coils: cmd.coils ?? 5, thickness: cmd.thickness ?? (cmd.radius ?? 1)/20,
+        ccw: cmd.ccw !== false,
+      };
+      mesh = new THREE.Mesh(buildHelixGeometry(spec), material);
+      mesh.userData = { vpType: 'helix', helixSpec: spec,
+        boxAxis: cmd.axis || [1,0,0], boxUp: cmd.up || [0,1,0] };
+      applyBoxOrientation(mesh, mesh.userData.boxAxis, mesh.userData.boxUp);
       break;
     }
 
@@ -609,26 +591,9 @@ function createObject(cmd, scene) {
     case 'triangle':
     case 'quad': {
       const verts = cmd.vertices || [];
-      const positions = [];
-      const colors = [];
-      // triangle: 3정점 1면, quad: 4정점 2면(0,1,2)+(0,2,3)
-      const indices = cmd.type === 'triangle' ? [0, 1, 2] : [0, 1, 2, 0, 2, 3];
-      for (const i of indices) {
-        const v = verts[i] || { pos: [0, 0, 0], color: [1, 1, 1] };
-        positions.push(v.pos[0], v.pos[1], v.pos[2]);
-        colors.push(v.color[0], v.color[1], v.color[2]);
-      }
-      const geom = new THREE.BufferGeometry();
-      geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-      geom.computeVertexNormals();
-      const mat = new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        side: THREE.DoubleSide,
-        roughness: 0.5,
-        metalness: 0.05,
-      });
-      mesh = new THREE.Mesh(geom, mat);
+      configureMeshMaterial(material, verts);
+      mesh = new THREE.Mesh(buildMeshGeometry(cmd.type, verts), material);
+      mesh.userData = { vpType: cmd.type };
       break;
     }
 
@@ -734,6 +699,7 @@ function createObject(cmd, scene) {
 
   // 씬에 추가 (group= 으로 묶인 객체는 그 그룹 안으로)
   scene.add(mesh);
+  mesh.userData = { ...(mesh.userData || {}), vpCanvasId: scene._vpCanvasId || 'scene' };
   meshRegistry.set(cmd.id, mesh);
   attachToGroup(mesh, cmd.group, scene);
 
@@ -858,8 +824,10 @@ function updateMesh(cmd) {
     } else if (mesh.userData?.vertexColored) {
       // 정점 색으로 그리는 extrusion — 정점 색을 모두 바꾼다
       fillColorAttribute(mesh.geometry, cmd.color);
+    } else if (mesh.userData?.vpType === 'compound') {
+      compoundAppearance.apply(mesh, { color: cmd.color });
     } else if (mesh.isGroup) {
-      // compound·group·text(Group) — 모든 자식 재질 색상 변경
+      // group·text(Group) — 모든 자식 재질 색상 변경
       mesh.traverse((child) => {
         eachMaterial(child, (mat) => updateMaterialColor(mat, toThreeColor(cmd.color)));
       });
@@ -891,19 +859,22 @@ function updateMesh(cmd) {
   }
 
   if (cmd.opacity !== undefined) {
-    if (mesh.isGroup) {
-      // compound(Group) — 모든 자식 재질 투명도 변경
-      mesh.traverse((child) => {
-        eachMaterial(child, (mat) => {
-          mat.opacity = cmd.opacity;
-          mat.transparent = cmd.opacity < 1;
-        });
-      });
+    if (mesh.userData?.vpType === 'compound') {
+      compoundAppearance.apply(mesh, { opacity: cmd.opacity });
+    } else if (mesh.isGroup) {
+      mesh.traverse(child => eachMaterial(child, mat => compoundAppearance.setOpacity(mat, cmd.opacity)));
     } else if (mesh.material) {
-      mesh.material.opacity = cmd.opacity;
-      mesh.material.transparent = cmd.opacity < 1;
+      const alpha = mesh.geometry?.getAttribute?.('vpOpacity');
+      const vertexAlpha = alpha && Array.from(alpha.array).some(value => value < 1);
+      eachMaterial(mesh, mat => compoundAppearance.setOpacity(mat, cmd.opacity, !!vertexAlpha));
     }
     registryUpdates.opacity = cmd.opacity;
+  }
+
+  if (cmd.shininess !== undefined) {
+    if (mesh.userData?.vpType === 'compound') compoundAppearance.apply(mesh, { shininess: cmd.shininess });
+    else eachMaterial(mesh, mat => { if ('roughness' in mat) mat.roughness = Math.max(0.05, 1-cmd.shininess); });
+    registryUpdates.shininess = cmd.shininess;
   }
 
   if (cmd.texture !== undefined) {
@@ -924,7 +895,9 @@ function updateMesh(cmd) {
   }
 
   if (cmd.emissive !== undefined && !mesh.isLight) {
-    if (mesh.isGroup) {
+    if (mesh.userData?.vpType === 'compound') {
+      compoundAppearance.apply(mesh, { emissive: cmd.emissive });
+    } else if (mesh.isGroup) {
       mesh.traverse((child) => {
         eachMaterial(child, (mat) => setMaterialEmissive(mat, cmd.emissive));
       });
@@ -942,10 +915,10 @@ function updateMesh(cmd) {
       newGeom = new THREE.SphereGeometry(cmd.radius, 32, 16);
     } else if (mesh.geometry.type === 'ConeGeometry') {
       const h = mesh.geometry.parameters?.height || 1;
-      newGeom = new THREE.ConeGeometry(cmd.radius, h, 32);
+      newGeom = primitiveGeometry.cone(cmd.radius, h);
     } else if (mesh.geometry.type === 'CylinderGeometry') {
       const h = mesh.geometry.parameters?.height || 1;
-      newGeom = new THREE.CylinderGeometry(cmd.radius, cmd.radius, h, 32);
+      newGeom = primitiveGeometry.cylinder(cmd.radius, h);
     } else if (mesh.geometry.type === 'TorusGeometry') {
       const t = mesh.geometry.parameters?.tube || 0.1;
       newGeom = new THREE.TorusGeometry(cmd.radius, t, 16, 48);
@@ -954,6 +927,16 @@ function updateMesh(cmd) {
       mesh.geometry.dispose();
       mesh.geometry = newGeom;
     }
+  }
+
+  if (mesh.userData?.vpType === 'helix' && ['size', 'radius', 'coils', 'thickness', 'ccw', 'axis'].some(key => cmd[key] !== undefined)) {
+    const spec = mesh.userData.helixSpec;
+    if (cmd.size) spec.size = [...cmd.size];
+    else if (cmd.radius !== undefined) spec.size = [spec.size[0], 2*cmd.radius, 2*cmd.radius];
+    if (cmd.coils !== undefined) spec.coils = cmd.coils;
+    if (cmd.thickness !== undefined) spec.thickness = cmd.thickness;
+    if (cmd.ccw !== undefined) spec.ccw = cmd.ccw;
+    rebuildHelixGeometry(mesh, cmd.axis ? Math.hypot(...cmd.axis) : spec.size[0]);
   }
 
   const isBox = mesh.userData?.vpType === 'box' || mesh.geometry?.type === 'BoxGeometry';
@@ -1038,12 +1021,12 @@ function updateMesh(cmd) {
     if (vpType === 'cylinder' && mesh.geometry) {
       const r = mesh.geometry.parameters?.radiusTop ?? 1;
       mesh.geometry.dispose();
-      mesh.geometry = new THREE.CylinderGeometry(r, r, len, 32);
+      mesh.geometry = primitiveGeometry.cylinder(r, len);
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     } else if (vpType === 'cone' && mesh.geometry) {
       const r = mesh.geometry.parameters?.radius ?? 1;
       mesh.geometry.dispose();
-      mesh.geometry = new THREE.ConeGeometry(r, len, 32);
+      mesh.geometry = primitiveGeometry.cone(r, len);
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     } else if (vpType === 'arrow') {
       mesh.userData.arrowLen = len;
@@ -1095,7 +1078,7 @@ function setSceneLights(scene, ids) {
     if (child.isLight && !child.isAmbientLight && child.userData?.vpDefaultLight) child.visible = false;
   });
   for (const [id, mesh] of meshRegistry) {
-    if (mesh.isLight && !mesh.isAmbientLight) mesh.visible = keep.has(String(id));
+    if (mesh.isLight && !mesh.isAmbientLight && (mesh.userData?.vpCanvasId || 'scene') === (scene._vpCanvasId || 'scene')) mesh.visible = keep.has(String(id));
   }
 }
 
@@ -1115,14 +1098,49 @@ export function resetDefaultLights(scene) {
  * 배치 커맨드 처리 (커맨드 배칭 패턴)
  */
 export function processBatch(commands, scene) {
+  const root = scene;
+  root._canvasScenes ||= new Map();
+  root._canvasScenes.set('scene', root);
+  root._canvasPending ||= new Map();
   for (const cmd of commands) {
+    const canvasId = cmd.canvas_id || 'scene';
+    if (cmd.action === 'canvas_create') {
+      root._canvasHost?.create(cmd);
+      continue;
+    }
+    scene = root._canvasScenes.get(canvasId);
+    if (!scene) {
+      const pending = root._canvasPending.get(canvasId) || [];
+      pending.push(cmd);
+      root._canvasPending.set(canvasId, pending);
+      continue;
+    }
+    if (cmd.action === 'canvas_resize') {
+      root._canvasHost?.resize(cmd);
+      continue;
+    }
+    if (cmd.action === 'canvas_move') {
+      const mesh = meshRegistry.get(cmd.id);
+      if (mesh) { scene.add(mesh); mesh.userData.vpCanvasId = canvasId; }
+      continue;
+    }
     switch (cmd.action) {
       case 'create':
+        if (canvasId === 'scene') root._canvasHost?.showDefault?.();
         createObject(cmd, scene);
         break;
       case 'update':
         updateMesh(cmd);
         break;
+      case 'mesh_vertices': {
+        const mesh = meshRegistry.get(cmd.id);
+        if (mesh && ['triangle', 'quad'].includes(mesh.userData?.vpType)) {
+          mesh.geometry.dispose();
+          mesh.geometry = buildMeshGeometry(mesh.userData.vpType, cmd.vertices);
+          configureMeshMaterial(mesh.material, cmd.vertices);
+        }
+        break;
+      }
       case 'scene':
         if (cmd.property === 'background' && cmd.value) {
           scene.background = toThreeColor(cmd.value);
@@ -1158,13 +1176,24 @@ export function processBatch(commands, scene) {
             else if (cmd.property === 'append_title') overlay.appendTitle(text);
             else overlay.appendCaption(text);
           }
+        } else if (['userzoom', 'userspin', 'userpan'].includes(cmd.property) && scene._cameraSystem?.controls) {
+          const key = { userzoom: 'enableZoom', userspin: 'enableRotate', userpan: 'enablePan' }[cmd.property];
+          scene._cameraSystem.controls[key] = !!cmd.value;
         } else if (cmd.property === 'visible') {
           // scene.visible = False — 3D 화면 전체를 숨긴다 (객체는 남는다)
           scene.visible = cmd.value !== false;
         } else if (cmd.property === 'delete') {
           // scene.delete() — 3D 객체를 모두 지운다 (위젯·그래프·오버레이는 남는다)
           deleteSceneObjects(scene, { markRegistry: true });
+          clearWidgets(canvasId);
+          clearGraphs2D(canvasId);
+          scene._overlay?.clear?.();
+          if (canvasId !== 'scene') {
+            root._canvasScenes.delete(canvasId);
+            root._canvasHost?.remove?.(canvasId);
+          }
         }
+        if (cmd.camera_revision !== undefined && scene._cameraSystem) scene._cameraRevision = cmd.camera_revision;
         break;
       case 'wtext_create':
       case 'wtext_update':
@@ -1268,26 +1297,14 @@ export function processBatch(commands, scene) {
         else group.position.set(center[0], center[1], center[2]);
         group.userData = {
           vpType: 'compound',
+          vpId: cmd.id,
+          vpCanvasId: canvasId,
           boxAxis: asVectorArray(cmd.axis, [1, 0, 0]),
           boxUp: asVectorArray(cmd.up, [0, 1, 0]),
         };
         applyBoxOrientation(group, group.userData.boxAxis, group.userData.boxUp);
-        if (cmd.color) {
-          group.traverse((child) => {
-            eachMaterial(child, (mat) => updateMaterialColor(mat, toThreeColor(cmd.color)));
-          });
-        }
-        if (cmd.opacity !== undefined && cmd.opacity < 1) {
-          group.traverse((child) => {
-            eachMaterial(child, (mat) => {
-              mat.opacity = cmd.opacity;
-              mat.transparent = true;
-            });
-          });
-        }
-        if (cmd.emissive) {
-          group.traverse((child) => eachMaterial(child, (mat) => setMaterialEmissive(mat, true)));
-        }
+        compoundAppearance.init(group);
+        compoundAppearance.apply(group, cmd);
         if (cmd.texture) {
           const tex = resolveTexture(cmd.texture);
           group.traverse((child) => eachMaterial(child, (mat) => {
@@ -1349,16 +1366,25 @@ export function processBatch(commands, scene) {
       case 'graph_series_clear':
         try { clearSeries(cmd); } catch (e) { console.warn('[series clear]', e); }
         break;
+      case 'graph_series_update':
+        try { updateSeries(cmd); } catch (e) { console.warn('[series update]', e); }
+        break;
       case 'graph_series_plot':
         try { plotSeries(cmd); } catch (e) { console.warn('[series plot]', e); }
         break;
 
       // === 이벤트 바인딩 신호 ===
       case 'scene_bind':
-        for (const name of (cmd.events || [])) sceneBoundEvents.add(name);
+        for (const name of (cmd.events || [])) sceneBoundEvents.add(eventKey(name, canvasId));
+        if (cmd.waiting && (cmd.events || []).includes('textures')) {
+          const epoch = root._canvasEpoch;
+          whenTexturesReady().then(() => {
+            if (root._canvasEpoch === epoch) postEvent({ name: 'textures', canvas_id: canvasId });
+          });
+        }
         break;
       case 'scene_unbind':
-        for (const name of (cmd.events || [])) sceneBoundEvents.delete(name);
+        for (const name of (cmd.events || [])) sceneBoundEvents.delete(eventKey(name, canvasId));
         break;
       default:
         console.warn(`[Bridge] 알 수 없는 액션: ${cmd.action}`);
@@ -1369,34 +1395,42 @@ export function processBatch(commands, scene) {
 /**
  * 3D 객체·궤적·곡선을 모두 씬에서 제거하고 해제한다 (scene.delete()와 새 실행 전 초기화가 함께 쓴다)
  */
-function deleteSceneObjects(scene, { markRegistry = false } = {}) {
+function deleteSceneObjects(scene, { markRegistry = false, all = false } = {}) {
   for (const [id, mesh] of meshRegistry) {
-    scene.remove(mesh);
+    if (!all && (mesh.userData?.vpCanvasId || 'scene') !== (scene._vpCanvasId || 'scene')) continue;
+    if (mesh.parent) mesh.parent.remove(mesh);
+    else scene.remove(mesh);
+    meshRegistry.delete(id);
     // distant_light의 target도 씬에서 제거 (생성 시 scene.add(light.target) 됨)
-    if (mesh.isDirectionalLight && mesh.target) scene.remove(mesh.target);
+    if (mesh.isDirectionalLight && mesh.target) mesh.target.parent?.remove(mesh.target);
     disposeObject(mesh);
     if (markRegistry) updateObject(id, { visible: false });
   }
-  meshRegistry.clear();
 
   // 궤적(trail) 레지스트리 정리
-  for (const [, trail] of trailRegistry) {
-    scene.remove(trail.line);
+  for (const [id, trail] of trailRegistry) {
+    if (!all && trail.line.parent !== scene) continue;
+    trail.line.parent?.remove(trail.line);
+    trailRegistry.delete(id);
     trail.line.geometry.dispose();
     trail.line.material.dispose();
   }
-  trailRegistry.clear();
 
   // curve/points 레지스트리 정리 (line 자체는 meshRegistry와 공유)
-  curveRegistry.clear();
+  for (const id of curveRegistry.keys()) if (!meshRegistry.has(id)) curveRegistry.delete(id);
 }
 
 /**
  * 씬 초기화 (모든 VPython 객체 제거)
  */
 export function clearScene(scene) {
-  deleteSceneObjects(scene);
+  deleteSceneObjects(scene, { all: true });
+  scene._canvasScenes?.clear();
+  scene._canvasPending?.clear();
+  scene._canvasEpoch = (scene._canvasEpoch || 0) + 1;
+  scene._canvasHost?.reset?.();
   scene.visible = true;
+  scene._cameraRevision = 0;
 
   // 위젯·2D 그래프 DOM 정리
   clearWidgets();

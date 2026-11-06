@@ -4,6 +4,19 @@ VPyLab의 Python 측 API. `from vpython import *`로 모두 임포트 가능합�
 
 > 본 문서는 VPyLab이 제공하는 객체와 함수의 공식 레퍼런스입니다. 표준 VPython과의 호환 범위와 차이점을 함께 표기합니다.
 
+## 문서 메뉴와 출처 표시 (2026-11-07)
+
+앱의 `/docs`에서 **모양 만들기** 가이드와 API 레퍼런스를 함께 봅니다. 가이드 항목은 시작·늘이기·방향·부품 합치기·삼각형 단면·닫힌 반구·열린 컵·기능 구분입니다. 각 실행 예제는 `/sandbox?doc=<id>`에서 열고 수정한 코드는 같은 탭의 문서 왕복에서 복원됩니다.
+
+- **VPython API**: 표준 이름·규칙을 따르는 기능입니다. `compound`, `vertex`, `emissive`, `scene.camera`도 여기에 속합니다. 완전한 화면 호환을 뜻하지는 않습니다.
+- **VPyLab 확장**: 소리·3D 차트·한글 이름·추가 색 이름, `scene_background`, `vector.clone`, `obj.attach_trail`, `frame`(이 앱의 compound 별칭) 등입니다. `frame`은 구형 VPython frame 전체를 재현하지 않습니다.
+- 표준 함수에 더한 `intensity` 같은 인자, 추가 텍스처 이름은 인자 표에서 따로 표시합니다. 표준 `attach_trail(obj, ...)`와 자체 `obj.attach_trail(...)`는 구별합니다.
+- **제공 함수** `make_dome`은 API가 아닙니다. 가이드 안에서 VPython으로 정의한 함수이며, 다른 파일로 옮기면 함수 정의도 함께 복사해야 합니다.
+- 원기둥·원뿔의 `pos`는 밑면 중심(시작점), `axis`는 끝점까지의 벡터입니다. `끝점 = pos + axis`이며 생성 후 radius·axis를 바꿔도 기준이 유지됩니다.
+- 열린 컵은 구멍 있는 단면을 extrusion한 벽에 원기둥 바닥을 더합니다. `shapes.circle`의 thickness는 반지름 비율입니다. 실행 성공만으로 구멍이나 모양의 정확성을 판단하지 말고 돌려 보며 확인합니다.
+
+세부 설계와 실제 검증 범위는 [문서·도형 가이드 보고서](DOCUMENTATION_AND_SHAPE_GUIDES_2026-11-07.md)에 있습니다.
+
 ## 빠른 시작 — 14개 쇼케이스 예제
 
 각 제목을 클릭하면 Sandbox에서 코드가 자동으로 로드됩니다 (`?example=<id>` URL 파라미터).
@@ -160,6 +173,8 @@ obj.clear_trail()
 | `label` | `pos`, `text`, `color`, `height`(픽셀), `background`, `border` | 항상 카메라를 향하는 2D 텍스트 라벨 |
 | `text` | `pos`, `text`, `height`, `depth`, `align`, `billboard`, `axis`, `up`, `color` | 두께가 있는 3D 입체 글자 (아래 절) |
 | `compound` / `frame` | `[obj, obj, ...]`, `pos`, `axis`, `up`, `color`, ... | 여러 객체를 하나로 묶기. `pos` 기본값은 부품들의 중심이고 지정하면 중심이 그 자리로 옮겨진다. `length`·`size`·`axis` 길이로 크기 조절, `rotate()`·`clone()`, `origin`(읽기 전용)·`world_to_compound()`·`compound_to_world()` |
+
+`compound.color`의 기본값은 `color.white`이며 부품의 원래 색에 곱하는 색 필터입니다. `c.color = color.white`로 원래 색을 복원합니다. 전체를 같은 색으로 칠하려면 부품을 흰색으로 만드세요. `c.opacity`(0~1)는 부품 불투명도에 곱하고, `c.shininess`(0~1)·`c.emissive`도 묶은 뒤 바꿀 수 있습니다. 묶인 부품을 따로 편집하려면 `group()`을 사용하세요.
 | `group` | `pos`, `axis`, `up`, `visible` + `box(group=g)` | 하위 객체를 나중에 따로 바꿀 수 있는 묶음 (아래 절) |
 | `extrusion` | `path`, `shape`, `pos`, `axis`, `color`, ... | 2D 단면을 경로를 따라 쓸어 만든 입체 (`shapes`·`paths` 절) |
 
@@ -228,8 +243,8 @@ p = points(pos=[{'pos': vector(0, 0, 0), 'radius': 0.05, 'color': color.red}], s
 ## 조명
 
 ```python
-local_light(pos=vector(2,3,1), color=color.white, intensity=1.0)
-distant_light(direction=vector(0,-1,0), color=color.white, intensity=0.8)
+local_light(pos=vector(2,3,1), color=color.white)  # intensity=는 VPyLab 확장
+distant_light(direction=vector(0,-1,0), color=color.white)  # intensity=는 VPyLab 확장
 ```
 
 ## 부착물 — attach_trail / attach_light / attach_arrow
@@ -255,7 +270,7 @@ VPyLab은 3D 화면이 하나입니다. `canvas(**kw)`는 인자를 `scene`에 �
 
 ```python
 scene = canvas(width=600, height=300, background=color.white, title='제목', center=vector(0, 1, 0), range=5)
-scene.width, scene.height         # 값은 기억하지만 화면 크기는 레이아웃이 정한다
+scene.width, scene.height         # 기본 화면은 앱 배치, 추가 canvas는 지정 크기를 공간 안에서 반영
 scene.visible = False             # 3D 화면 전체 숨기기 (객체는 남는다)
 for o in scene.objects: o.visible = False
 scene.delete()                    # 3D 객체 모두 지우기. 사용자 조명(local_light·attach_light)과 부착물(attach_arrow·attach_trail)도 지워지고 위젯·그래프는 남는다
@@ -276,17 +291,18 @@ scene.center = vector(0, 0, 0)       # 카메라 타겟 중심
 scene.autoscale = False              # True면 Auto-Fit 복귀
 scene.title = "내 시뮬레이션"        # 3D 화면 위쪽 글자
 scene.caption = "설명..."            # 3D 화면 아래쪽 글자
-scene.width = 800                    # 값만 기억 (화면 크기는 배치가 정한다)
+scene.width = 800                    # 기본 화면은 앱 배치. 추가 canvas는 공간 안에서 크기 반영
 scene.height = 500
 scene.objects                        # 보이는 3D 객체 목록
-scene.camera.rotate(angle=0.1, axis=vector(0, 1, 0))   # 중심을 보는 채로 카메라 회전
+scene.camera.rotate(angle=0.1, axis=vector(0, 1, 0))   # 카메라 위치를 유지하고 시선 회전
+scene.camera.rotate(angle=0.1, axis=vector(0,1,0), origin=scene.center)  # 중심 주위를 회전
 ```
 
 `scene.align`, `scene.resizable`, `scene.caption_anchor`, `scene.title_anchor`는 GlowScript 코드가 멈추지 않도록 받기만 합니다.
 
 > **참고**: `scene.range` / `scene.center`를 설정하면 자동 카메라(Auto-Fit/Follow)가 비활성화됩니다. `scene.autoscale = True` 또는 뷰 더블클릭으로 복귀할 수 있습니다.
 
-전역 함수 `scene_background(color)`도 동일한 효과입니다.
+전역 함수 `scene_background(color)`는 VPyLab 편의 함수이며 표준 표기는 `scene.background = color`입니다.
 
 ---
 
@@ -569,7 +585,7 @@ v_curve.clear()
 - `scene.ambient`, `scene.lights` (빈 목록이면 기본 조명을 끔), `local_light`, `distant_light`
 - `scene.title`, `scene.caption`, `scene.append_to_title()`, `scene.append_to_caption()` → 3D 화면 위·아래 글자
 - `attach_arrow(obj, 'velocity', scale=1)` → `rate()`·`sleep()`마다 갱신되는 화살표
-- `scene.range`는 화면의 짧은 변 방향으로 보이는 범위의 절반이다. 기본 시야각은 45도(GlowScript는 60도)이며 `scene.fov`로 바꿀 수 있다.
+- `scene.range`는 화면의 짧은 변 방향으로 보이는 범위의 절반이다. 기본 시야각은 60도(pi/3)이며 `scene.fov`로 바꿀 수 있다.
 - `ball.pos.x += 0.1`처럼 벡터 성분만 바꿔도 화면에 반영된다 (pos, axis, size, up, color, scene.center 등). 같은 벡터를 다른 물체에 넣으면 복제되어 서로 영향을 주지 않는다.
 - `color.gray(0.3)`처럼 밝기를 지정한 회색을 만들 수 있다. `color.hsv_to_rgb()`, `color.rgb_to_hsv()`로 색을 변환한다.
 - `textures.rock`, `textures.wood_old`는 가장 가까운 프리셋으로 그린다. `bumpmaps.*`는 받기만 하고 그리지 않는다.
@@ -577,7 +593,7 @@ v_curve.clear()
 
 ### 미지원 (현 시점)
 
-- `scene.width` / `scene.height`로 실제 화면 크기 바꾸기 (값은 받지만 화면은 그대로), 여러 개의 `canvas()` (두 번째부터는 같은 `scene`)
+- 기본 화면의 실제 크기는 앱 배치가 정합니다. 추가 `canvas()`는 독립 화면이며 요청 크기를 공간 안에서 반영합니다. canvas별 카메라·입력·위젯·그래프를 지원합니다.
 - `lambda`·생성기(`yield`)·`__init__`·클래스 본문·제너레이터식 안의 `rate()`/`sleep()` (경고 후 기다리지 않음)
 - `text()`의 한글 글꼴 (라틴 문자만 입체, 그 밖은 2D 라벨로 대체), `shapes.text`
 - `curve`의 `radius` 굵기 (선은 1픽셀), `scene.mouse.alt/ctrl/shift`(항상 False)
@@ -593,7 +609,7 @@ v_curve.clear()
 - `scene.pause()`·`scene.waitfor()`·`input()` — 이벤트·입력 채널 의존
 - `group`, 3D `text`, 단면이 있는 `extrusion`, 점별 색 `curve` — 내보내기용 간이 렌더러가 아직 모른다
 
-3D 객체와 사운드는 export에서도 모두 동작합니다. 함수 안의 `rate()`·`sleep()`과 `global` 선언은 편집기와 같은 변환기를 함께 실어 동작합니다.
+기본 3D 객체와 사운드를 내보낼 수 있으나 모든 속성·모든 조합의 호환을 보장하지는 않습니다. 특히 가이드의 열린 컵처럼 shapes.circle과 구멍 단면을 사용하는 예제는 현재 공유 HTML에서 같은 결과를 지원하지 않습니다. 함수 안의 `rate()`·`sleep()`과 `global` 선언은 편집기와 같은 변환기를 함께 실어 동작합니다.
 
 ### VPyLab만의 추가 기능
 
@@ -665,3 +681,5 @@ ball = sphere(pos=vector(0,0,0), radius=0.5, color=color.blue)
 label(pos=vector(0, 1.2, 0), text="공", height=20, color=color.white,
       background=color.black, border=2)
 ```
+
+대장간의 제공 함수·직접 `object.pos.x` 조작·종 단계·포크 출처는 [대장간 보고서](FORGE_MODULES_2026-11-07.md)를 참고하세요. 제공 함수의 `.object`는 실제 compound이며 생성 함수 자체는 VPython 내장 API가 아닙니다.

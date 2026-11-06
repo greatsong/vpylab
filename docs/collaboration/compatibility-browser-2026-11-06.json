@@ -1,0 +1,71 @@
+{
+  "scope": "실제 Chromium·Pyodide에서 선택한 작품의 실행과 입력 결과. 전체 코퍼스의 브라우저 통과율이 아님.",
+  "gradient": [
+    {
+      "id": "gs2024-01",
+      "checks": [
+        "소수 간격 그래프·학습률 3개 실행 완료"
+      ],
+      "errors": []
+    }
+  ],
+  "widgetAndGraph": [
+    {
+      "id": "gs2024-02",
+      "checks": [
+        "실제 RUN 버튼으로 540건을 5회 분류",
+        "실제 메뉴 변경으로 selected·index 확인"
+      ],
+      "errors": [],
+      "messages": []
+    },
+    {
+      "id": "gs2024-06",
+      "checks": [
+        "Pyodide 3.12에서 먹이 생성·키 입력"
+      ],
+      "errors": [],
+      "messages": []
+    },
+    {
+      "id": "gs2024-19",
+      "checks": [
+        "실제 슬라이더 입력으로 초록 공 수평 이동"
+      ],
+      "errors": [],
+      "messages": []
+    },
+    {
+      "id": "gs2024-21",
+      "checks": [
+        "벽 중복 제거·실제 좌우 키 입력"
+      ],
+      "errors": [],
+      "messages": []
+    },
+    {
+      "id": "graph-and-color",
+      "checks": [
+        "공식 RGB·plot(pos=)·다중 점·data 교체·반지름·색 변경"
+      ],
+      "errors": [],
+      "messages": []
+    }
+  ],
+  "keyMovementAfterNormalization": [
+    {
+      "id": "gs2024-06",
+      "checks": [
+        "ArrowUp 실제 입력 후 뱀의 새 머리 y 좌표 증가"
+      ],
+      "errors": []
+    },
+    {
+      "id": "gs2024-21",
+      "checks": [
+        "ArrowLeft 후 활성 블록 4개가 x=-1 이동, ArrowRight 후 복귀"
+      ],
+      "errors": []
+    }
+  ]
+}

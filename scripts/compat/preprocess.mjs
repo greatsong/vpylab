@@ -8,6 +8,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { compatibilityFingerprint } from './evidence.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
@@ -26,11 +27,15 @@ registration = registration.replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fro
 
 // 브릿지가 아는 객체 타입·액션 (case '...' 라벨) — 정적 하네스가 미지원 커맨드를 표시하는 데 사용
 const bridgeSrc = await readFile(path.join(root, 'client/src/engine/vpython-bridge.js'), 'utf8');
-const caseLabels = [...bridgeSrc.matchAll(/case '([A-Za-z_0-9]+)':/g)].map((m) => m[1]);
+const caseLabels = [
+  ...bridgeSrc.matchAll(/case '([A-Za-z_0-9]+)':/g),
+  ...bridgeSrc.matchAll(/cmd\.action === '([A-Za-z_0-9]+)'/g),
+].map(m => m[1]);
 
 await mkdir(path.join(here, 'out'), { recursive: true });
 await writeFile(path.join(here, 'out/preprocessed.json'), JSON.stringify({
   generatedAt: new Date().toISOString(),
+  fingerprint: await compatibilityFingerprint(root),
   registration,
   bridgeCaseLabels: [...new Set(caseLabels)],
   items,

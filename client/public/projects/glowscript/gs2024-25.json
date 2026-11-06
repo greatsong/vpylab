@@ -1,0 +1,8 @@
+{
+  "source": "Web VPython 3.2\nbox(pos = vec(0, -10, 0), size = vec(40,1,20), color = color.cyan)\nsphere(opacity = 0.5, radius = 2, color = color.red)",
+  "code": "from vpython import *\nbox(pos = vec(0, -10, 0), size = vec(40,1,20), color = color.cyan)\nsphere(opacity = 0.5, radius = 2, color = color.red)",
+  "sourceUrl": "https://www.glowscript.org/#/user/greatsong21/folder/2024vpython%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EB%AA%A8%EC%9D%8C/program/240819000",
+  "originalName": "240819000",
+  "folder": "2024vpython프로젝트모음",
+  "sha256": "34edd59948705d343227a29bca57c3e158c8a4773ec527e0bb7d9f48cc41ffb6"
+}

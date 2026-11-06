@@ -292,3 +292,16 @@ describe('실제 Worker 스크립트의 트레이스백 구조화', () => {
     expect(message.detail).toMatchObject({ type: 'ZeroDivisionError', message: 'division by zero', line: 1 });
   });
 });
+
+
+it('새 실행에는 이전 runId의 카메라 상태를 적용하지 않고 화면별로 나눈다', async()=>{
+  const {self}=createWorkerContext();
+  await self.onmessage({data:{type:'init',vpythonApi:'# API'}});
+  await self.onmessage({data:{type:'run',runId:2,code:'pass'}});
+  await self.onmessage({data:{type:'camera',runId:1,state:{center:[99,0,0]}}});
+  expect(self._getCameraState()).toBeNull();
+  await self.onmessage({data:{type:'camera',runId:2,state:{center:[2,0,0],revision:4}}});
+  await self.onmessage({data:{type:'camera',runId:2,canvas_id:'canvas_1',state:{center:[3,0,0],revision:1}}});
+  expect(JSON.parse(self._getCameraState())).toMatchObject({center:[2,0,0],revision:4});
+  expect(JSON.parse(self._getCameraState('canvas_1'))).toMatchObject({center:[3,0,0],revision:1});
+});

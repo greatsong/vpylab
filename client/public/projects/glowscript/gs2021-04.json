@@ -1,0 +1,8 @@
+{
+  "source": "Web VPython 3.2\n\nG = 6.378e-11\nRE = 6.378e6\nME = 5.972e24\nrod = cylinder(pos = vec(0,RE*1.2,0),axis=vec(RE*0.08,0,0), radius=RE*0.05, color = vec(1,0,0))\n\nEarth=sphere(pos=vec(0,0,0), radius = RE, texture=textures.earth)\nEarth.m=ME\nEarth.p=Earth.m*vec(0,0,0)\n\nb=sphere(pos=vec(0,RE*1.2,0), radius =RE*0.03, make_trail= True)\nb.m=100\nb.p=b.m*vec(7000,0,0)\n\nt=0\ndt=1\n\nwhile True :\n    rate(500)\n    r=b.pos-Earth.pos\n    F=-G*Earth.m*b.m*norm(r)/mag(r)**2\n    b.p=b.p+F*dt\n    b.pos=b.pos+b.p*dt/b.m\n    t=t+dt\n    \n",
+  "code": "from vpython import *\n\nG = 6.378e-11\nRE = 6.378e6\nME = 5.972e24\nrod = cylinder(pos = vec(0,RE*1.2,0),axis=vec(RE*0.08,0,0), radius=RE*0.05, color = vec(1,0,0))\n\nEarth=sphere(pos=vec(0,0,0), radius = RE, texture=textures.earth)\nEarth.m=ME\nEarth.p=Earth.m*vec(0,0,0)\n\nb=sphere(pos=vec(0,RE*1.2,0), radius =RE*0.03, make_trail= True)\nb.m=100\nb.p=b.m*vec(7000,0,0)\n\nt=0\ndt=1\n\nwhile True :\n    rate(500)\n    r=b.pos-Earth.pos\n    F=-G*Earth.m*b.m*norm(r)/mag(r)**2\n    b.p=b.p+F*dt\n    b.pos=b.pos+b.p*dt/b.m\n    t=t+dt\n    \n",
+  "sourceUrl": "https://www.glowscript.org/#/user/greatsong21/folder/2021%EC%84%9C%EC%9A%B8%EA%B3%A0%EC%9E%91%ED%92%88%EB%AA%A8%EC%9D%8C/program/4%EB%89%B4%ED%84%B4%EC%9D%98%EC%82%AC%EA%B3%A0%EC%8B%A4%ED%97%98",
+  "originalName": "4뉴턴의사고실험",
+  "folder": "2021서울고작품모음",
+  "sha256": "6b04df095cd45e053b93b077225613ac7f1369a9e40420bebe49394d38a01f91"
+}

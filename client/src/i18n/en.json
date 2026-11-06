@@ -5,11 +5,12 @@
     "version": "v0.1"
   },
   "nav": {
+    "tutorials": "Tutorials",
     "home": "Home",
     "courses": "Courses",
     "examples": "Examples",
     "sandbox": "Projects",
-    "missions": "Missions",
+    "missions": "Training",
     "about": "About",
     "dashboard": "Dashboard",
     "gallery": "Gallery",

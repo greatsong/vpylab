@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-11-06T22:10:30.153Z",
+  "networkOnly": true,
+  "results": [
+    {
+      "name": "forge-synthetic-login-draft-and-account-isolation",
+      "passed": true
+    },
+    {
+      "name": "forge-public-fork-private-record-fixture",
+      "passed": true
+    },
+    {
+      "name": "forge-republish-keeps-source-and-reference-fixture",
+      "passed": true
+    },
+    {
+      "name": "forge-own-public-module-edits-without-new-fork",
+      "passed": true
+    },
+    {
+      "name": "forge-own-module-unpublish-fixture",
+      "passed": true
+    },
+    {
+      "name": "forge-storage-failure-is-visible",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "remoteWrites": 0,
+  "syntheticWrites": [
+    {
+      "method": "POST",
+      "public": false,
+      "source": "10000000-0000-4000-8000-000000000001"
+    },
+    {
+      "method": "PATCH",
+      "public": true,
+      "source": "10000000-0000-4000-8000-000000000001"
+    },
+    {
+      "method": "PATCH",
+      "public": false
+    }
+  ],
+  "scope": "Actual WebGL/Pyodide and local files; OAuth and fork/republication use synthetic client state and intercepted responses; no live DB publish",
+  "fingerprint": {
+    "client/src/pages/Forge.jsx": "9d4e821aeb04377779692ed36cdce7b0ea11cb2559c38c74103ef33a9908ff32",
+    "client/src/forge/recipes.js": "67be781942d979a883b660831598c02a3852340f088157392701ce462d7cf672",
+    "client/src/forge/modules.js": "b2cfe4320db13559e27cc4ac1b1c13e42fc448c8bcad11bc9ca6d680dae6fd74",
+    "client/src/forge/registry.js": "34b2d072a051f2e5046e068906db454977d909d9483cf791800d8a757543737f",
+    "client/src/components/forge/ForgePreview.jsx": "7df2002e19524838ea582e635f8d118b36a6fca2e83b5c337248c22ffd1f01a9",
+    "client/src/components/forge/ForgeLibrary.jsx": "c4d587d31e2decfab001849aa304b0fe3a5227de09dbbff27ce81197f189e5b9",
+    "client/src/data/forge-tutorial.js": "ffcf4e913a3ba018ff9c832e009d154280311ec2d035ddf5cf52281a61e68a3e",
+    "client/src/pages/Sandbox.jsx": "0d003b7ac30531b95c503cfe3959784561e3b74f407adb3e96c3cce3327f2e04"
+  }
+}

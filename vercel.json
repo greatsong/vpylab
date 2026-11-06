@@ -20,7 +20,7 @@
       "destination": "/api/og?kind=gallery&id=:id"
     },
     {
-      "source": "/((?!api/|assets/|pyodide/|sw\\.js$|manifest\\.webmanifest$).*)",
+      "source": "/((?!api/|assets/|projects/|pyodide/|sw\\.js$|manifest\\.webmanifest$).*)",
       "destination": "/index.html"
     }
   ],

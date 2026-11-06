@@ -9,6 +9,7 @@ out/preprocessed.json 의 코드를 하나씩 자식 프로세스(runner-child.p
     python3 -I scripts/compat/static-harness.py [--api <vpython-api.py>] [--filter <부분문자열>] [--jobs 8] [--timeout 12]
 """
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -44,6 +45,8 @@ DRAW_CALL = re.compile(r'(?<![\w.])(sphere|box|cylinder|arrow|cone|ring|helix|py
 def classify(item, corpus_item, res, timed_out, bridge_labels):
     """결과를 범주로 분류한다. 반환: (category, detail)"""
     tags = set(corpus_item.get('tags', []))
+    if corpus_item.get('kind') == 'empty':
+        return ('empty', '내용 없는 원본 초안 — 실행 성공률에서 제외')
     if timed_out:
         return ('timeout', 'rate 가 없는 반복문이거나 매우 무거운 코드 — 브라우저에서는 10초 무응답 뒤 강제 종료')
     if res['status'] == 'error':
@@ -51,6 +54,11 @@ def classify(item, corpus_item, res, timed_out, bridge_labels):
         if err['phase'] in ('api', 'shim'):
             return ('harness', f"{err['phase']} 로드 실패: {err['type']}: {err['message']}")
         t, m = err['type'], err['message']
+        expected = corpus_item.get('expectedError')
+        if expected and t == expected['type'] and expected['message'] in m:
+            return ('origin-error', f'보존 원본의 알려진 오류: {t}: {m}')
+        if corpus_item.get('kind') == 'fragment' and t == 'TypeError' and 'required positional argument' in m:
+            return ('fragment-incomplete', f'인자를 생략한 문서 호출 표기: {m}')
         if t == 'NameError':
             name = m.split("'")[1] if "'" in m else ''
             if name in GLOWSCRIPT_GLOBALS:
@@ -150,6 +158,7 @@ def main():
     for r in results:
         summary[r['category']] = summary.get(r['category'], 0) + 1
     out = {
+        'fingerprint': {name: hashlib.sha256((Path(args.api) if name == 'client/src/engine/vpython-api.py' else ROOT / name).read_bytes()).hexdigest() for name in pre.get('fingerprint', {})},
         'generatedAt': time.strftime('%Y-%m-%dT%H:%M:%S'),
         'python': sys.version.split()[0],
         'api': os.path.relpath(args.api, ROOT),

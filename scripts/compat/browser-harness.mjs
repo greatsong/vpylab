@@ -17,6 +17,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { compatibilityFingerprint } from './evidence.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
@@ -282,7 +283,7 @@ async function main() {
   page.on('pageerror', (e) => consoleSink.push(`[pageerror] ${String(e).slice(0, 300)}`));
 
   const results = [];
-  const meta = { generatedAt: new Date().toISOString(), base, count: items.length, summary: {} };
+  const meta = { fingerprint: await compatibilityFingerprint(root), generatedAt: new Date().toISOString(), base, count: items.length, summary: {} };
   try {
     await page.goto(`${base}/sandbox`, { waitUntil: 'domcontentloaded' });
     const ready = await waitForMessage(page, 0, ['ready'], 120_000);

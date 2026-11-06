@@ -108,15 +108,17 @@ const _widgetValues = {};   // { widgetId: latestValue }
 // input() 응답: { requestId: JSON 문자열 '{"value": "..."}' 또는 '{"cancelled": true}' }
 const _inputValues = {};
 let _mouseState = { pos: [0, 0, 0], pick: null };
+const _mouseStates = new Map();
+const _cameraStates = new Map();
 let _cameraStateJson = null; // 메인 스레드가 보내는 카메라 상태 (scene.camera.pos 등 읽기용)
 let _pressedKeysJson = '[]';  // 현재 눌려있는 키 목록 (JSON 직렬화)
 
 self._popEvent = () => {
   return _eventQueue.length > 0 ? _eventQueue.shift() : null;
 };
-self._getMousePos = () => _mouseState.pos;
-self._getMousePick = () => _mouseState.pick;
-self._getCameraState = () => _cameraStateJson;
+self._getMousePos = (id = 'scene') => (_mouseStates.get(id) || (id === 'scene' ? _mouseState : { pos: [0,0,0] })).pos;
+self._getMousePick = (id = 'scene') => (_mouseStates.get(id) || (id === 'scene' ? _mouseState : { pick: null })).pick;
+self._getCameraState = (id = 'scene') => id === 'scene' ? _cameraStateJson : _cameraStates.get(id) || null;
 self._getWidgetValue = (id) => _widgetValues[id] ?? null;
 self._getInputValue = (id) => _inputValues[id] ?? null;
 self._getPressedKeys = () => _pressedKeysJson;
@@ -132,6 +134,10 @@ function sendProgress(percent, message) {
 
 function clearInputQueues() {
   _eventQueue.length = 0;
+  _mouseStates.clear();
+  _cameraStates.clear();
+  _cameraStateJson = null;
+  _mouseState = { pos: [0,0,0], pick: null };
   for (const key of Object.keys(_widgetValues)) delete _widgetValues[key];
   for (const key of Object.keys(_inputValues)) delete _inputValues[key];
 }
@@ -638,14 +644,27 @@ self.onmessage = async (event) => {
       break;
 
     case 'mouse':
+      {
+      const id = event.data.canvas_id || 'scene';
+      const value = _mouseStates.get(id) || { pos: [0,0,0], pick: null };
+      if (Array.isArray(event.data.pos)) value.pos = event.data.pos;
+      if ('pick' in event.data) value.pick = event.data.pick;
+      _mouseStates.set(id, value);
+      }
       // 마우스 좌표/픽 객체 갱신
       if (Array.isArray(event.data.pos)) _mouseState.pos = event.data.pos;
       if ('pick' in event.data) _mouseState.pick = event.data.pick;
       break;
 
     case 'camera':
+      if (event.data.runId !== currentRunId) break;
       // 카메라 위치·중심·방향·range — scene.camera.pos 등 폴링용
-      try { _cameraStateJson = JSON.stringify(event.data.state); }
+      try {
+        const value = JSON.stringify(event.data.state);
+        const id = event.data.canvas_id || 'scene';
+        _cameraStates.set(id, value);
+        if (id === 'scene') _cameraStateJson = value;
+      }
       catch { _cameraStateJson = null; }
       break;
 

@@ -5,11 +5,12 @@
     "version": "v0.1"
   },
   "nav": {
+    "tutorials": "튜토리얼",
     "home": "홈",
     "courses": "코스",
     "examples": "예제",
     "sandbox": "프로젝트",
-    "missions": "미션",
+    "missions": "트레이닝",
     "about": "프로젝트 소개",
     "dashboard": "대시보드",
     "gallery": "갤러리",
@@ -67,7 +68,7 @@
     "missionCount": "{{count}}개 미션",
     "preparing": "준비 중",
     "startMission": "미션 시작",
-    "backToMissions": "← 미션 목록",
+    "backToMissions": "트레이닝 코스",
     "allCategories": "전체 카테고리",
     "level": "Lv.{{level}}",
     "selectCategory": "카테고리를 선택하세요",

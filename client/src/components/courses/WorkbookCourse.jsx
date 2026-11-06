@@ -108,7 +108,7 @@ function Lesson({ course, lesson }) {
       </Section>
 
       <Section title="코드 열고 실행하기">
-        <p>실습은 새 탭에서 열립니다. 이 교재와 실습 화면을 나란히 놓고 실행 버튼을 누르세요.</p>
+        <p>실습에서 실행한 뒤 위쪽의 학습 안내로 이 차시에 돌아올 수 있습니다. 수정한 코드는 이 탭에 보관됩니다.</p>
         {guide.support && <p>{guide.support}</p>}
         {guide.accessibleCode && <details className="border p-4" style={panel}><summary className="cursor-pointer font-medium">소리 대신 화면으로 해보기</summary><pre className="mt-3 overflow-x-auto text-xs leading-relaxed" tabIndex={0}><code>{guide.accessibleCode}</code></pre><p className="mt-3">실습 화면의 코드를 이 코드로 바꾸고, 크기 목록의 순서를 바꿔 보세요.</p></details>}
         <pre
@@ -119,10 +119,8 @@ function Lesson({ course, lesson }) {
         ><code>{lesson.code}</code></pre>
         <Link
           to={`/sandbox?lesson=${course.id}/${lesson.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
           className="btn-primary no-underline inline-flex"
-        >코드 열고 실습하기 ↗</Link>
+        >코드 열고 실습하기 →</Link>
         <details className="rounded-lg px-4 py-3" style={panel}>
           <summary className="cursor-pointer font-medium" style={{ color: 'var(--color-text-primary)' }}>실행한 뒤 결과 확인하기</summary>
           <p className="mt-3">{guide.observe}</p>
@@ -220,8 +218,8 @@ function WorkflowLesson({ lesson }) {
         </dl>
       </Section>
       <Section title="직접 따라 하기">
-        <p>작품이 열려 있는 탭이 있으면 그 탭에서 진행하세요. 아래 링크는 기본 예제가 있는 새 실습 탭을 엽니다. 이어서 작업할 작품은 원래 탭을 사용하거나 프로젝트 목록에서 다시 여세요.</p>
-        <Link to="/sandbox" target="_blank" rel="noopener noreferrer" className="btn-primary no-underline inline-flex">실습 화면 열기 ↗</Link>
+        <p>작품이 열려 있는 탭이 있으면 그 탭에서 진행하세요. 아래 링크는 실습 화면을 엽니다. 이어서 작업할 작품은 원래 탭을 사용하거나 프로젝트 목록에서 다시 여세요.</p>
+        <Link to="/sandbox" className="btn-primary no-underline inline-flex">실습 화면 열기 →</Link>
         <ol className="space-y-4 pt-2">
           {guide.steps.map(({ title, body }, index) => (
             <li key={title} className="rounded-xl p-5" style={panel}>
@@ -296,7 +294,7 @@ export default function WorkbookCourse({ course, lessonId }) {
   return (
     <main className="flex-1 w-full min-w-0 max-w-3xl mx-auto px-6 py-8 md:py-12" style={{ color: 'var(--color-text-primary)' }}>
       <nav aria-label="현재 위치" className="text-xs flex justify-between gap-4 mb-8" style={{ color: 'var(--color-text-secondary)' }}>
-        <Link to="/courses" className="no-underline" style={{ color: 'inherit' }}>← 배우기</Link>
+        <Link to="/missions" className="no-underline" style={{ color: 'inherit' }}>← 트레이닝</Link>
         <Link to={`/courses/${course.id}`} className="no-underline min-w-0 truncate" style={{ color: 'inherit' }}>{course.title.ko}</Link>
       </nav>
       <header className="mb-8">
@@ -314,7 +312,7 @@ export default function WorkbookCourse({ course, lessonId }) {
       {lesson ? (course.workbook.type === 'workflow' ? <WorkflowLesson key={lesson.id} lesson={lesson} /> : <Lesson key={lesson.id} course={course} lesson={lesson} />) : <Introduction course={course} />}
       {lesson && <nav aria-label="차시 이동" className="flex gap-3 flex-wrap justify-between py-6" style={{ borderTop: '1px solid var(--color-border)' }}>
         <Link to={previous ? `/courses/${course.id}/${previous.id}` : `/courses/${course.id}`} className="text-sm no-underline py-2" style={{ color: 'var(--color-text-secondary)' }}>{previous ? '← 이전 차시' : '← 교재 안내'}</Link>
-        {next ? <Link to={`/courses/${course.id}/${next.id}`} className="text-sm font-semibold no-underline py-2" style={{ color: 'var(--color-accent)' }}>다음 차시 →</Link> : <Link to={course.workbook.nextCourse?.path || '/courses'} className="text-sm font-semibold no-underline py-2" style={{ color: 'var(--color-accent)' }}>{course.workbook.nextCourse?.label || '다른 코스 살펴보기 →'}</Link>}
+        {next ? <Link to={`/courses/${course.id}/${next.id}`} className="text-sm font-semibold no-underline py-2" style={{ color: 'var(--color-accent)' }}>다음 차시 →</Link> : <Link to={course.workbook.nextCourse?.path || '/missions'} className="text-sm font-semibold no-underline py-2" style={{ color: 'var(--color-accent)' }}>{course.workbook.nextCourse?.label || '트레이닝으로 돌아가기 →'}</Link>}
       </nav>}
     </main>
   );

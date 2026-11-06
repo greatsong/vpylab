@@ -135,7 +135,7 @@ sleep(0.5)
 print("신호등 완성")
 `,
     assertions: [
-      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01, index: 2 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 1, tolerance: 0.01, index: 2 },
       { type: 'sphere', property: 'emissive', operator: '==', value: true, index: 2 },
       { type: 'sphere', property: 'emissive', operator: '==', value: false, index: 1 },
     ],
@@ -232,7 +232,7 @@ for i in range(12):
 `,
     assertions: [
       { type: 'sphere', property: 'pos.y', operator: 'approx', value: 0, index: 0 },
-      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01, index: 5 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 1, tolerance: 0.01, index: 5 },
       { type: 'sphere', property: 'pos.y', operator: 'approx', value: 5.5, index: 11 },
     ],
     codeChecks: [
@@ -422,7 +422,7 @@ def 버튼(x, 색):
       { type: 'sphere', property: 'pos.x', operator: '<', value: -1, index: 0 },
       { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 0 },
       { type: 'sphere', property: 'pos.x', operator: '>', value: 1, index: 2 },
-      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01, index: 2 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 1, tolerance: 0.01, index: 2 },
     ],
     codeChecks: [
       { pattern: 'pos\\s*=\\s*vector\\s*\\(\\s*x\\s*,', minCount: 1, message: 'x 매개변수를 위치에 사용하세요' },
@@ -571,7 +571,7 @@ for i in range(len(색들)):
     assertions: [
       { type: 'sphere', property: 'color.r', operator: '==', value: 1, index: 0 },
       { type: 'sphere', property: 'color.b', operator: '==', value: 1, index: 2 },
-      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01, index: 3 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 1, tolerance: 0.01, index: 3 },
     ],
     codeChecks: [
       { pattern: '색들\\s*\\[\\s*i\\s*\\]', minCount: 1, message: '색들[i]로 리스트에서 색을 꺼내세요' },
@@ -664,7 +664,7 @@ else:
     결과.color = 색상['빨강']
 `,
     assertions: [
-      { type: 'sphere', property: 'color.g', operator: '==', value: 0.8, tolerance: 0.01 },
+      { type: 'sphere', property: 'color.g', operator: '==', value: 1, tolerance: 0.01 },
       { type: 'sphere', property: 'color.r', operator: '==', value: 0 },
     ],
     codeChecks: [
@@ -1786,7 +1786,7 @@ print("숨쉬는 구름 완성")
       count('sphere', '>=', 10, text('구름 구슬이 10개 이상입니다', 'At least 10 cloud spheres')),
       prop('sphere', 'opacity', '<', 1, { match: 'all', message: text('opacity로 반투명하게 만듭니다', 'Spheres are translucent (opacity < 1)') }),
       anyOf(text('색 팔레트를 바꾸거나 숨 속도·구슬 수를 바꿉니다', 'Change the palette, the breathing speed, or the sphere count'),
-        prop('sphere', 'color', 'in', [[1, 0, 0], [1, 0.6, 0], [1, 1, 0], [0, 0.8, 0], [0, 1, 1], [0, 0, 1], [0.5, 0, 0.5]], { match: 'any', tolerance: 0.01 }),
+        prop('sphere', 'color', 'in', [[1, 0, 0], [1, 0.6, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1], [0.4, 0.2, 0.6]], { match: 'any', tolerance: 0.01 }),
         count('sphere', '!=', 24),
         prop('sphere', 'radius', '!=', 0.2999, { index: 0, tolerance: 0.005 }),
       ),
@@ -1986,7 +1986,7 @@ print("음악 조명 무대 완료")
       count('local_light', '>=', 1, text('조명 local_light가 있습니다', 'A local_light exists')),
       count('sfx', '>=', 2, text('장면 전환과 마무리에 효과음을 씁니다 (2회 이상)', 'Sound effects for transitions and the finale (2+)')),
       anyOf(text('색 순서를 바꾸거나 배경음악을 peaceful로 바꿉니다', 'Change the color order or switch the BGM to peaceful'),
-        prop('sphere', 'color', '!=', [0.5, 0, 0.5], { tolerance: 0.01 }),
+        prop('sphere', 'color', '!=', [0.4, 0.2, 0.6], { tolerance: 0.01 }),
         prop('local_light', 'color', '!=', [1, 0.6, 0], { tolerance: 0.01 }),
         prop('bgm', 'name', '!=', 'adventure', { match: 'any' }),
       ),

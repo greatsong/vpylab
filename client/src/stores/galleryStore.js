@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { studentProjectIds } from '../data/student-projects';
 
 import { API_BASE } from '../lib/api-base.js';
 
@@ -43,6 +44,7 @@ const useGalleryStore = create((set, get) => ({
   currentWork: null,
   myWorks: [],
   loading: false,
+  error: null,
   publishing: false,
   hasMore: true,
   page: 0,
@@ -56,13 +58,18 @@ const useGalleryStore = create((set, get) => ({
     const pageSize = 12;
     const currentPage = reset ? 0 : page;
 
-    set({ loading: true });
+    if (studentProjectIds.length === 0) {
+      set({ works: [], page: 0, hasMore: false, loading: false, error: null });
+      return;
+    }
+    set({ loading: true, error: null });
 
     // 성능: 목록에서 thumbnail 제외 — GalleryCard에서 Intersection Observer로 개별 lazy fetch
     let query = supabase
       .from('vpylab_gallery')
       .select('id, title, description, category, view_count, like_count, remix_count, github_url, github_repo, author_alias, created_at, user_id')
       .eq('is_public', true)
+      .in('id', studentProjectIds)
       .range(currentPage * pageSize, (currentPage + 1) * pageSize - 1);
 
     if (filters.category !== 'all') {
@@ -95,33 +102,23 @@ const useGalleryStore = create((set, get) => ({
         loading: false,
       });
     } else {
-      set({ loading: false });
+      set({ loading: false, error: '작품을 불러오지 못했습니다.' });
     }
   },
 
   // === 추천 작품 조회 (Home 하이라이트) ===
   fetchFeaturedWorks: async () => {
-    // 성능: thumbnail 제외, 단일 쿼리로 인기순 폴백 통합
-    const cols = 'id, title, description, category, like_count, view_count, remix_count, github_url, github_repo, author_alias, created_at, user_id';
-
-    let { data } = await supabase
+    if (studentProjectIds.length === 0) {
+      set({ featuredWorks: [] });
+      return;
+    }
+    const { data } = await supabase
       .from('vpylab_gallery')
-      .select(cols)
+      .select('id, title, description, category, like_count, view_count, remix_count, github_url, github_repo, author_alias, created_at, user_id')
       .eq('is_public', true)
-      .eq('is_featured', true)
+      .in('id', studentProjectIds)
       .order('created_at', { ascending: false })
       .limit(6);
-
-    if (!data || data.length < 4) {
-      const { data: popular } = await supabase
-        .from('vpylab_gallery')
-        .select(cols)
-        .eq('is_public', true)
-        .order('like_count', { ascending: false })
-        .limit(6);
-      data = popular;
-    }
-
     const withProfiles = await attachProfiles(data || []);
     set({ featuredWorks: withProfiles });
   },

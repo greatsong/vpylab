@@ -1,3 +1,4 @@
+import { readPracticeDraft, writePracticeDraft } from '../utils/practice-drafts';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/useI18n';
@@ -12,7 +13,7 @@ import { gradeMission } from '../engine/grading-engine';
 import { clearRegistry } from '../engine/object-registry';
 import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, resumeAndRun } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
-import missions from '../data/missions';
+import { getTrainingPosition } from '../data/training';
 
 import useAppStore from '../stores/appStore';
 import useCodeStore from '../stores/codeStore';
@@ -22,8 +23,15 @@ import useAuthStore from '../stores/authStore';
  * 미션 플레이 페이지
  * Sandbox와 유사하지만 미션 설명 + 채점 기능이 추가됨
  */
+const userIdForDraft = () => useAuthStore.getState().user?.id;
+
 export default function MissionPlay() {
   const { missionId } = useParams();
+  const userId = useAuthStore(s => s.user?.id);
+  return <MissionSession key={`${missionId}:${userId || 'guest'}`} missionId={missionId} />;
+}
+
+function MissionSession({ missionId }) {
   const { t, locale: lang } = useI18n();
   const navigate = useNavigate();
 
@@ -31,7 +39,8 @@ export default function MissionPlay() {
   const completeMission = useAppStore((s) => s.completeMission);
   const { user } = useAuthStore();
   const { autoSave, clearAutoSave, saveStatus, loadMissionCode } = useCodeStore();
-  const [code, setCode] = useState(mission?.starterCode || '');
+  const [code, setCode] = useState(() => readPracticeDraft(`mission/${missionId}`, userIdForDraft()) ?? mission?.starterCode ?? '');
+  const latestCodeRef = useRef(code);
   const [outputs, setOutputs] = useState([]);
   const [gradeResult, setGradeResult] = useState(null);
   const [hintIndex, setHintIndex] = useState(-1);
@@ -47,22 +56,32 @@ export default function MissionPlay() {
 
   useEffect(() => { initAudioOnUserGesture(); }, []);
 
-  // 이전 저장된 코드 로드 (로그인 시)
+  // 같은 탭의 수정본을 우선 복원하고 늦게 도착한 이전 차시 응답은 버린다.
   useEffect(() => {
-    if (user && missionId) {
-      loadMissionCode(missionId).then((savedCode) => {
-        if (savedCode) setCode(savedCode);
+    let cancelled = false;
+    const context = `mission/${missionId}`;
+    const local = readPracticeDraft(context, user?.id);
+    if (user && missionId && local === null) {
+      loadMissionCode(missionId).then(saved => {
+        if (!cancelled && saved && readPracticeDraft(context,user.id) === null && latestCodeRef.current === mission?.starterCode) { latestCodeRef.current=saved; setCode(saved); }
       });
     }
-    return () => clearAutoSave();
-  }, [missionId, user]);
+    return () => { cancelled = true; clearAutoSave(); };
+  }, [missionId, user, mission, loadMissionCode, clearAutoSave]);
+
+  const changeCode = value => {
+    const next = value || '';
+    latestCodeRef.current = next;
+    writePracticeDraft(`mission/${missionId}`,next,mission?.starterCode,user?.id);
+    setCode(next);
+  };
 
   // 자동 저장: 코드 변경 시 2초 debounce
   useEffect(() => {
     if (user && code && mission) {
       autoSave(code, { title: `미션: ${mission.title[lang]}`, missionId });
     }
-  }, [code, user]);
+  }, [code, user, mission, missionId, lang, autoSave]);
 
   // details: 파이썬 오류의 구조화 정보(입문자용 설명 포함). 콘솔이 설명을 먼저 보여 준다.
   const addOutput = useCallback((text, type = 'log', details) => {
@@ -222,9 +241,8 @@ export default function MissionPlay() {
 
 
   // 다음 미션
-  const currentIdx = missions.findIndex(m => m.id === missionId);
-  const nextMission = currentIdx >= 0 && currentIdx < missions.length - 1
-    ? missions[currentIdx + 1] : null;
+  const training = getTrainingPosition(missionId);
+  const nextMission = training?.nextId ? getMissionById(training.nextId) : null;
 
   if (!mission) return null;
 
@@ -241,9 +259,13 @@ export default function MissionPlay() {
     <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
 
+      {training && <details className="px-4 py-2 text-xs border-b shrink-0" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
+        <summary className="cursor-pointer">{lang === 'ko' ? '핵심 연습' : 'Core practice'} {training.index + 1} / {training.total} · {training.focus[lang]}</summary>
+        <p className="pt-2 pb-1">{training.reflect[lang]}</p>
+      </details>}
       {/* 툴바 — Sandbox와 동일한 레이아웃 */}
       <div
-        className="flex items-center gap-2 px-3 py-2 shrink-0"
+        className="flex flex-wrap items-center gap-2 px-3 py-2 shrink-0"
         style={{
           backgroundColor: 'var(--color-bg-secondary)',
           borderBottom: '1px solid var(--color-border)',
@@ -260,15 +282,10 @@ export default function MissionPlay() {
           {t('mission.submit')}
         </button>
 
+        <Link to="/missions" aria-label={lang === 'ko' ? '트레이닝 목록' : 'Training list'} className="py-2 text-xs no-underline shrink-0" style={{color:'var(--color-accent)'}}>← {lang === 'ko' ? '트레이닝' : 'Training'}</Link>
         {/* 미션 정보 */}
         <div className="hidden md:flex items-center gap-2 ml-2">
-          <Link
-            to={`/missions?category=${mission.category}`}
-            className="text-xs no-underline"
-            style={{ color: 'var(--color-accent)' }}
-          >
-            ← {t('home.backToMissions')}
-          </Link>
+
           <span className="text-xs font-mono font-bold" style={{ color: 'var(--color-text-muted)' }}>
             {mission.id}
           </span>
@@ -284,10 +301,11 @@ export default function MissionPlay() {
         <div className="flex-1" />
 
         {/* 모바일 탭 */}
-        <div className="flex md:hidden gap-1">
-          {[['editor', 'Code'], ['3d', '3D'], ['info', 'Info']].map(([tab, label]) => (
+        <div className="flex md:hidden gap-1 w-full justify-end">
+          {[['editor', lang === 'ko' ? '코드' : 'Code'], ['3d', lang === 'ko' ? '화면' : '3D'], ['info', lang === 'ko' ? '안내' : 'Info']].map(([tab, label]) => (
             <button
               key={tab}
+              aria-pressed={activeTab === tab}
               onClick={() => setActiveTab(tab)}
               className={`tab-btn ${activeTab === tab ? '--active' : ''}`}
             >
@@ -314,7 +332,7 @@ export default function MissionPlay() {
           className={`${activeTab === 'editor' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-[45%] md:min-w-[300px]`}
           style={{ borderRight: '1px solid var(--color-border)' }}
         >
-          <CodeEditor code={code} onChange={(val) => setCode(val || '')} />
+          <CodeEditor code={code} onChange={changeCode} />
         </div>
 
         {/* 중앙: 3D + 콘솔 */}
@@ -430,6 +448,8 @@ export default function MissionPlay() {
                   </div>
                 )}
 
+                {training && <p className="text-xs leading-relaxed mt-3" style={{ color: 'var(--color-text-secondary)' }}>{lang === 'ko' ? '자동 검사는 코드 조건을 확인합니다. 다음 질문으로 이해를 확인하세요: ' : 'Automatic checks verify code conditions. Reflect on this: '}{training.reflect[lang]}</p>}
+                {gradeResult.passed && !nextMission && <Link to="/missions" className="block mt-3 text-sm" style={{ color: 'var(--color-accent)' }}>{lang === 'ko' ? '트레이닝 코스로 돌아가기 →' : 'Back to training courses →'}</Link>}
                 {/* 다음 미션 버튼 */}
                 {gradeResult.passed && nextMission && (
                   <Link

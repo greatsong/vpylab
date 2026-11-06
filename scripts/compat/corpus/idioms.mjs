@@ -257,6 +257,8 @@ assert h.x == 0 and h.y == 1 and h.z == 1
   { id: 'attr-color-names', title: 'GlowScript 색 이름 전체', doc: 'color', code: `from vpython import *
 for c in [color.red, color.green, color.blue, color.yellow, color.cyan, color.magenta, color.orange, color.purple, color.black, color.white]:
     assert isinstance(c, vector)
+assert color.green == vector(0, 1, 0)
+assert color.purple == vector(0.4, 0.2, 0.6)
 print(color.green)
 ` },
   { id: 'attr-opacity-emissive-shininess', title: 'opacity / emissive / shininess', doc: 'opacity', code: `from vpython import *
@@ -782,14 +784,15 @@ print(callable(get_library), callable(read_local_file))
 ` },
 
   // === 중·대 난이도 항목 (canvas, group, shapes/paths, text, curve 형식, attach_trail/light, mouse.project, wtext) ===
-  { id: 'canvas-single', title: 'canvas(**kw)는 scene에 인자를 적용하고 같은 scene을 돌려준다', doc: 'canvas', code: `from vpython import *
+  { id: 'canvas-independent', title: 'canvas(**kw)는 독립된 캔버스를 만들고 select()로 활성 화면을 바꾼다', doc: 'canvas', code: `from vpython import *
 scene = canvas(width=600, height=300, background=color.white, title='제목', center=vector(0, 1, 0), range=5)
 assert scene.width == 600 and scene.height == 300 and scene.title == '제목'
 assert scene.center == vector(0, 1, 0)
 c2 = canvas(title='둘째')
-assert c2 is scene
-assert canvas.get_selected() is scene
+assert c2 is not scene
+assert canvas.get_selected() is c2
 scene.select()
+assert canvas.get_selected() is scene
 ` },
   { id: 'canvas-visible-delete', title: 'scene.visible, scene.delete(), scene.objects', doc: 'canvas', code: `from vpython import *
 b = box()

@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-11-06T22:08:24.647Z",
+  "url": "http://127.0.0.1:4035",
+  "results": [
+    {
+      "name": "production-forge-real-pixels",
+      "passed": true
+    },
+    {
+      "name": "production-copy-readable-python",
+      "passed": true
+    },
+    {
+      "name": "production-bell-three-stages",
+      "passed": true
+    },
+    {
+      "name": "production-forge-responsive-360",
+      "passed": true
+    },
+    {
+      "name": "production-forge-responsive-768",
+      "passed": true
+    },
+    {
+      "name": "production-gallery-33-links",
+      "passed": true
+    },
+    {
+      "name": "production-all-original-json-and-thumbnails",
+      "passed": true,
+      "count": 33
+    },
+    {
+      "name": "production-original-detail-and-workspace-link",
+      "passed": true
+    },
+    {
+      "name": "production-docs-shape-guide",
+      "passed": true
+    },
+    {
+      "name": "production-pasted-module-real-pyodide",
+      "passed": true
+    },
+    {
+      "name": "production-real-html-export",
+      "passed": true,
+      "bytes": 166766
+    },
+    {
+      "name": "production-character-collect-and-independent-tint",
+      "passed": true
+    },
+    {
+      "name": "production-guide-loaded",
+      "passed": true,
+      "updated": false
+    }
+  ],
+  "errors": [],
+  "scope": "Read-only anonymous production browser. Native rendering/Pyodide/copy/export/static files; no live account writes or public module registration."
+}

@@ -41,7 +41,7 @@ describe.skipIf(!hasPython())('교재 작품의 편집기와 공유 HTML 실행 
       expect(finalObjects(exported.commands), exported.id).toEqual(finalObjects(original.commands));
       const sounds = commands => commands.filter(command => command.action === 'sound');
       expect(sounds(exported.commands), exported.id).toEqual(sounds(original.commands));
-      const range = commands => commands.filter(command => command.action === 'scene' && command.property === 'range');
+      const range = commands => commands.filter(command => command.action === 'scene' && command.property === 'range').map(({action,property,value})=>({action,property,value}));
       expect(range(exported.commands), exported.id).toEqual(range(original.commands));
       const background = commands => commands.filter(command => command.action === 'scene' && command.property === 'background');
       expect(background(exported.commands), exported.id).toEqual(background(original.commands));

@@ -105,9 +105,14 @@ function setBillboard(holder, enabled) {
 }
 
 /** billboard 글자가 카메라를 향하도록 — 뷰포트가 renderer.render 직전에 부른다 */
-export function updateBillboards(camera) {
+export function updateBillboards(camera, scene) {
   if (!camera || billboardHolders.size === 0) return;
-  for (const holder of billboardHolders) holder.quaternion.copy(camera.quaternion);
+  for (const holder of billboardHolders) {
+    let owner = holder;
+    while (owner.parent) owner = owner.parent;
+    if (scene && owner !== scene) continue;
+    holder.quaternion.copy(camera.quaternion);
+  }
 }
 
 /** 씬에서 지울 때 billboard 목록에서도 뺀다 */

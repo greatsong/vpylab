@@ -1,0 +1,8 @@
+{
+  "source": "Web VPython 3.2\n\nprint()",
+  "code": "from vpython import *\n\nprint()",
+  "sourceUrl": "https://www.glowscript.org/#/user/greatsong21/folder/2024vpython%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EB%AA%A8%EC%9D%8C/program/240529ns01",
+  "originalName": "240529ns01",
+  "folder": "2024vpython프로젝트모음",
+  "sha256": "2871b038e048bdefbce6305b491d7f606495138834297bb38b87ab247ecf1d4d"
+}

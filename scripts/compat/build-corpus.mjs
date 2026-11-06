@@ -76,6 +76,21 @@ async function internalCorpus() {
       });
     }
   }
+  const { creativeLabs, shapeExtensions } = await import(path.join(dataDir, 'creative-labs.js'));
+  for (const lab of [...creativeLabs, ...shapeExtensions]) {
+    for (const step of lab.variants || [{ id: 'base', code: lab.code }]) {
+      items.push({ id: `internal:creative:${lab.id}:${step.id}`, source: 'internal', kind: 'program', title: lab.title.ko, origin: `client/src/data/creative-labs.js#${lab.id}`, code: step.code });
+    }
+  }
+  const docs = await loadDataModule('docs.js');
+  const { getGuideVariants } = await import(path.join(dataDir, 'shape-guides.js'));
+  for (const doc of docs) {
+    if (!doc.code) continue;
+    const variants = doc.origin === 'guide' ? getGuideVariants(doc) : [];
+    for (const example of [{id: 'base',code:doc.code},...variants]) {
+      items.push({id:`internal:doc:${doc.id}:${example.id}`,source:'internal',kind:'program',title:`문서 ${doc.title.ko}`,origin:`client/src/data/docs.js#${doc.id}`,code:example.code});
+    }
+  }
   return items;
 }
 
@@ -92,8 +107,35 @@ async function jsonCorpus(file) {
   return raw.map((it) => (it.kind === 'fragment' ? { ...it, code: FRAGMENT_PREAMBLE + it.code } : it));
 }
 
+async function showcaseCorpus() {
+  const { glowscriptProjects } = await import(path.join(dataDir, 'glowscript-projects.js'));
+  const expected = {
+    'gs2024-01': { type: 'TypeError', message: "'float' object cannot be interpreted as an integer" },
+    'gs2024-06': { type: 'TypeError', message: "'float' object cannot be interpreted as an integer" },
+    'gs2024-02': { type: 'SyntaxError', message: "expected ':'" },
+    'gs2024-19': { type: 'NameError', message: "name 'speed_f' is not defined" },
+    'gs2024-21': { type: 'TypeError', message: 'list indices must be integers or slices, not float' },
+  };
+  const items = [];
+  for (const project of glowscriptProjects) {
+    const original = JSON.parse(await readFile(path.join(root, 'client/public', project.sourcePath), 'utf8'));
+    items.push({ id: `showcase:${project.id}`, source: 'showcase', kind: project.pythonCheck === 'empty' ? 'empty' : 'program',
+      title: project.originalName, origin: project.sourceUrl, code: original.code });
+    if (expected[project.id]) {
+      const raw = original.source.split(/\r?\n/);
+      raw[0] = 'from vpython import *';
+      items.push({ id: `showcase-original:${project.id}`, source: 'showcase-original', kind: 'program',
+        title: project.originalName, origin: project.sourceUrl, code: raw.join('\n'), expectedError: expected[project.id] });
+    }
+  }
+  const { tutorials } = await import(path.join(dataDir, 'tutorials.js'));
+  for (const tutorial of tutorials) items.push({ id: `internal:tutorial:${tutorial.id}`, source: 'internal', kind: 'program', title: tutorial.title.ko, origin: `client/src/data/tutorials.js#${tutorial.id}`, code: tutorial.code });
+  return items;
+}
+
 const corpus = [
   ...(await internalCorpus()),
+  ...(await showcaseCorpus()),
   ...(await idiomCorpus()),
   ...(await jsonCorpus('glowscript-examples.json')),
   ...(await jsonCorpus('glowscript-docs.json')),

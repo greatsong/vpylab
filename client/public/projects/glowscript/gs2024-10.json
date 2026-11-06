@@ -1,0 +1,8 @@
+{
+  "source": "Web VPython 3.2\n\nimport random\nbox(opacity = 0.4, size = vec(102, 102, 102))\n\nfor i in range(100000) :\n    rate(10000)\n    b = box()\n    x = random.randint(0,99) - 50\n    y = random.randint(0,99) - 50\n    z = random.randint(0,99) - 50\n    b.pos = vec(x,y,z)\n    b.color = vec(x/100, y/100, z/100)",
+  "code": "from vpython import *\n\nimport random\nbox(opacity = 0.4, size = vec(102, 102, 102))\n\nfor i in range(100000) :\n    rate(10000)\n    b = box()\n    x = random.randint(0,99) - 50\n    y = random.randint(0,99) - 50\n    z = random.randint(0,99) - 50\n    b.pos = vec(x,y,z)\n    b.color = vec(x/100, y/100, z/100)",
+  "sourceUrl": "https://www.glowscript.org/#/user/greatsong21/folder/2024vpython%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EB%AA%A8%EC%9D%8C/program/%EC%BB%AC%EB%9F%AC%EB%B2%A1%ED%84%B0%28%EC%84%9D%EB%A6%AC%EC%86%A1%29",
+  "originalName": "컬러벡터(석리송)",
+  "folder": "2024vpython프로젝트모음",
+  "sha256": "7578d1c69464c611d561a51c5eadea6055a4dbcb1908ba44e1423245551936aa"
+}

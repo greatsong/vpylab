@@ -1177,13 +1177,13 @@ slider(text='크기', min=0.1, max=2.0, value=0.4, bind=크기바꾸기)
 
 def 키눌림(evt):
     이동 = 0.2                       # ★ 이동량
-    if evt.key == 'ArrowLeft':
+    if evt.key == 'left':
         공.pos = 공.pos + vector(-이동, 0, 0)
-    elif evt.key == 'ArrowRight':
+    elif evt.key == 'right':
         공.pos = 공.pos + vector(이동, 0, 0)
-    elif evt.key == 'ArrowUp':
+    elif evt.key == 'up':
         공.pos = 공.pos + vector(0, 이동, 0)
-    elif evt.key == 'ArrowDown':
+    elif evt.key == 'down':
         공.pos = 공.pos + vector(0, -이동, 0)
 
 scene.bind('keydown', 키눌림)

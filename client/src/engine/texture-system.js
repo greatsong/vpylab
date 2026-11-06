@@ -6,6 +6,9 @@
 import * as THREE from 'three';
 
 const TEXTURE_CACHE = new Map();
+const textureLoads = new Map();
+
+export function whenTexturesReady() { return Promise.all([...textureLoads.values()]); }
 // crossOrigin='anonymous'면 CORS 헤더가 없는 서버의 이미지가 실패함.
 // 텍스처는 화면에만 사용하므로 픽셀 읽기가 필요 없어 빈 문자열로 두어
 // 일반 <img> 처럼 동작하게 한다 (canvas는 tainted 되지만 렌더링은 정상).
@@ -57,14 +60,13 @@ export function resolveTexture(spec) {
     spec.startsWith('https://') ||
     spec.startsWith('data:image')
   ) {
-    texture = URL_LOADER.load(
-      spec,
-      undefined,
-      undefined,
-      (err) => {
-        console.warn(`[texture] 로드 실패: ${spec}`, err?.message || err);
-      },
-    );
+    let complete;
+    const ready = new Promise(resolve => { complete = resolve; });
+    textureLoads.set(spec, ready);
+    texture = URL_LOADER.load(spec, () => complete(), undefined, err => {
+      console.warn(`[texture] 로드 실패: ${spec}`, err?.message || err);
+      complete();
+    });
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;

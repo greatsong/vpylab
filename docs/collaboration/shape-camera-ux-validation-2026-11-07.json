@@ -1,0 +1,78 @@
+{
+  "generatedAt": "2026-11-06T15:31:08.742Z",
+  "fingerprint": {
+    "scripts/compat/corpus/corpus.json": "5ab1052ce448805f73a2a3dbef46776db4e308aee9d87a6d94a52f241252d019",
+    "scripts/compat/preprocess.mjs": "0af136991f163f44a232e9b282447ac76f0e3842ccec3ce7bf96a09989a0dc7e",
+    "scripts/compat/static-harness.py": "a9f93b77c29626c79f513552391f02db11bf87e2352c83a37872d25b33a75234",
+    "client/src/engine/vpython-api.py": "f48fad098ffb23674ef5f3d6e830d11dc1575ff43232669320700fee2c24c3b4",
+    "client/src/engine/student-code-transform.py": "412409dd6f858dbab50e699810a9e82e59e5bdacd9c84d522df972609113b605",
+    "client/src/engine/pyodide-worker.js": "cfd792a63f03ebbbff63087612cb47960d0abde81233cd627c60abf9aa812691",
+    "client/src/engine/vpython-bridge.js": "acc9dd997618db64715160328b5c59c07704bba5ae58772e33d0761ed883f81d",
+    "client/src/engine/graph2d-system.js": "7ab41e346babefebaf487608f17d3d359eba72de72eb488e7d1bfd781ba0f562",
+    "server/utils/standalone-template.js": "b007990f415fea747d57929878614372d170171f9247134f8136a0dffd715150",
+    "client/src/engine/mesh-geometry.js": "d9406e3ab3e286226633425b165c85135434c5b7a4e64e314a3311c3f1e6cc89",
+    "client/src/engine/text3d-system.js": "575788dbc668f6ff0766b7bbecdad1cfe4e9dfb87829f7da923f770848b3ea3b",
+    "client/src/engine/texture-system.js": "7aa6abab80fe54c3fa3c9832d3d2d087f0fc1e7e8c82134929af1588882baf3b",
+    "client/src/engine/widgets-system.js": "27388a30be2e77f69f5610613e62d949261ea998f2b301e79402f4dd668283ce",
+    "client/src/engine/camera-system.js": "be89c09a9130e69f46bbd98055030eeee2da582d8b5f043c556936c403697ab8",
+    "server/shared/compound-appearance.js": "3414692b8fc2b5b112af8b71deba21be2074c2584ee52de136aa7d909bdc99b8",
+    "server/shared/camera-system.js": "50a9bd6da7a90eb214f5b2a5eba83d34df36dc42f812db81cfa4575635e36954",
+    "client/src/engine/pyodide-singleton.js": "ba477e4a990c030064b0db21f14fd68cd9020b7be579a08b93f2df37115f2bcd",
+    "client/src/components/viewport/Viewport3D.jsx": "2dbf40532c6e33764b4f53bb9b4030f11348be3a820f55e428d6c66a441b5c7a"
+  },
+  "frontend": {
+    "files": 62,
+    "passed": 722,
+    "log": "local /private/tmp/vpylab-final-client-tests.log"
+  },
+  "serverUtilities": {
+    "passed": 10
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 0,
+    "scope": "changed frontend files"
+  },
+  "build": {
+    "passed": true,
+    "existingChunkWarnings": true
+  },
+  "staticCorpus": {
+    "count": 642,
+    "summary": {
+      "pass": 589,
+      "origin-error": 5,
+      "empty": 2,
+      "timeout": 1,
+      "unsupported-api": 4,
+      "error": 2,
+      "glowscript-only": 2,
+      "fragment-incomplete": 6,
+      "fragment-undefined": 22,
+      "warning": 4,
+      "unsupported-module": 5
+    },
+    "timeoutSeconds": 20,
+    "jobs": 4,
+    "fingerprintMatches": true
+  },
+  "browser": {
+    "learningCameraCompoundSolar": 14,
+    "creative": 7,
+    "errors": [],
+    "fingerprintMatches": true,
+    "engine": "Chrome Headless Shell; no forced render"
+  },
+  "standalone": {
+    "sourceGenerated": true,
+    "productionMinifiedGenerated": true
+  },
+  "solar": {
+    "requests": 6,
+    "staticShapeProposals": 5,
+    "visibleWithoutRuntimeError": 5,
+    "semanticAccuracyGuaranteed": false,
+    "enabledInStudentUI": false
+  },
+  "deployed": false
+}

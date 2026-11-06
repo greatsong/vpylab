@@ -12,15 +12,19 @@ import { postEvent, postWidgetValue, postInputValue } from './pyodide-singleton'
 
 // 위젯 패널 DOM 컨테이너
 let panelEl = null;
+const panels = new Map();
 const widgetRegistry = new Map(); // id → { el, kind, value }
 
-function ensurePanel() {
-  if (panelEl) return panelEl;
-  panelEl = document.querySelector('[data-vpylab-widgets]');
+function ensurePanel(canvasId = 'scene') {
+  panelEl = panels.get(canvasId) || null;
+  if (panelEl?.isConnected) return panelEl;
+  panelEl = document.querySelector(`[data-vpylab-widgets][data-canvas-id="${canvasId}"]`);
   if (panelEl) return panelEl;
 
   panelEl = document.createElement('div');
   panelEl.setAttribute('data-vpylab-widgets', '');
+  panelEl.dataset.canvasId = canvasId;
+  panels.set(canvasId, panelEl);
   panelEl.style.cssText = [
     'position:absolute', 'top:8px', 'right:8px',
     'max-width:280px', 'max-height:60%',
@@ -34,7 +38,7 @@ function ensurePanel() {
   ].join(';');
 
   // 3D 뷰포트 컨테이너 안에 부착 (없으면 body)
-  const host = document.querySelector('[data-vpylab-viewport]') || document.body;
+  const host = document.querySelector(`[data-vpylab-canvas-id="${canvasId}"]`) || document.querySelector('[data-vpylab-viewport]') || document.body;
   // 호스트가 static positioning이면 위젯이 화면 우상단에 잘못 붙으므로 보정
   const cs = host && host.nodeType === 1 ? getComputedStyle(host) : null;
   if (cs && cs.position === 'static' && host !== document.body) {
@@ -45,17 +49,17 @@ function ensurePanel() {
 }
 
 function removePanelIfEmpty() {
-  if (panelEl && widgetRegistry.size === 0) {
-    panelEl.remove();
-    panelEl = null;
+  for (const [id, el] of panels) {
+    if (el.childElementCount === 0) { el.remove(); panels.delete(id); }
   }
+  panelEl = null;
 }
 
 /**
  * 위젯 생성
  */
 export function createWidget(cmd) {
-  const panel = ensurePanel();
+  const panel = ensurePanel(cmd.canvas_id);
   const wrap = document.createElement('div');
   wrap.dataset.widgetId = cmd.id;
   wrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
@@ -204,7 +208,7 @@ export function createWidget(cmd) {
   if (cmd.visible === false) wrap.style.display = 'none';
 
   panel.appendChild(wrap);
-  widgetRegistry.set(cmd.id, { el: wrap, input: inputEl, kind: cmd.kind, value: cmd.value });
+  widgetRegistry.set(cmd.id, { canvasId: cmd.canvas_id || 'scene', el: wrap, input: inputEl, kind: cmd.kind, value: cmd.value });
 }
 
 /**
@@ -212,7 +216,7 @@ export function createWidget(cmd) {
  * 한 번 답하면 입력창을 잠그고, Python 쪽이 widget_delete로 지운다.
  */
 export function createInputPrompt(cmd) {
-  const panel = ensurePanel();
+  const panel = ensurePanel(cmd.canvas_id);
   const wrap = document.createElement('div');
   wrap.dataset.widgetId = cmd.id;
   wrap.dataset.vpylabInput = '';
@@ -251,7 +255,7 @@ export function createInputPrompt(cmd) {
   wrap.appendChild(promptEl);
   wrap.appendChild(row);
   panel.appendChild(wrap);
-  widgetRegistry.set(cmd.id, { el: wrap, input: inputEl, kind: 'input', value: null });
+  widgetRegistry.set(cmd.id, { canvasId: cmd.canvas_id || 'scene', el: wrap, input: inputEl, kind: 'input', value: null });
   inputEl.focus();
 }
 
@@ -259,7 +263,7 @@ export function createInputPrompt(cmd) {
  * scene.pause() 안내 — 클릭을 기다리는 동안 보여 주고, Python 쪽이 widget_delete로 지운다.
  */
 export function createPauseNotice(cmd) {
-  const panel = ensurePanel();
+  const panel = ensurePanel(cmd.canvas_id);
   const wrap = document.createElement('div');
   wrap.dataset.widgetId = cmd.id;
   wrap.dataset.vpylabPause = '';
@@ -268,7 +272,7 @@ export function createPauseNotice(cmd) {
   // 안내 배너를 눌러도 화면 클릭과 같이 click 이벤트를 보낸다 (scene.pause는 click을 기다린다)
   wrap.addEventListener('click', () => postEvent({ name: 'click', pos: [0, 0, 0], pick: null }));
   panel.appendChild(wrap);
-  widgetRegistry.set(cmd.id, { el: wrap, input: null, kind: 'notice', value: null });
+  widgetRegistry.set(cmd.id, { canvasId: cmd.canvas_id || 'scene', el: wrap, input: null, kind: 'notice', value: null });
 }
 
 export function updateWidget(cmd) {
@@ -306,15 +310,12 @@ export function deleteWidget(cmd) {
   removePanelIfEmpty();
 }
 
-export function clearWidgets() {
-  // 답을 받지 못한 input()은 취소로 알린다 (Worker가 살아 있으면 Python 쪽 EOFError)
+export function clearWidgets(canvasId) {
   for (const [id, w] of widgetRegistry) {
+    if (canvasId && w.canvasId !== canvasId) continue;
     if (w.kind === 'input' && w.input && !w.input.disabled) postInputValue(id, null);
+    w.el.remove();
+    widgetRegistry.delete(id);
   }
-  for (const [, w] of widgetRegistry) w.el.remove();
-  widgetRegistry.clear();
-  if (panelEl) {
-    panelEl.remove();
-    panelEl = null;
-  }
+  removePanelIfEmpty();
 }

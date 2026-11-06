@@ -13,7 +13,7 @@
 - **3D**: Three.js
 - **Python**: Pyodide (Web Worker)
 - **DB/인증**: Supabase Pro
-- **AI**: Upstage Solar Pro 3 (서버 프록시)
+- **AI**: 기본 학습은 AI 없이 진행. Solar Pro 4 도형 제안은 검증 원형만 있으며 공개 라우트·학생 UI에 미연결.
 - **호스팅**: Railway (백엔드), Vercel (프론트)
 
 ## 코딩 컨벤션
@@ -37,3 +37,17 @@
 
 - 코드: AGPL v3
 - 미션 콘텐츠: CC BY-NC-SA 4.0
+
+## 호환성과 학습자료 기준 (2026-11-06 사용자 지시)
+
+- 특별한 논리적 문제가 없으면 표준 Python과 공식 VPython API의 값·인자·이벤트·좌표 의미를 따른다. GlowScript의 JavaScript 확장 때문에 Python 내장 range나 리스트 인덱스 규칙을 느슨하게 바꾸지 않는다.
+- VPython API 변경은 Python 래퍼, Worker, 렌더러, 문서·예제와 공유 HTML의 영향을 확인한다. 실행 오류가 없다는 검사만으로 화면·상호작용 호환을 선언하지 않는다. 미지원 기능을 인자를 무시하는 가짜 구현으로 통과시키지 않는다.
+- VPyLab의 소리·한글 별칭 등 추가 기능은 확장으로 구분한다. Worker 네트워크·파일 접근 제한과 브라우저 자원 상한 같은 예외는 이유와 대안을 문서에 남긴다.
+- 초심자 교육자료는 AI 없이 직접 예상·실행·수정·설명하는 흐름이 기본이다. 짧은 체험은 튜토리얼, 단계 학습은 트레이닝, 실제 작품은 갤러리 안에서 제공하며 추가 최상위 메뉴를 늘리지 않는다.
+- 설계와 최근 검증 범위: docs/CREATIVE_LEARNING_AND_VPYTHON_2026-11-06.md.
+
+- 도형 AI·compound·카메라·이동 UX의 최신 원인 분석과 검증: docs/SHAPE_CAMERA_UX_REVIEW_2026-11-07.md.
+
+- 문서 출처 표시·도형 가이드·primitive 기준점의 최신 설계와 검증: docs/DOCUMENTATION_AND_SHAPE_GUIDES_2026-11-07.md.
+
+- 독립 대장간·단일 오브젝트·코드 복사·포크 출처·종 단계·캐릭터 교재: docs/FORGE_MODULES_2026-11-07.md.

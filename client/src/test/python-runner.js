@@ -9,9 +9,13 @@ import path from 'node:path';
 // vitest는 client/ 디렉터리에서 실행된다 (npm --prefix client run test:run)
 const RUNNER = path.resolve(globalThis.process?.cwd?.() ?? '.', 'src/test/run-vpython.py');
 
+// Pyodide 0.27과 같은 Python 3.12를 우선한다. 3.11은 randint(실수)를 받아 차이를 숨긴다.
+const candidates = globalThis.process?.env?.VPYLAB_TEST_PYTHON
+  ? [globalThis.process.env.VPYLAB_TEST_PYTHON] : ['python3.12', 'python3'];
+const python = candidates.find(command => spawnSync(command, ['--version'], { encoding: 'utf8' }).status === 0);
+
 export function hasPython() {
-  const probe = spawnSync('python3', ['--version'], { encoding: 'utf8' });
-  return probe.status === 0;
+  return Boolean(python);
 }
 
 /**
@@ -20,10 +24,11 @@ export function hasPython() {
  * @returns {Map<string, object>} `${id}:${label}` → { ok, stopped, error, stdout, commands, heartbeats, pendingTasks }
  */
 export function runPythonJobs(jobs) {
-  const proc = spawnSync('python3', ['-I', RUNNER], {
+  const proc = spawnSync(python, ['-I', RUNNER], {
     input: JSON.stringify(jobs),
     encoding: 'utf8',
     maxBuffer: 1 << 28,
+    timeout: 60000,
   });
   if (proc.status !== 0) {
     throw new Error(`run-vpython.py 실패:\n${proc.stderr}`);

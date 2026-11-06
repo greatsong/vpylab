@@ -23,11 +23,17 @@ _print_digits = 4
 # === 커맨드 버퍼 (배칭) ===
 _command_buffer = []
 _object_counter = 0
+_object_canvases = {}
 
 
 def _send_commands():
     """버퍼의 모든 커맨드를 메인 스레드로 한번에 전송"""
     global _command_buffer
+    # 한 프레임에 같은 정점을 여러 번 바꿔도 면마다 최종 상태를 한 번만 보낸다.
+    for face in list(_dirty_mesh_faces.values()):
+        _add_command({'action': 'mesh_vertices', 'id': face._id,
+                      'vertices': [v.to_dict() for v in face._vertices]})
+    _dirty_mesh_faces.clear()
     if _command_buffer:
         # JSON 문자열로 직렬화하여 전송 (Proxy 객체 문제 회피)
         js.postMessage(json.dumps({
@@ -40,6 +46,10 @@ def _send_commands():
 
 def _add_command(cmd):
     """커맨드를 버퍼에 추가"""
+    if 'canvas_id' not in cmd:
+        canvas_obj = _object_canvases.get(cmd.get('id')) or globals().get('_selected_canvas')
+        if canvas_obj is not None and canvas_obj._id != 'scene':
+            cmd['canvas_id'] = canvas_obj._id
     _command_buffer.append(cmd)
 
 
@@ -51,10 +61,14 @@ def _current_run_id():
         return 0
 
 
-def _new_id():
+def _new_id(canvas_obj=None):
     global _object_counter
     _object_counter += 1
-    return f"obj_{_object_counter}"
+    result = f"obj_{_object_counter}"
+    owner = canvas_obj or globals().get('_selected_canvas')
+    if owner is not None:
+        _object_canvases[result] = owner
+    return result
 
 
 # === vector 클래스 ===
@@ -327,7 +341,7 @@ class _ColorPalette:
 
     # --- 기본 색 (기존 호환) ---
     red       = vector(1, 0, 0)
-    green     = vector(0, 0.8, 0)
+    green     = vector(0, 1, 0)
     blue      = vector(0, 0, 1)
     yellow    = vector(1, 1, 0)
     cyan      = vector(0, 1, 1)
@@ -336,7 +350,7 @@ class _ColorPalette:
     white     = vector(1, 1, 1)
     black     = vector(0, 0, 0)
     gray      = _GrayColor(0.5, 0.5, 0.5)
-    purple    = vector(0.5, 0, 0.5)
+    purple    = vector(0.4, 0.2, 0.6)
 
     # --- 확장 색 (학생 친화적) ---
     pink      = vector(1, 0.75, 0.8)
@@ -512,7 +526,7 @@ class _GObject(_VectorOwner):
     _vector_attrs = ('pos', 'axis', 'size', 'up', 'color', 'velocity', 'trail_color')
 
     def __init__(self, obj_type, **kwargs):
-        self._id = _new_id()
+        self._id = _new_id(kwargs.get('canvas'))
         self._type = obj_type
         self._group = _group_ref(kwargs.pop('group', None))
         self._make_trail = kwargs.pop('make_trail', False)
@@ -527,6 +541,9 @@ class _GObject(_VectorOwner):
         self._visible = kwargs.get('visible', True)
         self._opacity = kwargs.get('opacity', 1.0)
         self._emissive = kwargs.get('emissive', False)
+        self._shininess = float(kwargs.get('shininess', 0.6))
+        if not math.isfinite(self._shininess) or not 0 <= self._shininess <= 1:
+            raise ValueError('shininess는 0~1 사이여야 합니다')
         _scene_objects.append(self)
         self._velocity = kwargs.get('velocity', vector(0, 0, 0))
         self._texture = kwargs.get('texture', None)
@@ -556,6 +573,17 @@ class _GObject(_VectorOwner):
             "trail_color": self._trail_color.to_list() if self._trail_color else None,
             **extra,
         })
+
+    @property
+    def canvas(self):
+        return _object_canvases.get(self._id, scene)
+
+    @canvas.setter
+    def canvas(self, value):
+        if not isinstance(value, _Scene):
+            raise TypeError('canvas must be a canvas object')
+        _object_canvases[self._id] = value
+        _add_command({'action': 'canvas_move', 'id': self._id, 'canvas_id': value._id})
 
     @property
     def pos(self):
@@ -622,6 +650,17 @@ class _GObject(_VectorOwner):
             "id": self._id,
             "opacity": value,
         })
+
+    @property
+    def shininess(self): return self._shininess
+
+    @shininess.setter
+    def shininess(self, value):
+        value = float(value)
+        if not math.isfinite(value) or not 0 <= value <= 1:
+            raise ValueError('shininess는 0~1 사이여야 합니다')
+        self._shininess = value
+        _add_command({'action':'update','id':self._id,'shininess':value})
 
     @property
     def emissive(self):
@@ -1123,34 +1162,52 @@ class ellipsoid(_GObject):
 
 # === 새 프리미티브: helix (나선/스프링) ===
 class helix(_GObject):
-    """나선 — pos에서 axis 방향으로 길이만큼, coils번 감김"""
+    """VPython 나선: size=(길이, 높이, 폭), thickness는 선의 지름."""
     def __init__(self, **kwargs):
-        self._radius = kwargs.pop('radius', 1.0)
-        self._axis = kwargs.pop('axis', vector(1, 0, 0))
-        self._length = kwargs.pop('length', None)
-        self._coils = kwargs.pop('coils', 5)
-        self._thickness = kwargs.pop('thickness', 0.05)
-        # length 미지정 시 axis 길이 사용
-        ax = self._axis
-        length = self._length if self._length is not None else ax.mag
-        super().__init__(
-            'helix',
-            radius=self._radius,
-            axis=ax.to_list(),
-            length=float(length),
-            coils=int(self._coils),
-            thickness=float(self._thickness),
-            **kwargs,
-        )
+        axis = kwargs.pop('axis', vector(1, 0, 0))
+        radius = float(kwargs.pop('radius', 1))
+        size = kwargs.pop('size', vector(axis.mag, 2*radius, 2*radius))
+        length = kwargs.pop('length', size.x)
+        self._size = vector(float(length), size.y, size.z)
+        self._axis = (axis.hat if axis.mag else vector(1, 0, 0)) * self._size.x
+        self._up = kwargs.pop('up', vector(0, 1, 0))
+        self._coils = self._checked_coils(kwargs.pop('coils', 5))
+        self._thickness = float(kwargs.pop('thickness', radius/20))
+        self._ccw = bool(kwargs.pop('ccw', True))
+        super().__init__('helix', size=self._size, axis=self._axis, up=self._up,
+                         radius=self.radius, length=self.length, coils=self._coils,
+                         thickness=self._thickness, ccw=self._ccw, **kwargs)
+
+    @staticmethod
+    def _checked_coils(value):
+        value = float(value)
+        if not math.isfinite(value) or abs(value) > 256:
+            raise ValueError('helix.coils는 브라우저 자원 보호를 위해 -256~256 범위여야 합니다')
+        return value
+
+    def _emit_shape(self):
+        _add_command({'action': 'update', 'id': self._id, 'size': self._size.to_list(),
+                      'axis': self._axis.to_list(), 'up': self._up.to_list(),
+                      'radius': self.radius, 'length': self.length, 'coils': self._coils,
+                      'thickness': self._thickness, 'ccw': self._ccw})
+
+    @property
+    def size(self):
+        return self._size
+
+    @size.setter
+    def size(self, value):
+        self._size = _coerce_vector(value, vector(1, 2, 2))
+        self._axis = (self._axis.hat if self._axis.mag else vector(1,0,0)) * self._size.x
+        self._emit_shape()
 
     @property
     def radius(self):
-        return self._radius
+        return self._size.y / 2
 
     @radius.setter
     def radius(self, value):
-        self._radius = value
-        _add_command({"action": "update", "id": self._id, "radius": value})
+        self.size = vector(self.length, 2*float(value), 2*float(value))
 
     @property
     def axis(self):
@@ -1158,36 +1215,65 @@ class helix(_GObject):
 
     @axis.setter
     def axis(self, value):
-        self._axis = value
-        self._length = self._axis.mag
-        _add_command({"action": "update", "id": self._id, "axis": value.to_list(), "length": float(self._length)})
+        self._axis = _coerce_vector(value, vector(1,0,0))
+        self._size = vector(self._axis.mag, self._size.y, self._size.z)
+        self._emit_shape()
+
+    @property
+    def up(self):
+        return self._up
+
+    @up.setter
+    def up(self, value):
+        self._up = _coerce_vector(value, vector(0,1,0))
+        self._emit_shape()
 
     @property
     def length(self):
-        """나선의 길이 — axis의 길이와 같다 (GlowScript 호환)"""
-        return self._length if self._length is not None else self._axis.mag
+        return self._size.x
 
     @length.setter
     def length(self, value):
-        direction = self._axis.hat if self._axis.mag > 0 else vector(1, 0, 0)
-        self.axis = direction * float(value)
+        self.size = vector(float(value), self._size.y, self._size.z)
+
+    @property
+    def thickness(self):
+        return self._thickness
+
+    @thickness.setter
+    def thickness(self, value):
+        self._thickness = float(value)
+        self._emit_shape()
+
+    @property
+    def coils(self):
+        return self._coils
+
+    @coils.setter
+    def coils(self, value):
+        self._coils = self._checked_coils(value)
+        self._emit_shape()
+
+    @property
+    def ccw(self):
+        return self._ccw
+
+    @ccw.setter
+    def ccw(self, value):
+        self._ccw = bool(value)
+        self._emit_shape()
 
     def _clone_kwargs(self):
-        return {
-            **super()._clone_kwargs(),
-            'radius': self._radius,
-            'axis': self._axis.clone(),
-            'length': self._length,
-            'coils': self._coils,
-            'thickness': self._thickness,
-        }
+        return {**super()._clone_kwargs(), 'size': self._size.clone(),
+                'axis': self._axis.clone(), 'up': self._up.clone(),
+                'coils': self._coils, 'thickness': self._thickness, 'ccw': self._ccw}
 
 
 # === 새 프리미티브: label (3D 텍스트 라벨) ===
 class label:
     """3D 위치에 텍스트 라벨을 표시 — 항상 카메라를 향함(Sprite)"""
     def __init__(self, **kwargs):
-        self._id = _new_id()
+        self._id = _new_id(kwargs.get('canvas'))
         _scene_objects.append(self)
         self._pos = kwargs.get('pos', vector(0, 0, 0))
         self._text = kwargs.get('text', '')
@@ -1542,7 +1628,7 @@ class _PointList(_VectorOwner):
     _type = 'curve'
 
     def __init__(self, *args, **kwargs):
-        self._id = _new_id()
+        self._id = _new_id(kwargs.get('canvas'))
         self._group = _group_ref(kwargs.pop('group', None))
         self._color = _coerce_vector(kwargs.get('color'), color.white)
         self._radius = float(kwargs.get('radius', 0))
@@ -1928,6 +2014,11 @@ class points(_PointList):
 # === compound (복합 객체) ===
 def _object_extent(obj):
     """객체의 대략적인 경계 상자 (lo, hi). compound의 중심·크기 어림용이며 회전은 무시한다."""
+    vertices = getattr(obj, '_vertices', None)
+    if vertices:
+        points = [v.pos for v in vertices]
+        return vector(*(min(getattr(p,k) for p in points) for k in ('x','y','z'))), \
+               vector(*(max(getattr(p,k) for p in points) for k in ('x','y','z')))
     pos = getattr(obj, 'pos', None)
     if not isinstance(pos, vector):
         return vector(0, 0, 0), vector(0, 0, 0)
@@ -1967,8 +2058,15 @@ class compound(_VectorOwner):
     (하위 객체를 나중에 따로 바꾸려면 group()을 사용한다.)"""
     _vector_attrs = ('pos', 'axis', 'up', 'color', 'trail_color', 'scale')
 
+    def __setattr__(self, name, value):
+        if not name.startswith('_') and getattr(self, '_consumed_by_compound', False):
+            raise AttributeError('이 compound는 다른 compound의 고정 부품입니다. 전체 객체를 바꾸거나 group을 사용하세요.')
+        super().__setattr__(name, value)
+
     def __init__(self, objects, **kwargs):
-        self._id = _new_id()
+        self._consumed_by_compound = False
+        self._appearance_explicit = {k for k in ('emissive','shininess') if k in kwargs}
+        self._id = _new_id(kwargs.get('canvas'))
         self._objects = list(objects)
         self._group = _group_ref(kwargs.pop('group', None))
         # 부품들의 경계 상자 → 중심과 원래 크기 (회전은 무시한 어림값)
@@ -1990,9 +2088,10 @@ class compound(_VectorOwner):
         axis_dir = axis_dir.hat if axis_dir.mag > 0 else vector(1, 0, 0)
         self._axis = axis_dir * self._size0.x
         self._up = _coerce_vector(kwargs.get('up'), vector(0, 1, 0))
-        self._color = kwargs.get('color', None)
+        self._color = _coerce_vector(kwargs.get('color'), color.white)
         self._visible = kwargs.get('visible', True)
-        self._opacity = kwargs.get('opacity', 1.0)
+        self._opacity = self._check_unit(kwargs.get('opacity', 1.0), 'opacity')
+        self._shininess = self._check_unit(kwargs.get('shininess', 0.6), 'shininess')
         self._emissive = kwargs.get('emissive', False)
         self._texture = kwargs.get('texture', None)
         self._make_trail = kwargs.pop('make_trail', False)
@@ -2003,6 +2102,7 @@ class compound(_VectorOwner):
         for obj in self._objects:
             sub_ids.append(obj._id)
             _untrack_scene_object(obj)
+            if isinstance(obj, compound): obj._consumed_by_compound = True
 
         cmd = {
             "action": "compound",
@@ -2015,11 +2115,12 @@ class compound(_VectorOwner):
             "color": self._color.to_list() if self._color else None,
             "visible": self._visible,
             "opacity": self._opacity,
-            "emissive": self._emissive,
             "texture": self._texture,
             "make_trail": self._make_trail,
             "trail_color": self._trail_color.to_list() if self._trail_color else None,
         }
+        for key in self._appearance_explicit:
+            cmd[key] = getattr(self, '_' + key)
         if self._group is not None:
             self._group._objects.append(self)
             cmd['group'] = self._group._id
@@ -2031,6 +2132,13 @@ class compound(_VectorOwner):
         for name in ('length', 'height', 'width'):
             if kwargs.get(name) is not None:
                 setattr(self, name, kwargs[name])
+
+    @staticmethod
+    def _check_unit(value, name):
+        value = float(value)
+        if not math.isfinite(value) or not 0 <= value <= 1:
+            raise ValueError(f'compound.{name} must be between 0 and 1')
+        return value
 
     def __getitem__(self, index):
         """compound[0] — 인덱스로 하위 객체 접근"""
@@ -2126,8 +2234,8 @@ class compound(_VectorOwner):
 
     @color.setter
     def color(self, value):
-        self._color = value
-        _add_command({"action": "update", "id": self._id, "color": value.to_list()})
+        self._color = _coerce_vector(value, color.white)
+        _add_command({"action": "update", "id": self._id, "color": self._color.to_list()})
 
     @property
     def visible(self):
@@ -2144,8 +2252,18 @@ class compound(_VectorOwner):
 
     @opacity.setter
     def opacity(self, value):
-        self._opacity = value
-        _add_command({"action": "update", "id": self._id, "opacity": value})
+        self._opacity = self._check_unit(value, "opacity")
+        _add_command({"action": "update", "id": self._id, "opacity": self._opacity})
+
+    @property
+    def shininess(self):
+        return self._shininess
+
+    @shininess.setter
+    def shininess(self, value):
+        self._appearance_explicit.add('shininess')
+        self._shininess = self._check_unit(value, 'shininess')
+        _add_command({'action': 'update', 'id': self._id, 'shininess': self._shininess})
 
     @property
     def emissive(self):
@@ -2153,6 +2271,7 @@ class compound(_VectorOwner):
 
     @emissive.setter
     def emissive(self, value):
+        self._appearance_explicit.add('emissive')
         self._emissive = bool(value)
         _add_command({"action": "update", "id": self._id, "emissive": self._emissive})
 
@@ -2222,11 +2341,12 @@ class compound(_VectorOwner):
             'color': self._color.clone() if isinstance(self._color, vector) else self._color,
             'visible': self._visible,
             'opacity': self._opacity,
-            'emissive': self._emissive,
             'texture': self._texture,
             'make_trail': self._make_trail,
             'trail_color': self._trail_color.clone() if isinstance(self._trail_color, vector) else self._trail_color,
         }
+        for key in self._appearance_explicit:
+            args[key] = getattr(self, '_' + key)
         args.update(kwargs)
         size = args.pop('size', None)
         copy = compound(parts, **args)
@@ -2250,7 +2370,7 @@ class group(_VectorOwner):
     _vector_attrs = ('pos', 'axis', 'up', 'color')
 
     def __init__(self, **kwargs):
-        self._id = _new_id()
+        self._id = _new_id(kwargs.get('canvas'))
         self._objects = []
         self._parent = _group_ref(kwargs.get('group'))
         self._pos = _coerce_vector(kwargs.get('pos'), vector(0, 0, 0))
@@ -2384,7 +2504,7 @@ class local_light(_VectorOwner):
     _vector_attrs = ('pos', 'color')
 
     def __init__(self, **kwargs):
-        self._id = _new_id()
+        self._id = _new_id(kwargs.get('canvas'))
         _user_lights.append(self)
         self._pos = kwargs.get('pos', vector(0, 0, 0))
         self._color = kwargs.get('color', color.white)
@@ -2432,7 +2552,7 @@ class distant_light(_VectorOwner):
     _vector_attrs = ('direction', 'color')
 
     def __init__(self, **kwargs):
-        self._id = _new_id()
+        self._id = _new_id(kwargs.get('canvas'))
         _user_lights.append(self)
         self._direction = kwargs.get('direction', vector(0, -1, 0))
         self._color = kwargs.get('color', color.white)
@@ -2476,86 +2596,107 @@ class distant_light(_VectorOwner):
 
 
 # === 저수준 메시: vertex / triangle / quad / extrusion ===
-class vertex:
-    """삼각형/사각형의 정점 — pos는 필수, 나머지는 선택"""
-    def __init__(self, pos=None, color=None, normal=None, opacity=1.0):
-        self.pos = pos if pos is not None else vector(0, 0, 0)
-        self.color = color if color is not None else vector(1, 1, 1)
-        self.normal = normal
+_dirty_mesh_faces = {}
+
+
+def _vertex_property(name, vector_value=False):
+    def get(self):
+        return getattr(self, '_' + name)
+
+    def set(self, value):
+        if vector_value:
+            if not isinstance(value, vector):
+                raise TypeError(name + ' must be a vector')
+            if name == 'texpos' and value.z != 0:
+                raise ValueError('texpos.z must be zero')
+        setattr(self, '_' + name, value)
+        for face in self._faces:
+            _dirty_mesh_faces[face._id] = face
+    return property(get, set)
+
+
+class vertex(_VectorOwner):
+    """공유 정점을 바꾸면 연결된 모든 면의 좌표·법선·UV를 갱신한다."""
+    _vector_attrs = ('pos', 'color', 'normal', 'texpos', 'bumpaxis')
+    pos = _vertex_property('pos', True)
+    color = _vertex_property('color', True)
+    normal = _vertex_property('normal', True)
+    texpos = _vertex_property('texpos', True)
+    bumpaxis = _vertex_property('bumpaxis', True)
+    opacity = _vertex_property('opacity')
+    shininess = _vertex_property('shininess')
+    emissive = _vertex_property('emissive')
+
+    def __init__(self, pos=None, color=None, normal=None, opacity=1.0,
+                 texpos=None, bumpaxis=None, shininess=0.6, emissive=False):
+        self._faces = set()
+        self.pos = pos if pos is not None else vector(0,0,0)
+        self.color = color if color is not None else vector(1,1,1)
+        self.normal = normal if normal is not None else vector(0,0,1)
+        self.texpos = texpos if texpos is not None else vector(0,0,0)
+        self.bumpaxis = bumpaxis if bumpaxis is not None else vector(1,0,0)
         self.opacity = float(opacity)
+        self.shininess = float(shininess)
+        self.emissive = bool(emissive)
 
     def to_dict(self):
-        d = {
-            "pos": self.pos.to_list(),
-            "color": self.color.to_list(),
-            "opacity": self.opacity,
-        }
-        if isinstance(self.normal, vector):
-            d["normal"] = self.normal.to_list()
-        return d
+        return {name: getattr(self, name).to_list() for name in self._vector_attrs} | {
+            'opacity': self.opacity, 'shininess': self.shininess, 'emissive': self.emissive}
 
 
-class triangle:
-    """3정점으로 이루어진 삼각형 면 — vertex 3개를 받음"""
+class _MeshFace:
+    _count = 3
+    _type = 'triangle'
+
+    def __init__(self, verts, vs, **kwargs):
+        self._id = _new_id(kwargs.get('canvas'))
+        verts = list(vs) if vs is not None else verts
+        if len(verts) != self._count or any(v is None for v in verts):
+            raise ValueError(f'{self._type} requires {self._count} vertices')
+        self._vertices = [v if isinstance(v, vertex) else vertex(pos=v) for v in verts]
+        for v in self._vertices:
+            v._faces.add(self)
+        self._visible = bool(kwargs.get('visible', True))
+        self._texture = kwargs.get('texture')
+        _scene_objects.append(self)
+        _add_command({'action': 'create', 'id': self._id, 'type': self._type,
+                      'vertices': [v.to_dict() for v in self._vertices],
+                      'texture': self._texture, 'visible': self._visible})
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = bool(value)
+        _add_command({'action': 'update', 'id': self._id, 'visible': self._visible})
+
+    @property
+    def texture(self):
+        return self._texture
+
+    @texture.setter
+    def texture(self, value):
+        self._texture = value
+        _add_command({'action': 'update', 'id': self._id, 'texture': value})
+
+    @property
+    def vs(self):
+        return list(self._vertices)
+
+
+class triangle(_MeshFace):
     def __init__(self, v0=None, v1=None, v2=None, vs=None, **kwargs):
-        self._id = _new_id()
-        # vs=[v0,v1,v2] 또는 v0=, v1=, v2= 두 형식 모두 지원
-        if vs is not None:
-            verts = list(vs)
-        else:
-            verts = [v0, v1, v2]
-        if len(verts) != 3 or any(v is None for v in verts):
-            raise ValueError("triangle은 정확히 3개의 vertex가 필요합니다")
-        self._vertices = [v if isinstance(v, vertex) else vertex(pos=v) for v in verts]
-        self._visible = kwargs.get('visible', True)
-
-        _add_command({
-            "action": "create",
-            "id": self._id,
-            "type": "triangle",
-            "vertices": [v.to_dict() for v in self._vertices],
-            "visible": self._visible,
-        })
-
-    @property
-    def visible(self):
-        return self._visible
-
-    @visible.setter
-    def visible(self, value):
-        self._visible = value
-        _add_command({"action": "update", "id": self._id, "visible": value})
+        super().__init__([v0, v1, v2], vs, **kwargs)
 
 
-class quad:
-    """4정점으로 이루어진 사각형 면 — 내부적으로 2개의 삼각형"""
+class quad(_MeshFace):
+    _count = 4
+    _type = 'quad'
+
     def __init__(self, v0=None, v1=None, v2=None, v3=None, vs=None, **kwargs):
-        self._id = _new_id()
-        if vs is not None:
-            verts = list(vs)
-        else:
-            verts = [v0, v1, v2, v3]
-        if len(verts) != 4 or any(v is None for v in verts):
-            raise ValueError("quad는 정확히 4개의 vertex가 필요합니다")
-        self._vertices = [v if isinstance(v, vertex) else vertex(pos=v) for v in verts]
-        self._visible = kwargs.get('visible', True)
-
-        _add_command({
-            "action": "create",
-            "id": self._id,
-            "type": "quad",
-            "vertices": [v.to_dict() for v in self._vertices],
-            "visible": self._visible,
-        })
-
-    @property
-    def visible(self):
-        return self._visible
-
-    @visible.setter
-    def visible(self, value):
-        self._visible = value
-        _add_command({"action": "update", "id": self._id, "visible": value})
+        super().__init__([v0, v1, v2, v3], vs, **kwargs)
 
 
 def _is_point2d(p):
@@ -2749,7 +2890,7 @@ _active_graphs = {}  # id → graph 인스턴스 (디버그용)
 class graph:
     """2D 플롯 캔버스 — gcurve/gdots/gvbars/ghbars의 컨테이너"""
     def __init__(self, **kwargs):
-        self._id = _new_id()
+        self._id = _new_id(kwargs.get('canvas'))
         self._title = kwargs.get('title', '')
         self._xtitle = kwargs.get('xtitle', '')
         self._ytitle = kwargs.get('ytitle', '')
@@ -2776,6 +2917,11 @@ class graph:
             "ymin": self._ymin, "ymax": self._ymax,
         })
 
+    @staticmethod
+    def get_selected():
+        """자동 선택되는 가장 최근의 활성 그래프. 삭제한 그래프는 돌려주지 않는다."""
+        return next(reversed(_active_graphs.values()), None)
+
     def _add_series(self, series):
         self._series.append(series)
 
@@ -2789,7 +2935,7 @@ class _GSeriesBase:
     _kind = 'curve'
 
     def __init__(self, **kwargs):
-        self._id = _new_id()
+        self._id = _new_id(kwargs.get('canvas'))
         # graph 인스턴스 — 미지정 시 기본 graph 1개를 자동 생성
         g = kwargs.get('graph', None)
         if g is None:
@@ -2801,9 +2947,10 @@ class _GSeriesBase:
         self._graph = g
         self._color = kwargs.get('color', vector(0.2, 0.5, 0.9))
         self._width = float(kwargs.get('width', 1.5))
-        self._size = float(kwargs.get('size', 4))   # gdots
+        self._size = float(kwargs.get('size', 2 * kwargs.get('radius', 2)))   # gdots: size는 지름, radius는 반지름
         self._label = kwargs.get('label', '')
         self._visible = kwargs.get('visible', True)
+        self._data = []
         g._add_series(self)
 
         _add_command({
@@ -2818,34 +2965,107 @@ class _GSeriesBase:
             "visible": self._visible,
         })
 
-    def plot(self, *args):
-        """plot(x, y) 또는 plot([(x,y), ...]) 또는 plot([x1,x2,...], [y1,y2,...])"""
-        # 다양한 입력 형식 정규화
-        pts = []
-        if len(args) == 2 and not hasattr(args[0], '__iter__'):
-            pts = [(float(args[0]), float(args[1]))]
-        elif len(args) == 2 and hasattr(args[0], '__iter__') and hasattr(args[1], '__iter__'):
-            pts = list(zip([float(x) for x in args[0]], [float(y) for y in args[1]]))
-        elif len(args) == 1 and hasattr(args[0], '__iter__'):
-            for item in args[0]:
-                if hasattr(item, '__iter__') and not isinstance(item, str):
-                    a = list(item)
-                    pts.append((float(a[0]), float(a[1])))
-                else:
-                    raise ValueError("plot 인자가 (x,y) 페어가 아닙니다")
+        if kwargs.get('data') is not None:
+            self.data = kwargs['data']
+
+    @staticmethod
+    def _pairs(value):
+        values = list(value)
+        if len(values) == 2 and all(not hasattr(v, '__iter__') for v in values):
+            return [(float(values[0]), float(values[1]))]
+        points = []
+        for item in values:
+            pair = list(item)
+            if len(pair) != 2:
+                raise ValueError('그래프의 각 점은 (x, y) 두 값이어야 합니다')
+            points.append((float(pair[0]), float(pair[1])))
+        return points
+
+    def plot(self, *args, pos=None, data=None):
+        """점 한 쌍, 점 목록, pos=/data=, x/y 목록과 여러 x,y 인자를 받는다."""
+        if (pos is not None) + (data is not None) + bool(args) > 1:
+            raise TypeError('plot에는 위치 인자, pos=, data= 중 한 형식만 사용하세요')
+        if pos is not None or data is not None:
+            pts = self._pairs(pos if pos is not None else data)
+        elif len(args) == 1:
+            pts = self._pairs(args[0])
+        elif len(args) == 2 and all(hasattr(a, '__iter__') for a in args):
+            # VPyLab의 기존 plot(x목록, y목록) 형식도 보존한다.
+            xs, ys = list(args[0]), list(args[1])
+            if len(xs) != len(ys):
+                raise ValueError('x 목록과 y 목록의 길이가 같아야 합니다')
+            pts = [(float(x), float(y)) for x, y in zip(xs, ys)]
+        elif len(args) >= 2 and len(args) % 2 == 0:
+            pts = [(float(args[i]), float(args[i + 1])) for i in range(0, len(args), 2)]
         else:
-            raise ValueError("plot(x, y) 또는 plot([(x,y), ...]) 형식이어야 합니다")
-        _add_command({
-            "action": "graph_series_plot",
-            "id": self._id,
-            "points": pts,
-        })
+            raise ValueError('plot(x, y), plot(pos=(x,y)), plot(data=[(x,y), ...]) 형식이어야 합니다')
+        self._data.extend(pts)
+        _add_command({"action": "graph_series_plot", "id": self._id, "points": pts})
+
+    @property
+    def data(self):
+        return [list(point) for point in self._data]
+
+    @data.setter
+    def data(self, value):
+        pts = self._pairs(value)
+        self._data = pts
+        _add_command({"action": "graph_series_clear", "id": self._id})
+        _add_command({"action": "graph_series_plot", "id": self._id, "points": pts})
+
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, value):
+        self._color = value
+        _add_command({"action": "graph_series_update", "id": self._id, "color": value.to_list()})
+
+    @property
+    def width(self):
+        return self._width
+
+    @width.setter
+    def width(self, value):
+        self._width = float(value)
+        _add_command({"action": "graph_series_update", "id": self._id, "width": self._width})
+
+    @property
+    def size(self):
+        return self._size
+
+    @size.setter
+    def size(self, value):
+        value = float(value)
+        if value < 0 or not math.isfinite(value):
+            raise ValueError('점의 지름은 0 이상의 유한한 값이어야 합니다')
+        self._size = value
+        _add_command({"action": "graph_series_update", "id": self._id, "size": value})
+
+    @property
+    def radius(self):
+        return self._size / 2
+
+    @radius.setter
+    def radius(self, value):
+        self.size = 2 * float(value)
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = bool(value)
+        _add_command({"action": "graph_series_update", "id": self._id, "visible": self._visible})
 
     def delete(self):
         _add_command({"action": "graph_series_delete", "id": self._id})
 
     def clear(self):
         """시리즈의 점만 비우고 같은 그래프/색/핸들러는 유지"""
+        self._data.clear()
         _add_command({"action": "graph_series_clear", "id": self._id})
 
 
@@ -2872,15 +3092,20 @@ class ghbars(_GSeriesBase):
 # === 이벤트 시스템 (scene.bind, scene.mouse) ===
 class _MouseState:
     """scene.mouse — 마우스 상태 폴링 객체. 최신 위치는 메인 스레드가 갱신."""
-    def __init__(self):
+    def __init__(self, canvas_obj=None):
+        self._canvas = canvas_obj
         self._pos = vector(0, 0, 0)   # 월드 좌표 (3D 평면 z=0 가정)
         self._pick = None              # 현재 마우스 아래 객체 id
+
+    def __call__(self):
+        """문서의 scene.mouse()와 scene.mouse 속성 표기를 함께 지원한다."""
+        return self
 
     @property
     def pos(self):
         # JS의 _getMousePos를 통해 최신 좌표 갱신
         try:
-            p = js._getMousePos()
+            p = js._getMousePos(self._canvas._id if self._canvas else 'scene')
             if p is not None:
                 self._pos = vector(p[0], p[1], p[2])
         except Exception:
@@ -2890,21 +3115,21 @@ class _MouseState:
     @property
     def pick(self):
         try:
-            return js._getMousePick()
+            return js._getMousePick(self._canvas._id if self._canvas else 'scene')
         except Exception:
             return None
 
     @property
     def camera(self):
-        """카메라 위치 (scene.camera.pos와 같다)"""
-        return scene.camera.pos
+        """카메라 위치 ((self._canvas or scene).camera.pos와 같다)"""
+        return (self._canvas or scene).camera.pos
 
     @property
     def ray(self):
         """카메라에서 마우스가 가리키는 점을 향하는 단위 벡터"""
-        direction = self.pos - scene.camera.pos
+        direction = self.pos - (self._canvas or scene).camera.pos
         if direction.mag == 0:
-            return scene.forward
+            return (self._canvas or scene).forward
         return direction.hat
 
     def project(self, normal=None, point=None, d=None):
@@ -2917,7 +3142,7 @@ class _MouseState:
             point = normal.hat * float(d or 0)
         else:
             point = _coerce_vector(point, vector(0, 0, 0))
-        cam = scene.camera.pos
+        cam = (self._canvas or scene).camera.pos
         ray = self.ray
         denom = normal.dot(ray)
         if abs(denom) < 1e-12:
@@ -2936,13 +3161,28 @@ class _MouseState:
 _mouse_singleton = _MouseState()
 
 
+def _vpython_key(key):
+    """브라우저 키 이름을 VPython 키 이름으로 변환한다."""
+    special = {
+        'ArrowLeft': 'left', 'ArrowRight': 'right', 'ArrowUp': 'up', 'ArrowDown': 'down',
+        'Enter': '\n', 'Backspace': 'backspace', 'Delete': 'delete', 'Escape': 'esc',
+        'Shift': 'shift', 'Control': 'ctrl', 'Alt': 'alt', 'Tab': 'tab',
+        'CapsLock': 'caps lock', 'PageUp': 'pageup', 'PageDown': 'pagedown',
+        'Home': 'home', 'End': 'end', 'Insert': 'insert', 'Pause': 'break',
+    }
+    if isinstance(key, str) and re.fullmatch(r'F\d{1,2}', key):
+        return key.lower()
+    return special.get(key, key)
+
+
 class _EventInfo:
     """on_click/on_mousedown 등에 전달되는 이벤트 객체"""
     def __init__(self, name, pos=None, pick=None, key=None):
         self.event = name
         self.pos = pos if pos is not None else vector(0, 0, 0)
         self.pick = pick
-        self.key = key
+        self.raw_key = key
+        self.key = _vpython_key(key)
 
 
 # bind된 핸들러 저장: { event_name: [handler, ...] }
@@ -2963,7 +3203,8 @@ def _process_pending_events():
             except Exception:
                 continue
             name = evt.get('name')
-            handlers = _event_handlers.get(name, [])
+            widget_id = evt.get('widget')
+            handlers = _event_handlers.get(_scene_event_key(evt.get('canvas_id', 'scene'), name), [])
             if not handlers:
                 # widget 이벤트는 widget id로도 디스패치
                 w_id = evt.get('widget')
@@ -2978,18 +3219,37 @@ def _process_pending_events():
                 pick=evt.get('pick'),
                 key=evt.get('key'),
             )
-            # widget 이벤트면 value 필드 추가
-            if 'value' in evt:
+            info.canvas = _canvases.get(evt.get('canvas_id', 'scene'), scene)
+            # VPython 위젯 콜백에는 해당 위젯을 전달한다(.selected/.index/.checked 포함).
+            widget = _widget_instances.get(widget_id)
+            if widget is not None:
+                if 'value' in evt:
+                    _widget_values[widget_id] = evt['value']
+                info = widget
+            elif 'value' in evt:
                 info.value = evt['value']
             for h in handlers:
                 try:
-                    result = h(info)
+                    import inspect as _inspect
+                    try:
+                        signature = _inspect.signature(h)
+                    except (TypeError, ValueError):
+                        result = h(info)
+                    else:
+                        try:
+                            signature.bind(info)
+                        except TypeError:
+                            # 인자 없는 callback도 지원한다. 함수 내부 TypeError로 재호출하지 않는다.
+                            signature.bind()
+                            result = h()
+                        else:
+                            result = h(info)
                     # 핸들러 안에서 rate()·sleep()을 쓰면 변환기가 async def로 바꾼다.
                     # 그 코루틴은 별도 태스크로 돌려 메인 루프와 나란히 진행한다(GlowScript와 같다).
                     if asyncio.iscoroutine(result):
                         _spawn_task(result, 'event handler')
                 except Exception as e:
-                    print(f"[event handler error] {e}")
+                    _task_errors.append(e)
     except Exception:
         # _popEvent 미정의 등 — 조용히 무시
         return
@@ -2997,14 +3257,18 @@ def _process_pending_events():
 
 def keysdown():
     """현재 눌려있는 모든 키의 리스트를 반환 (VPython 호환).
-    예: 'ArrowUp' in keysdown() — 위 화살표가 현재 눌려있으면 True
+    예: 'up' in keysdown() — 위 화살표가 현재 눌려있으면 True
     여러 키를 동시에 처리하는 게임 루프에 유용."""
     try:
         import json as _json
         raw = js._getPressedKeys()
-        return _json.loads(str(raw))
+        return [_vpython_key(key) for key in _json.loads(str(raw))]
     except Exception:
         return []
+
+
+def _scene_event_key(canvas_id, event_name):
+    return event_name if canvas_id == 'scene' else canvas_id + ':' + event_name
 
 
 def _bind(event_name, handler):
@@ -3025,13 +3289,22 @@ def _unbind(event_name, handler=None):
 # 모두 DOM 요소로 메인 스레드에서 렌더링되며, 이벤트는 _event_handlers로 디스패치.
 
 _widget_values = {}  # widget id → 최신 value (JS와 동기화)
+_widget_instances = {}  # widget id → 콜백에 전달할 실제 위젯
+
+
+def _anchor_canvas(pos):
+    if isinstance(pos, (list, tuple)) and len(pos) == 2 and isinstance(pos[0], int):
+        key = 'scene' if pos[0] == 0 else f'canvas_{pos[0]}'
+        return _canvases.get(key)
+    return None
 
 
 class _Widget:
     _kind = 'widget'
 
     def __init__(self, **kwargs):
-        self._id = _new_id()
+        self._id = _new_id(kwargs.get('canvas') or _anchor_canvas(kwargs.get('pos')))
+        _widget_instances[self._id] = self
         self._bind = kwargs.pop('bind', None)
         self._visible = kwargs.pop('visible', True)
         self._disabled = kwargs.pop('disabled', False)
@@ -3214,10 +3487,10 @@ class winput(_Widget):
 
 
 # === scene 객체 (카메라/배경 제어) ===
-def _camera_state():
+def _camera_state(canvas_id='scene'):
     """메인 스레드가 약 10Hz로 보내는 카메라 상태 (pos, center, forward, up, range, fov, width, height)."""
     try:
-        raw = js._getCameraState()
+        raw = js._getCameraState(canvas_id)
         if raw is None:
             return None
         return json.loads(str(raw))
@@ -3248,11 +3521,14 @@ class _Camera:
 
     @pos.setter
     def pos(self, value):
-        value = _coerce_vector(value, vector(0, 0, 0))
-        self._pos = value
+        value = _coerce_vector(value, vector(0,0,0))
+        axis = self.axis
+        self._pos = value.clone()
+        self._axis = axis.clone()
+        self._scene._center = value + axis
         self._scene._autoscale = False
         self._scene._mark_set()
-        _add_command({"action": "scene", "property": "camera_pos", "value": value.to_list()})
+        self._scene._add_command({'action':'scene','property':'camera_pos','value':value.to_list()})
 
     @property
     def axis(self):
@@ -3265,35 +3541,44 @@ class _Camera:
 
     @axis.setter
     def axis(self, value):
-        value = _coerce_vector(value, vector(0, 0, -1))
-        if mag(value) == 0:
+        value = _coerce_vector(value, vector(0,0,-1))
+        if value.mag == 0:
             raise ValueError('scene.camera.axis는 길이가 0이 아닌 벡터여야 합니다')
-        self._axis = value
+        pos = self.pos
+        self._pos = pos.clone()
+        self._axis = value.clone()
+        self._scene._center = pos + value
         self._scene._autoscale = False
-        self._scene._forward = norm(value)
-        self._scene._range = mag(value) * math.tan(self._scene._fov / 2)
+        self._scene._forward = value.hat
+        self._scene._range = value.mag * math.tan(self._scene._fov/2) * min(1, self._scene._aspect())
         self._scene._mark_set()
-        _add_command({"action": "scene", "property": "camera_axis", "value": value.to_list()})
+        self._scene._add_command({'action':'scene','property':'camera_axis','value':value.to_list()})
 
     def rotate(self, angle=0, axis=None, origin=None):
-        """카메라를 origin(기본 scene.center)을 중심으로 axis 둘레로 angle만큼 회전한다. 보는 점은 그대로다."""
-        if axis is None:
-            axis = self._scene.up
-        axis = _coerce_vector(axis, vector(0, 1, 0))
-        center = self._scene.center
-        origin = _coerce_vector(origin, center)
-        new_pos = origin + (self.pos - origin).rotate(angle, axis=axis)
+        """카메라 위치·시선·up을 회전한다. 기본 origin은 camera.pos, axis는 scene.forward다."""
+        axis = _coerce_vector(axis, self._scene.forward)
+        old_pos, old_axis = self.pos, self.axis
+        origin = _coerce_vector(origin, old_pos)
+        new_pos = origin + (old_pos - origin).rotate(angle, axis=axis)
+        new_axis = old_axis.rotate(angle, axis=axis)
         new_up = self._scene.up.rotate(angle, axis=axis)
-        # pos를 지정하면 중심도 같이 움직이므로, axis로 중심을 원래 자리에 되돌린다
         self.pos = new_pos
-        self.axis = center - new_pos
+        self.axis = new_axis
         self._scene.up = new_up
 
     def follow(self, obj=None):
         """객체를 계속 화면 중심에 둔다. None이면 추적을 멈춘다."""
+        old_pos, old_axis = self.pos, self.axis
         self.follower = obj
+        if obj is not None:
+            self._scene._center = obj.pos.clone()
+            self._pos = self._scene._center - old_axis
+            self._axis = old_axis
+        else:
+            self._pos, self._axis = old_pos, old_axis
+        self._scene._mark_set()
         obj_id = getattr(obj, '_id', None) if obj is not None else None
-        _add_command({"action": "scene", "property": "camera_follow", "value": obj_id})
+        self._scene._add_command({"action": "scene", "property": "camera_follow", "value": obj_id})
 
 
 class _Scene(_VectorOwner):
@@ -3313,7 +3598,9 @@ class _Scene(_VectorOwner):
     """
     _vector_attrs = ('background', 'center', 'forward', 'up', 'ambient')
 
-    def __init__(self):
+    def __init__(self, canvas_id='scene'):
+        self._id = canvas_id
+        self._mouse = _MouseState(self)
         self._background = vector(0.97, 0.98, 0.98)
         self._range = None
         self._center = vector(0, 0, 0)
@@ -3322,10 +3609,11 @@ class _Scene(_VectorOwner):
         self._caption = ''
         self._forward = vector(0, 0, -1)
         self._up = vector(0, 1, 0)
-        self._fov = math.pi / 4   # 뷰포트 기본 45도 (GlowScript 기본은 60도)
+        self._fov = math.pi / 3   # VPython 기본 시야각 60도
         self._ambient = vector(0.6, 0.6, 0.6)
         self._lights = None
         self._camera = _Camera(self)
+        self._view_revision = 0
         self._set_seq = None   # 마지막으로 카메라 값을 지정했을 때의 상태 번호
         self._width = None     # scene.width = 800 처럼 지정한 값 (화면 크기는 바뀌지 않고 값만 기억한다)
         self._height = None
@@ -3333,28 +3621,59 @@ class _Scene(_VectorOwner):
         self._resizable = True
         self._visible = True
 
+    def _add_command(self, cmd):
+        if self._id != 'scene':
+            cmd['canvas_id'] = self._id
+        if cmd.get('action') == 'scene' and cmd.get('property') in ('range','center','forward','up','fov','autoscale','camera_pos','camera_axis','camera_follow'):
+            cmd['camera_revision'] = self._view_revision
+        _add_command(cmd)
+
     def _mark_set(self):
         """카메라 값을 지정한 직후에는 메인 스레드 상태가 아직 옛 값이므로 로컬 값을 쓰게 한다."""
-        state = _camera_state()
+        self._view_revision += 1
+        state = _camera_state(self._id)
         self._set_seq = state.get('seq', 0) if state else -1
 
     def _fresh_state(self):
-        """지정 이후에 새로 도착한 카메라 상태만 돌려준다. 없으면 None."""
-        state = _camera_state()
+        """지정한 카메라 명령을 실제 적용했다는 revision이 있는 스냅샷만 채택한다."""
+        state = _camera_state(self._id)
         if not state:
             return None
-        if self._set_seq is not None and state.get('seq', 0) <= self._set_seq:
+        if 'revision' in state:
+            if state['revision'] < self._view_revision:
+                return None
+        elif self._set_seq is not None and state.get('seq', 0) <= self._set_seq:
             return None
+        for name in ('center','forward','up'):
+            if state.get(name) is not None:
+                setattr(self, '_' + name, vector(*state[name]))
+        if state.get('range'):
+            self._range = float(state['range'])
+        if state.get('fov'):
+            self._fov = float(state['fov'])
+        if 'autoscale' in state:
+            self._autoscale = bool(state['autoscale'])
+        if state.get('pos') is not None:
+            self._camera._pos = vector(*state['pos'])
+            self._camera._axis = self._center - self._camera._pos
         return state
+
+    def _aspect(self):
+        state = _camera_state(self._id) or {}
+        if state.get('aspect') and float(state['aspect']) > 0:
+            return float(state['aspect'])
+        width = self._width or state.get('width') or 640
+        height = self._height or state.get('height') or 400
+        return float(width) / max(1, float(height))
 
     def _reset(self):
         """새 실행 전에 카메라·조명 설정을 기본값으로 되돌린다."""
-        self.__init__()
+        self.__init__(self._id)
 
     def _distance(self):
         """중심에서 카메라까지 거리 — range / tan(fov/2)"""
         r = self._range if self._range else 10.0
-        return r / math.tan(self._fov / 2)
+        return r / (math.tan(self._fov / 2) * min(1, self._aspect()))
 
     @property
     def background(self):
@@ -3363,7 +3682,7 @@ class _Scene(_VectorOwner):
     @background.setter
     def background(self, value):
         self._background = value
-        _add_command({"action": "scene", "property": "background", "value": value.to_list()})
+        self._add_command({"action": "scene", "property": "background", "value": value.to_list()})
 
     @property
     def range(self):
@@ -3375,35 +3694,41 @@ class _Scene(_VectorOwner):
     @range.setter
     def range(self, value):
         value = float(value)
-        if value <= 0:
-            raise ValueError('scene.range는 0보다 커야 합니다')
+        if not math.isfinite(value) or value <= 0:
+            raise ValueError('scene.range는 0보다 큰 유한수여야 합니다')
+        self._fresh_state()
         self._range = value
+        self._camera._pos = self._center - self._forward * self._distance()
+        self._camera._axis = self._center - self._camera._pos
         self._autoscale = False   # GlowScript처럼 range를 지정하면 자동 맞춤을 끈다
         self._mark_set()
-        _add_command({"action": "scene", "property": "range", "value": self._range})
+        self._add_command({"action": "scene", "property": "range", "value": self._range})
 
     @property
     def forward(self):
         state = self._fresh_state()
         if state and state.get('forward'):
             self._forward = vector(*state['forward'])
-        return self._forward.clone()
+        return self._forward
 
     @forward.setter
     def forward(self, value):
         value = _coerce_vector(value, vector(0, 0, -1))
         if mag(value) == 0:
             raise ValueError('scene.forward는 길이가 0이 아닌 벡터여야 합니다')
+        distance = self._camera.axis.mag
         self._forward = norm(value)
+        self._camera._pos = self._center - self._forward * distance
+        self._camera._axis = self._forward * distance
         self._mark_set()
-        _add_command({"action": "scene", "property": "forward", "value": self._forward.to_list()})
+        self._add_command({"action": "scene", "property": "forward", "value": self._forward.to_list()})
 
     @property
     def up(self):
         state = self._fresh_state()
         if state and state.get('up'):
             self._up = vector(*state['up'])
-        return self._up.clone()
+        return self._up
 
     @up.setter
     def up(self, value):
@@ -3412,7 +3737,7 @@ class _Scene(_VectorOwner):
             raise ValueError('scene.up은 길이가 0이 아닌 벡터여야 합니다')
         self._up = norm(value)
         self._mark_set()
-        _add_command({"action": "scene", "property": "up", "value": self._up.to_list()})
+        self._add_command({"action": "scene", "property": "up", "value": self._up.to_list()})
 
     @property
     def fov(self):
@@ -3426,9 +3751,12 @@ class _Scene(_VectorOwner):
         value = float(value)
         if not 0 < value < math.pi:
             raise ValueError('scene.fov는 라디안 단위로 0과 pi 사이여야 합니다 (예: pi/3)')
+        self._fresh_state()
         self._fov = value
+        self._camera._pos = self._center - self._forward * self._distance()
+        self._camera._axis = self._center - self._camera._pos
         self._mark_set()
-        _add_command({"action": "scene", "property": "fov", "value": self._fov})
+        self._add_command({"action": "scene", "property": "fov", "value": self._fov})
 
     @property
     def camera(self):
@@ -3438,24 +3766,26 @@ class _Scene(_VectorOwner):
     def width(self):
         if self._width is not None:
             return self._width
-        state = _camera_state()
+        state = _camera_state(self._id)
         return int(state['width']) if state and state.get('width') else 640
 
     @width.setter
     def width(self, value):
         """GlowScript 코드가 멈추지 않도록 값을 기억한다. 3D 화면 크기는 레이아웃이 정하므로 바뀌지 않는다."""
         self._width = int(value)
+        self._add_command({'action': 'canvas_resize', 'width': self._width})
 
     @property
     def height(self):
         if self._height is not None:
             return self._height
-        state = _camera_state()
+        state = _camera_state(self._id)
         return int(state['height']) if state and state.get('height') else 400
 
     @height.setter
     def height(self, value):
         self._height = int(value)
+        self._add_command({'action': 'canvas_resize', 'height': self._height})
 
     @property
     def align(self):
@@ -3476,12 +3806,12 @@ class _Scene(_VectorOwner):
     @property
     def caption_anchor(self):
         """wtext(pos=scene.caption_anchor) 위치 표시 — vpython-jupyter처럼 [캔버스 번호, 2]. 위젯은 전용 패널에 놓이므로 위젯에서는 무시된다."""
-        return list(_CAPTION_ANCHOR)
+        return [0 if self._id == 'scene' else int(self._id.split('_')[-1]), 2]
 
     @property
     def title_anchor(self):
         """wtext(pos=scene.title_anchor)면 글자가 제목 영역에 놓인다 — [캔버스 번호, 1]"""
-        return list(_TITLE_ANCHOR)
+        return [0 if self._id == 'scene' else int(self._id.split('_')[-1]), 1]
 
     # vpython-jupyter canvas의 userzoom·userspin·userpan — 값만 기억한다 (VPyLab의 카메라 조작은 뷰포트 설정이 정한다)
     @property
@@ -3491,6 +3821,7 @@ class _Scene(_VectorOwner):
     @userzoom.setter
     def userzoom(self, value):
         object.__setattr__(self, '_userzoom', bool(value))
+        self._add_command({'action': 'scene', 'property': 'userzoom', 'value': bool(value)})
 
     @property
     def userspin(self):
@@ -3499,6 +3830,7 @@ class _Scene(_VectorOwner):
     @userspin.setter
     def userspin(self, value):
         object.__setattr__(self, '_userspin', bool(value))
+        self._add_command({'action': 'scene', 'property': 'userspin', 'value': bool(value)})
 
     @property
     def userpan(self):
@@ -3507,11 +3839,12 @@ class _Scene(_VectorOwner):
     @userpan.setter
     def userpan(self, value):
         object.__setattr__(self, '_userpan', bool(value))
+        self._add_command({'action': 'scene', 'property': 'userpan', 'value': bool(value)})
 
     @property
     def objects(self):
         """현재 보이는 3D 객체 목록. for o in scene.objects: o.visible = False 로 모두 숨길 수 있다."""
-        return [o for o in _scene_objects if getattr(o, '_visible', True)]
+        return [o for o in _scene_objects if getattr(o, '_visible', True) and _object_canvases.get(o._id, scene) is self]
 
     @property
     def visible(self):
@@ -3521,35 +3854,37 @@ class _Scene(_VectorOwner):
     def visible(self, value):
         """scene.visible = False 면 3D 화면 전체를 숨긴다 (객체는 남아 있다)."""
         self._visible = bool(value)
-        _add_command({"action": "scene", "property": "visible", "value": self._visible})
+        self._add_command({"action": "scene", "property": "visible", "value": self._visible})
 
     def delete(self):
         """3D 화면의 객체를 모두 지운다 (GlowScript의 canvas.delete()). 사용자가 만든 조명(local_light·distant_light·
-        attach_light)과 부착물(attach_arrow·attach_trail)도 함께 지워지고, 위젯·그래프·캡션은 남는다."""
-        for obj in list(_scene_objects):
+        attach_light)과 부착물(attach_arrow·attach_trail), 해당 화면의 위젯·그래프·캡션도 정리한다."""
+        for obj in list(self.objects):
             try:
                 obj._visible = False
             except Exception:
                 pass
-        _scene_objects.clear()
+        _scene_objects[:] = [o for o in _scene_objects if _object_canvases.get(o._id, scene) is not self]
         # 지워진 객체를 rate()마다 갱신하려는 부착물도 함께 정리한다
-        _user_lights.clear()
-        _attached_arrows.clear()
-        for item in list(_attached_followers):
+        _user_lights[:] = [o for o in _user_lights if _object_canvases.get(o._id, scene) is not self]
+        _attached_arrows[:] = [a for a in _attached_arrows if _object_canvases.get(a.obj._id, scene) is not self]
+        for item in [f for f in _attached_followers if _object_canvases.get(getattr(getattr(f, 'obj', None), '_id', None), scene) is self]:
             if hasattr(item, 'stop'):
                 item.stop()
-        _attached_followers.clear()
+        _attached_followers[:] = [f for f in _attached_followers if _object_canvases.get(getattr(getattr(f, 'obj', None), '_id', None), scene) is not self]
         self._lights = None
-        _add_command({"action": "scene", "property": "delete", "value": True})
+        self._add_command({"action": "scene", "property": "delete", "value": True})
 
     def select(self):
-        """GlowScript의 canvas.select() — 캔버스가 하나뿐이므로 할 일이 없다."""
+        """다음 객체가 만들어질 활성 캔버스를 선택한다."""
+        global _selected_canvas
+        _selected_canvas = self
         return self
 
     @property
     def pixel_to_world(self):
         """화면 픽셀 하나가 중심 거리에서 차지하는 월드 길이"""
-        return 2 * self.range / max(1, self.height)
+        return 2 * self.range / max(1, min(self.width, self.height))
 
     @property
     def ambient(self):
@@ -3559,36 +3894,44 @@ class _Scene(_VectorOwner):
     def ambient(self, value):
         value = _coerce_vector(value, vector(0.6, 0.6, 0.6))
         self._ambient = value
-        _add_command({"action": "scene", "property": "ambient", "value": value.to_list()})
+        self._add_command({"action": "scene", "property": "ambient", "value": value.to_list()})
 
     @property
     def lights(self):
-        return list(self._lights) if self._lights is not None else list(_user_lights)
+        return list(self._lights) if self._lights is not None else [o for o in _user_lights if _object_canvases.get(o._id, scene) is self]
 
     @lights.setter
     def lights(self, value):
         lights = list(value) if value else []
         self._lights = lights
         ids = [light._id for light in lights if hasattr(light, '_id')]
-        _add_command({"action": "scene", "property": "lights", "value": ids})
+        self._add_command({"action": "scene", "property": "lights", "value": ids})
 
     @property
     def center(self):
+        self._fresh_state()
         return self._center
 
     @center.setter
     def center(self, value):
+        value = _coerce_vector(value, vector(0,0,0))
+        axis = self._camera.axis
         self._center = value
-        _add_command({"action": "scene", "property": "center", "value": value.to_list()})
+        self._camera._axis = axis
+        self._camera._pos = value - axis
+        self._mark_set()
+        self._add_command({"action": "scene", "property": "center", "value": value.to_list()})
 
     @property
     def autoscale(self):
+        self._fresh_state()
         return self._autoscale
 
     @autoscale.setter
     def autoscale(self, value):
         self._autoscale = bool(value)
-        _add_command({"action": "scene", "property": "autoscale", "value": self._autoscale})
+        self._mark_set()
+        self._add_command({"action": "scene", "property": "autoscale", "value": self._autoscale})
 
     @property
     def title(self):
@@ -3597,19 +3940,19 @@ class _Scene(_VectorOwner):
     @title.setter
     def title(self, value):
         self._title = str(value)
-        _add_command({"action": "scene", "property": "title", "value": self._title})
+        self._add_command({"action": "scene", "property": "title", "value": self._title})
 
     def append_to_title(self, *values):
         """3D 화면 위쪽 글자에 덧붙인다."""
         text = ''.join(str(v) for v in values)
         self._title += text
-        _add_command({"action": "scene", "property": "append_title", "value": text})
+        self._add_command({"action": "scene", "property": "append_title", "value": text})
 
     def append_to_caption(self, *values):
         """3D 화면 아래쪽 글자에 덧붙인다."""
         text = ''.join(str(v) for v in values)
         self._caption += text
-        _add_command({"action": "scene", "property": "append_caption", "value": text})
+        self._add_command({"action": "scene", "property": "append_caption", "value": text})
 
     @property
     def caption(self):
@@ -3618,11 +3961,11 @@ class _Scene(_VectorOwner):
     @caption.setter
     def caption(self, value):
         self._caption = str(value)
-        _add_command({"action": "scene", "property": "caption", "value": self._caption})
+        self._add_command({"action": "scene", "property": "caption", "value": self._caption})
 
     @property
     def mouse(self):
-        return _mouse_singleton
+        return self._mouse
 
     def bind(self, event_names, handler=None):
         """이벤트 핸들러 등록.
@@ -3637,14 +3980,14 @@ class _Scene(_VectorOwner):
             return _decorator
         names = event_names.split() if isinstance(event_names, str) else list(event_names)
         for n in names:
-            _bind(n, handler)
+            _bind(_scene_event_key(self._id, n), handler)
         # 메인 스레드에 이 이벤트를 디스패치 시작하라고 알림
-        _add_command({"action": "scene_bind", "events": names})
+        self._add_command({"action": "scene_bind", "events": names})
 
     def unbind(self, event_names, handler=None):
         names = event_names.split() if isinstance(event_names, str) else list(event_names)
         for n in names:
-            _unbind(n, handler)
+            _unbind(_scene_event_key(self._id, n), handler)
 
     async def waitfor(self, event_names):
         """이벤트가 올 때까지 기다렸다가 이벤트 객체를 돌려준다 (GlowScript scene.waitfor).
@@ -3665,9 +4008,9 @@ class _Scene(_VectorOwner):
             received.append(ev)
 
         for n in names:
-            _bind(n, _catch)
+            _bind(_scene_event_key(self._id, n), _catch)
         # waiting 표시는 하네스가 대기 중인 이벤트를 알아보는 데 쓴다. 브릿지는 무시한다.
-        _add_command({"action": "scene_bind", "events": names, "waiting": True})
+        self._add_command({"action": "scene_bind", "events": names, "waiting": True})
         _send_commands()
         try:
             ticks = 0
@@ -3683,45 +4026,44 @@ class _Scene(_VectorOwner):
                 await asyncio.sleep(0.05)
         finally:
             for n in names:
-                _unbind(n, _catch)
-            freed = [n for n in names if not _event_handlers.get(n)]
+                _unbind(_scene_event_key(self._id, n), _catch)
+            freed = [n for n in names if not _event_handlers.get(_scene_event_key(self._id, n))]
             if freed:
-                _add_command({"action": "scene_unbind", "events": freed})
+                self._add_command({"action": "scene_unbind", "events": freed})
         return received[0]
 
     async def pause(self, text=''):
         """화면을 클릭할 때까지 멈춘다 (GlowScript scene.pause). 안내 문구를 줄 수 있다."""
         notice_id = _new_id()
-        _add_command({"action": "pause_notice", "id": notice_id,
+        self._add_command({"action": "pause_notice", "id": notice_id,
                       "text": str(text) if text else "▶ 화면을 클릭하면 계속합니다"})
         try:
             return await self.waitfor('click')
         finally:
-            _add_command({"action": "widget_delete", "id": notice_id})
+            self._add_command({"action": "widget_delete", "id": notice_id})
             _send_commands()
 
 
 scene = _Scene()
-
-
-# === canvas() — GlowScript의 캔버스 생성 ===
+_canvases = {'scene': scene}
+_selected_canvas = scene
 _canvas_calls = 0
 
 
 def canvas(**kwargs):
-    """GlowScript의 canvas(width=, height=, background=, title=, center=, range=, forward=, ...).
-    VPyLab은 3D 화면이 하나라서 인자를 scene에 적용하고 scene을 돌려준다.
-    두 번째 호출부터는 같은 scene을 돌려주고 안내를 한 번 출력한다."""
-    global _canvas_calls
+    """독립된 객체·카메라·입력·오버레이를 가진 VPython 캔버스."""
+    global _canvas_calls, _selected_canvas
     _canvas_calls += 1
-    if _canvas_calls > 1:
-        _notice_once('canvas-single', "[canvas] VPyLab은 캔버스를 하나만 지원합니다. 새 canvas()는 기존 scene을 그대로 돌려줍니다.")
+    result = _Scene(f'canvas_{_canvas_calls}')
+    _canvases[result._id] = result
+    _selected_canvas = result
+    _add_command({'action': 'canvas_create', 'canvas_id': result._id})
     for key, value in kwargs.items():
-        setattr(scene, key, value)
-    return scene
+        setattr(result, key, value)
+    return result
 
 
-canvas.get_selected = lambda: scene
+canvas.get_selected = lambda: _selected_canvas
 
 
 # === attach_arrow — 객체의 벡터 속성을 따라다니는 화살표 ===
@@ -3944,7 +4286,7 @@ class wtext:
     w.text = f'{s.value:.1f}'
     pos=scene.title_anchor면 제목 영역에 표시한다. (인자 이름은 vpython-jupyter의 wtext와 같다)"""
     def __init__(self, text='', pos=None, **kwargs):
-        self._id = _new_id()
+        self._id = _new_id(kwargs.get('canvas') or _anchor_canvas(pos))
         self._text = str(text)
         if pos == print_anchor:
             raise AttributeError('wtext: Cannot specify "print_anchor" in VPython 7.')
@@ -5101,7 +5443,7 @@ class _StopExecution(BaseException):
 
 def _heartbeat():
     """커맨드를 보내거나, 보낼 것이 없으면 빈 배치를 보낸다 (메인 스레드의 10초 무응답 타이머 초기화)."""
-    if _command_buffer:
+    if _command_buffer or _dirty_mesh_faces:
         _send_commands()
     else:
         js.postMessage(json.dumps({"type": "batch", "runId": _current_run_id(), "commands": []}))
@@ -5197,6 +5539,7 @@ def _before_wait():
     _raise_task_error()
     if _event_handlers:
         _process_pending_events()
+        _raise_task_error()
     if _attached_arrows:
         _update_attached_arrows()
     if _attached_followers:
@@ -5882,6 +6225,7 @@ def _reset_runtime_state():
     _active_graphs.clear()
     _event_handlers.clear()
     _widget_values.clear()
+    _widget_instances.clear()
     _attached_arrows.clear()
     _user_lights.clear()
     for task in list(_pending_tasks):
@@ -5889,8 +6233,14 @@ def _reset_runtime_state():
     _pending_tasks.clear()
     _task_errors.clear()
     _scene_objects.clear()
+    _dirty_mesh_faces.clear()
     _attached_followers.clear()
     _notices_shown.clear()
     global _canvas_calls
     _canvas_calls = 0
+    global _selected_canvas
+    _object_canvases.clear()
+    _canvases.clear()
+    _canvases['scene'] = scene
+    _selected_canvas = scene
     scene._reset()

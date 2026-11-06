@@ -59,8 +59,8 @@ export default function About() {
         </section>
 
         <div className="flex gap-3 flex-wrap">
-          <Link to="/courses" className="btn-primary no-underline">{t('nav.courses')}</Link>
-          <Link to="/examples" className="btn-secondary no-underline">{t('nav.examples')}</Link>
+          <Link to="/missions" className="btn-primary no-underline">{t('nav.missions')}</Link>
+          <Link to="/tutorials" className="btn-secondary no-underline">{t('nav.tutorials')}</Link>
           <Link to="/guide" className="btn-secondary no-underline">{t('nav.guide')}</Link>
         </div>
       </main>

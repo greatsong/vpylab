@@ -1,0 +1,38 @@
+[
+  {
+    "id": "shape",
+    "objects": 1,
+    "spheres": 1,
+    "errors": []
+  },
+  {
+    "id": "light-sound",
+    "objects": 1,
+    "spheres": 1,
+    "errors": []
+  },
+  {
+    "id": "motion",
+    "objects": 1,
+    "spheres": 1,
+    "errors": []
+  },
+  {
+    "id": "interaction",
+    "objects": 1,
+    "spheres": 1,
+    "errors": []
+  },
+  {
+    "id": "gs2024-09",
+    "objects": 8,
+    "spheres": 8,
+    "errors": []
+  },
+  {
+    "id": "gs2021-01",
+    "objects": 14,
+    "spheres": 10,
+    "errors": []
+  }
+]

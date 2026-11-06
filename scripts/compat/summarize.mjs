@@ -6,6 +6,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sameCompatibilityEvidence } from './evidence.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(here, 'out');
@@ -16,22 +17,25 @@ async function readJson(file) {
 
 const staticRes = await readJson('static-results.json');
 if (!staticRes) throw new Error('out/static-results.json 이 없습니다. 먼저 static-harness.py 를 실행하세요.');
-const browserRes = await readJson('browser-results.json');
-const shimRes = await readJson('static-shim-results.json');
+const browserCandidate = await readJson('browser-results.json');
+const browserRes = sameCompatibilityEvidence(staticRes.fingerprint, browserCandidate?.fingerprint) ? browserCandidate : null;
+if (browserCandidate && !browserRes) console.warn('브라우저 결과는 코드·코퍼스 버전이 달라 이번 정적 결과와 합치지 않습니다.');
+const shimCandidate = await readJson('static-shim-results.json');
+const shimRes = sameCompatibilityEvidence(staticRes.fingerprint, shimCandidate?.fingerprint) ? shimCandidate : null;
 const shimById = new Map((shimRes?.results || []).map((r) => [r.id, r]));
 const corpus = JSON.parse(await readFile(path.join(here, 'corpus/corpus.json'), 'utf8'));
 const corpusById = new Map(corpus.map((it) => [it.id, it]));
 
 const SOURCE_LABEL = {
-  internal: 'VPyLab 내장(예제·코스·미션)', idiom: '수업 관용구', gsexample: 'GlowScript 공식 예제', docs: 'GlowScript 문서 조각', demos: 'VPython 7 데모(vpython-jupyter)',
+  internal: 'VPyLab 내장(예제·코스·미션·체험)', showcase: '가져온 작품 실행용', 'showcase-original': '보존 원본 오류 재현', idiom: '수업 관용구', gsexample: 'GlowScript 공식 예제', docs: 'GlowScript 문서 조각', demos: 'VPython 7 데모(vpython-jupyter)',
 };
 const CATEGORY_LABEL = {
-  pass: '통과', 'unsupported-api': '미지원 API(이름 없음)', 'unsupported-attr': '미지원 속성·메서드', 'unsupported-arg': '미지원 인자·호출 형식',
+  pass: 'Python 실행 통과', 'origin-error': '보존 원본 오류 재현', 'fragment-incomplete': '문서 호출 표기(제외)', empty: '빈 원본(제외)', 'unsupported-api': '미지원 API(이름 없음)', 'unsupported-attr': '미지원 속성·메서드', 'unsupported-arg': '미지원 인자·호출 형식',
   'unsupported-module': '미지원 모듈', 'unsupported-bridge': '브릿지 미지원 커맨드', semantic: '의미 차이', silent: '무반응', timeout: '시간 초과(정지 불가)',
   hang: '무응답 뒤 강제 종료', 'activity-timeout': '10초 무응답 종료', error: '실행 오류', warning: '경고', input: 'input() 불가', 'fragment-undefined': '문서 조각 미정의(제외)',
   'glowscript-only': 'Web VPython 전용(제외)', harness: '하네스 오류', lost: '응답 없음',
 };
-const EXCLUDED = new Set(['fragment-undefined', 'glowscript-only', 'harness']);
+const EXCLUDED = new Set(['fragment-undefined', 'fragment-incomplete', 'glowscript-only', 'origin-error', 'empty']);
 
 /** 브라우저 오류 메시지를 정적 하네스와 같은 범주로 */
 function browserCategory(r) {
@@ -84,7 +88,7 @@ lines.push(`- 생성: ${new Date().toISOString()}`);
 lines.push(`- 정적 하네스: ${staticRes.generatedAt}, CPython ${staticRes.python}, API ${staticRes.api}, ${staticRes.count}개`);
 if (browserRes) lines.push(`- 브라우저 하네스: ${browserRes.generatedAt}, ${browserRes.base}, ${browserRes.count}개, 씬 접근 ${browserRes.sceneAccessible ? '가능' : '불가'}`);
 if (shimRes) lines.push(`- 심 적용 정적 하네스(즉시 수정 가능 항목을 shim-quickfixes.py 로 덧씌운 what-if): ${shimRes.generatedAt}, ${shimRes.count}개`);
-lines.push('');
+lines.push('', 'Python 실행 통과는 화면·입력·게임의 의미가 동일함을 보장하지 않습니다. 함수 등록 뒤의 이벤트 동작은 별도 회귀 검사로 확인합니다.', '');
 
 // 출처별 통과율
 lines.push('## 출처별 결과', '', '| 출처 | 개수 | 정적 통과 | 정적 실패 | 제외(문서 조각 미정의 등) | 브라우저 통과 | 브라우저 실패 | 즉시 수정 적용 시 통과 |', '|---|---|---|---|---|---|---|---|');

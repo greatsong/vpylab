@@ -1,0 +1,8 @@
+{
+  "source": "Web VPython 3.2 \nsphere(pos = vec(0,0,0), color = color.orange, radius = 1)\nsphere(pos = vec(0.8,0.8,0), color = color.orange, radius = 0.2)\nsphere(pos = vec(-0.8,0.8,0), color = color.orange, radius = 0.2)\nsphere(pos = vec(0.1,0.25,0.95), color = color.white, radius = 0.15)\nsphere(pos = vec(-0.1,0.25,0.95), color = color.white, radius = 0.15)\nsphere(pos = vec(0,0.4,1), color = color.black, radius = 0.05)\nsphere(pos = vec(0.3,0.5,0.8), color = color.black, radius = 0.1)\nsphere(pos = vec(-0.3,0.5,0.8), color = color.black, radius = 0.1)\n\n",
+  "code": "from vpython import *\nsphere(pos = vec(0,0,0), color = color.orange, radius = 1)\nsphere(pos = vec(0.8,0.8,0), color = color.orange, radius = 0.2)\nsphere(pos = vec(-0.8,0.8,0), color = color.orange, radius = 0.2)\nsphere(pos = vec(0.1,0.25,0.95), color = color.white, radius = 0.15)\nsphere(pos = vec(-0.1,0.25,0.95), color = color.white, radius = 0.15)\nsphere(pos = vec(0,0.4,1), color = color.black, radius = 0.05)\nsphere(pos = vec(0.3,0.5,0.8), color = color.black, radius = 0.1)\nsphere(pos = vec(-0.3,0.5,0.8), color = color.black, radius = 0.1)\n\n",
+  "sourceUrl": "https://www.glowscript.org/#/user/greatsong21/folder/2024vpython%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EB%AA%A8%EC%9D%8C/program/%EC%B9%B4%EC%B9%B4%EC%98%A4%ED%94%84%EB%A0%8C%EC%A6%88%EB%9D%BC%EC%9D%B4%EC%96%B8%28%EC%84%9D%EB%A6%AC%EC%86%A1%EC%88%98%EC%A0%95%29",
+  "originalName": "카카오프렌즈라이언(석리송수정)",
+  "folder": "2024vpython프로젝트모음",
+  "sha256": "2561eaa93b20adb6412713e8954d3c552210829efdbbb71c56fc4f667bbce3f6"
+}

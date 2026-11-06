@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import useAppStore from '../../stores/appStore';
 import CameraSystem from '../../engine/camera-system';
 import { postCameraState, postEvent, postMouseState, postPressedKeys } from '../../engine/pyodide-singleton';
-import { isEventBound, updateBillboards } from '../../engine/vpython-bridge';
+import { isEventBound, updateBillboards, registerCanvasScene } from '../../engine/vpython-bridge';
 import useFullscreen from '../../hooks/useFullscreen';
 import { useOptionalI18n } from '../../i18n/useI18n';
 
@@ -25,8 +25,9 @@ const THEME_BG = {
  * @param {{ onRun?: () => void, onStop?: () => void, isRunning?: boolean, isReady?: boolean }} [props.controls]
  *   전체 화면 안에서도 실행·정지할 수 있게 부모가 넘기는 핸들러. 전체 화면일 때만 화면에 그립니다.
  */
-export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPosition, controls }) {
+export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPosition, controls, canvasId = 'scene' }) {
   const containerRef = useRef(null);
+  const sceneForChildren = useRef(null);
   const wrapperRef = useRef(null);
   const fullscreen = useFullscreen(wrapperRef);
   // 교실 앱은 I18nProvider 없이 이 구성 요소를 쓰므로 선택적 훅을 씁니다.
@@ -40,13 +41,18 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
   const axesRef = useRef(null);
   const titleRef = useRef(null);
   const captionRef = useRef(null);
+  const [extraCanvases, setExtraCanvases] = useState([]);
+  const [defaultHasObjects, setDefaultHasObjects] = useState(false);
   const [showAxes, setShowAxes] = useState(false);
   const [cameraMode, setCameraMode] = useState('auto-fit');
   const [lockFollowZoom, setLockFollowZoom] = useState(false);
   const startingCamera = useRef(initialCameraPosition);
   const theme = useAppStore((s) => s.theme);
 
+  const initialSceneSetup = useRef({ canvasId, onSceneReady, sceneRef, theme, lockFollowZoom });
+
   useEffect(() => {
+    const { canvasId, onSceneReady, sceneRef, theme, lockFollowZoom } = initialSceneSetup.current;
     const container = containerRef.current;
     if (!container) return;
 
@@ -55,10 +61,20 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
 
     // 씬
     const scene = new THREE.Scene();
+    scene._vpCanvasId = canvasId;
+    if (canvasId === 'scene') {
+      scene._canvasHost = {
+        create: cmd => setExtraCanvases(items => items.some(item => item.id === cmd.canvas_id) ? items : [...items, { id: cmd.canvas_id, epoch: scene._canvasEpoch || 0 }]),
+        resize: cmd => setExtraCanvases(items => items.map(item => item.id === cmd.canvas_id ? { ...item, ...(cmd.width ? { width: cmd.width } : {}), ...(cmd.height ? { height: cmd.height } : {}) } : item)),
+        reset: () => { setExtraCanvases([]); setDefaultHasObjects(false); },
+        showDefault: () => setDefaultHasObjects(true),
+        remove: id => setExtraCanvases(items => items.filter(item => item.id !== id)),
+      };
+    }
     scene.background = new THREE.Color(THEME_BG[theme] || 0xf7f8fa);
 
     // 카메라 — 기본 거리를 8로 줄여 가까이에서 시작
-    const camera = new THREE.PerspectiveCamera(45, (width / height) || 1, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(60, (width / height) || 1, 0.1, 1000);
     const initial = startingCamera.current;
     if (Array.isArray(initial) && initial.length === 3 && initial.every(Number.isFinite)) camera.position.set(...initial);
     else camera.position.set(0, 0, 8);
@@ -134,37 +150,42 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
     }
 
     const onPointerDown = (e) => {
-      if (!isEventBound('mousedown') && !isEventBound('click')) return;
+      renderer.domElement.focus({ preventScroll: true });
+      if (!isEventBound('mousedown', canvasId) && !isEventBound('click', canvasId)) return;
       const { pos, pick } = computePosFromEvent(e);
-      if (isEventBound('mousedown')) postEvent({ name: 'mousedown', pos, pick });
+      if (isEventBound('mousedown', canvasId)) postEvent({ canvas_id: canvasId, name: 'mousedown', pos, pick });
     };
     const onPointerUp = (e) => {
-      const downBound = isEventBound('mouseup') || isEventBound('click');
+      const downBound = isEventBound('mouseup', canvasId) || isEventBound('click', canvasId);
       if (!downBound) return;
       const { pos, pick } = computePosFromEvent(e);
-      if (isEventBound('mouseup')) postEvent({ name: 'mouseup', pos, pick });
-      if (isEventBound('click')) postEvent({ name: 'click', pos, pick });
+      if (isEventBound('mouseup', canvasId)) postEvent({ canvas_id: canvasId, name: 'mouseup', pos, pick });
+      if (isEventBound('click', canvasId)) postEvent({ canvas_id: canvasId, name: 'click', pos, pick });
     };
     const onPointerMove = (e) => {
       // mouse pos는 항상 갱신 (scene.mouse.pos 폴링용)
       const { pos, pick } = computePosFromEvent(e);
-      if (pos) postMouseState(pos, pick);
-      if (isEventBound('mousemove')) postEvent({ name: 'mousemove', pos, pick });
+      if (pos) postMouseState(pos, pick, canvasId);
+      if (isEventBound('mousemove', canvasId)) postEvent({ canvas_id: canvasId, name: 'mousemove', pos, pick });
     };
     // keysdown() 폴링용 — 현재 눌려있는 키 셋
     const pressedKeys = new Set();
     const flushKeys = () => postPressedKeys([...pressedKeys]);
 
+    renderer.domElement.tabIndex = 0;
+    const acceptsKeyboard = () => !document.activeElement || document.activeElement === document.body || document.activeElement === renderer.domElement;
     const onKeyDown = (e) => {
+      if (!acceptsKeyboard() || (document.activeElement === document.body && canvasId !== 'scene')) return;
       if (!pressedKeys.has(e.key)) {
         pressedKeys.add(e.key);
         flushKeys();
       }
-      if (isEventBound('keydown')) postEvent({ name: 'keydown', key: e.key });
+      if (isEventBound('keydown', canvasId)) postEvent({ canvas_id: canvasId, name: 'keydown', key: e.key });
     };
     const onKeyUp = (e) => {
+      if (!acceptsKeyboard() || (document.activeElement === document.body && canvasId !== 'scene')) return;
       if (pressedKeys.delete(e.key)) flushKeys();
-      if (isEventBound('keyup')) postEvent({ name: 'keyup', key: e.key });
+      if (isEventBound('keyup', canvasId)) postEvent({ canvas_id: canvasId, name: 'keyup', key: e.key });
     };
     const onBlur = () => {
       // 포커스 잃을 때 모든 키 해제 (stuck key 방지)
@@ -259,7 +280,11 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       sceneRef.current._renderer = renderer;
       sceneRef.current._camera = camera;
     }
-    onSceneReady?.(scene);
+    sceneForChildren.current = scene;
+    scene._renderer = renderer;
+    scene._camera = camera;
+    // 개발 모드의 setup→cleanup→setup에서 폐기될 화면이 명령 큐를 가져가지 않게 한다.
+    const readyFrame = requestAnimationFrame(() => onSceneReady?.(scene));
 
     // 렌더 루프
     let modeUpdateCounter = 0;
@@ -271,17 +296,19 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       camSystem.update();
 
       controls.update();
+      camSystem.updateClipPlanes();
       // billboard=True 인 3D 글자를 카메라 쪽으로 돌린다 (Group에는 onBeforeRender가 오지 않는다)
-      updateBillboards(camera);
+      updateBillboards(camera, scene);
       renderer.render(scene, camera);
 
       // 카메라 상태를 Python 쪽에 알림 (6프레임마다, 약 10Hz)
       if (++modeUpdateCounter % 6 === 0) {
         const state = camSystem.getState();
         state.seq = ++cameraStateSeq;
+        state.revision = scene._cameraRevision || 0;
         state.width = renderer.domElement.clientWidth;
         state.height = renderer.domElement.clientHeight;
-        postCameraState(state);
+        postCameraState(state, canvasId);
       }
 
       // UI 모드 표시 업데이트 (60프레임마다)
@@ -296,8 +323,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       const w = container.clientWidth;
       const h = container.clientHeight;
       if (w === 0 || h === 0) return;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
+      camSystem.resize(w, h);
       renderer.setSize(w, h);
     });
     observer.observe(container);
@@ -305,6 +331,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
     return () => {
       observer.disconnect();
       cancelAnimationFrame(animFrameRef.current);
+      cancelAnimationFrame(readyFrame);
       renderer.domElement.removeEventListener('dblclick', onDblClick);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
@@ -315,6 +342,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       camSystem.dispose();
       controls.dispose();
       renderer.dispose();
+      renderer.forceContextLoss();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
@@ -358,13 +386,16 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       ref={wrapperRef}
       className="w-full h-full relative"
       style={{
+        overflow: extraCanvases.length ? 'auto' : undefined,
         touchAction: 'none',
         // 전체 화면 API가 없는 브라우저(iOS Safari)는 화면을 채우는 고정 배치로 대체합니다.
         ...(fullscreen.pseudo ? { position: 'fixed', inset: 0, zIndex: 9999, width: '100vw', height: '100vh', backgroundColor: 'var(--color-bg-primary)' } : {}),
       }}
       data-vpylab-viewport=""
+      data-vpylab-canvas-id={canvasId}
       data-fullscreen={fullscreen.active ? 'true' : undefined}
     >
+      <div className="relative w-full" style={{ height: extraCanvases.length ? (defaultHasObjects ? 320 : 0) : '100%', overflow: 'hidden' }}>
       <div ref={containerRef} className="w-full h-full" />
 
       {/* 전체 화면 안의 실행·정지 — 부모 도구 모음이 가려지므로 여기서 그립니다. */}
@@ -481,6 +512,10 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
           {t('viewport.axes')}
         </label>
       </div>
+      </div>
+      {extraCanvases.map(item => <div key={`${item.id}-${item.epoch}`} className="relative border-t" style={{ height: Math.max(180, Math.min(item.height || 320, 1000)), width: item.width ? Math.min(item.width, 1600) : '100%', maxWidth: '100%', borderColor: 'var(--color-border)' }}>
+        <Viewport3D canvasId={item.id} onSceneReady={child => registerCanvasScene(sceneRef?.current || sceneForChildren.current, item.id, child)} />
+      </div>)}
     </div>
   );
 }

@@ -1,0 +1,8 @@
+{
+  "source": "Web VPython 3.2\n\nx = []\nfor i in range(100) :     \n    x.append(box(pos = vec(0,i-50,0)))\n\nt = 0    \nimport random\nwhile True :\n    rate(100)\n    k = keysdown()\n    t = t + 0.1\n    a = random.random()\n    for i in range(100) :           \n        x[i].color = vec(a,1-i/99,i/99)\n        x[i].pos.x = 3 * sin(t) * sin(i/5)\n        \n",
+  "code": "from vpython import *\n\nx = []\nfor i in range(100) :     \n    x.append(box(pos = vec(0,i-50,0)))\n\nt = 0    \nimport random\nwhile True :\n    rate(100)\n    k = keysdown()\n    t = t + 0.1\n    a = random.random()\n    for i in range(100) :           \n        x[i].color = vec(a,1-i/99,i/99)\n        x[i].pos.x = 3 * sin(t) * sin(i/5)\n        \n",
+  "sourceUrl": "https://www.glowscript.org/#/user/greatsong21/folder/2024vpython%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EB%AA%A8%EC%9D%8C/program/2023%EC%84%9C%EC%9A%B8%EA%B3%A0%EA%B5%90%ED%95%99%EA%B3%B5%EC%9E%91%ED%92%88%28%EC%88%98%ED%95%99%EC%84%A0%EC%83%9D%EB%8B%98%29",
+  "originalName": "2023서울고교학공작품(수학선생님)",
+  "folder": "2024vpython프로젝트모음",
+  "sha256": "4243d78110d5f67726d13be2e1f017e6b410cfba4eadf3c210312588f4f34484"
+}

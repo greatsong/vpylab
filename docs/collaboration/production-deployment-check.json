@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-06",
+  "productionUrl": "https://vpylab.vercel.app",
+  "sourceCommit": "db66e30fea81847234ce7836e9f6fb65774c59e6",
+  "deployment": "https://vpylab-5a1i5ptxz-greatsongs-projects.vercel.app",
+  "deploymentStatus": "Ready",
+  "integration": {
+    "base": "fd6e9e99b0a7bc8182661bc735a8848608c0f176",
+    "preserved": "원격 main의 개인정보 보호 수정과 기존 공개키 형식 대응을 보존. 별도 release worktree에서 이번 화면·교재·저장 변경만 통합. 관계없는 로컬 문서 수정은 제외."
+  },
+  "checks": {
+    "clientTestFiles": 46,
+    "clientTestsPassed": 620,
+    "ogTestsPassed": 3,
+    "productionBuild": "passed",
+    "modifiedFilesLint": "passed",
+    "gitDiffCheck": "passed",
+    "secretScan": "passed",
+    "productionHttpPaths": [
+      "/",
+      "/courses/beg-light-sound/light-sound-1",
+      "/courses/beg-github-project",
+      "/sandbox"
+    ],
+    "productionAssetHttp": "200",
+    "productionApiOrigin": "vpylab-server-production.up.railway.app"
+  },
+  "authenticatedComputerUse": {
+    "browser": "Google Chrome",
+    "account": "사용자가 지정한 학교 테스트 계정",
+    "environment": "http://127.0.0.1:4033, 실제 Supabase 운영 DB 연결",
+    "projectName": "배포 검증용 빛과 소리 20261106",
+    "projectList": "passed",
+    "projectCreate": "passed, GitHub 연결 체크 해제",
+    "codeSave": "passed, 노란 공 A 저장, VPyLab 저장 완료 2번째 저장 확인",
+    "revisionRead": "passed, 프로젝트 생성 및 노란 공 A 저장 조회",
+    "editedRuntime": "passed, 파란 공 B와 저장 검증 B 출력 확인",
+    "restore": "passed: 노란 공 A 복원 후 저장 검증 A 출력과 노란 공 확인. 복원 전 편집본 보관 65자와 새 복원 기록 67자 확인.",
+    "githubWrite": "not performed, Google 로그인과 GitHub 저장소 쓰기 권한은 별도",
+    "existingProjects": "읽기 외에는 변경하지 않음",
+    "production": "passed: 운영 홈의 새 화면, 지정 계정 Google 로그인, 새 탭의 실제 운영 도메인에서 같은 테스트 프로젝트 다시 열기, 저장 검증 A 실행 확인."
+  },
+  "fixedAfterAuthenticatedCheck": [
+    "onAuthStateChange의 async DB 대기로 로그인 알림과 요청 인증이 서로 기다리는 구조 수정. DB 동기화는 다음 이벤트 루프에서 실행하고 즉시 콜백 반환. 계정 변경과 정리된 listener의 후속 작업 방지.",
+    "다른 이름으로 저장의 오류 무시 수정: 저장 중/실패 및 이력 경고 표시."
+  ],
+  "limitations": [
+    "GitHub 외부 쓰기와 Pages 갱신은 별도 GitHub 인증이 필요해 완료로 판정하지 않음. 테스트 프로젝트의 GitHub 연결은 해제 상태.",
+    "테스트 프로젝트는 기존 작품과 분리해 계정에 남겨둠. 다른 기존 작품은 읽기 외에 수정하지 않음."
+  ],
+  "localWorkspace": "배포 커밋으로 main 기준을 맞추고 관계없는 기존 변경 11개가 그대로임을 해시로 검증."
+}

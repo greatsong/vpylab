@@ -117,7 +117,7 @@ export default function Guide() {
 
         <div className="flex gap-3 flex-wrap">
           <Link to="/sandbox" className="btn-primary no-underline">프로젝트 열기</Link>
-          <Link to="/examples" className="btn-secondary no-underline">예제 살펴보기</Link>
+          <Link to="/tutorials" className="btn-secondary no-underline">튜토리얼 체험하기</Link>
         </div>
       </main>
     </div>

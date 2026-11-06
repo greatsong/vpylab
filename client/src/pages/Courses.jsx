@@ -1,13 +1,12 @@
-import { useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useParams, useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
-import courses, { getCourseById } from '../data/courses';
+import { getCourseById } from '../data/courses';
 import { useI18n } from '../i18n/useI18n';
 import WorkbookCourse from '../components/courses/WorkbookCourse';
 
 /**
  * Courses — 한 페이지에서 3가지 모드를 라우팅 파라미터로 분기
- *   /courses                      → 전체 목록(트랙 필터)
+ *   /courses                      → 미션 트레이닝 목록으로 이동
  *   /courses/:courseId            → 코스 상세
  *   /courses/:courseId/:lessonId  → 코스 상세 + 차시 활성(우측 sticky 패널)
  *
@@ -17,7 +16,6 @@ import WorkbookCourse from '../components/courses/WorkbookCourse';
  */
 
 // 트랙 메타 (입문 / 융합 / 튜토리얼)
-const TRACK_ORDER = ['beginner', 'fusion', 'tutorial'];
 const TRACK_META = {
   beginner: { ko: '입문', en: 'Beginner', color: '#4A6CF7' },
   fusion: { ko: '융합', en: 'Fusion', color: '#00B894' },
@@ -36,91 +34,6 @@ const COURSE_HEX = {
   blue: '#4A6CF7',
 };
 const colorOf = (course) => COURSE_HEX[course.color] || '#4A6CF7';
-
-// ─── 코스 카드 (목록 페이지) ────────────────────────────────────
-function CourseCard({ course, lang }) {
-  const color = colorOf(course);
-  const trackMeta = TRACK_META[course.track];
-  return (
-    <Link
-      to={`/courses/${course.id}`}
-      className="category-card no-underline"
-      style={{ '--card-accent': color }}
-    >
-      {/* 상단: 아이콘 + 트랙 라벨 */}
-      <div className="flex items-center gap-2.5 mb-3">
-        <span className="text-2xl leading-none shrink-0">{course.icon}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-            <span
-              className="text-[11px] font-mono font-semibold uppercase tracking-wider"
-              style={{ color }}
-            >
-              {trackMeta?.[lang] || trackMeta?.ko} · {course.subject || '코딩'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 제목 */}
-      <h3 className="font-display text-[16px] font-bold leading-snug mb-2"
-        style={{ color: 'var(--color-text-primary)' }}>
-        {course.title?.[lang] || course.title?.ko}
-      </h3>
-
-      {/* 설명 — 3줄 클램프 */}
-      <p
-        className="text-[13px] leading-relaxed mb-4"
-        style={{
-          color: 'var(--color-text-secondary)',
-          display: '-webkit-box',
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-        }}
-      >
-        {course.description}
-      </p>
-
-      {/* 하단: 대상 + 차시 수 */}
-      <div className="flex items-center justify-between text-[11px] pt-3"
-        style={{ borderTop: '1px solid var(--color-border)' }}>
-        <span style={{ color: 'var(--color-text-muted)' }}>
-          {course.targetGrade}
-        </span>
-        <span className="font-mono font-semibold" style={{ color }}>
-          {course.sessions}{lang === 'ko' ? '차시' : ' sessions'}
-        </span>
-      </div>
-    </Link>
-  );
-}
-
-// ─── 코스 목록 ─────────────────────────────────────────────────
-function CourseList() {
-  const { locale: lang } = useI18n();
-  const [trackFilter, setTrackFilter] = useState(null);
-  const coreIds = ['beg-light-sound', 'beg-github-project'];
-  const core = coreIds.map(id => getCourseById(id));
-  const others = courses.filter(course => !coreIds.includes(course.id) && (!trackFilter || course.track === trackFilter));
-  return (
-    <main className="flex-1 w-full max-w-5xl mx-auto px-6 md:px-10 py-12">
-      <h1 className="font-display text-3xl font-bold mb-3" style={{ color: 'var(--color-text-primary)' }}>{lang === 'ko' ? '하나씩 만들며 배워요' : 'Learn by making'}</h1>
-      <p className="text-sm mb-8" style={{ color: 'var(--color-text-secondary)' }}>{lang === 'ko' ? '처음이라면 빛과 소리부터. 작품을 만든 다음에는 저장과 공유를 배웁니다.' : 'Start with light and sound, then learn to save and share your work.'}</p>
-      <div className="grid sm:grid-cols-2 gap-5 mb-10">{core.map(course => <CourseCard key={course.id} course={course} lang={lang} />)}</div>
-      <details className="border-t pt-6" style={{ borderColor: 'var(--color-border)' }}>
-        <summary className="text-sm font-semibold cursor-pointer" style={{ color: 'var(--color-text-primary)' }}>{lang === 'ko' ? '다른 교재 둘러보기' : 'Explore other courses'}</summary>
-        <div className="flex flex-wrap gap-2 my-6">
-          <button className="mission-filter-btn" data-active={!trackFilter || undefined} onClick={() => setTrackFilter(null)}>{lang === 'ko' ? '전체' : 'All'}</button>
-          {TRACK_ORDER.map(track => <button key={track} className="mission-filter-btn" data-active={trackFilter === track || undefined} onClick={() => setTrackFilter(track)}>{TRACK_META[track][lang] || TRACK_META[track].ko}</button>)}
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{others.map(course => <CourseCard key={course.id} course={course} lang={lang} />)}</div>
-        {!others.length && <p className="text-sm py-8" style={{ color: 'var(--color-text-secondary)' }}>{lang === 'ko' ? '이 분류에는 다른 교재가 없습니다.' : 'No other courses in this group.'}</p>}
-      </details>
-    </main>
-  );
-}
 
 // ─── 차시 행 ─────────────────────────────────────────────────
 function LessonRow({ course, lesson, idx, active, color, lang }) {
@@ -188,8 +101,8 @@ function CourseDetail({ courseId, lessonId }) {
           <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
             {lang === 'ko' ? '코스를 찾을 수 없습니다.' : 'Course not found.'}
           </p>
-          <Link to="/courses" className="btn-secondary no-underline inline-block">
-            {lang === 'ko' ? '← 코스 목록' : '← Back to courses'}
+          <Link to="/missions" className="btn-secondary no-underline inline-block">
+            {lang === 'ko' ? '← 트레이닝' : '← Back to courses'}
           </Link>
         </div>
       </main>
@@ -210,8 +123,8 @@ function CourseDetail({ courseId, lessonId }) {
           {t('nav.home')}
         </Link>
         <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>/</span>
-        <Link to="/courses" className="text-xs no-underline" style={{ color: 'var(--color-text-muted)' }}>
-          {lang === 'ko' ? '코스' : 'Courses'}
+        <Link to="/missions" className="text-xs no-underline" style={{ color: 'var(--color-text-muted)' }}>
+          {lang === 'ko' ? '미션' : 'Missions'}
         </Link>
         <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>/</span>
         <span className="text-xs font-medium truncate" style={{ color: 'var(--color-text-secondary)' }}>
@@ -413,7 +326,7 @@ export default function Courses() {
       {courseId ? (
         <CourseDetail courseId={courseId} lessonId={lessonId} />
       ) : (
-        <CourseList />
+        <Navigate to="/missions" replace />
       )}
     </div>
   );

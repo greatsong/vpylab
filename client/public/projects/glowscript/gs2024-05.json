@@ -1,0 +1,8 @@
+{
+  "source": "Web VPython 3.2\n\nscene.lights = []\n\nb = box(pos = vec(0,0,-1), size=vector(5,5,1))\nl1 = local_light(pos=vec(0,0,0), color = vec(1,0,0))\nl2 = local_light(pos=vec(0,0,0), color = vec(0,1,0))\nl3 = local_light(pos=vec(0,0,0), color = vec(0,0,1))\n\nwhile True:\n    rate(100)\n    k = keysdown() \n    if 'left' in k: \n        l2.pos.x -= 0.01\n    if 'right' in k:\n        l2.pos.x += 0.01\n    if 'down' in k: \n        l3.pos.y -= 0.01\n    if 'up' in k:\n        l3.pos.y += 0.01",
+  "code": "from vpython import *\n\nscene.lights = []\n\nb = box(pos = vec(0,0,-1), size=vector(5,5,1))\nl1 = local_light(pos=vec(0,0,0), color = vec(1,0,0))\nl2 = local_light(pos=vec(0,0,0), color = vec(0,1,0))\nl3 = local_light(pos=vec(0,0,0), color = vec(0,0,1))\n\nwhile True:\n    rate(100)\n    k = keysdown() \n    if 'left' in k: \n        l2.pos.x -= 0.01\n    if 'right' in k:\n        l2.pos.x += 0.01\n    if 'down' in k: \n        l3.pos.y -= 0.01\n    if 'up' in k:\n        l3.pos.y += 0.01",
+  "sourceUrl": "https://www.glowscript.org/#/user/greatsong21/folder/2024vpython%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EB%AA%A8%EC%9D%8C/program/%EB%B9%9B%EC%9D%983%EC%9B%90%EC%83%89%EC%8B%A4%ED%97%98%28%EC%84%9D%EB%A6%AC%EC%86%A1%29",
+  "originalName": "빛의3원색실험(석리송)",
+  "folder": "2024vpython프로젝트모음",
+  "sha256": "23b7d9f5ab7d8c0e33ddc2d15cb514d93d3deee5ff193ae4c7a30f606fb37214"
+}

@@ -1,8 +1,11 @@
+import { shapeGuides } from './shape-guides.js';
+import { annotateDocOrigin } from './doc-origins.js';
 // VPyLab API 문서 데이터
 // VPython 3D 프로그래밍 교육 플랫폼용 레퍼런스
 
 // ─── 카테고리 정의 ───────────────────────────────────────────
 export const docCategories = {
+  'shape-guides': { ko: '모양 만들기', en: 'Making shapes', icon: '◇' },
   objects:  { ko: '3D 객체',       en: '3D Objects',       icon: '📦' },
   meshes:   { ko: '저수준 메시',   en: 'Low-level Meshes', icon: '🔷' },
   vectors:  { ko: '벡터와 수학',   en: 'Vectors & Math',   icon: '📐' },
@@ -17,7 +20,7 @@ export const docCategories = {
 };
 
 // ─── 문서 항목 ──────────────────────────────────────────────
-const docs = [
+const apiDocs = [
   // ━━━ objects ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   {
     id: 'sphere',
@@ -195,12 +198,13 @@ orbit = ring(pos=vector(0, 0, 0), radius=2, thickness=0.03, color=color.gray)`,
       ko: '여러 객체를 하나로 합쳐 함께 움직이게 합니다. pos 기본값은 부품들의 중심이고, 지정하면 중심이 그 자리로 옮겨집니다. rotate()·clone()·length·size를 지원합니다. 부품을 나중에 따로 바꾸려면 group().',
       en: 'Combines objects into one that moves together. pos defaults to the center of the parts; setting it moves the center there. Supports rotate(), clone(), length, size. Use group() to keep parts editable.',
     },
-    signature: "compound(objects, pos=중심, axis=vector(1,0,0), color=None)",
+    signature: "compound(objects, pos=중심, axis=vector(1,0,0), color=color.white)",
     params: [
+      { name: 'shininess', type: 'number', default: '0.6', desc: { ko: '광택(0~1). 묶은 뒤 변경 가능', en: 'Shininess (0–1); editable after combining' } },
       { name: 'objects',    type: 'list',    default: '[]',            desc: { ko: '합칠 객체 리스트', en: 'List of objects to combine' } },
       { name: 'pos',        type: 'vector',  default: '부품 중심',      desc: { ko: '중심 위치 (지정하면 그 자리로 이동)', en: 'Center position (moves the compound when given)' } },
       { name: 'axis',       type: 'vector',  default: 'vector(1,0,0)', desc: { ko: '방향. 길이는 length가 됨', en: 'Orientation; its length becomes length' } },
-      { name: 'color',      type: 'vector',  default: 'color.white',   desc: { ko: '색상 (전체 덮어쓰기)', en: 'Color (overrides all)' } },
+      { name: 'color',      type: 'vector',  default: 'color.white',   desc: { ko: '부품 색에 곱하는 색 필터. 흰색이면 원래 색으로 복원', en: 'Multiplies the original part colors; white restores them' } },
       { name: 'opacity',    type: 'number',  default: '1.0',           desc: { ko: '불투명도 (0~1)', en: 'Opacity (0–1)' } },
       { name: 'emissive',   type: 'boolean', default: 'False',         desc: { ko: '색상으로 스스로 빛나게 표시', en: 'Glow using the object color' } },
       { name: 'make_trail', type: 'boolean', default: 'False',         desc: { ko: '궤적 표시 여부', en: 'Show trail' } },
@@ -222,7 +226,7 @@ car = compound([body, head], pos=vector(0, 0, 0))`,
     },
     signature: "pyramid(pos=vector(0,0,0), size=vector(1,1,1), axis=vector(1,0,0), color=color.white)",
     params: [
-      { name: 'pos',  type: 'vector', default: 'vector(0,0,0)', desc: { ko: '꼭짓점 기준 위치', en: 'Apex position' } },
+      { name: 'pos',  type: 'vector', default: 'vector(0,0,0)', desc: { ko: '경계 상자 중심 위치', en: 'Bounding-box center position' } },
       { name: 'size', type: 'vector', default: 'vector(1,1,1)', desc: { ko: '(축높이, 폭, 깊이)', en: '(axial-height, width, depth)' } },
       { name: 'axis', type: 'vector', default: 'vector(1,0,0)', desc: { ko: '축 방향', en: 'Axis direction' } },
       { name: 'color', type: 'vector', default: 'color.white', desc: { ko: '색상', en: 'Color' } },
@@ -350,8 +354,8 @@ for x in range(-5, 6):
     category: 'objects',
     title: { ko: 'frame (= compound)', en: 'frame (alias for compound)' },
     description: {
-      ko: '구버전 VPython 호환 별칭. 사용법은 compound와 동일.',
-      en: 'Legacy VPython alias for compound. Same API.',
+      ko: 'VPyLab의 편의 별칭입니다. 이 앱에서는 compound와 같으며 구형 VPython frame 전체를 재현하지는 않습니다.',
+      en: 'A VPyLab convenience alias for compound; it does not reproduce the historical frame API.',
     },
     signature: "frame(objects, pos=vector(0,0,0), color=color.white)",
     params: [
@@ -931,8 +935,8 @@ box(size=vector(2, 0.5, 2), color=color.orange)`,
     category: 'scene',
     title: { ko: '카메라 위치와 방향 (scene.camera, scene.forward)', en: 'scene.camera / scene.forward' },
     description: {
-      ko: '카메라를 직접 움직입니다. scene.forward는 보는 방향, scene.camera.pos는 카메라 위치, scene.camera.axis는 카메라에서 중심까지의 벡터입니다. GlowScript VPython과 같은 의미입니다. 값을 지정하면 자동 맞춤이 꺼지고, 자동 버튼을 누르면 다시 켜집니다.',
-      en: 'Moves the camera directly. scene.forward is the viewing direction, scene.camera.pos the camera position and scene.camera.axis the vector from the camera to the center, with the same meaning as GlowScript VPython. Setting a value turns autoscale off.',
+      ko: '카메라를 직접 움직입니다. scene.forward는 보는 방향, scene.camera.pos는 카메라 위치, scene.camera.axis는 카메라에서 중심까지의 벡터입니다. GlowScript VPython과 같은 의미입니다. range 또는 camera.pos/axis를 지정하면 자동 맞춤이 꺼집니다. forward·center·camera.follow는 자동 맞춤 여부를 유지합니다. center를 옮기면 카메라도 함께 평행 이동합니다.',
+      en: 'Moves the camera directly. scene.forward is the viewing direction, scene.camera.pos the camera position and scene.camera.axis the vector from the camera to the center, with the same meaning as GlowScript VPython. Setting range or camera.pos/axis disables autoscale; forward, center, and camera.follow preserve it. Moving center translates the camera too.',
     },
     signature: "scene.forward = vector(0, -1, -1); scene.camera.pos = vector(0, 5, 10); scene.camera.axis = vector(0, -5, -10); scene.camera.follow(obj)",
     params: [
@@ -940,6 +944,7 @@ box(size=vector(2, 0.5, 2), color=color.orange)`,
       { name: 'scene.up', type: 'vector', default: 'vector(0,1,0)', desc: { ko: '화면의 위쪽 방향', en: 'Screen up direction' } },
       { name: 'scene.camera.pos', type: 'vector', default: '-', desc: { ko: '카메라 위치. 중심도 같이 이동', en: 'Camera position; the center moves with it' } },
       { name: 'scene.camera.axis', type: 'vector', default: '-', desc: { ko: '카메라에서 중심까지의 벡터', en: 'Vector from camera to center' } },
+      { name: 'scene.camera.rotate(angle, axis, origin)', type: 'method', default: 'origin=camera.pos', desc: { ko: '기본은 자기 위치에서 시선 회전. origin=scene.center로 중심 주위 회전', en: 'Rotates in place by default; specify origin=scene.center to orbit' } },
       { name: 'scene.camera.follow(obj)', type: 'object', default: 'None', desc: { ko: '객체를 계속 화면 중심에 둠. None이면 해제', en: 'Keep an object centered; None stops following' } },
     ],
     code: `from vpython import *
@@ -962,14 +967,14 @@ for i in range(200):
     category: 'scene',
     title: { ko: '보이는 범위와 시야각 (scene.range, scene.fov)', en: 'scene.range / scene.fov' },
     description: {
-      ko: 'scene.range는 화면의 짧은 변 방향으로 중심에서 보이는 범위의 절반입니다. range=5이면 중심 위아래로 5만큼이 보입니다. scene.fov는 시야각(라디안)이며 기본값은 45도입니다. scene.center는 카메라가 바라보는 점입니다.',
-      en: 'scene.range is half of the visible extent along the shorter side of the view. scene.fov is the field of view in radians (default 45 degrees). scene.center is the point the camera looks at.',
+      ko: 'scene.range는 화면의 짧은 변 방향으로 중심에서 보이는 범위의 절반입니다. 가로 화면에서 range=5이면 중심 위아래로 5만큼, 세로 화면이면 좌우로 5만큼이 보입니다. scene.fov는 시야각(라디안)이며 기본값은 60도(pi/3)입니다. scene.center는 카메라가 바라보는 점입니다.',
+      en: 'scene.range is half of the visible extent along the shorter side of the view. scene.fov is the field of view in radians (default 60 degrees, pi/3). scene.center is the point the camera looks at.',
     },
     signature: "scene.range = 5; scene.center = vector(0, 0, 0); scene.fov = pi/3; scene.autoscale = False",
     params: [
       { name: 'scene.range', type: 'number', default: '자동', desc: { ko: '짧은 변 방향 시야의 절반', en: 'Half extent along the shorter side' } },
       { name: 'scene.center', type: 'vector', default: 'vector(0,0,0)', desc: { ko: '카메라가 보는 점', en: 'Point the camera looks at' } },
-      { name: 'scene.fov', type: 'number', default: 'pi/4', desc: { ko: '시야각 (라디안)', en: 'Field of view (radians)' } },
+      { name: 'scene.fov', type: 'number', default: 'pi/3', desc: { ko: '시야각 (라디안)', en: 'Field of view (radians)' } },
       { name: 'scene.autoscale', type: 'bool', default: 'True', desc: { ko: '모든 물체가 보이도록 자동 조절', en: 'Fit all objects automatically' } },
     ],
     code: `from vpython import *
@@ -980,7 +985,7 @@ for i in range(5):
 scene.center = vector(0, 0, 0)
 scene.range = 3        # 가운데 세 개만 크게
 sleep(1.5)
-scene.fov = pi / 3     # 시야각을 넓히면 원근감이 커진다
+scene.fov = pi / 2     # 기본 pi/3보다 넓은 시야각으로 원근감 비교
 sleep(1.5)
 scene.autoscale = True # 다시 전체 보기`,
     tags: ['scene', 'range', 'fov', 'center', 'autoscale', 'zoom', '범위', '시야각'],
@@ -1050,8 +1055,8 @@ scene.append_to_caption(f' 걸린 시간: {t:.2f}초')`,
       { name: 'range',      type: 'number', default: '—',         desc: { ko: '시야 반경 (Auto-Fit OFF)', en: 'View half-range (disables auto-fit)' } },
       { name: 'center',     type: 'vector', default: 'vector(0,0,0)', desc: { ko: '카메라 타겟', en: 'Camera target' } },
       { name: 'autoscale',  type: 'bool',   default: 'True',      desc: { ko: 'Auto-Fit 다시 켜기', en: 'Re-enable auto-fit' } },
-      { name: 'title',      type: 'string', default: '—',         desc: { ko: '콘솔에 출력', en: 'Logged to console' } },
-      { name: 'caption',    type: 'string', default: '—',         desc: { ko: '콘솔에 출력', en: 'Logged to console' } },
+      { name: 'title',      type: 'string', default: '—',         desc: { ko: '3D 화면 위·아래에 표시', en: 'Displayed above or below the 3D viewport' } },
+      { name: 'caption',    type: 'string', default: '—',         desc: { ko: '3D 화면 위·아래에 표시', en: 'Displayed above or below the 3D viewport' } },
     ],
     code: `from vpython import *
 scene.background = color.black
@@ -1172,10 +1177,10 @@ ball = sphere(pos=vector(0,0,0), radius=0.3, color=color.lime)
 while True:
     rate(60)
     keys = keysdown()
-    if 'ArrowLeft'  in keys: ball.pos.x -= 0.05
-    if 'ArrowRight' in keys: ball.pos.x += 0.05
-    if 'ArrowUp'    in keys: ball.pos.y += 0.05
-    if 'ArrowDown'  in keys: ball.pos.y -= 0.05`,
+    if 'left'  in keys: ball.pos.x -= 0.05
+    if 'right' in keys: ball.pos.x += 0.05
+    if 'up'    in keys: ball.pos.y += 0.05
+    if 'down'  in keys: ball.pos.y -= 0.05`,
     tags: ['keysdown', 'keyboard', 'multi-key', '다중 키', '폴링'],
   },
 
@@ -1266,7 +1271,7 @@ while True:
       ko: '같은 name 그룹에서 하나만 선택. 선택될 때 bind 호출.',
       en: 'Single-select within same name group. bind fires when selected.',
     },
-    signature: "radio(text='', name='group', value=None, checked=False, bind=fn)",
+    signature: "radio(text='', name='group', checked=False, bind=fn)",
     params: [
       { name: 'text',    type: 'string',   default: "''",        desc: { ko: '레이블', en: 'Label' } },
       { name: 'name',    type: 'string',   default: "'radio_group'", desc: { ko: '그룹명', en: 'Group name' } },
@@ -1275,16 +1280,17 @@ while True:
       { name: 'bind',    type: 'function', default: 'None',      desc: { ko: '선택 콜백', en: 'Select callback' } },
     ],
     code: `from vpython import *
-ball = sphere(pos=vector(0,0,0), radius=0.5)
-
-def on_select(evt):
-    ball.color = evt.value
-
-radio(text='빨강', name='c', value=color.red,    checked=True,  bind=on_select)
-radio(text='초록', name='c', value=color.green,                 bind=on_select)
-radio(text='파랑', name='c', value=color.blue,                  bind=on_select)
-while True:
-    rate(30)`,
+ball = sphere(radius=0.5, color=color.red)
+def choose_red(r):
+    ball.color = color.red
+def choose_green(r):
+    ball.color = color.green
+def choose_blue(r):
+    ball.color = color.blue
+radio(text='빨강', name='shade', checked=True, bind=choose_red)
+radio(text='초록', name='shade', bind=choose_green)
+radio(text='파랑', name='shade', bind=choose_blue)
+`,
     tags: ['radio', 'widget', '라디오'],
   },
   {
@@ -1497,7 +1503,7 @@ for i, v in enumerate([52, 333, 126, 1400]):
     signature: "color.red, color.green, color.blue, ...",
     params: [
       { name: 'color.red',      type: 'vector', default: 'vector(1,0,0)',           desc: { ko: '빨강', en: 'Red' } },
-      { name: 'color.green',    type: 'vector', default: 'vector(0,0.8,0)',         desc: { ko: '초록', en: 'Green' } },
+      { name: 'color.green',    type: 'vector', default: 'vector(0,1,0)',         desc: { ko: '초록', en: 'Green' } },
       { name: 'color.blue',     type: 'vector', default: 'vector(0,0,1)',           desc: { ko: '파랑', en: 'Blue' } },
       { name: 'color.yellow',   type: 'vector', default: 'vector(1,1,0)',           desc: { ko: '노랑', en: 'Yellow' } },
       { name: 'color.cyan',     type: 'vector', default: 'vector(0,1,1)',           desc: { ko: '시안', en: 'Cyan' } },
@@ -1505,8 +1511,8 @@ for i, v in enumerate([52, 333, 126, 1400]):
       { name: 'color.orange',   type: 'vector', default: 'vector(1,0.6,0)',         desc: { ko: '주황', en: 'Orange' } },
       { name: 'color.white',    type: 'vector', default: 'vector(1,1,1)',           desc: { ko: '흰색', en: 'White' } },
       { name: 'color.black',    type: 'vector', default: 'vector(0,0,0)',           desc: { ko: '검정', en: 'Black' } },
-      { name: 'color.gray',     type: 'vector', default: 'vector(0.5,0.5,0.5)',     desc: { ko: '회색', en: 'Gray' } },
-      { name: 'color.purple',   type: 'vector', default: 'vector(0.5,0,0.5)',       desc: { ko: '보라', en: 'Purple' } },
+      { name: 'color.gray(0.5)',     type: 'vector', default: 'vector(0.5,0.5,0.5)',     desc: { ko: '회색', en: 'Gray' } },
+      { name: 'color.purple',   type: 'vector', default: 'vector(0.4,0.2,0.6)',       desc: { ko: '보라', en: 'Purple' } },
       { name: 'color.pink',     type: 'vector', default: 'vector(1,0.75,0.8)',      desc: { ko: '분홍', en: 'Pink' } },
       { name: 'color.brown',    type: 'vector', default: 'vector(0.6,0.3,0.1)',     desc: { ko: '갈색', en: 'Brown' } },
       { name: 'color.gold',     type: 'vector', default: 'vector(1,0.84,0)',        desc: { ko: '금색', en: 'Gold' } },
@@ -2123,12 +2129,12 @@ while True:
     category: 'scene',
     title: { ko: '화면 크기와 객체 목록 (scene.width, scene.objects)', en: 'scene.width / scene.objects' },
     description: {
-      ko: 'scene.width = 800처럼 GlowScript 코드가 그대로 실행되도록 값을 받습니다. 다만 3D 화면 크기는 화면 배치가 정하므로 실제 크기는 바뀌지 않습니다. scene.objects는 현재 보이는 3D 객체 목록이며, 모두 숨기거나 개수를 셀 때 사용합니다. scene.align, scene.resizable, scene.caption_anchor도 받기만 합니다.',
-      en: 'scene.width = 800 is accepted so GlowScript code runs unchanged, but the viewport size is set by the layout and does not change. scene.objects lists the visible 3D objects, useful for hiding everything or counting. scene.align, scene.resizable and scene.caption_anchor are accepted and ignored.',
+      ko: 'scene.width/height를 지정할 수 있지만 기본 화면의 실제 크기는 앱 배치가 정합니다. 추가 canvas는 지정 크기를 사용 가능한 공간 안에서 반영합니다. scene.objects는 현재 보이는 3D 객체 목록이며, 모두 숨기거나 개수를 셀 때 사용합니다. scene.align과 scene.resizable은 값을 기억하며, caption_anchor/title_anchor는 위젯 영역을 지정합니다.',
+      en: 'The default viewport follows app layout. Extra canvases honor requested dimensions within available space. scene.objects lists the visible 3D objects, useful for hiding everything or counting. scene.align and scene.resizable are stored; caption_anchor/title_anchor identify widget areas.',
     },
     signature: "scene.width = 800; scene.height = 500; for obj in scene.objects: obj.visible = False",
     params: [
-      { name: 'scene.width / height', type: 'number', default: '화면 크기', desc: { ko: '값만 기억 (화면은 그대로)', en: 'Stored only (viewport unchanged)' } },
+      { name: 'scene.width / height', type: 'number', default: '화면 배치', desc: { ko: '기본 화면은 앱 배치, 추가 canvas는 사용 가능한 공간 안에서 크기 반영', en: 'Default view follows app layout; extra canvases resize within available space' } },
       { name: 'scene.objects', type: 'list', default: '[]', desc: { ko: '보이는 3D 객체 목록', en: 'Visible 3D objects' } },
     ],
     code: `from vpython import *
@@ -2136,8 +2142,9 @@ while True:
 scene.width = 800
 scene.height = 500
 
+colors = [color.red, color.orange, color.yellow, color.green, color.blue]
 for i in range(5):
-    sphere(pos=vector(i - 2, 0, 0), radius=0.3, color=무지개[i])
+    sphere(pos=vector(i - 2, 0, 0), radius=0.3, color=colors[i])
 
 print(len(scene.objects), '개')
 sleep(1)
@@ -2146,6 +2153,9 @@ for obj in scene.objects:
     tags: ['scene', 'width', 'height', 'objects', 'align', '화면', '크기', '목록'],
   },
 ];
+
+const docs = [...shapeGuides.map(doc=>({...doc,practice:!!doc.code})), ...apiDocs.map(annotateDocOrigin)];
+export const apiReferenceDocs = docs.filter(doc=>doc.origin !== 'guide');
 
 // ─── 유틸리티 함수 ──────────────────────────────────────────
 
@@ -2185,8 +2195,8 @@ export function searchDocs(query, locale = 'ko') {
   const scored = docs.map((doc) => {
     let score = 0;
 
-    const titleText = (doc.title[locale] || doc.title.en || '').toLowerCase();
-    const descText = (doc.description[locale] || doc.description.en || '').toLowerCase();
+    const titleText = [doc.title?.[locale],doc.title?.ko,doc.title?.en].filter(Boolean).join(' ').toLowerCase();
+    const descText = [doc.description?.[locale] || doc.description?.en || '', doc.explain?.[locale] || '', ...((doc.changes || []).map(step => step.instruction?.[locale] || '')), ...(doc.extensionNotes || []).map(note=>note[locale] || '')].join(' ').toLowerCase();
     const sigText = (doc.signature || '').toLowerCase();
     const idText = doc.id.toLowerCase();
 

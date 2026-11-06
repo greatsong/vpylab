@@ -21,6 +21,7 @@ function lazyWithRetry(importFn) {
 // Code splitting — Monaco + Three.js는 Sandbox/Mission 진입 시에만 로드
 const Sandbox = lazyWithRetry(() => import('./pages/Sandbox'));
 const Missions = lazyWithRetry(() => import('./pages/Missions'));
+const Tutorials = lazyWithRetry(() => import('./pages/Tutorials'));
 const MissionPlay = lazyWithRetry(() => import('./pages/MissionPlay'));
 const Courses = lazyWithRetry(() => import('./pages/Courses'));
 const Examples = lazyWithRetry(() => import('./pages/Examples'));
@@ -28,8 +29,10 @@ const About = lazyWithRetry(() => import('./pages/About'));
 const Dashboard = lazyWithRetry(() => import('./pages/Dashboard'));
 const Gallery = lazyWithRetry(() => import('./pages/Gallery'));
 const GalleryDetail = lazyWithRetry(() => import('./pages/GalleryDetail'));
+const SourceProject = lazyWithRetry(() => import('./pages/SourceProject'));
 const SharedCodeLoader = lazyWithRetry(() => import('./pages/SharedCodeLoader'));
 const Docs = lazyWithRetry(() => import('./pages/Docs'));
+const Forge = lazyWithRetry(() => import('./pages/Forge'));
 const Guide = lazyWithRetry(() => import('./pages/Guide'));
 const Privacy = lazyWithRetry(() => import('./pages/Privacy'));
 const Embed = lazyWithRetry(() => import('./pages/Embed'));
@@ -54,6 +57,8 @@ function AppContent() {
       }>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/tutorials" element={<Tutorials />} />
+          <Route path="/tutorials/:tutorialId" element={<Tutorials />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/courses/:courseId" element={<Courses />} />
           <Route path="/courses/:courseId/:lessonId" element={<Courses />} />
@@ -62,10 +67,12 @@ function AppContent() {
           <Route path="/missions" element={<Missions />} />
           <Route path="/mission/:missionId" element={<MissionPlay />} />
           <Route path="/docs" element={<Docs />} />
+          <Route path="/forge" element={<Forge />} />
           <Route path="/guide" element={<Guide />} />
           <Route path="/about" element={<About />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/gallery" element={<Gallery />} />
+          <Route path="/gallery/glowscript/:projectId" element={<SourceProject />} />
           <Route path="/gallery/:id" element={<GalleryDetail />} />
           <Route path="/s/:id" element={<SharedCodeLoader />} />
           <Route path="/embed/:id" element={<Embed />} />

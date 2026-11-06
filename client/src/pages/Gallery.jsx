@@ -1,226 +1,51 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import Header from '../components/layout/Header';
+import GalleryCard from '../components/gallery/GalleryCard';
 import useGalleryStore from '../stores/galleryStore';
 import useAuthStore from '../stores/authStore';
-import GalleryCard from '../components/gallery/GalleryCard';
-import Header from '../components/layout/Header';
+import { glowscriptProjects } from '../data/glowscript-projects';
 import { useI18n } from '../i18n/useI18n';
 
-const CATEGORIES = [
-  { value: 'all', label: '전체', en: 'All' },
-  { value: 'CT', label: '컴퓨팅', en: 'CT' },
-  { value: 'CR', label: '창작', en: 'Creative' },
-  { value: 'MA', label: '수학', en: 'Math' },
-  { value: 'SC', label: '과학', en: 'Science' },
-  { value: 'AR', label: '아트', en: 'Art' },
-  { value: 'SN', label: '사운드', en: 'Sound' },
-  { value: 'free', label: '자유', en: 'Free' },
-];
-
-const SORTS = [
-  { value: 'latest', label: '최신', en: 'Latest' },
-  { value: 'popular', label: '좋아요', en: 'Liked' },
-  { value: 'views', label: '조회', en: 'Viewed' },
-];
+function SourceCard({ project, ko }) {
+  return <Link to={`/gallery/glowscript/${project.id}`} className="block border no-underline overflow-hidden" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-primary)' }}>
+    {project.thumbnail ? <img src={project.thumbnail} alt="" loading="lazy" className="w-full aspect-[8/5] object-contain" style={{ backgroundColor: '#111827' }} /> : <div className="aspect-[8/5] flex items-center justify-center text-xs" style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)' }}>{ko ? '원본 코드 보기' : 'View original code'}</div>}
+    <div className="p-5"><p className="text-xs mb-2" style={{ color: 'var(--color-accent)' }}>{project.credit}</p><h3 className="text-base font-semibold leading-relaxed break-words mb-3">{project.title}</h3><p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{project.folder.startsWith('2021') ? '2021 서울고' : '2024 프로젝트 모음'} · {ko ? '작품 보기' : 'Explore'} →</p></div>
+  </Link>;
+}
 
 export default function Gallery() {
-  const { locale: lang } = useI18n();
-  const { works, loading, hasMore, filters, setFilters, fetchWorks, myWorks, fetchMyWorks } = useGalleryStore();
+  const { locale } = useI18n();
+  const ko = locale === 'ko';
   const user = useAuthStore(s => s.user);
-  const [search, setSearch] = useState(filters.search || '');
-
-  useEffect(() => {
-    fetchWorks(true);
-  }, [fetchWorks, filters.category, filters.sort, filters.search]);
-
-  // 내 작품 목록 (비공개 Fork 초안 포함) — 로그인 시에만 조회
-  useEffect(() => {
-    if (user) fetchMyWorks();
-  }, [user, fetchMyWorks]);
-
-  const stats = useMemo(() => {
-    const pages = works.filter(work => work.github_url || work.github_repo).length;
-    const remixes = works.reduce((sum, work) => sum + (work.remix_count || 0), 0);
-    const likes = works.reduce((sum, work) => sum + (work.like_count || 0), 0);
-    return { pages, remixes, likes };
-  }, [works]);
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setFilters({ search: search.trim() });
-  };
-
-  const clearSearch = () => {
-    setSearch('');
-    setFilters({ search: '' });
-  };
-
-  const handleLoadMore = () => {
-    if (!loading && hasMore) fetchWorks();
-  };
-
-  return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
-      <Header />
-
-      <main className="gallery-page">
-        <section className="gallery-command">
-          <div className="gallery-command-copy">
-            <p className="gallery-kicker">Open Source Studio</p>
-            <h1>{lang === 'ko' ? '실행하고, 고치고, 다시 공유하는 갤러리' : 'Run, remix, and share VPyLab work'}</h1>
-            <p>
-              {lang === 'ko'
-                ? '작품은 코드와 GitHub 저장소로 이어집니다. 마음에 드는 장면을 실행하고, 이슈를 남기고, 내 프로젝트로 발전시켜보세요.'
-                : 'Every work can become code, feedback, a fork, and a new project.'}
-            </p>
-          </div>
-
-          <div className="gallery-command-panel" aria-label="gallery summary">
-            <div>
-              <span>{works.length}</span>
-              <p>{lang === 'ko' ? '로드된 작품' : 'Loaded works'}</p>
-            </div>
-            <div>
-              <span>{stats.pages}</span>
-              <p>GitHub Pages</p>
-            </div>
-            <div>
-              <span>{stats.remixes}</span>
-              <p>Remix</p>
-            </div>
-            <div>
-              <span>{stats.likes}</span>
-              <p>{lang === 'ko' ? '좋아요' : 'Likes'}</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="gallery-toolbar" aria-label="gallery filters">
-          <form onSubmit={handleSearch} className="gallery-search">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={lang === 'ko' ? '제목으로 작품 검색' : 'Search by title'}
-            />
-            {filters.search && (
-              <button type="button" className="gallery-search-clear" onClick={clearSearch}>
-                {lang === 'ko' ? '초기화' : 'Clear'}
-              </button>
-            )}
-            <button type="submit">{lang === 'ko' ? '검색' : 'Search'}</button>
-          </form>
-
-          <div className="gallery-filter-row">
-            <div className="gallery-cats" role="tablist" aria-label="categories">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat.value}
-                  className={`cat-pill ${filters.category === cat.value ? 'active' : ''}`}
-                  onClick={() => setFilters({ category: cat.value })}
-                  type="button"
-                >
-                  {lang === 'ko' ? cat.label : cat.en}
-                </button>
-              ))}
-            </div>
-
-            <div className="gallery-sort" aria-label="sort">
-              {SORTS.map(sort => (
-                <button
-                  key={sort.value}
-                  className={`sort-btn ${filters.sort === sort.value ? 'active' : ''}`}
-                  onClick={() => setFilters({ sort: sort.value })}
-                  type="button"
-                >
-                  {lang === 'ko' ? sort.label : sort.en}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {user && myWorks.length > 0 && (
-          <section aria-label={lang === 'ko' ? '내 작품' : 'My works'} style={{ marginBottom: '2.5rem' }}>
-            <div className="gallery-section-head compact">
-              <div>
-                <h2>{lang === 'ko' ? '내 작품' : 'My Works'}</h2>
-                <p>
-                  {lang === 'ko'
-                    ? '비공개 작품(Fork 초안 포함)은 상세 페이지에서 갤러리에 공개할 수 있습니다.'
-                    : 'Private works (including fork drafts) can be published from their detail page.'}
-                </p>
-              </div>
-            </div>
-            <div className="gallery-grid">
-              {myWorks.map(work => (
-                <div key={work.id} style={{ position: 'relative' }}>
-                  {work.is_public === false && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: 10,
-                        right: 10,
-                        zIndex: 2,
-                        padding: '3px 9px',
-                        borderRadius: 999,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: '#fff',
-                        backgroundColor: 'rgba(20, 20, 28, 0.72)',
-                        pointerEvents: 'none',
-                      }}
-                    >
-                      {lang === 'ko' ? '비공개' : 'Private'}
-                    </span>
-                  )}
-                  <GalleryCard work={work} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <div className="gallery-section-head">
-          <div>
-            <h2>{lang === 'ko' ? '공개 작품' : 'Published Works'}</h2>
-            <p>{lang === 'ko' ? '클릭하면 상세, 실행, GitHub 흐름으로 이어집니다.' : 'Open a work to run, inspect code, and fork.'}</p>
-          </div>
-          <Link to="/sandbox" className="gallery-create-link">
-            {lang === 'ko' ? '새 작품 만들기' : 'Create work'}
-          </Link>
-        </div>
-
-        <div className="gallery-grid">
-          {works.map(work => (
-            <GalleryCard key={work.id} work={work} />
-          ))}
-        </div>
-
-        {!loading && works.length === 0 && (
-          <div className="gallery-empty">
-            <div className="gallery-empty-mark" aria-hidden="true">
-              <svg width="32" height="32" viewBox="0 0 16 16" fill="none">
-                <path d="M3 3.5h10v9H3z" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M6 6l4 2-4 2V6z" fill="currentColor" />
-              </svg>
-            </div>
-            <h3>{lang === 'ko' ? '조건에 맞는 작품이 없습니다.' : 'No matching works.'}</h3>
-            <p>{lang === 'ko' ? '검색어를 줄이거나 다른 카테고리를 선택해보세요.' : 'Try another search or category.'}</p>
-          </div>
-        )}
-
-        {loading && <div className="gallery-loading">{lang === 'ko' ? '작품을 불러오는 중입니다.' : 'Loading works.'}</div>}
-        {!loading && hasMore && works.length > 0 && (
-          <button onClick={handleLoadMore} className="load-more-btn" type="button">
-            {lang === 'ko' ? '더 불러오기' : 'Load more'}
-          </button>
-        )}
-      </main>
-    </div>
-  );
+  const { works, myWorks, loading, error, hasMore, fetchWorks, fetchMyWorks } = useGalleryStore();
+  const students = glowscriptProjects.filter(project => project.kind === 'student');
+  const references = glowscriptProjects.filter(project => project.kind !== 'student');
+  useEffect(() => { fetchWorks(true); }, [fetchWorks]);
+  useEffect(() => { if (user) fetchMyWorks(); }, [user, fetchMyWorks]);
+  return <div className="min-h-screen" style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }}>
+    <Header />
+    <main className="w-full max-w-5xl mx-auto px-6 md:px-10 py-12">
+      <h1 className="font-display text-3xl font-bold mb-4">{ko ? '갤러리' : 'Gallery'}</h1>
+      <p className="text-sm leading-relaxed max-w-2xl mb-9" style={{ color: 'var(--color-text-secondary)' }}>{ko ? '학생이 만든 실제 프로젝트를 보고, 어떤 아이디어를 코드로 옮겼는지 살펴보세요. 원본을 실행하거나 코드를 열어 나만의 실험으로 이어갈 수 있어요.' : 'Explore actual student projects and the ideas behind them. Run the originals or open the code for your own experiments.'}</p>
+      <section aria-labelledby="student-project-title">
+        <div className="flex items-center justify-between gap-4 mb-5"><h2 id="student-project-title" className="font-display text-xl font-bold">{ko ? '학생 프로젝트' : 'Student projects'}</h2><Link to="/sandbox" className="text-sm no-underline" style={{ color: 'var(--color-accent)' }}>{ko ? '내 작품 만들기' : 'Create your own'} →</Link></div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">{students.map(project => <SourceCard key={project.id} project={project} ko={ko} />)}{works.map(work => <GalleryCard key={work.id} work={work} />)}</div>
+        {loading && <p className="text-sm mt-5">{ko ? '작품을 불러오는 중입니다.' : 'Loading projects.'}</p>}
+        {error && <p role="alert" className="text-sm mt-5">{ko ? '새 작품을 불러오지 못했습니다.' : 'Could not load new projects.'} <button type="button" onClick={() => fetchWorks(true)} className="btn-secondary">{ko ? '다시 시도' : 'Retry'}</button></p>}
+        {!loading && hasMore && works.length > 0 && <button type="button" onClick={() => fetchWorks()} className="btn-secondary mt-5">{ko ? '더 보기' : 'Load more'}</button>}
+      </section>
+      <details className="mt-12 border-t pt-6" style={{ borderColor: 'var(--color-border)' }}>
+        <summary className="text-sm font-semibold cursor-pointer">{ko ? `교사·참고 프로젝트 ${references.length}개` : `${references.length} teacher and reference projects`}</summary>
+        <p className="text-sm leading-relaxed my-5" style={{ color: 'var(--color-text-secondary)' }}>{ko ? '2024 프로젝트 모음의 교사·연수·참고 자료입니다. 학생 작품과 구분해 보관했습니다. 내용이 없는 초안도 원본 기록으로 남아 있습니다.' : 'Teacher, workshop, and other work from the supplied 2024 collection. These are separate from student work; empty drafts are also preserved.'}</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">{references.map(project => <SourceCard key={project.id} project={project} ko={ko} />)}</div>
+      </details>
+      {user && myWorks.length > 0 && <details className="mt-8 border-t pt-6" style={{ borderColor: 'var(--color-border)' }}>
+        <summary className="text-sm font-semibold cursor-pointer">{ko ? '내 작업 보기' : 'My work'}</summary>
+        <p className="text-sm my-5" style={{ color: 'var(--color-text-secondary)' }}>{ko ? '작품 상세 화면에서 공개 범위를 바꿀 수 있어요. 학생 프로젝트 전시는 별도 확인한 뒤 이루어집니다.' : 'Manage visibility from each work’s detail page. Student exhibition is confirmed separately.'}</p>
+        <div className="gallery-grid">{myWorks.map(work => <GalleryCard key={work.id} work={work} />)}</div>
+      </details>}
+      <p className="mt-10 text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{ko ? '출처: greatsong21의 GlowScript 공개 폴더 2개 · 총 33개 원본. 원본 이름과 출처는 작품별로 확인할 수 있습니다.' : 'Source: two public GlowScript folders by greatsong21, containing 33 originals. Each project includes its original name and source.'}</p>
+    </main>
+  </div>;
 }

@@ -20,9 +20,14 @@ export default function Header() {
   const accountRef = useRef(null);
   const menuId = useId();
   const location = useLocation();
-  const primary = [{ label: ko ? '배우기' : 'Learn', path: '/courses' }, { label: ko ? '만들기' : 'Create', path: '/sandbox' }];
+  const primary = [
+    { label: ko ? '튜토리얼' : 'Tutorials', path: '/tutorials' },
+    { label: ko ? '트레이닝' : 'Training', path: '/missions' },
+    { label: ko ? '갤러리' : 'Gallery', path: '/gallery' },
+    { label: ko ? '대장간' : 'Forge', path: '/forge' },
+    { label: ko ? '만들기' : 'Create', path: '/sandbox' },
+  ];
   const resources = [
-    { label: t('nav.examples'), path: '/examples' }, { label: t('nav.missions'), path: '/missions' }, { label: t('nav.gallery'), path: '/gallery' },
     { label: ko ? '사용 안내' : 'Guide', path: '/guide' }, { label: t('nav.docs'), path: '/docs' }, { label: ko ? 'VPyLab 소개' : 'About VPyLab', path: '/about' },
     ...(isTeacher ? [{ label: t('nav.dashboard'), path: '/dashboard' }] : []),
   ];
@@ -40,21 +45,22 @@ export default function Header() {
   useEffect(() => {
     setOpenMenu(null); // eslint-disable-line react-hooks/set-state-in-effect
   }, [location.pathname]);
-  const active = path => location.pathname === path || location.pathname.startsWith(path + '/');
+  const active = path => location.pathname === path || location.pathname.startsWith(path + '/')
+    || (path === '/missions' && (location.pathname.startsWith('/courses/') || location.pathname.startsWith('/mission/')));
   const linkStyle = path => ({ color: active(path) ? 'var(--color-accent)' : 'var(--color-text-secondary)' });
   const menuStyle = { backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' };
   return (
     <header ref={rootRef} className="sticky top-0 z-50 h-14 shrink-0 w-full min-w-0 flex items-center gap-4 border-b px-5 md:px-8" style={{ backgroundColor: 'var(--color-bg-panel)', borderColor: 'var(--color-border)' }}>
       <Link to="/" className="no-underline mr-auto shrink-0" aria-label="VPyLab 홈"><BrandLogo size={26} inverse={!!THEME_META[theme]?.dark} /></Link>
-      <nav aria-label={ko ? '주 메뉴' : 'Main navigation'} className="hidden sm:flex items-center gap-6 mr-3">
+      <nav aria-label={ko ? '주 메뉴' : 'Main navigation'} className="hidden md:flex items-center gap-5 mr-3">
         {primary.map(item => <Link key={item.path} to={item.path} aria-current={active(item.path) ? 'page' : undefined} className="no-underline text-sm font-medium py-3" style={linkStyle(item.path)} onMouseEnter={() => { if (item.path === '/sandbox') prewarm(); }}>{item.label}</Link>)}
       </nav>
       <div className="relative">
-        <button ref={moreRef} type="button" aria-expanded={openMenu === 'more'} aria-controls={`${menuId}-more`} onClick={() => setOpenMenu(openMenu === 'more' ? null : 'more')} className="text-sm cursor-pointer border-0 bg-transparent py-2 px-1" style={{ color: 'var(--color-text-secondary)' }}><span className="hidden sm:inline">{ko ? '더 보기' : 'More'}</span><span className="sm:hidden">{ko ? '메뉴' : 'Menu'}</span> <span aria-hidden="true">⌄</span></button>
+        <button ref={moreRef} type="button" aria-expanded={openMenu === 'more'} aria-controls={`${menuId}-more`} onClick={() => setOpenMenu(openMenu === 'more' ? null : 'more')} className="text-sm cursor-pointer border-0 bg-transparent py-2 px-1" style={{ color: 'var(--color-text-secondary)' }}><span className="hidden md:inline">{ko ? '더 보기' : 'More'}</span><span className="md:hidden">{ko ? '메뉴' : 'Menu'}</span> <span aria-hidden="true">⌄</span></button>
         {openMenu === 'more' && (
           <div id={`${menuId}-more`} className="absolute right-0 top-full mt-3 w-60 max-h-[calc(100dvh-80px)] overflow-y-auto p-3" style={menuStyle}>
             <nav aria-label={ko ? '전체 메뉴' : 'All navigation'}>
-              <div className="sm:hidden mb-2 pb-2" style={{ borderBottom: '1px solid var(--color-border)' }}>{primary.map(item => <Link key={item.path} to={item.path} className="block px-3 py-2.5 text-sm no-underline font-semibold" style={linkStyle(item.path)}>{item.label}</Link>)}</div>
+              <div className="md:hidden mb-2 pb-2" style={{ borderBottom: '1px solid var(--color-border)' }}>{primary.map(item => <Link key={item.path} to={item.path} className="block px-3 py-2.5 text-sm no-underline font-semibold" style={linkStyle(item.path)}>{item.label}</Link>)}</div>
               {resources.map(item => <Link key={item.path} to={item.path} className="block px-3 py-2.5 text-sm no-underline hover:underline" style={linkStyle(item.path)}>{item.label}</Link>)}
             </nav>
             <div className="mt-3 pt-4 px-3 space-y-4 text-xs" style={{ borderTop: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}>

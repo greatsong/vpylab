@@ -15,9 +15,10 @@ describe('단계형 교재에서 학습 내용 접근', () => {
     const lesson = light.lessons[6];
     render(<MemoryRouter><WorkbookCourse course={light} lessonId={lesson.id} /></MemoryRouter>);
     expect(screen.getByLabelText('예상할 코드').textContent).toBe(lesson.code);
-    expect(screen.queryByRole('link', { name: '코드 열고 실습하기 ↗' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '코드 열고 실습하기 →' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '실행' }));
-    expect(screen.getByRole('link', { name: '코드 열고 실습하기 ↗' })).toHaveAttribute('href', `/sandbox?lesson=${light.id}/${lesson.id}`);
+    expect(screen.getByRole('link', { name: '코드 열고 실습하기 →' })).toHaveAttribute('href', `/sandbox?lesson=${light.id}/${lesson.id}`);
+    expect(screen.getByRole('link', { name: '코드 열고 실습하기 →' })).not.toHaveAttribute('target');
     expect(screen.getByText(lesson.guide.support)).toBeVisible();
     expect(screen.getByText('소리 대신 화면으로 해보기').closest('details')).not.toHaveAttribute('open');
     fireEvent.click(screen.getByRole('button', { name: '바꾸기' }));

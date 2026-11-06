@@ -139,8 +139,8 @@ export function postInputValue(id, value) {
   if (worker && ['running', 'stopping'].includes(status)) worker.postMessage({ type: 'input_value', id, value });
 }
 
-export function postMouseState(pos, pick) {
-  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'mouse', pos, pick });
+export function postMouseState(pos, pick, canvasId = 'scene') {
+  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'mouse', pos, pick, canvas_id: canvasId });
 }
 
 export function postPressedKeys(keys) {
@@ -148,8 +148,8 @@ export function postPressedKeys(keys) {
 }
 
 /** 카메라 상태를 Worker에 알린다. Python의 scene.camera.pos, scene.forward 읽기에 쓴다. */
-export function postCameraState(state) {
-  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'camera', state });
+export function postCameraState(state, canvasId = 'scene') {
+  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'camera', state, canvas_id: canvasId, runId: activeRunId });
 }
 
 /** 구독은 유지하므로 종료 후 다시 준비해도 메시지가 유실되지 않습니다. */

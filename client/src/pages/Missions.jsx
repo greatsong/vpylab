@@ -1,169 +1,47 @@
-import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { useI18n } from '../i18n/useI18n';
+import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
-import missions, { categories, getMissionsByCategory } from '../data/missions';
+import { useI18n } from '../i18n/useI18n';
+import { getMissionById } from '../data/missions';
+import { trainingCourses, trainingSteps } from '../data/training';
 import useAppStore from '../stores/appStore';
 
-const LEVEL_LABELS = {
-  1: { ko: '따라하기', en: 'Follow' },
-  2: { ko: '변형하기', en: 'Modify' },
-  3: { ko: '설계하기', en: 'Design' },
-  4: { ko: '창작하기', en: 'Create' },
-};
-
-const CAT_COLORS = {
-  CT: '#6C5CE7', CR: '#FF6B6B', MA: '#00CEC9',
-  SC: '#00B894', AR: '#F0883E', SN: '#E84393', AI: '#4A6CF7',
-};
-
 export default function Missions() {
-  const { t, locale: lang } = useI18n();
-  const [searchParams] = useSearchParams();
-  const initialCategory = searchParams.get('category') || null;
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const missionProgress = useAppStore((s) => s.missionProgress);
-
-  const categoryList = Object.values(categories);
-  const filteredMissions = selectedCategory
-    ? getMissionsByCategory(selectedCategory)
-    : missions;
-
+  const { locale: lang } = useI18n();
+  const ko = lang === 'ko';
+  const progress = useAppStore(s => s.missionProgress);
+  const next = trainingSteps.find(step => !progress[step.missionId]?.passed);
+  const completed = trainingSteps.filter(step => progress[step.missionId]?.passed).length;
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }}>
       <Header />
-
-      <main className="flex-1 container-main py-8 w-full">
-        {/* 제목 + 진행 요약 */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Link to="/" className="text-xs no-underline" style={{ color: 'var(--color-text-muted)' }}>
-              {t('nav.home')}
-            </Link>
-            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>/</span>
-          </div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-            {t('nav.missions')}
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
-            {filteredMissions.length}{lang === 'ko' ? '개 미션' : ' missions'}
-          </p>
-        </div>
-
-        {/* 카테고리 필터 — pill 형태 */}
-        <div className="flex gap-2 flex-wrap mb-8">
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className="mission-filter-btn"
-            data-active={!selectedCategory || undefined}
-          >
-            All
-          </button>
-          {categoryList.map((cat) => {
-            const color = CAT_COLORS[cat.id];
-            const count = getMissionsByCategory(cat.id).length;
-            if (count === 0) return null;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
-                className="mission-filter-btn"
-                data-active={selectedCategory === cat.id || undefined}
-                style={selectedCategory === cat.id ? { '--filter-color': color } : {}}
-              >
-                {cat.title[lang] || cat.id}
-                <span className="opacity-50 ml-1">{count}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* 미션 카드 그리드 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" style={{ alignItems: 'start' }}>
-          {filteredMissions.map((mission) => {
-            const color = CAT_COLORS[mission.category];
-            const completed = missionProgress[mission.id]?.passed;
-            const score = missionProgress[mission.id]?.score;
-
-            return (
-              <Link
-                key={mission.id}
-                to={`/mission/${mission.id}`}
-                className="no-underline block rounded-md p-5 transition-all"
-                style={{
-                  backgroundColor: 'var(--color-bg-panel)',
-                  border: '1px solid var(--color-border)',
-                  boxShadow: 'var(--shadow-sm)',
-                  borderLeft: `3px solid ${color}`,
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                {/* 상단: ID + 레벨 + 상태 */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono font-semibold" style={{ color }}>{mission.id}</span>
-                    <span className="mission-level-badge" style={{ '--level-color': color }}>
-                      {LEVEL_LABELS[mission.level]?.[lang]}
-                    </span>
-                  </div>
-                  {completed ? (
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center"
-                      style={{ background: 'var(--color-success)' }}>
-                      <svg width="10" height="10" viewBox="0 0 16 16" fill="white">
-                        <path d="M6.5 12L2 7.5l1.5-1.5L6.5 9 12.5 3 14 4.5 6.5 12z"/>
-                      </svg>
-                    </div>
-                  ) : (
-                    <div className="w-5 h-5 rounded-full"
-                      style={{ border: '1.5px solid var(--color-border)' }} />
-                  )}
-                </div>
-
-                {/* 제목 */}
-                <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>
-                  {mission.title[lang]}
-                </h3>
-
-                {/* 설명 */}
-                <p className="text-[13px] leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>
-                  {mission.description[lang]}
-                </p>
-
-                {/* 하단: 카테고리 + 점수 */}
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded"
-                    style={{ backgroundColor: `${color}20`, color }}>
-                    {t(`categories.${mission.category}`)}
-                  </span>
-                  {score != null && (
-                    <span className="text-xs font-mono font-semibold" style={{ color: 'var(--color-success)' }}>
-                      {score}점
-                    </span>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {filteredMissions.length === 0 && (
-          <div className="text-center py-16" style={{ color: 'var(--color-text-muted)' }}>
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ margin: '0 auto 12px' }}>
-              <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="1.5" opacity="0.3"/>
-              <path d="M13 25a7 7 0 0114 0" stroke="currentColor" strokeWidth="1.5" opacity="0.3" fill="none"/>
-              <circle cx="15" cy="17" r="1.5" fill="currentColor" opacity="0.3"/>
-              <circle cx="25" cy="17" r="1.5" fill="currentColor" opacity="0.3"/>
-            </svg>
-            <p className="text-sm">{t('home.preparing')}</p>
-          </div>
-        )}
+      <main className="w-full max-w-3xl mx-auto px-6 md:px-10 py-12">
+        <h1 className="font-display text-3xl font-bold mb-4">{ko ? '트레이닝' : 'Training'}</h1>
+        <p className="text-sm leading-relaxed mb-10" style={{ color: 'var(--color-text-secondary)' }}>{ko ? '작은 작품을 완성하는 트레이닝 코스입니다. 처음이라면 기초부터, 문법을 배웠다면 핵심 연습부터 시작하세요.' : 'Training courses for finishing a small project. Start with foundations, or try core practice if you know the basics.'}</p>
+        <section aria-labelledby="foundation-title" className="border p-6 mb-8" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-panel)' }}>
+          <p className="text-xs mb-3" style={{ color: 'var(--color-accent)' }}>{ko ? '처음이라면 여기부터 · 기초 8차시' : 'Start here · 8 foundation lessons'}</p>
+          <h2 id="foundation-title" className="font-display text-xl font-bold mb-3">{trainingCourses[0].title[lang]}</h2>
+          <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>{trainingCourses[0].description[lang]}</p>
+          <p className="text-xs mb-5" style={{ color: 'var(--color-text-secondary)' }}>{trainingCourses[0].prerequisite[lang]}</p>
+          <Link to={`/courses/${trainingCourses[0].id}`} className="btn-primary no-underline inline-flex">{ko ? '기초 코스 시작하기' : 'Start foundations'} →</Link>
+        </section>
+        <section aria-labelledby="practice-title" className="mb-10">
+          <div className="flex justify-between items-center gap-4 mb-3"><h2 id="practice-title" className="font-display text-xl font-bold">{ko ? '배운 것을 내 힘으로' : 'Practice on your own'}</h2><span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{completed} / {trainingSteps.length} {ko ? '조건 확인' : 'checks passed'}</span></div>
+          <p className="text-sm leading-relaxed mb-5" style={{ color: 'var(--color-text-secondary)' }}>{ko ? '기초를 배운 뒤 선택하는 6단계 연습입니다. 변수·반복·조건·리스트를 도움을 조금씩 줄이며 연습합니다. 순서는 추천이며 어느 단계든 열 수 있어요.' : 'An optional six-step practice course after foundations. Practice variables, loops, conditions, and lists with less help. Follow the suggested order or open any step.'}</p>
+          {next && <Link to={`/mission/${next.missionId}`} className="text-sm inline-block mb-5" style={{ color: 'var(--color-accent)' }}>{ko ? (completed ? '이어서 연습하기' : '핵심 연습 시작하기') : (completed ? 'Continue practice' : 'Start core practice')} →</Link>}
+          <ol>{trainingSteps.map((step, index) => {
+            const mission = getMissionById(step.missionId);
+            return <li key={step.missionId} className="border-t" style={{ borderColor: 'var(--color-border)' }}><Link to={`/mission/${step.missionId}`} className="flex gap-4 py-5 no-underline" style={{ color: 'inherit' }}><span className="font-mono text-xs pt-1" style={{ color: 'var(--color-accent)' }}>{index + 1}</span><div className="flex-1 min-w-0"><p className="text-xs mb-2" style={{ color: 'var(--color-text-secondary)' }}>{step.focus[lang]}</p><h3 className="font-semibold text-sm">{mission.title[lang]}</h3><p className="text-xs mt-2 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{step.reflect[lang]}</p></div><span className="text-xs shrink-0" style={{ color: 'var(--color-accent)' }}>{progress[step.missionId]?.passed ? (ko ? '조건 확인됨' : 'Checked') : '→'}</span></Link></li>;
+          })}</ol>
+          <p className="text-xs leading-relaxed mt-4" style={{ color: 'var(--color-text-secondary)' }}>{ko ? '자동 검사는 코드의 조건을 확인합니다. 왜 바꿨는지 설명하고, 다른 값에서도 되는지 살펴보며 마무리하세요. 이 기기의 연습 기록은 그대로 이어집니다.' : 'Automatic checks verify code conditions. Explain your changes and try other values to finish. Practice records on this device are preserved.'}</p>
+        </section>
+        <p className="text-sm leading-relaxed mb-10"><Link to="/tutorials" style={{ color: 'var(--color-accent)' }}>{ko ? '연습한 것으로 내 작품을 만들고 싶다면 튜토리얼의 만들며 탐구하기로 →' : 'Use your practice in a project: Explore by making in Tutorials →'}</Link></p>
+        <section aria-labelledby="sharing-title" className="border-t pt-6" style={{ borderColor: 'var(--color-border)' }}>
+          <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>{ko ? '작품을 만든 다음 · 선택 4차시' : 'After making a project · 4 optional lessons'}</p>
+          <h2 id="sharing-title" className="font-display text-xl font-bold mb-3">{trainingCourses[1].title[lang]}</h2>
+          <p className="text-sm mb-3 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{trainingCourses[1].description[lang]}</p>
+          <p className="text-xs mb-5" style={{ color: 'var(--color-text-secondary)' }}>{trainingCourses[1].prerequisite[lang]}</p>
+          <Link to={`/courses/${trainingCourses[1].id}`} className="text-sm" style={{ color: 'var(--color-accent)' }}>{ko ? '저장과 공유 코스 열기' : 'Open saving and sharing'} →</Link>
+        </section>
       </main>
     </div>
   );

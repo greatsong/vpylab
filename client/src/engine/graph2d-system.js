@@ -12,20 +12,24 @@
 const graphRegistry = new Map();   // graphId → { canvas, ctx, opts, series:Map<seriesId, seriesObj> }
 const seriesGraphMap = new Map();  // seriesId → graphId
 let panelEl = null;
+const panels = new Map();
 
-function ensurePanel() {
-  if (panelEl) return panelEl;
-  panelEl = document.querySelector('[data-vpylab-graphs]');
+function ensurePanel(canvasId = 'scene') {
+  panelEl = panels.get(canvasId) || null;
+  if (panelEl?.isConnected) return panelEl;
+  panelEl = document.querySelector(`[data-vpylab-graphs][data-canvas-id="${canvasId}"]`);
   if (panelEl) return panelEl;
   panelEl = document.createElement('div');
   panelEl.setAttribute('data-vpylab-graphs', '');
+  panelEl.dataset.canvasId = canvasId;
+  panels.set(canvasId, panelEl);
   panelEl.style.cssText = [
     'position:absolute', 'left:8px', 'bottom:8px',
     'z-index:10',
     'display:flex', 'flex-direction:column', 'gap:8px',
     'pointer-events:none',
   ].join(';');
-  const host = document.querySelector('[data-vpylab-viewport]') || document.body;
+  const host = document.querySelector(`[data-vpylab-canvas-id="${canvasId}"]`) || document.querySelector('[data-vpylab-viewport]') || document.body;
   const cs = host.nodeType === 1 ? getComputedStyle(host) : null;
   if (cs && cs.position === 'static' && host !== document.body) {
     host.style.position = 'relative';
@@ -35,14 +39,14 @@ function ensurePanel() {
 }
 
 function removePanelIfEmpty() {
-  if (panelEl && graphRegistry.size === 0) {
-    panelEl.remove();
-    panelEl = null;
+  for (const [id, el] of panels) {
+    if (el.childElementCount === 0) { el.remove(); panels.delete(id); }
   }
+  panelEl = null;
 }
 
 export function createGraph(cmd) {
-  const panel = ensurePanel();
+  const panel = ensurePanel(cmd.canvas_id);
   const wrap = document.createElement('div');
   wrap.style.cssText = [
     'background:rgba(255,255,255,0.95)',
@@ -86,6 +90,7 @@ export function createGraph(cmd) {
 
   panel.appendChild(wrap);
   graphRegistry.set(cmd.id, {
+    canvasId: cmd.canvas_id || 'scene',
     wrap, canvas, ctx,
     opts: { width: w, height: h, ...cmd },
     series: new Map(),
@@ -137,6 +142,16 @@ export function clearSeries(cmd) {
   const s = g.series.get(cmd.id);
   if (!s) return;
   s.points = [];
+  redraw(g);
+}
+
+export function updateSeries(cmd) {
+  const g = graphRegistry.get(seriesGraphMap.get(cmd.id));
+  const series = g?.series.get(cmd.id);
+  if (!series) return;
+  for (const property of ['color', 'width', 'size', 'visible']) {
+    if (cmd[property] !== undefined) series[property] = cmd[property];
+  }
   redraw(g);
 }
 
@@ -255,12 +270,10 @@ function redraw(g) {
   }
 }
 
-export function clearGraphs2D() {
-  for (const [, g] of graphRegistry) g.wrap.remove();
-  graphRegistry.clear();
-  seriesGraphMap.clear();
-  if (panelEl) {
-    panelEl.remove();
-    panelEl = null;
+export function clearGraphs2D(canvasId) {
+  for (const [id, g] of graphRegistry) {
+    if (canvasId && g.canvasId !== canvasId) continue;
+    deleteGraph({ id });
   }
+  removePanelIfEmpty();
 }

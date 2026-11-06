@@ -30,6 +30,8 @@ collected_commands = []
 collected_warnings = []
 heartbeat_count = [0]   # batch 메시지 수 (빈 배치 = 하트비트)
 stop_requested = False
+event_queue = []
+pressed_keys = []
 
 
 class FakeJs(types.ModuleType):
@@ -61,7 +63,11 @@ class FakeJs(types.ModuleType):
 
     @staticmethod
     def _popEvent():
-        return None
+        return event_queue.pop(0) if event_queue else None
+
+    @staticmethod
+    def _getPressedKeys():
+        return json.dumps(pressed_keys)
 
     @staticmethod
     def _getInputValue(request_id):
@@ -130,7 +136,7 @@ sys.modules['vpython'] = vpython_module
 StopExecution = api_namespace['_StopExecution']
 
 
-def run_one(code, limit=RATE_CALL_LIMIT):
+def run_one(code, limit=RATE_CALL_LIMIT, events=None, keys=None):
     """코드 한 편을 실행하고 수집된 커맨드를 돌려준다."""
     global stop_requested
     rate_limit[0] = limit
@@ -141,6 +147,8 @@ def run_one(code, limit=RATE_CALL_LIMIT):
     rate_calls[0] = 0
     stop_requested = False
     api_namespace['_reset_runtime_state']()
+    event_queue.clear()
+    pressed_keys[:] = keys or []
 
     stdout = io.StringIO()
     error = None
@@ -150,6 +158,9 @@ def run_one(code, limit=RATE_CALL_LIMIT):
         with contextlib.redirect_stdout(stdout):
             # Worker와 같은 경로: ast 변환 → 실행마다 새 학생 전역에서 모듈 수준 실행(최상위 await) → 남은 태스크 대기
             loop.run_until_complete(api_namespace['_vpylab_run'](code, '<mission>'))
+            if events:
+                event_queue.extend(json.dumps(event) for event in events)
+                loop.run_until_complete(api_namespace['_vpylab_dispatch_events']())
     except StopExecution:
         stopped = True
     except BaseException as exc:  # noqa: BLE001 — 학생 코드의 모든 오류를 보고한다
@@ -181,7 +192,7 @@ def main():
     jobs = json.loads(sys.stdin.read() or '[]')
     results = []
     for job in jobs:
-        outcome = run_one(job.get('code', ''), int(job.get('rateLimit', RATE_CALL_LIMIT)))
+        outcome = run_one(job.get('code', ''), int(job.get('rateLimit', RATE_CALL_LIMIT)), job.get('events'), job.get('pressedKeys'))
         outcome['id'] = job.get('id')
         outcome['label'] = job.get('label')
         results.append(outcome)

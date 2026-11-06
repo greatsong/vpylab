@@ -1,3 +1,4 @@
+import { readPracticeDraft, writePracticeDraft } from '../utils/practice-drafts';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n/useI18n';
@@ -41,6 +42,9 @@ import CodeShareToast from '../components/codeshare/CodeShareToast';
 import useCodeShareStore from '../stores/codeShareStore';
 import EXAMPLES, { EXAMPLE_CATEGORIES } from '../data/examples';
 import { getLesson } from '../data/courses';
+import { getTutorial } from '../data/tutorials';
+import { getDocById } from '../data/docs';
+import { getGlowscriptProject } from '../data/glowscript-projects';
 
 function getProjectRole(project, members, userId) {
   if (!project || !userId) return null;
@@ -68,6 +72,7 @@ export default function Sandbox() {
   const [outputs, setOutputs] = useState([]);
   const [activeTab, setActiveTab] = useState('editor');
   const [mobileMore, setMobileMore] = useState(false);
+  const toolsButtonRef = useRef(null);
   const [shareMsg, setShareMsg] = useState('');
   const [shareDialog, setShareDialog] = useState(null); // { url, id } | null
   const [saveMsg, setSaveMsg] = useState('');
@@ -124,6 +129,8 @@ export default function Sandbox() {
   // 초기화 시 되돌릴 "원본 코드" — 예제/lesson/remix 로드 시 갱신, 미설정 시 DEFAULT_CODE
   const initialCodeRef = useRef(DEFAULT_CODE);
   const codeRef = useRef(DEFAULT_CODE);
+  const practiceContextRef = useRef(null);
+  const draftWriteFailedRef = useRef(false);
   const pendingPlayRef = useRef(null); // 자동 실행할 코드
   const loadedRepoParamRef = useRef(null);
   const handledTeamInviteRef = useRef('');
@@ -132,17 +139,37 @@ export default function Sandbox() {
   const repoAutorun = searchParams.get('autorun') === '1';
   const playParam = searchParams.get('play');
   const teamInviteCode = (searchParams.get('team') || '').trim().toLowerCase();
+  const showcaseProject = getGlowscriptProject(searchParams.get('showcase'));
+  const tutorial = getTutorial(searchParams.get('tutorial'), searchParams.get('step'));
+  const referenceDoc = getDocById(searchParams.get('doc'));
   const lessonPath = searchParams.get('lesson');
   const lessonParts = (lessonPath || '').split('/');
   const workbookLesson = lessonParts.length === 2 ? getLesson(lessonParts[0], lessonParts[1]) : null;
 
   const updateCode = useCallback((nextCode) => {
-    setCode((prev) => {
-      const value = typeof nextCode === 'function' ? nextCode(prev) : nextCode;
-      const normalized = value || '';
-      codeRef.current = normalized;
-      return normalized;
-    });
+    const value = typeof nextCode === 'function' ? nextCode(codeRef.current) : nextCode;
+    const normalized = value || '';
+    codeRef.current = normalized;
+    if (practiceContextRef.current && !useProjectStore.getState().activeProject) {
+      draftWriteFailedRef.current = !writePracticeDraft(practiceContextRef.current, normalized, initialCodeRef.current, useAuthStore.getState().user?.id);
+    }
+    setCode(normalized);
+  }, []);
+
+  const loadPracticeCode = useCallback((source, context) => {
+    practiceContextRef.current = context;
+    initialCodeRef.current = source;
+    const draft = readPracticeDraft(context, user?.id);
+    updateCode(draft ?? source);
+  }, [updateCode, user?.id]);
+
+  useEffect(() => {
+    const warn = event => {
+      if (!draftWriteFailedRef.current || codeRef.current === initialCodeRef.current) return;
+      event.preventDefault(); event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
   }, []);
 
   useEffect(() => {
@@ -313,12 +340,16 @@ export default function Sandbox() {
   // 외부 코드(공유/리믹스/플레이/예제/차시) 로드 시 활성 프로젝트 컨텍스트 해제
   // → 그 코드를 저장하면 별도 프로젝트로 가는 게 자연스러움
   useEffect(() => {
+    if (!searchParams.get('tutorial') && !searchParams.get('lesson') && !searchParams.get('showcase') && !searchParams.get('doc')) practiceContextRef.current = null;
     const fromExternal =
       !!location.state?.sharedCode
       || !!searchParams.get('remix')
       || !!searchParams.get('play')
       || !!searchParams.get('example')
       || !!searchParams.get('lesson')
+      || !!searchParams.get('doc')
+      || !!searchParams.get('tutorial')
+      || !!searchParams.get('showcase')
       || !!repoParam
       || window.location.hash.startsWith('#code=')
       || window.location.hash.startsWith('#b64=');
@@ -327,6 +358,13 @@ export default function Sandbox() {
       useCodeStore.getState().setCurrentCodeId(null);
     }
   }, [location.state, repoParam, searchParams]);
+
+  useEffect(() => {
+    if (!mobileMore) return;
+    const close = event => { if (event.key === 'Escape') { setMobileMore(false); toolsButtonRef.current?.focus(); } };
+    window.addEventListener('keydown',close);
+    return () => window.removeEventListener('keydown',close);
+  }, [mobileMore]);
 
   // Ctrl/Cmd+S → 저장
   useEffect(() => {
@@ -426,6 +464,59 @@ export default function Sandbox() {
     }
   }, [searchParams, addOutput, updateCode]);
 
+  useEffect(() => {
+    const id = searchParams.get('doc');
+    if (!id) return;
+    const item = getDocById(id);
+    if (!item?.code) { addOutput('실행할 문서 예제를 찾을 수 없습니다.', 'error'); return; }
+    stopAllSounds();
+    import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
+    if (sceneRef.current) clearScene(sceneRef.current);
+    loadPracticeCode(item.code, `doc/${item.id}`);
+    addOutput(`문서 예제 "${item.title.ko}" 준비됨. 실행 버튼을 눌러주세요.`, 'success');
+  }, [searchParams, loadPracticeCode, addOutput]);
+
+
+  useEffect(() => {
+    const tutorialId = searchParams.get('tutorial');
+    if (!tutorialId) return;
+    const item = getTutorial(tutorialId, searchParams.get('step'));
+    if (!item) {
+      addOutput('튜토리얼을 찾을 수 없습니다.', 'error');
+      return;
+    }
+    stopAllSounds();
+    import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
+    if (sceneRef.current) clearScene(sceneRef.current);
+    loadPracticeCode(item.code, `tutorial/${item.id}/${item.activeStep || 'base'}`);
+    addOutput(`튜토리얼 "${item.title.ko}" 준비됨. 실행 버튼을 눌러주세요.`, 'success');
+  }, [searchParams, addOutput, updateCode, loadPracticeCode]);
+
+  useEffect(() => {
+    const showcaseId = searchParams.get('showcase');
+    if (!showcaseId) return;
+    const project = getGlowscriptProject(showcaseId);
+    if (!project || project.pythonCheck !== 'ready') {
+      addOutput('이 프로젝트는 갤러리의 원본 링크에서 실행해주세요.', 'warning');
+      return;
+    }
+    const controller = new AbortController();
+    fetch(project.sourcePath, { signal: controller.signal }).then(response => {
+      if (!response.ok) throw new Error('source-load-failed');
+      return response.json();
+    }).then(data => {
+      if (controller.signal.aborted) return;
+      stopAllSounds();
+      import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
+      if (sceneRef.current) clearScene(sceneRef.current);
+      loadPracticeCode(data.code, `showcase/${project.id}`);
+      addOutput(`학생·참고 프로젝트 "${project.title}" 준비됨. 실행 버튼을 눌러주세요.`, 'success');
+    }).catch(reason => {
+      if (reason.name !== 'AbortError') addOutput('작품 코드를 불러오지 못했습니다. 갤러리에서 원본을 확인해주세요.', 'error');
+    });
+    return () => controller.abort();
+  }, [searchParams, addOutput, updateCode, loadPracticeCode]);
+
   // Course lesson 파라미터 처리 (?lesson=<courseId>/<lessonId>) — 코스 차시 코드 prefill
   useEffect(() => {
     const lessonParam = searchParams.get('lesson');
@@ -443,15 +534,14 @@ export default function Sandbox() {
       stopAllSounds();
       import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
       if (sceneRef.current) clearScene(sceneRef.current);
-      updateCode(lesson.code);
-      initialCodeRef.current = lesson.code;  // 초기화 시 이 차시로 복귀
+      loadPracticeCode(lesson.code, `lesson/${lessonParam}`);  // 초기화 시 이 차시로 복귀
       addOutput(`코스 차시 "${lesson.title?.ko || lid}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
     } else {
       addOutput(lesson
         ? '이 차시는 절차 안내입니다. 학습 코스에서 교재를 열고 현재 작품으로 실습하세요.'
         : `차시를 찾을 수 없습니다: ${lessonParam}`, lesson ? 'warning' : 'error');
     }
-  }, [searchParams, addOutput, updateCode]);
+  }, [searchParams, addOutput, updateCode, loadPracticeCode]);
 
   // Edit 파라미터 처리 (?edit=galleryId) — GitHub에서 코드 가져와 수정 모드
   useEffect(() => {
@@ -1036,20 +1126,20 @@ export default function Sandbox() {
 
         {/* 클릭하여 시작 오버레이 */}
         {theaterWaiting && (
-          <div
+          <button type="button"
             onClick={handleTheaterStart}
             style={{
               position: 'fixed', inset: 0, zIndex: 200,
               background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
+              cursor: 'pointer', border: 'none', padding: 0, width: '100%', color: 'white',
             }}
           >
             <div style={{ textAlign: 'center', color: 'white' }}>
               <div style={{ fontSize: 64, marginBottom: 16 }}>▶</div>
               <div style={{ fontSize: 18, fontWeight: 600 }}>클릭하여 시작</div>
             </div>
-          </div>
+          </button>
         )}
 
         {/* 좌상단: 코드 보기 버튼 */}
@@ -1099,14 +1189,32 @@ export default function Sandbox() {
         <ShareLinkDialog url={shareDialog.url} shareId={shareDialog.id} title={shareDialog.title} onClose={() => setShareDialog(null)} />
       )}
 
-      {workbookLesson && <div className="px-5 py-2 text-xs flex items-center justify-between gap-4 border-b" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}><span className="truncate">{workbookLesson.title.ko}</span><Link to={`/courses/${lessonPath}`} target="_blank" rel="noopener noreferrer" className="no-underline shrink-0" style={{ color: 'var(--color-accent)' }}>교재 보기 ↗</Link></div>}
+      {(tutorial || showcaseProject || workbookLesson || referenceDoc) && <nav aria-label={locale === 'ko' ? '학습 이동' : 'Learning navigation'} className="flex items-center justify-between gap-3 px-4 py-2 border-b text-xs shrink-0" style={{ borderColor:'var(--color-border)', color:'var(--color-accent)' }}>
+        <Link className="shrink-0 py-1 no-underline" to={referenceDoc ? '/docs' : tutorial ? '/tutorials' : showcaseProject ? '/gallery' : `/courses/${lessonParts[0]}`}>
+          ← {locale === 'ko' ? (referenceDoc ? '문서 목록' : tutorial ? '튜토리얼 목록' : showcaseProject ? '갤러리' : '코스 목차') : (referenceDoc ? 'Docs' : tutorial ? 'Tutorial list' : showcaseProject ? 'Gallery' : 'Course contents')}
+        </Link>
+        <span className="truncate" style={{color:'var(--color-text-secondary)'}}>{referenceDoc?.title?.[locale] || tutorial?.title[locale] || showcaseProject?.title || workbookLesson?.title?.[locale] || workbookLesson?.title?.ko || workbookLesson?.title}</span>
+        <Link className="shrink-0 py-1 no-underline" to={referenceDoc ? `/docs#${referenceDoc.id}` : tutorial ? `/tutorials/${tutorial.id}${tutorial.activeStep ? `?step=${tutorial.activeStep}` : ''}` : showcaseProject ? `/gallery/glowscript/${showcaseProject.id}` : `/courses/${lessonPath}`}>
+          {locale === 'ko' ? (referenceDoc ? '문서로 돌아가기' : showcaseProject ? '작품 설명' : '학습 안내') : (referenceDoc ? 'Back to topic' : showcaseProject ? 'Project details' : 'Activity guide')}
+        </Link>
+      </nav>}
+      {draftWriteFailedRef.current && <p role="status" className="px-4 py-2 text-xs">{locale === 'ko' ? '연습 내용을 이 탭에 보관하지 못했습니다. 이동 전에 코드를 저장하세요.' : 'Your practice could not be kept in this tab. Save your code before leaving.'}</p>}
+      {showcaseProject && <details className="px-5 py-2 text-xs border-b shrink-0" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
+        <summary className="cursor-pointer">{showcaseProject.credit} · {showcaseProject.title}</summary>
+        <div className="pt-3 pb-2 space-y-2"><p>{locale === 'ko' ? '원작의 화면·조작과 다를 수 있어요. 계속 움직이는 작품은 정지 버튼으로 멈추세요.' : 'Rendering and controls may differ from the original. Use Stop for continuous animations.'}</p><Link to={`/gallery/glowscript/${showcaseProject.id}`} style={{ color: 'var(--color-accent)' }}>{locale === 'ko' ? '작품과 원본 보기' : 'Project and original source'} →</Link></div>
+      </details>}
+      {tutorial && <details className="px-5 py-2 text-xs border-b shrink-0" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
+        <summary className="cursor-pointer">{tutorial.title[locale]} · {locale === 'ko' ? '체험 안내' : 'Experience guide'}</summary>
+        <div className="pt-3 pb-2 space-y-2"><p>{tutorial.change[locale]}</p><p>{tutorial.reflect[locale]}</p>{tutorial.stepNote && <p>{tutorial.stepNote[locale]}</p>}{tutorial.peerTest && <p>{tutorial.peerTest[locale]}</p>}<Link to={`/tutorials/${tutorial.id}${tutorial.activeStep ? `?step=${tutorial.activeStep}` : ''}`} style={{ color: 'var(--color-accent)' }}>{locale === 'ko' ? '튜토리얼로 돌아가기' : 'Back to tutorial'} →</Link></div>
+      </details>}
+
       <div className="flex flex-wrap items-center gap-2 shrink-0 px-4 py-3 border-b" style={{ backgroundColor: 'var(--color-bg-panel)', borderColor: 'var(--color-border)' }}>
         <button onClick={handleRun} disabled={!isReady || isRunning || repoLoadStatus === 'loading'} className="toolbar-btn --run">{repoLoadStatus === 'loading' ? '불러오는 중' : t('editor.run')}</button>
         {isRunning && <button onClick={handleStop} className="toolbar-btn --stop">{t('editor.stop')}</button>}
         <button onClick={handleSave} disabled={!activeProjectCanEdit} className="toolbar-btn" title="현재 코드 저장 (Ctrl/Cmd+S)">{activeProjectRole === 'viewer' ? '보기 전용' : (saveMsg || '저장')}</button>
         <button onClick={() => { setTeamInitialAction('browse'); setShowTeam(true); }} className="toolbar-btn max-w-36 truncate" title={activeProject?.title || '프로젝트'}>{activeProject ? activeProject.title : '프로젝트'}</button>
         <div className="relative">
-          <button onClick={() => setMobileMore(previous => !previous)} className="toolbar-btn" aria-label="실습 도구" aria-expanded={mobileMore}>도구 <span aria-hidden="true">⌄</span></button>
+          <button ref={toolsButtonRef} onClick={() => setMobileMore(previous => !previous)} className="toolbar-btn" aria-label="실습 도구" aria-expanded={mobileMore}>도구 <span aria-hidden="true">⌄</span></button>
           {mobileMore && <>
             <button type="button" aria-label="실습 도구 닫기" className="fixed inset-0 z-40 cursor-default border-0 bg-transparent" onClick={() => setMobileMore(false)} />
             <div className="absolute right-0 top-full mt-2 w-60 max-h-[calc(100dvh-170px)] overflow-y-auto py-2 z-50 border" style={{ backgroundColor: 'var(--color-bg-panel)', borderColor: 'var(--color-border)', boxShadow: 'var(--shadow-md)' }}>
@@ -1133,7 +1241,7 @@ export default function Sandbox() {
           {user && saveStatus === 'error' && <span style={{ color: 'var(--color-error)' }}>자동 저장 실패 · 저장을 눌러주세요</span>}
           <span>{isRunning ? '실행 중' : isReady ? '준비됨' : 'Python 준비 중…'}</span>
         </div>
-        <div className="w-full flex md:hidden gap-1 pt-1" aria-label="실습 패널">{[['editor', '코드'], ['3d', '화면'], ['console', '출력']].map(([tab, label]) => <button key={tab} onClick={() => setActiveTab(tab)} className={`tab-btn flex-1 ${activeTab === tab ? '--active' : ''}`}>{label}</button>)}</div>
+        <div className="w-full flex md:hidden gap-1 pt-1" aria-label="실습 패널">{[['editor', '코드'], ['3d', '화면'], ['console', '출력']].map(([tab, label]) => <button key={tab} onClick={() => setActiveTab(tab)} aria-pressed={activeTab === tab} className={`tab-btn flex-1 ${activeTab === tab ? '--active' : ''}`}>{label}</button>)}</div>
       </div>
 
       {/* === 3패널 레이아웃 === */}

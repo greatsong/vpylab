@@ -1,0 +1,132 @@
+{
+  "layout": [
+    {
+      "width": 1440,
+      "path": "/",
+      "heading": "빛과 소리로 만드는나의 첫 코딩.",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "path": "/tutorials",
+      "heading": "튜토리얼",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "path": "/tutorials/interaction",
+      "heading": "버튼으로 반응 만들기",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "path": "/missions",
+      "heading": "미션",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "path": "/gallery",
+      "heading": "갤러리",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "path": "/courses/beg-light-sound/light-sound-1",
+      "heading": "첫 소리를 내고 고쳐 보기",
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "path": "/courses/beg-github-project",
+      "heading": "GitHub 프로젝트 시작하기",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "path": "/",
+      "heading": "빛과 소리로 만드는나의 첫 코딩.",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "path": "/tutorials",
+      "heading": "튜토리얼",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "path": "/tutorials/interaction",
+      "heading": "버튼으로 반응 만들기",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "path": "/missions",
+      "heading": "미션",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "path": "/gallery",
+      "heading": "갤러리",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "path": "/courses/beg-light-sound/light-sound-1",
+      "heading": "첫 소리를 내고 고쳐 보기",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "path": "/courses/beg-github-project",
+      "heading": "GitHub 프로젝트 시작하기",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "path": "/",
+      "heading": "빛과 소리로 만드는나의 첫 코딩.",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "path": "/tutorials",
+      "heading": "튜토리얼",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "path": "/tutorials/interaction",
+      "heading": "버튼으로 반응 만들기",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "path": "/missions",
+      "heading": "미션",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "path": "/gallery",
+      "heading": "갤러리",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "path": "/courses/beg-light-sound/light-sound-1",
+      "heading": "첫 소리를 내고 고쳐 보기",
+      "overflow": false
+    },
+    {
+      "width": 320,
+      "path": "/courses/beg-github-project",
+      "heading": "GitHub 프로젝트 시작하기",
+      "overflow": false
+    }
+  ],
+  "runtime": [],
+  "errors": []
+}

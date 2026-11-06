@@ -1,0 +1,121 @@
+{
+  "generatedAt": "2026-11-06T19:50:16.141598+00:00",
+  "scope": "Documentation, shape guides, cylinder/cone origin; no deployment or live AI calls",
+  "claude": {
+    "design": "docs-design-claude-2026-11-07.json",
+    "implementation": "docs-implementation-claude-2026-11-07.json",
+    "method": "Full sanitized project snapshot available; bounded read-only static review, not all-file inspection or independent runtime testing"
+  },
+  "checks": {
+    "frontend": {
+      "files": 67,
+      "passed": 748,
+      "command": "npm --prefix client run test:run",
+      "skipped": 0
+    },
+    "serverAndEvidence": {
+      "passed": 10,
+      "command": "node --test server/utils/export-html.test.js server/utils/shape-proposal.test.js scripts/compat/evidence.test.mjs"
+    },
+    "scopedLint": {
+      "passed": true,
+      "notes": "Changed documentation, geometry, tests, and compatibility scripts; zero diagnostics"
+    },
+    "productionBuild": {
+      "passed": true,
+      "command": "npm --prefix client run build",
+      "notes": "Existing chunk size and ineffective dynamic import warnings remain"
+    },
+    "documentationPythonPrograms": {
+      "passed": 108,
+      "base": 95,
+      "guideVariants": 13
+    },
+    "documentationBrowser": {
+      "passed": 21,
+      "guidePrograms": 20,
+      "artifact": "docs-browser-2026-11-07.json"
+    },
+    "creativeBrowser": {
+      "passed": 7,
+      "artifact": "docs-creative-regression-2026-11-07.json"
+    },
+    "navigationCameraBrowser": {
+      "passed": 9,
+      "artifact": "docs-navigation-camera-regression-2026-11-07.json"
+    },
+    "standalone": {
+      "passed": true,
+      "artifact": "docs-standalone-2026-11-07.json"
+    },
+    "productionExport": {
+      "passed": true,
+      "artifact": "docs-production-export-2026-11-07.json"
+    },
+    "productionStandalone": {
+      "passed": true,
+      "artifact": "docs-production-standalone-2026-11-07.json"
+    },
+    "compatibility": {
+      "count": 750,
+      "summary": {
+        "pass": 697,
+        "origin-error": 5,
+        "empty": 2,
+        "timeout": 1,
+        "unsupported-api": 4,
+        "error": 2,
+        "glowscript-only": 2,
+        "fragment-incomplete": 6,
+        "fragment-undefined": 22,
+        "warning": 4,
+        "unsupported-module": 5
+      },
+      "allInternal": 344,
+      "internalPassed": 344,
+      "newDocumentationCases": 108,
+      "newDocumentationPassed": 108,
+      "python": "3.12.4"
+    }
+  },
+  "documentationFingerprint": {
+    "client/src/pages/Docs.jsx": "7049fb173cf72ae6c6d283a673ce8102f28a8cf20544ceaf4f578612b189aff8",
+    "client/src/pages/Sandbox.jsx": "825e89e75f4770352435d2439d61775004cac992931f7d9e7eb37f7380b3bc03",
+    "client/src/components/docs/DocContent.jsx": "75d0dd07cbff0ac1ea7574dd45a56a638e48f75fa4cf454871ed3815746b10e1",
+    "client/src/components/docs/DocSidebar.jsx": "2f23b97cf8bf3b4230dd26de48c0d4b18d999605d63466b2c3e40722c6b192c8",
+    "client/src/components/docs/DocCodeBlock.jsx": "c16e060d213b2e9a7dba25454bb995a841332788a74ac9b8816cbaa42e589745",
+    "client/src/data/docs.js": "35e1a5f484f5fe709819e90ab72d0581409a92475b8ff4d1508218829df0c5e4",
+    "client/src/data/doc-origins.js": "e606cdc766d84097ea9cc1009b55a7cd7ae940ad3bd53bd37c04ed0dcb1dd9e7",
+    "client/src/data/shape-guides.js": "5bd973692f00d5ff75aa1e81f607e44623ad3a0ffa5e4f0fb6d6ce1a53144d15",
+    "client/src/data/shape-helpers.js": "b548727d1b009e9710181cc2da853678aedba7fe9c502950a506f803fc7e92b5"
+  },
+  "runtimeFingerprint": {
+    "scripts/compat/corpus/corpus.json": "3595f1b564cdbcd0ed0c057d2f9cb219fab956ccdc424c4a2ee6255014127530",
+    "scripts/compat/preprocess.mjs": "0af136991f163f44a232e9b282447ac76f0e3842ccec3ce7bf96a09989a0dc7e",
+    "scripts/compat/static-harness.py": "a9f93b77c29626c79f513552391f02db11bf87e2352c83a37872d25b33a75234",
+    "client/src/engine/vpython-api.py": "f48fad098ffb23674ef5f3d6e830d11dc1575ff43232669320700fee2c24c3b4",
+    "client/src/engine/student-code-transform.py": "412409dd6f858dbab50e699810a9e82e59e5bdacd9c84d522df972609113b605",
+    "client/src/engine/pyodide-worker.js": "cfd792a63f03ebbbff63087612cb47960d0abde81233cd627c60abf9aa812691",
+    "client/src/engine/vpython-bridge.js": "8837ed7996acadf3b3a8e5c1096bd0d2112b92431f1da8dff1f8f43fd44d5bd7",
+    "client/src/engine/graph2d-system.js": "7ab41e346babefebaf487608f17d3d359eba72de72eb488e7d1bfd781ba0f562",
+    "server/utils/standalone-template.js": "2c1e13032e85555e55b0d903949d28af39308c4062626890e2f4e335c1a82927",
+    "client/src/engine/mesh-geometry.js": "d9406e3ab3e286226633425b165c85135434c5b7a4e64e314a3311c3f1e6cc89",
+    "client/src/engine/text3d-system.js": "575788dbc668f6ff0766b7bbecdad1cfe4e9dfb87829f7da923f770848b3ea3b",
+    "client/src/engine/texture-system.js": "7aa6abab80fe54c3fa3c9832d3d2d087f0fc1e7e8c82134929af1588882baf3b",
+    "client/src/engine/widgets-system.js": "27388a30be2e77f69f5610613e62d949261ea998f2b301e79402f4dd668283ce",
+    "client/src/engine/camera-system.js": "be89c09a9130e69f46bbd98055030eeee2da582d8b5f043c556936c403697ab8",
+    "server/shared/compound-appearance.js": "3414692b8fc2b5b112af8b71deba21be2074c2584ee52de136aa7d909bdc99b8",
+    "server/shared/camera-system.js": "50a9bd6da7a90eb214f5b2a5eba83d34df36dc42f812db81cfa4575635e36954",
+    "server/shared/primitive-geometry.js": "78a30400cf328940b58b8c62f95326283beac89c4393b9ccccc54025be91a779",
+    "client/src/engine/pyodide-singleton.js": "ba477e4a990c030064b0db21f14fd68cd9020b7be579a08b93f2df37115f2bcd",
+    "client/src/components/viewport/Viewport3D.jsx": "2dbf40532c6e33764b4f53bb9b4030f11348be3a820f55e428d6c66a441b5c7a"
+  },
+  "limitations": [
+    "Static corpus pass is Python execution, not full visual/interaction compatibility.",
+    "Auth hydration/account isolation uses synthetic local state with backend requests blocked, not live OAuth/database verification.",
+    "Standalone HTML does not support the cup cross-section holes/shapes used by this guide; editor supports them.",
+    "Pyramid unequal rectangular base and extrusion twist/smooth/xscale/yscale remain documented limitations.",
+    "Standalone browser uses installed matching Three.js/Pyodide assets to isolate CDN availability.",
+    "AI student UI remains disabled; no live model benchmark or deployment in this change."
+  ]
+}

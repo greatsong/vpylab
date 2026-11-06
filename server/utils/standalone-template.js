@@ -7,7 +7,7 @@
  *   + pyramid, ellipsoid, helix, label/text, curve, points, vertex, triangle, quad, extrusion
  * - vector 확장: .proj, .comp, .diff_angle, .rotate
  * - 객체 메서드: .clone(), .rotate(), .attach_trail(), .clear_trail()
- * - scene 객체: scene.background (range/center/autoscale은 export에서 제한적)
+ * - scene 객체: scene.background 및 편집기와 공유하는 카메라 계산
  * - frame 별칭 (= compound)
  * - 30색 팔레트 + 한글 색상 이름
  * - 사운드/차트/한글 API/numpy 자동 설치 (이전 버전과 동일)
@@ -27,6 +27,10 @@
  */
 
 
+
+import { createCompoundAppearanceTools } from '../shared/compound-appearance.js';
+import { createCameraSystem } from '../shared/camera-system.js';
+import { createPrimitiveGeometry } from '../shared/primitive-geometry.js';
 
 const PYODIDE_VERSION = '0.27.0';
 const THREE_VERSION = '0.183.2';
@@ -101,6 +105,8 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
 
   <script type="module">
   import * as THREE from 'three';
+  const primitiveGeometry = (${createPrimitiveGeometry.toString()})(THREE);
+  const compoundAppearance = (${createCompoundAppearanceTools.toString()})(THREE);
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
   // === Three.js 씬 셋업 ===
@@ -120,22 +126,9 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
 
-  // 편집기와 같이 range는 화면의 짧은 변에 보이는 영역의 절반입니다.
-  let explicitSceneRange = null;
-  function applySceneRange(range) {
-    if (!Number.isFinite(range) || range <= 0) return;
-    explicitSceneRange = range;
-    const verticalHalfExtent = camera.aspect >= 1 ? range : range / camera.aspect;
-    const distance = verticalHalfExtent / Math.tan(camera.fov * Math.PI / 360);
-    const direction = camera.position.clone().sub(controls.target);
-    if (direction.lengthSq() < 0.000001) direction.set(0, 0, 1);
-    direction.normalize();
-    camera.position.copy(controls.target).addScaledVector(direction, distance);
-    camera.far = Math.max(1000, distance * 4);
-    camera.updateProjectionMatrix();
-    camera.lookAt(controls.target);
-    controls.update();
-  }
+  const CameraSystem = (${createCameraSystem.toString()})(THREE);
+  const cameraSystem = new CameraSystem(camera, controls, scene);
+  cameraSystem.onCodeStart();
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
   const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -143,18 +136,15 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
   scene.add(dirLight);
 
   window.addEventListener('resize', () => {
-    // 사용자가 확대·회전한 시점의 범위를 보존한 채 화면 비율만 바꿉니다.
-    const currentRange = camera.position.distanceTo(controls.target)
-      * Math.tan(camera.fov * Math.PI / 360) * Math.min(1, camera.aspect);
-    camera.aspect = innerWidth / innerHeight;
-    camera.updateProjectionMatrix();
-    if (explicitSceneRange !== null) applySceneRange(currentRange);
+    cameraSystem.resize(innerWidth, innerHeight);
     renderer.setSize(innerWidth, innerHeight);
   });
 
   function animate() {
     requestAnimationFrame(animate);
+    cameraSystem.update();
     controls.update();
+    cameraSystem.updateClipPlanes();
     renderer.render(scene, camera);
   }
   animate();
@@ -603,7 +593,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
       let mesh;
       const baseColor = toColor(cmd.color || [1,1,1]);
       const mat = new THREE.MeshStandardMaterial({
-        color: baseColor, roughness: 0.4, metalness: 0.1,
+        color: baseColor, roughness: cmd.shininess === undefined ? 0.4 : Math.max(0.05,1-cmd.shininess), metalness: 0.1,
         emissive: cmd.emissive ? cloneColor(baseColor) : new THREE.Color(0,0,0),
         emissiveIntensity: cmd.emissive ? 0.8 : 0,
         transparent: (cmd.opacity ?? 1) < 1, opacity: cmd.opacity ?? 1,
@@ -613,7 +603,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
         case 'box': { const s = cmd.size || [cmd.length||1, cmd.height||1, cmd.width||1]; mesh = new THREE.Mesh(new THREE.BoxGeometry(s[0],s[1],s[2]), mat); break; }
         case 'cylinder': {
           const r = cmd.radius||1; const a = cmd.axis||[1,0,0]; const l = Math.hypot(...a)||1;
-          mesh = new THREE.Mesh(new THREE.CylinderGeometry(r,r,l,32), mat);
+          mesh = new THREE.Mesh(primitiveGeometry.cylinder(r,l), mat);
           const dir = new THREE.Vector3(...a).normalize();
           mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
           break;
@@ -631,7 +621,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
         }
         case 'cone': {
           const r = cmd.radius||1; const a = cmd.axis||[1,0,0]; const l = Math.hypot(...a)||1;
-          mesh = new THREE.Mesh(new THREE.ConeGeometry(r,l,32), mat);
+          mesh = new THREE.Mesh(primitiveGeometry.cone(r,l), mat);
           const dir = new THREE.Vector3(...a).normalize();
           mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
           break;
@@ -755,6 +745,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
       if (cmd.pos) m.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
       if (cmd.color) {
         if (m.isLight) m.color = toColor(cmd.color);
+        else if (m.userData?.vpType === 'compound') compoundAppearance.apply(m, {color:cmd.color});
         else if (m.isGroup) m.traverse(c => { if(c.material) updateMaterialColor(c.material, toColor(cmd.color)); });
         else if (m.material) updateMaterialColor(m.material, toColor(cmd.color));
       }
@@ -762,18 +753,21 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
       if (cmd.direction !== undefined && m.isDirectionalLight) m.position.set(-cmd.direction[0]*10,-cmd.direction[1]*10,-cmd.direction[2]*10);
       if (cmd.visible !== undefined) m.visible = cmd.visible;
       if (cmd.opacity !== undefined) {
-        if (m.isGroup) m.traverse(c => { if(c.material){c.material.opacity=cmd.opacity;c.material.transparent=cmd.opacity<1;} });
-        else if (m.material) { m.material.opacity=cmd.opacity; m.material.transparent=cmd.opacity<1; }
+        if(m.userData?.vpType==='compound') compoundAppearance.apply(m,{opacity:cmd.opacity});
+        else if (m.isGroup) m.traverse(c => { if(c.material)compoundAppearance.setOpacity(c.material,cmd.opacity); });
+        else if (m.material) compoundAppearance.setOpacity(m.material,cmd.opacity);
       }
+      if(cmd.shininess!==undefined && m.userData?.vpType==='compound')compoundAppearance.apply(m,{shininess:cmd.shininess});
       if (cmd.emissive !== undefined && !m.isLight) {
-        if (m.isGroup) m.traverse(c => { if(c.material) setMaterialEmissive(c.material, cmd.emissive); });
+        if(m.userData?.vpType==='compound') compoundAppearance.apply(m,{emissive:cmd.emissive});
+        else if (m.isGroup) m.traverse(c => { if(c.material) setMaterialEmissive(c.material, cmd.emissive); });
         else if (m.material) setMaterialEmissive(m.material, cmd.emissive);
       }
       if (cmd.radius !== undefined && m.geometry) {
         let ng;
         if(m.geometry.type==='SphereGeometry') ng=new THREE.SphereGeometry(cmd.radius,32,16);
-        else if(m.geometry.type==='ConeGeometry') ng=new THREE.ConeGeometry(cmd.radius,m.geometry.parameters?.height||1,32);
-        else if(m.geometry.type==='CylinderGeometry') ng=new THREE.CylinderGeometry(cmd.radius,cmd.radius,m.geometry.parameters?.height||1,32);
+        else if(m.geometry.type==='ConeGeometry') ng=primitiveGeometry.cone(cmd.radius,m.geometry.parameters?.height||1);
+        else if(m.geometry.type==='CylinderGeometry') ng=primitiveGeometry.cylinder(cmd.radius,m.geometry.parameters?.height||1);
         else if(m.geometry.type==='TorusGeometry') ng=new THREE.TorusGeometry(cmd.radius,m.geometry.parameters?.tube||0.1,16,48);
         if(ng){m.geometry.dispose();m.geometry=ng;}
       }
@@ -792,8 +786,8 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
         } else if (cmd.axis !== undefined) {
           const len = Math.hypot(...cmd.axis) || 1;
           const dir = new THREE.Vector3(...cmd.axis).normalize();
-          if (vpType === 'cylinder' && m.geometry) { const r=m.geometry.parameters?.radiusTop??1; m.geometry.dispose(); m.geometry=new THREE.CylinderGeometry(r,r,len,32); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
-          else if (vpType === 'cone' && m.geometry) { const r=m.geometry.parameters?.radius??1; m.geometry.dispose(); m.geometry=new THREE.ConeGeometry(r,len,32); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
+          if (vpType === 'cylinder' && m.geometry) { const r=m.geometry.parameters?.radiusTop??1; m.geometry.dispose(); m.geometry=primitiveGeometry.cylinder(r,len); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
+          else if (vpType === 'cone' && m.geometry) { const r=m.geometry.parameters?.radius??1; m.geometry.dispose(); m.geometry=primitiveGeometry.cone(r,len); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
           else if (vpType === 'arrow') { m.userData.arrowLen=len; rebuildArrow(m, len, m.userData.shaftwidth||0.1); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
           else if (vpType === 'helix') { rebuildHelixLen(m, len); m.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),dir); }
           else { m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
@@ -801,7 +795,15 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
       }
     } else if (cmd.action === 'scene') {
       if (cmd.property === 'background') scene.background = toColor(cmd.value);
-      if (cmd.property === 'range') applySceneRange(cmd.value);
+      if (cmd.property === 'range') cameraSystem.setExplicitRange(cmd.value);
+      if (cmd.property === 'center') cameraSystem.setExplicitCenter(...cmd.value);
+      if (cmd.property === 'forward') cameraSystem.setForward(...cmd.value);
+      if (cmd.property === 'up') cameraSystem.setUp(...cmd.value);
+      if (cmd.property === 'fov') cameraSystem.setFov(cmd.value);
+      if (cmd.property === 'autoscale') cameraSystem.setAutoscale(cmd.value);
+      if (cmd.property === 'camera_pos') cameraSystem.setCameraPos(...cmd.value);
+      if (cmd.property === 'camera_axis') cameraSystem.setCameraAxis(...cmd.value);
+      if (cmd.property === 'camera_follow') cameraSystem.followObject(cmd.value ? meshes.get(cmd.value) : null);
     } else if (cmd.action === 'trail_update') {
       updateTrail(cmd);
     } else if (cmd.action === 'trail_clear') {
@@ -822,8 +824,9 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
         if (subMesh) { scene.remove(subMesh); group.add(subMesh); }
       }
       if (cmd.pos) group.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
-      if (cmd.color) group.traverse(c => { if(c.material) c.material.color = toColor(cmd.color); });
-      if (cmd.opacity !== undefined && cmd.opacity < 1) group.traverse(c => { if(c.material){c.material.opacity=cmd.opacity;c.material.transparent=true;} });
+      group.userData.vpType='compound';
+      compoundAppearance.init(group);
+      compoundAppearance.apply(group,cmd);
       group.visible = cmd.visible !== false;
       scene.add(group);
       meshes.set(cmd.id, group);
@@ -885,6 +888,8 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
         try { await micropip.install(pkg); } catch(e) { console.warn('패키지 설치 실패:', pkg, e); }
       }
     }
+
+    pyodide.globals.set('_js_camera_state', () => JSON.stringify(cameraSystem.getState()));
 
     // VPython API 정의
     await pyodide.runPythonAsync(vpythonApi);
@@ -998,6 +1003,7 @@ def _send_commands():
   const vpythonApi = \`
 import json
 import asyncio
+import math
 
 _command_buffer = []
 _object_counter = 0
@@ -1020,7 +1026,26 @@ def _new_id():
 # === vector 클래스 ===
 class vector:
     def __init__(self, x=0, y=0, z=0):
-        self.x = float(x); self.y = float(y); self.z = float(z)
+        self._change_callback = None
+        self._x = float(x); self._y = float(y); self._z = float(z)
+    @property
+    def x(self): return self._x
+    @x.setter
+    def x(self,v):
+        self._x=float(v)
+        if self._change_callback: self._change_callback()
+    @property
+    def y(self): return self._y
+    @y.setter
+    def y(self,v):
+        self._y=float(v)
+        if self._change_callback: self._change_callback()
+    @property
+    def z(self): return self._z
+    @z.setter
+    def z(self,v):
+        self._z=float(v)
+        if self._change_callback: self._change_callback()
     def __repr__(self): return f"<{self.x:.4g}, {self.y:.4g}, {self.z:.4g}>"
     def __add__(self, o): return vector(self.x+o.x, self.y+o.y, self.z+o.z)
     def __sub__(self, o): return vector(self.x-o.x, self.y-o.y, self.z-o.z)
@@ -1071,10 +1096,10 @@ vec = vector
 
 # === 30색 팔레트 ===
 class _ColorPalette:
-    red=vector(1,0,0); green=vector(0,0.8,0); blue=vector(0,0,1)
+    red=vector(1,0,0); green=vector(0,1,0); blue=vector(0,0,1)
     yellow=vector(1,1,0); cyan=vector(0,1,1); magenta=vector(1,0,1)
     orange=vector(1,0.6,0); white=vector(1,1,1); black=vector(0,0,0)
-    gray=vector(0.5,0.5,0.5); purple=vector(0.5,0,0.5)
+    gray=vector(0.5,0.5,0.5); purple=vector(0.4,0.2,0.6)
     pink=vector(1,0.75,0.8); brown=vector(0.6,0.3,0.1); gold=vector(1,0.84,0)
     silver=vector(0.75,0.75,0.75); navy=vector(0,0,0.5); skyblue=vector(0.53,0.81,0.92)
     lime=vector(0.5,1,0); olive=vector(0.5,0.5,0); coral=vector(1,0.5,0.31)
@@ -1319,12 +1344,14 @@ class compound:
         self._id = _new_id()
         self._objects = list(objects)
         self._pos = kw.get('pos', vector(0,0,0))
-        self._color = kw.get('color', None)
+        self._set_color(kw.get('color') or color.white)
         self._visible = kw.get('visible', True)
-        self._opacity = kw.get('opacity', 1.0)
+        self._opacity = self._check_unit(kw.get('opacity',1.0),'opacity')
+        self._shininess = self._check_unit(kw.get('shininess',0.6),'shininess')
+        self._emissive = bool(kw.get('emissive',False))
         self._make_trail = kw.pop('make_trail', False)
         self._trail_color = kw.pop('trail_color', None)
-        _add_command({
+        cmd = {
             "action":"compound","id":self._id,
             "sub_ids":[obj._id for obj in self._objects],
             "pos":self._pos.to_list(),
@@ -1332,7 +1359,19 @@ class compound:
             "visible":self._visible,"opacity":self._opacity,
             "make_trail":self._make_trail,
             "trail_color":self._trail_color.to_list() if self._trail_color else None,
-        })
+        }
+        if 'shininess' in kw: cmd['shininess']=self._shininess
+        if 'emissive' in kw: cmd['emissive']=bool(kw['emissive'])
+        _add_command(cmd)
+    @staticmethod
+    def _check_unit(v,name):
+        import math
+        v=float(v)
+        if not math.isfinite(v) or not 0<=v<=1: raise ValueError('compound.'+name+' must be between 0 and 1')
+        return v
+    def _set_color(self,v):
+        self._color=vector(v.x,v.y,v.z)
+        self._color._change_callback=lambda: _add_command({'action':'update','id':self._id,'color':self._color.to_list()})
     def __getitem__(self, i): return self._objects[i]
     def __len__(self): return len(self._objects)
     @property
@@ -1347,8 +1386,8 @@ class compound:
     def color(self): return self._color
     @color.setter
     def color(self, v):
-        self._color = v
-        _add_command({"action":"update","id":self._id,"color":v.to_list()})
+        self._set_color(v)
+        _add_command({"action":"update","id":self._id,"color":self._color.to_list()})
     @property
     def visible(self): return self._visible
     @visible.setter
@@ -1359,9 +1398,23 @@ class compound:
     def opacity(self): return self._opacity
     @opacity.setter
     def opacity(self, v):
-        self._opacity = v
-        _add_command({"action":"update","id":self._id,"opacity":v})
+        self._opacity = self._check_unit(v,"opacity")
+        _add_command({"action":"update","id":self._id,"opacity":self._opacity})
 
+
+    @property
+    def shininess(self): return self._shininess
+    @shininess.setter
+    def shininess(self,v):
+        self._shininess=self._check_unit(v,'shininess')
+        _add_command({'action':'update','id':self._id,'shininess':self._shininess})
+
+    @property
+    def emissive(self): return self._emissive
+    @emissive.setter
+    def emissive(self,v):
+        self._emissive=bool(v)
+        _add_command({'action':'update','id':self._id,'emissive':self._emissive})
 
 # === 새 프리미티브 (v3) ===
 class pyramid(_GObject):
@@ -1501,49 +1554,128 @@ class extrusion:
 
 
 # === scene 객체 + frame 별칭 ===
+class _ExportCamera:
+    def __init__(self,owner): self._scene=owner
+    @property
+    def pos(self):
+        return self._scene._read('pos',self._scene._center-self._scene._forward*self._scene._distance())
+    @pos.setter
+    def pos(self,v):
+        axis=self.axis
+        self._scene._center=v+axis
+        self._scene._send('camera_pos',v.to_list())
+    @property
+    def axis(self): return self._scene.center-self.pos
+    @axis.setter
+    def axis(self,v):
+        if v.mag==0: raise ValueError('camera.axis must be nonzero')
+        self._scene._center=self.pos+v
+        self._scene._forward=norm(v)
+        self._scene._range=v.mag*math.tan(self._scene._fov/2)
+        self._scene._send('camera_axis',v.to_list())
+    def follow(self,obj=None): self._scene._send('camera_follow',getattr(obj,'_id',None))
+    def rotate(self,angle=0,axis=None,origin=None):
+        axis=axis if axis is not None else self._scene.forward
+        old_pos,old_axis=self.pos,self.axis
+        origin=origin if origin is not None else old_pos
+        new_up=self._scene.up.rotate(angle,axis=axis)
+        self.pos=origin+(old_pos-origin).rotate(angle,axis=axis)
+        self.axis=old_axis.rotate(angle,axis=axis)
+        self._scene.up=new_up
+
 class _Scene:
     def __init__(self):
-        self._background = vector(0.97, 0.98, 0.98)
-        self._range = None
+        self._background=vector(0.97,0.98,0.98)
+        self._range=10.0
+        self._center=vector(0,0,0)
+        self._forward=vector(0,0,-1)
+        self._up=vector(0,1,0)
+        self._fov=math.pi/3
+        self._autoscale=True
+        self.camera=_ExportCamera(self)
+    def _send(self,name,value):
+        _add_command({'action':'scene','property':name,'value':value})
+        _send_commands()
+    def _read(self,name,fallback):
+        try:
+            value=json.loads(str(_js_camera_state())).get(name)
+            if value is not None: return vector(*value) if isinstance(value,list) else value
+        except (NameError,TypeError,ValueError): pass
+        return fallback
+    def _distance(self): return self._range/math.tan(self._fov/2)
     @property
     def background(self): return self._background
     @background.setter
-    def background(self, v):
-        self._background = v
-        _add_command({"action":"scene","property":"background","value":v.to_list()})
+    def background(self,v):
+        self._background=v
+        self._send('background',v.to_list())
     @property
-    def range(self): return self._range
+    def range(self): return self._read('range',self._range)
     @range.setter
-    def range(self, v):
-        self._range = v
-        _add_command({"action":"scene","property":"range","value":v})
+    def range(self,v):
+        v=float(v)
+        if not math.isfinite(v) or v<=0: raise ValueError('scene.range must be positive')
+        self._range=v
+        self._autoscale=False
+        self._send('range',v)
     @property
-    def center(self): return vector(0,0,0)
+    def center(self):
+        v=self._read('center',self._center)
+        v._change_callback=lambda: self._send('center',v.to_list())
+        return v
     @center.setter
-    def center(self, v): pass
+    def center(self,v):
+        self._center=v
+        self._send('center',v.to_list())
     @property
-    def autoscale(self): return True
+    def forward(self):
+        v=self._read('forward',self._forward)
+        v._change_callback=lambda: self._send('forward',v.to_list())
+        return v
+    @forward.setter
+    def forward(self,v):
+        if v.mag==0: raise ValueError('scene.forward must be nonzero')
+        self._forward=norm(v)
+        self._send('forward',self._forward.to_list())
+    @property
+    def up(self): return self._read('up',self._up)
+    @up.setter
+    def up(self,v):
+        if v.mag==0: raise ValueError('scene.up must be nonzero')
+        self._up=norm(v)
+        self._send('up',self._up.to_list())
+    @property
+    def fov(self): return self._read('fov',self._fov)
+    @fov.setter
+    def fov(self,v):
+        v=float(v)
+        if not 0<v<math.pi: raise ValueError('scene.fov must be between 0 and pi')
+        self._fov=v
+        self._send('fov',v)
+    @property
+    def autoscale(self): return self._read('autoscale',self._autoscale)
     @autoscale.setter
-    def autoscale(self, v): pass
+    def autoscale(self,v):
+        self._autoscale=bool(v)
+        self._send('autoscale',bool(v))
     @property
     def title(self): return ''
     @title.setter
-    def title(self, v): print(f"[scene.title] {v}")
+    def title(self,v): print(f"[scene.title] {v}")
     @property
     def caption(self): return ''
     @caption.setter
-    def caption(self, v): print(f"[scene.caption] {v}")
-    # 이벤트/마우스 — standalone export에서 미지원
-    def bind(self, *args, **kw):
+    def caption(self,v): print(f"[scene.caption] {v}")
+    def bind(self,*args,**kw):
         print("[scene.bind] standalone HTML export에서는 이벤트가 지원되지 않습니다.")
-        if len(args) == 1: return lambda fn: fn
-    def unbind(self, *args, **kw): pass
-    def waitfor(self, *args, **kw): pass
+        if len(args)==1: return lambda fn: fn
+    def unbind(self,*args,**kw): pass
+    def waitfor(self,*args,**kw): pass
     @property
     def mouse(self):
         class _M:
-            pos = vector(0,0,0)
-            pick = None
+            pos=vector(0,0,0)
+            pick=None
         return _M()
 
 scene = _Scene()

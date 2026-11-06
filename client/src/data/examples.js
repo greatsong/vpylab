@@ -1263,7 +1263,7 @@ while True:
     code: `from vpython import *
 
 # scene.bind('keydown', handler)로 키보드 이벤트 처리.
-# evt.key에 눌린 키 이름이 들어옵니다 ('ArrowUp', 'ArrowLeft' 등)
+# evt.key에 눌린 키 이름이 들어옵니다 ('up', 'left' 등)
 # ──────────────────────────────────────────
 
 scene.background = vector(0.1, 0.1, 0.15)
@@ -1289,10 +1289,10 @@ label(pos=vector(0, WALL+0.5, 0),
 # 방향키 → 가속도 부여
 def on_key(evt):
     accel = 0.05
-    if evt.key == 'ArrowUp':    ball.velocity += vector(0, accel, 0)
-    elif evt.key == 'ArrowDown': ball.velocity += vector(0, -accel, 0)
-    elif evt.key == 'ArrowLeft': ball.velocity += vector(-accel, 0, 0)
-    elif evt.key == 'ArrowRight':ball.velocity += vector(accel, 0, 0)
+    if evt.key == 'up':    ball.velocity += vector(0, accel, 0)
+    elif evt.key == 'down': ball.velocity += vector(0, -accel, 0)
+    elif evt.key == 'left': ball.velocity += vector(-accel, 0, 0)
+    elif evt.key == 'right':ball.velocity += vector(accel, 0, 0)
     elif evt.key == ' ':         ball.velocity = vector(0, 0, 0)
 
 scene.bind('keydown', on_key)
@@ -1566,10 +1566,10 @@ while True:
     rate(60)
     keys = keysdown()  # 현재 눌려있는 키 리스트
     dx, dy = 0, 0
-    if 'ArrowUp' in keys or 'w' in keys:    dy += speed
-    if 'ArrowDown' in keys or 's' in keys:  dy -= speed
-    if 'ArrowLeft' in keys or 'a' in keys:  dx -= speed
-    if 'ArrowRight' in keys or 'd' in keys: dx += speed
+    if 'up' in keys or 'w' in keys:    dy += speed
+    if 'down' in keys or 's' in keys:  dy -= speed
+    if 'left' in keys or 'a' in keys:  dx -= speed
+    if 'right' in keys or 'd' in keys: dx += speed
     if ' ' in keys:
         ship.clear_trail()  # Space — 궤적 지우기
 

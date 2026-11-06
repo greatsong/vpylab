@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-11-07",
+  "baseCommit": "e1a1004267f73f2c9d33d2c799cff70071512422",
+  "client": {
+    "files": 69,
+    "tests": 785,
+    "passed": true
+  },
+  "server": {
+    "tests": 158,
+    "passed": true
+  },
+  "build": true,
+  "lint": {
+    "errors": 0,
+    "existingWarnings": 1
+  },
+  "claude": {
+    "reviews": 2,
+    "p0p1": 0,
+    "findingsFixed": [
+      "deleted-source-republication",
+      "metadata-roundtrip-size",
+      "wave-slider-and-remount",
+      "own-publication-status-and-edit",
+      "latest-guest-draft",
+      "local-edits-precedence",
+      "fork-author-alias",
+      "unicode-title-boundary",
+      "empty-publication-response"
+    ],
+    "execution": "static review; host performed tests"
+  },
+  "browser": "See release-local-browser, release-local-fork and release-local-standalone evidence. Account writes intercepted; no live OAuth/DB mutations.",
+  "forgeBrowser": {
+    "passed": 37,
+    "errors": [],
+    "liveWrites": 0,
+    "syntheticWrites": 3
+  }
+}
