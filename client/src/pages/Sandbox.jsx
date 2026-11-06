@@ -938,10 +938,21 @@ export default function Sandbox() {
     const title = prompt(t('code.saveTitlePlaceholder'));
     if (title === null) return;
     const finalTitle = title || `코드 ${new Date().toLocaleDateString()}`;
-    const { data, error } = await saveCode({ title: finalTitle, code: codeRef.current });
-    if (!error && data) {
+    setSaveMsg('저장 중…');
+    try {
+      const { data, error } = await saveCode({ title: finalTitle, code: codeRef.current });
+      if (error || !data) {
+        setSaveMsg('저장 실패');
+        addOutput(`저장 실패: ${error?.message || '저장 결과를 확인할 수 없습니다.'}`, 'error');
+        return;
+      }
       useCodeStore.getState().setCurrentCodeId(data.id);
       setSaveMsg(t('code.saved'));
+      if (data._revisionWarning) addOutput(`코드는 저장됐지만 이력 확인이 필요합니다: ${data._revisionWarning}`, 'error');
+    } catch (error) {
+      setSaveMsg('저장 실패');
+      addOutput(`저장 실패: ${error.message}`, 'error');
+    } finally {
       setTimeout(() => setSaveMsg(''), 2000);
     }
   };

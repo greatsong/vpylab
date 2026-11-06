@@ -1,12 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ getSession: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getSession: vi.fn(), onAuthStateChange: vi.fn() }));
 vi.mock('../lib/supabase', () => ({
   AUTH_STORAGE_KEY: 'vpylab-auth',
-  supabase: { auth: { getSession: mocks.getSession } },
+  supabase: { auth: { getSession: mocks.getSession, onAuthStateChange: mocks.onAuthStateChange } },
 }));
 
 import useAuthStore from './authStore';
+
+const originalProfileActions = { upsertProfile: useAuthStore.getState().upsertProfile, fetchProfile: useAuthStore.getState().fetchProfile };
 
 const githubUser = { id: 'student-a', app_metadata: { provider: 'github' } };
 
@@ -82,5 +84,65 @@ describe('GitHub 연결에 쓰는 현재 계정 인증', () => {
     localStorage.setItem('vpylab-oauth-provider', 'google');
     useAuthStore.getState().captureOAuthSession({ user: githubUser, provider_token: 'test-google' });
     expect(localStorage.getItem('vpylab-github-auth')).toBeNull();
+  });
+});
+
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  useAuthStore.setState(originalProfileActions);
+});
+
+describe('로그인 알림과 DB 요청의 교착 방지', () => {
+  it('로그인 알림은 DB 요청을 기다리지 않고 반환하며 다음 작업에서 동기화한다', async () => {
+    vi.useFakeTimers();
+    mocks.getSession.mockResolvedValue({ data: { session: null } });
+    let callback;
+    const unsubscribe = vi.fn();
+    mocks.onAuthStateChange.mockImplementation((listener) => {
+      callback = listener;
+      return { data: { subscription: { unsubscribe } } };
+    });
+    let finishProfile;
+    const profileRequest = new Promise(resolve => { finishProfile = resolve; });
+    const upsert = vi.fn().mockReturnValue(profileRequest);
+    const fetchProfile = vi.fn().mockResolvedValue();
+    useAuthStore.setState({ upsertProfile: upsert, fetchProfile });
+    const cleanup = useAuthStore.getState().initialize();
+    await Promise.resolve();
+
+    // SDK가 콜백을 await해도 즉시 빠져나와 인증 잠금을 해제할 수 있어야 한다.
+    expect(callback('SIGNED_IN', { user: githubUser })).toBeUndefined();
+    expect(upsert).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(upsert).toHaveBeenCalledWith(githubUser);
+    expect(fetchProfile).not.toHaveBeenCalled();
+
+    // 진행 중 계정이 바뀌면 이전 계정의 프로필/진행률 요청을 이어가지 않는다.
+    useAuthStore.setState({ user: null });
+    finishProfile();
+    await Promise.resolve();
+    expect(fetchProfile).not.toHaveBeenCalled();
+    cleanup();
+    expect(unsubscribe).toHaveBeenCalledOnce();
+  });
+
+  it('StrictMode 정리 후에는 예약된 DB 요청을 실행하지 않는다', async () => {
+    vi.useFakeTimers();
+    mocks.getSession.mockResolvedValue({ data: { session: null } });
+    let callback;
+    mocks.onAuthStateChange.mockImplementation((listener) => {
+      callback = listener;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+    const upsert = vi.fn().mockResolvedValue();
+    useAuthStore.setState({ upsertProfile: upsert });
+    const cleanup = useAuthStore.getState().initialize();
+    await Promise.resolve();
+    callback('SIGNED_IN', { user: githubUser });
+    cleanup();
+    await vi.runAllTimersAsync();
+    expect(upsert).not.toHaveBeenCalled();
   });
 });

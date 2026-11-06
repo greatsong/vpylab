@@ -69,31 +69,52 @@ const useAuthStore = create((set, get) => ({
   // 세션 초기화 (App 마운트 시 호출)
   // cleanup 함수를 반환하여 StrictMode 이중 실행 시 리스너 중복 방지
   initialize: () => {
+    let active = true;
+    const pendingTasks = new Set();
+    const afterAuthEvent = (task) => {
+      const timer = setTimeout(() => {
+        pendingTasks.delete(timer);
+        if (active) Promise.resolve().then(task).catch((error) => {
+          console.warn('로그인 후 동기화 실패:', error.message);
+        });
+      }, 0);
+      pendingTasks.add(timer);
+    };
+    const isCurrentUser = (userId) => active && get().user?.id === userId;
+
     // 세션 조회 (비동기, 반환값과 무관)
     (async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        if (!active) return;
         if (session?.user) {
           set({ user: session.user, loading: false });
           await get().upsertProfile(session.user);
-          get().fetchProfile(session.user.id);
+          if (isCurrentUser(session.user.id)) get().fetchProfile(session.user.id);
         } else {
           set({ loading: false });
         }
       } catch {
-        set({ loading: false });
+        if (active) set({ loading: false });
       }
     })();
 
     // 인증 상태 변화 리스너
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Supabase는 이 콜백의 완료를 기다립니다. DB 요청은 다음 이벤트 루프에서
+    // 시작해야 요청의 인증 조회가 현재 로그인 알림을 다시 기다리지 않습니다.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
       if (event === 'SIGNED_IN' && session?.user) {
-        set({ user: session.user });
-        await get().upsertProfile(session.user);
-        get().fetchProfile(session.user.id);
-        // localStorage 진행률 서버 동기화
-        const { default: useAppStore } = await import('./appStore');
-        useAppStore.getState().syncProgressToServer();
+        set({ user: session.user, loading: false });
+        afterAuthEvent(async () => {
+          if (!isCurrentUser(session.user.id)) return;
+          await get().upsertProfile(session.user);
+          if (!isCurrentUser(session.user.id)) return;
+          await get().fetchProfile(session.user.id);
+          // localStorage 진행률 서버 동기화
+          const { default: useAppStore } = await import('./appStore');
+          if (isCurrentUser(session.user.id)) useAppStore.getState().syncProgressToServer();
+        });
       } else if (event === 'SIGNED_OUT') {
         try { localStorage.removeItem(GITHUB_AUTH_KEY); } catch { /* ignore */ }
         set({ user: null, profile: null, githubTokenExpired: false });
@@ -103,6 +124,8 @@ const useAuthStore = create((set, get) => ({
 
     // cleanup 함수 반환
     return () => {
+      active = false;
+      pendingTasks.forEach(clearTimeout);
       subscription.unsubscribe();
     };
   },
