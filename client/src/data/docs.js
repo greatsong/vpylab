@@ -172,11 +172,12 @@ tree_top = cone(pos=vector(0, 1, 0), axis=vector(0, 1.5, 0), radius=0.7, color=c
     category: 'objects',
     title: { ko: '링 (ring)', en: 'ring' },
     description: {
-      ko: '3D 링(도넛 형태)을 생성합니다. 궤도나 장식 표현에 유용합니다.',
-      en: 'Creates a 3D ring (torus shape). Useful for orbits and decorations.',
+      ko: '3D 링(도넛 형태)을 생성합니다. axis는 고리 면에 수직인 방향이며 기본값은 vector(1,0,0)입니다. 정면에서 둥글게 보려면 vector(0,0,1)을 지정하세요.',
+      en: 'Creates a torus. axis is normal to the ring plane and defaults to vector(1,0,0). Use vector(0,0,1) for a front-facing ring.',
     },
-    signature: "ring(pos=vector(0,0,0), radius=1.0, thickness=0.1, color=color.white)",
+    signature: "ring(pos=vector(0,0,0), axis=vector(1,0,0), radius=1.0, thickness=0.1, color=color.white)",
     params: [
+      { name: 'axis', type: 'vector', default: 'vector(1,0,0)', desc: { ko: '고리 면에 수직인 방향', en: 'Normal to the ring plane' } },
       { name: 'pos',       type: 'vector',  default: 'vector(0,0,0)', desc: { ko: '중심 위치', en: 'Center position' } },
       { name: 'radius',    type: 'number',  default: '1.0',          desc: { ko: '링의 반지름', en: 'Ring radius' } },
       { name: 'thickness', type: 'number',  default: '0.1',          desc: { ko: '링의 두께', en: 'Ring thickness' } },
@@ -187,7 +188,7 @@ tree_top = cone(pos=vector(0, 1, 0), axis=vector(0, 1.5, 0), radius=0.7, color=c
     ],
     code: `from vpython import *
 planet = sphere(pos=vector(0, 0, 0), radius=0.5, color=color.blue)
-orbit = ring(pos=vector(0, 0, 0), radius=2, thickness=0.03, color=color.gray)`,
+orbit = ring(pos=vector(0, 0, 0), axis=vector(0,0,1), radius=2, thickness=0.03, color=color.gray)`,
     tags: ['3d', 'object', 'geometry', 'ring', 'torus', 'orbit'],
   },
   {

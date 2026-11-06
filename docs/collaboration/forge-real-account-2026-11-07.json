@@ -1,0 +1,82 @@
+{
+  "startedAt": "2026-11-06T23:30:15.288Z",
+  "origin": "https://vpylab.vercel.app",
+  "prefix": "forge-live-mw5lxlko",
+  "scope": "Real account session and production DB via normal UI. No auth stubs, response interception, admin credentials, or unrelated record writes.",
+  "results": [
+    {
+      "name": "real-authenticated-user-validated",
+      "passed": true
+    },
+    {
+      "name": "real-source-created-through-ui",
+      "passed": true,
+      "id": "c2cde326-0857-4e58-9ff2-fd8cc90fe897"
+    },
+    {
+      "name": "real-fork-private-and-anonymous-denied",
+      "passed": true,
+      "id": "3cb34cf8-607d-46db-a3bd-3bd01cd4275d"
+    },
+    {
+      "name": "real-edits-and-republication-preserve-source",
+      "passed": true,
+      "id": "3cb34cf8-607d-46db-a3bd-3bd01cd4275d",
+      "widthBefore": 1.7,
+      "widthAfter": 1.75
+    },
+    {
+      "name": "real-public-catalog-shows-published-fork",
+      "passed": true
+    },
+    {
+      "name": "real-unpublish-hides-fork-and-preserves-private-record",
+      "passed": true
+    },
+    {
+      "name": "real-source-unpublished-through-ui",
+      "passed": true
+    },
+    {
+      "name": "real-public-catalog-no-test-modules",
+      "passed": true
+    }
+  ],
+  "mutations": [
+    {
+      "method": "POST",
+      "status": 201,
+      "id": "c2cde326-0857-4e58-9ff2-fd8cc90fe897"
+    },
+    {
+      "method": "POST",
+      "status": 201,
+      "id": "3cb34cf8-607d-46db-a3bd-3bd01cd4275d"
+    },
+    {
+      "method": "PATCH",
+      "status": 200,
+      "id": "3cb34cf8-607d-46db-a3bd-3bd01cd4275d"
+    },
+    {
+      "method": "PATCH",
+      "status": 200,
+      "id": "3cb34cf8-607d-46db-a3bd-3bd01cd4275d"
+    },
+    {
+      "method": "PATCH",
+      "status": 200,
+      "id": "c2cde326-0857-4e58-9ff2-fd8cc90fe897"
+    }
+  ],
+  "authenticated": true,
+  "cleanup": {
+    "privateRecords": 2,
+    "publicRecords": 0,
+    "anonymousVisible": 0
+  },
+  "sourceId": "c2cde326-0857-4e58-9ff2-fd8cc90fe897",
+  "forkId": "3cb34cf8-607d-46db-a3bd-3bd01cd4275d",
+  "completedAt": "2026-11-06T23:30:26.389Z",
+  "passed": true
+}

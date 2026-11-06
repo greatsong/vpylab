@@ -18,7 +18,7 @@ function lazyWithRetry(importFn) {
   );
 }
 
-// Code splitting — Monaco + Three.js는 Sandbox/Mission 진입 시에만 로드
+// 실습 화면은 지연 로딩하며, 홈의 3D 환영 친구는 별도 청크로 불러온다.
 const Sandbox = lazyWithRetry(() => import('./pages/Sandbox'));
 const Missions = lazyWithRetry(() => import('./pages/Missions'));
 const Tutorials = lazyWithRetry(() => import('./pages/Tutorials'));

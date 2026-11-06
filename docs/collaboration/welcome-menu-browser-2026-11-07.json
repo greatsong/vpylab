@@ -1,0 +1,73 @@
+{
+  "url": "http://127.0.0.1:4035",
+  "generatedAt": "2026-11-06T23:40:51.808Z",
+  "results": [
+    {
+      "name": "desktop-seven-menu-order",
+      "passed": true
+    },
+    {
+      "name": "welcome-dumpling",
+      "passed": true,
+      "pixels": 6604
+    },
+    {
+      "name": "welcome-flashlight",
+      "passed": true,
+      "pixels": 6011
+    },
+    {
+      "name": "welcome-toolbox",
+      "passed": true,
+      "pixels": 7624
+    },
+    {
+      "name": "welcome-cloud",
+      "passed": true,
+      "pixels": 7478
+    },
+    {
+      "name": "hand-wave-replay-changes-pixels",
+      "passed": true
+    },
+    {
+      "name": "reduced-motion-stops-animation",
+      "passed": true
+    },
+    {
+      "name": "responsive-navigation-1024",
+      "passed": true
+    },
+    {
+      "name": "responsive-navigation-900",
+      "passed": true
+    },
+    {
+      "name": "responsive-navigation-768",
+      "passed": true
+    },
+    {
+      "name": "responsive-navigation-360",
+      "passed": true
+    },
+    {
+      "name": "long-account-button-layout",
+      "passed": true
+    },
+    {
+      "name": "english-seven-menu-layout",
+      "passed": true
+    },
+    {
+      "name": "webgl-unavailable-keeps-static-friends-and-links",
+      "passed": true
+    },
+    {
+      "name": "lazy-chunk-failure-keeps-static-friend",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "liveWrites": 0,
+  "scope": "Real WebGL and native UI. Long-account layout uses a DOM-only account-button substitute, without account/DB writes."
+}

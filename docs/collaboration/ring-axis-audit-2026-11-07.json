@@ -1,0 +1,140 @@
+{
+  "scope": "Bundled lessons, docs, examples and all 33 supplied public originals. No private saved code was read or changed.",
+  "calls": [
+    {
+      "source": "missions.default[2].starterCode",
+      "line": 5,
+      "explicitAxis": true
+    },
+    {
+      "source": "missions.default[2].solutionCode",
+      "line": 5,
+      "explicitAxis": true
+    },
+    {
+      "source": "missions.default[17].starterCode",
+      "line": 10,
+      "explicitAxis": true
+    },
+    {
+      "source": "missions.default[17].solutionCode",
+      "line": 10,
+      "explicitAxis": true
+    },
+    {
+      "source": "missions.default[20].starterCode",
+      "line": 6,
+      "explicitAxis": true
+    },
+    {
+      "source": "missions.default[20].solutionCode",
+      "line": 6,
+      "explicitAxis": true
+    },
+    {
+      "source": "missions.default[40].starterCode",
+      "line": 5,
+      "explicitAxis": true
+    },
+    {
+      "source": "missions.default[40].solutionCode",
+      "line": 5,
+      "explicitAxis": true
+    },
+    {
+      "source": "examples.default[10].code",
+      "line": 46,
+      "explicitAxis": true
+    },
+    {
+      "source": "examples.default[22].code",
+      "line": 11,
+      "explicitAxis": true
+    },
+    {
+      "source": "examples.default[39].code",
+      "line": 27,
+      "explicitAxis": true
+    },
+    {
+      "source": "docs.apiReferenceDocs[6].description.en",
+      "parseable": false
+    },
+    {
+      "source": "docs.apiReferenceDocs[6].signature",
+      "line": 1,
+      "explicitAxis": false
+    },
+    {
+      "source": "docs.apiReferenceDocs[6].code",
+      "line": 3,
+      "explicitAxis": false
+    },
+    {
+      "source": "docs.default[14].description.en",
+      "parseable": false
+    },
+    {
+      "source": "docs.default[14].signature",
+      "line": 1,
+      "explicitAxis": false
+    },
+    {
+      "source": "docs.default[14].code",
+      "line": 3,
+      "explicitAxis": false
+    },
+    {
+      "source": "gs2021-06.json",
+      "line": 29,
+      "explicitAxis": true
+    },
+    {
+      "source": "gs2021-06.json",
+      "line": 30,
+      "explicitAxis": true
+    },
+    {
+      "source": "gs2021-06.json",
+      "line": 31,
+      "explicitAxis": true
+    },
+    {
+      "source": "gs2021-06.json",
+      "line": 32,
+      "explicitAxis": true
+    },
+    {
+      "source": "gs2021-06.json",
+      "line": 33,
+      "explicitAxis": true
+    },
+    {
+      "source": "gs2021-06.json",
+      "line": 34,
+      "explicitAxis": true
+    },
+    {
+      "source": "gs2021-06.json",
+      "line": 35,
+      "explicitAxis": true
+    },
+    {
+      "source": "gs2021-06.json",
+      "line": 36,
+      "explicitAxis": true
+    },
+    {
+      "source": "gs2024-16.json",
+      "line": 1,
+      "explicitAxis": false
+    },
+    {
+      "source": "gs2024-16.json",
+      "line": 2,
+      "explicitAxis": false
+    }
+  ],
+  "stage": "Audit captured before updating the ring documentation example and signature.",
+  "resolution": "Documentation now explicitly describes default +X normal and uses +Z for the front-facing example. Original gs2024-16 code is preserved."
+}

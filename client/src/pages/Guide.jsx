@@ -35,12 +35,15 @@ export default function Guide() {
 
         <GuideSection id="start" title="어디에서 시작할까요?">
           <ul className="list-disc pl-5 space-y-2">
-            <li><Link to="/tutorials">튜토리얼</Link>: 빛·소리·상호작용을 짧게 체험합니다.</li>
             <li><Link to="/missions">트레이닝</Link>: 처음 코딩하는 학생을 위한 코스를 순서대로 연습합니다.</li>
+            <li><Link to="/sandbox">만들기</Link>: Python 코드를 직접 쓰고 실행하며 내 프로젝트를 만듭니다.</li>
+            <li><Link to="/tutorials">튜토리얼</Link>: 빛·소리·상호작용을 짧게 체험합니다.</li>
             <li><Link to="/forge">대장간</Link>: 슬라이더로 하나의 오브젝트를 만들고 여러 작품에서 재사용합니다.</li>
             <li><Link to="/gallery">갤러리</Link>: 실제 학생 작품과 원본 프로젝트를 살펴봅니다.</li>
-            <li><Link to="/sandbox">만들기</Link>: Python 코드를 직접 쓰고 실행하며 내 프로젝트를 만듭니다.</li>
+            <li><Link to="/docs">문서</Link>: VPython 기능과 VPyLab 확장, 도형 가이드를 찾아봅니다.</li>
+            <li>사용 안내: 지금 읽고 있는 서비스와 협력 프로젝트의 안내입니다.</li>
           </ul>
+          <p>첫 화면에서는 만두·손전등·공구상자·구름 친구를 골라 볼 수 있습니다. <Link to="/tutorials/welcome-friend">이 친구, 내 코드로 만들기</Link>에서 같은 도형을 직접 실행하고 색과 크기를 바꿔 보세요. 아직 이름은 정하지 않았습니다.</p>
           <p>교사가 제공한 GlowScript 원본 33개는 갤러리에서 볼 수 있습니다. 학생 작품 7개와 교사·참고 자료 26개를 구분하고, 참고 자료 목록은 접어 둡니다. 각 상세 화면에서 원본과 VPyLab 실습을 열 수 있습니다. 원본 실행과 VPyLab 실행은 환경에 따라 차이가 있을 수 있습니다.</p>
         </GuideSection>
 

@@ -1,5 +1,7 @@
 # Claude 검토·운영 배포·사용 안내 업데이트 — 2026-11-07
 
+> 후속 확인: 실제 계정의 포크·수정·공개·공개 내리기도 완료했습니다. 최신 [메뉴·환영 친구·실계정 검증 보고서](WELCOME_MENU_AND_LIVE_VERIFICATION_2026-11-07.md)를 확인하세요. 아래 검증 한계는 당시 배포 단계의 기록입니다.
+
 ## 운영 반영
 
 Claude의 배포 전 정적 검토와 재검토를 받고 발견한 오류를 수정한 뒤, 기능 릴리스 `f9d1f8b1bac0d7605bdab2b3b3a5112914eeaf5e`를 main에 반영했습니다. Vercel·Railway 배포 성공과 서버 health의 `commitSha: f9d1f8b1bac0`를 확인했습니다.

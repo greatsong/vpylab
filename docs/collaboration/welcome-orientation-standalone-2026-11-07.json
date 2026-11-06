@@ -1,0 +1,99 @@
+{
+  "generatedAt": "2026-11-06T23:37:36.051Z",
+  "result": {
+    "camera": {
+      "pos": [
+        8,
+        3.0000000000000004,
+        2
+      ],
+      "center": [
+        8,
+        1,
+        -2
+      ],
+      "forward": [
+        0,
+        -0.44721359549995804,
+        -0.8944271909999159
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "range": 2.581988897471611,
+      "fov": 1.0471975511965976,
+      "aspect": 1.3333333333333333,
+      "autoscale": false
+    },
+    "color": [
+      1,
+      0.2,
+      0.1
+    ],
+    "opacity": 0.3,
+    "transparent": true,
+    "emissive": 0.8,
+    "roughness": 0.09999999999999998,
+    "drawCalls": 5,
+    "portrait": {
+      "pos": [
+        8,
+        5.32820512820513,
+        6.656410256410256
+      ],
+      "center": [
+        8,
+        1,
+        -2
+      ],
+      "forward": [
+        0,
+        -0.4472135954999581,
+        -0.8944271909999159
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "range": 2.581988897471611,
+      "fov": 1.0471975511965976,
+      "aspect": 0.46208530805687204,
+      "autoscale": false
+    },
+    "primitiveAnchors": [
+      {
+        "type": "cylinder",
+        "min": 3,
+        "max": 7
+      },
+      {
+        "type": "cone",
+        "min": 3,
+        "max": 7
+      }
+    ],
+    "orientation": {
+      "scale": [
+        4,
+        0.6,
+        0.8
+      ],
+      "kind": "SphereGeometry",
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ]
+    },
+    "passed": true
+  },
+  "errors": []
+}

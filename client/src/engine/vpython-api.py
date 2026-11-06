@@ -821,6 +821,8 @@ simple_sphere = sphere   # GlowScript의 삼각형 수가 적은 구 — 같은 
 
 
 class box(_GObject):
+    _geometry_type = 'box'
+
     def __init__(self, **kwargs):
         size_arg = kwargs.pop('size', None)
         length_arg = kwargs.pop('length', None)
@@ -847,7 +849,7 @@ class box(_GObject):
         self._axis = axis_dir * self._size.x
         self._up = up_arg if up_arg.mag > 0 else vector(0, 1, 0)
         super().__init__(
-            'box',
+            self._geometry_type,
             size=self._size,
             axis=self._axis,
             up=self._up,
@@ -1047,9 +1049,19 @@ class cone(_AxisLength, _RadiusSize, _GObject):
 
 class ring(_GObject):
     def __init__(self, **kwargs):
+        self._axis = _coerce_vector(kwargs.pop('axis', None), vector(1,0,0))
         self._radius = kwargs.pop('radius', 1.0)
         self._thickness = kwargs.pop('thickness', 0.1)
-        super().__init__('ring', radius=self._radius, thickness=self._thickness, **kwargs)
+        super().__init__('ring', radius=self._radius, thickness=self._thickness, axis=self._axis, **kwargs)
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @axis.setter
+    def axis(self, value):
+        self._axis = _coerce_vector(value, vector(1,0,0))
+        _add_command({'action':'update', 'id':self._id, 'axis':self._axis.to_list()})
 
     @property
     def radius(self):
@@ -1070,7 +1082,7 @@ class ring(_GObject):
         _add_command({"action": "update", "id": self._id, "thickness": value})
 
     def _clone_kwargs(self):
-        return {**super()._clone_kwargs(), 'radius': self._radius, 'thickness': self._thickness}
+        return {**super()._clone_kwargs(), 'radius': self._radius, 'thickness': self._thickness, 'axis': self._axis.clone()}
 
 
 # === 새 프리미티브: pyramid (4면 피라미드) ===
@@ -1106,58 +1118,9 @@ class pyramid(_GObject):
 
 
 # === 새 프리미티브: ellipsoid (타원체) ===
-class ellipsoid(_GObject):
-    """타원체 — sphere를 size로 비균등 스케일링. size=vector(length, height, width)"""
-    def __init__(self, **kwargs):
-        size = _coerce_vector(kwargs.pop('size', None), vector(1, 1, 1))
-        # GlowScript처럼 length·height·width로도 지정할 수 있다
-        length_arg = kwargs.pop('length', None)
-        height_arg = kwargs.pop('height', None)
-        width_arg = kwargs.pop('width', None)
-        if length_arg is not None:
-            size.x = float(length_arg)
-        if height_arg is not None:
-            size.y = float(height_arg)
-        if width_arg is not None:
-            size.z = float(width_arg)
-        self._size = size
-        super().__init__('ellipsoid', size=self._size.to_list(), **kwargs)
-
-    @property
-    def size(self):
-        return self._size
-
-    @size.setter
-    def size(self, value):
-        self._size = _coerce_vector(value, vector(1, 1, 1))
-        _add_command({"action": "update", "id": self._id, "size": self._size.to_list()})
-
-    @property
-    def length(self):
-        return self._size.x
-
-    @length.setter
-    def length(self, value):
-        self.size = vector(float(value), self._size.y, self._size.z)
-
-    @property
-    def height(self):
-        return self._size.y
-
-    @height.setter
-    def height(self, value):
-        self.size = vector(self._size.x, float(value), self._size.z)
-
-    @property
-    def width(self):
-        return self._size.z
-
-    @width.setter
-    def width(self, value):
-        self.size = vector(self._size.x, self._size.y, float(value))
-
-    def _clone_kwargs(self):
-        return {**super()._clone_kwargs(), 'size': self._size.clone()}
+class ellipsoid(box):
+    """타원체: box와 같은 size·axis·up 규칙을 가지며 중심을 기준으로 회전한다."""
+    _geometry_type = 'ellipsoid'
 
 
 # === 새 프리미티브: helix (나선/스프링) ===

@@ -626,7 +626,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
           mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
           break;
         }
-        case 'ring': mesh = new THREE.Mesh(new THREE.TorusGeometry(cmd.radius||1, cmd.thickness||0.1, 16, 48), mat); break;
+        case 'ring': mesh = new THREE.Mesh(new THREE.TorusGeometry(cmd.radius||1, cmd.thickness||0.1, 16, 48), mat); mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), new THREE.Vector3(...(cmd.axis||[1,0,0])).normalize()); break;
         case 'pyramid': {
           const sz = cmd.size || [1,1,1]; const a = cmd.axis||[1,0,0];
           const baseR = Math.max(sz[1], sz[2])/2 || 0.5;
@@ -736,7 +736,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
       mesh.userData = Object.assign(mesh.userData || {}, { vpType: cmd.type });
       if (cmd.type === 'arrow') { const a0 = cmd.axis || [1,0,0]; mesh.userData.arrowLen = Math.hypot(...a0) || 1; mesh.userData.shaftwidth = cmd.shaftwidth || 0.1; }
       if (cmd.type === 'helix') { mesh.userData.helixRadius = cmd.radius || 1; mesh.userData.helixCoils = cmd.coils || 5; }
-      if (cmd.type === 'box' && (cmd.axis || cmd.up)) { mesh.userData.boxAxis = cmd.axis || [1,0,0]; mesh.userData.boxUp = cmd.up || [0,1,0]; applyBoxOrientation(mesh); }
+      if (['box','ellipsoid'].includes(cmd.type) && (cmd.axis || cmd.up)) { mesh.userData.boxAxis = cmd.axis || [1,0,0]; mesh.userData.boxUp = cmd.up || [0,1,0]; applyBoxOrientation(mesh); }
       scene.add(mesh);
       meshes.set(cmd.id, mesh);
       if (cmd.make_trail) createTrail(cmd);
@@ -779,7 +779,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
       if (cmd.thickness !== undefined && m.geometry?.type==='TorusGeometry') { const r=m.geometry.parameters?.radius||1; const ng=new THREE.TorusGeometry(r,cmd.thickness,16,48); m.geometry.dispose(); m.geometry=ng; }
       if (cmd.axis !== undefined || cmd.up !== undefined) {
         const vpType = m.userData?.vpType;
-        if (vpType === 'box') {
+        if (['box','ellipsoid'].includes(vpType)) {
           if (cmd.axis) m.userData.boxAxis = cmd.axis;
           if (cmd.up) m.userData.boxUp = cmd.up;
           applyBoxOrientation(m);
@@ -788,6 +788,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
           const dir = new THREE.Vector3(...cmd.axis).normalize();
           if (vpType === 'cylinder' && m.geometry) { const r=m.geometry.parameters?.radiusTop??1; m.geometry.dispose(); m.geometry=primitiveGeometry.cylinder(r,len); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
           else if (vpType === 'cone' && m.geometry) { const r=m.geometry.parameters?.radius??1; m.geometry.dispose(); m.geometry=primitiveGeometry.cone(r,len); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
+          else if (vpType === 'ring') { m.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),dir); }
           else if (vpType === 'arrow') { m.userData.arrowLen=len; rebuildArrow(m, len, m.userData.shaftwidth||0.1); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
           else if (vpType === 'helix') { rebuildHelixLen(m, len); m.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),dir); }
           else { m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir); }
@@ -1232,6 +1233,7 @@ class sphere(_GObject):
         _add_command({"action":"update","id":self._id,"radius":v})
 
 class box(_GObject):
+    _geometry_type = 'box'
     def __init__(self, **kw):
         _sz = kw.pop('size', None)
         if _sz is None:
@@ -1244,7 +1246,7 @@ class box(_GObject):
         _extra = {}
         if self._axis is not None: _extra['axis'] = self._axis.to_list() if isinstance(self._axis,vector) else self._axis
         if self._up is not None: _extra['up'] = self._up.to_list() if isinstance(self._up,vector) else self._up
-        super().__init__('box', size=self._size.to_list() if isinstance(self._size,vector) else self._size, **_extra, **kw)
+        super().__init__(self._geometry_type, size=self._size.to_list() if isinstance(self._size,vector) else self._size, **_extra, **kw)
     @property
     def axis(self): return self._axis
     @axis.setter
@@ -1321,9 +1323,16 @@ class cone(_GObject):
 
 class ring(_GObject):
     def __init__(self, **kw):
+        self._axis = kw.pop('axis', vector(1,0,0))
         self._radius = kw.pop('radius', 1.0)
         self._thickness = kw.pop('thickness', 0.1)
-        super().__init__('ring', radius=self._radius, thickness=self._thickness, **kw)
+        super().__init__('ring', radius=self._radius, thickness=self._thickness, axis=self._axis.to_list(), **kw)
+    @property
+    def axis(self): return self._axis
+    @axis.setter
+    def axis(self, v):
+        self._axis = v
+        _add_command({'action':'update','id':self._id,'axis':v.to_list()})
     @property
     def radius(self): return self._radius
     @radius.setter
@@ -1336,6 +1345,10 @@ class ring(_GObject):
     def thickness(self, v):
         self._thickness = v
         _add_command({"action":"update","id":self._id,"thickness":v})
+
+
+    def _clone_kwargs(self):
+        return {**super()._clone_kwargs(), 'radius':self._radius, 'thickness':self._thickness, 'axis':self._axis.clone()}
 
 
 # === compound (복합 객체) ===
@@ -1424,11 +1437,68 @@ class pyramid(_GObject):
         s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
         super().__init__('pyramid', size=s, axis=self._axis.to_list(), **kw)
 
-class ellipsoid(_GObject):
+def _ellipsoid_vector(v):
+    return v.clone() if isinstance(v, vector) else vector(*v)
+
+class ellipsoid(box):
+    _geometry_type = 'ellipsoid'
     def __init__(self, **kw):
-        self._size = kw.pop('size', vector(1,1,1))
-        s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
-        super().__init__('ellipsoid', size=s, **kw)
+        axis = _ellipsoid_vector(kw.pop('axis', vector(1,0,0)))
+        size = kw.pop('size', None)
+        if size is None:
+            size = vector(kw.pop('length', axis.mag or 1), kw.pop('height',1), kw.pop('width',1))
+        else:
+            size = _ellipsoid_vector(size)
+            for i, name in enumerate(('length','height','width')):
+                if name in kw:
+                    setattr(size, ('x','y','z')[i], float(kw.pop(name)))
+        direction = axis.hat if axis.mag else vector(1,0,0)
+        kw['axis'] = direction * size.x
+        kw['up'] = _ellipsoid_vector(kw.pop('up', vector(0,1,0)))
+        super().__init__(size=size, **kw)
+        self._watch_vectors()
+    def _watch_vectors(self):
+        self._size._change_callback = lambda: setattr(self, 'size', self._size)
+        self._axis._change_callback = lambda: setattr(self, 'axis', self._axis)
+        self._up._change_callback = lambda: setattr(self, 'up', self._up)
+    @property
+    def size(self): return self._size
+    @size.setter
+    def size(self, value):
+        self._size = _ellipsoid_vector(value)
+        direction = self._axis.hat if self._axis.mag else vector(1,0,0)
+        self._axis = direction * self._size.x
+        self._watch_vectors()
+        _add_command({'action':'update','id':self._id,'size':self._size.to_list(),'axis':self._axis.to_list()})
+    @property
+    def axis(self): return self._axis
+    @axis.setter
+    def axis(self, value):
+        self._axis = _ellipsoid_vector(value)
+        if self._axis.mag: self._size._x = self._axis.mag
+        self._watch_vectors()
+        _add_command({'action':'update','id':self._id,'axis':self._axis.to_list(),'size':self._size.to_list()})
+    @property
+    def up(self): return self._up
+    @up.setter
+    def up(self, value):
+        self._up = _ellipsoid_vector(value)
+        self._watch_vectors()
+        _add_command({'action':'update','id':self._id,'up':self._up.to_list()})
+    @property
+    def length(self): return self._size.x
+    @length.setter
+    def length(self, value): self.size = vector(value,self._size.y,self._size.z)
+    @property
+    def height(self): return self._size.y
+    @height.setter
+    def height(self, value): self.size = vector(self._size.x,value,self._size.z)
+    @property
+    def width(self): return self._size.z
+    @width.setter
+    def width(self, value): self.size = vector(self._size.x,self._size.y,value)
+    def _clone_kwargs(self):
+        return {**super()._clone_kwargs(), 'size':self._size.clone(), 'axis':self._axis.clone(), 'up':self._up.clone()}
 
 class helix(_GObject):
     def __init__(self, **kw):

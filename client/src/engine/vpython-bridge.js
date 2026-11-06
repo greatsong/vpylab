@@ -72,7 +72,7 @@ const curveRegistry = new Map();
 
 // axis·up 기준 좌표계(basis)로 방향을 정하는 객체 종류 — box와 같은 방식으로 회전한다
 // group은 GlowScript 명세대로 Python이 하위 객체를 하나씩 돌리므로 여기 없다 (그룹 자체는 위치만 갖는다)
-const BASIS_TYPES = new Set(['box', 'compound', 'extrusion', 'text', 'curve', 'points', 'helix']);
+const BASIS_TYPES = new Set(['box', 'ellipsoid', 'compound', 'extrusion', 'text', 'curve', 'points', 'helix']);
 
 // 기본 재질 설정
 const DEFAULT_MATERIAL_PARAMS = {
@@ -462,6 +462,8 @@ function createObject(cmd, scene) {
       const t = cmd.thickness ?? DEFAULT_OBJECT_PROPS.ring.thickness;
       geometry = new THREE.TorusGeometry(r, t, 16, 48);
       mesh = new THREE.Mesh(geometry, material);
+      mesh.userData = { vpType: 'ring' };
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), new THREE.Vector3(...asVectorArray(cmd.axis, [1,0,0])).normalize());
       break;
     }
 
@@ -487,6 +489,8 @@ function createObject(cmd, scene) {
       geometry = new THREE.SphereGeometry(0.5, 32, 16);
       mesh = new THREE.Mesh(geometry, material);
       mesh.scale.set(size[0], size[1], size[2]);
+      mesh.userData = { vpType: 'ellipsoid', boxAxis: asVectorArray(cmd.axis, [1,0,0]), boxUp: asVectorArray(cmd.up, [0,1,0]) };
+      applyBoxOrientation(mesh, mesh.userData.boxAxis, mesh.userData.boxUp);
       break;
     }
 
@@ -1028,6 +1032,8 @@ function updateMesh(cmd) {
       mesh.geometry.dispose();
       mesh.geometry = primitiveGeometry.cone(r, len);
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    } else if (vpType === 'ring') {
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), dir);
     } else if (vpType === 'arrow') {
       mesh.userData.arrowLen = len;
       rebuildArrow(mesh, len, mesh.userData.arrowShaftwidth ?? DEFAULT_OBJECT_PROPS.arrow.shaftwidth);
