@@ -11,7 +11,7 @@ Claude의 배포 전 정적 검토와 재검토를 받고 발견한 오류를 �
 - [문서: 반구·돔](https://vpylab.vercel.app/docs#shape-dome)
 - [기능 릴리스 CI — 전체 성공](https://github.com/greatsong/vpylab/actions/runs/42302812979)
 
-기능 배포 완료 후 사용 안내를 확장했습니다. `/guide`의 제목을 ‘사용 안내’로 바꾸고 시작 순서·대장간·포크/출처·캐릭터 튜토리얼·팀 프로젝트의 다섯 목차를 제공합니다. 기존 팀 저장·이력·GitHub 안내를 유지했습니다. 별도 [학생·교사용 가이드](USER_GUIDE_KO.md)와 README의 진입 링크도 추가했습니다. 가이드의 데스크톱·360/768px 브라우저 검사 5건, 빌드·린트를 통과한 뒤 별도 가이드 릴리스로 반영합니다.
+기능 배포 완료 후 사용 안내를 확장했습니다. `/guide`의 제목을 ‘사용 안내’로 바꾸고 시작 순서·대장간·포크/출처·캐릭터 튜토리얼·팀 프로젝트의 다섯 목차를 제공합니다. 기존 팀 저장·이력·GitHub 안내를 유지했습니다. 별도 [학생·교사용 가이드](USER_GUIDE_KO.md)와 README의 진입 링크도 추가했습니다. 가이드의 데스크톱·360/768px 브라우저 검사 5건, 빌드·린트를 통과한 뒤 별도 가이드 릴리스 `64c99cfea437c5a5f8ab0aff1f569aa75e3c32a5`로 반영했습니다. Vercel·Railway 성공과 서버 health의 `64c99cfea437`를 확인한 뒤, 운영 가이드의 5개 검사를 다시 통과했습니다. 운영 DB의 출처 컬럼을 포함한 익명 모듈 조회도 HTTP 200(현재 공개 모듈 0개)으로 확인했습니다.
 
 기존 최신 원격 main의 인증·원자 저장·동시 기록 보완을 포함한 상태로 릴리스했습니다. 원래 작업 폴더의 다른 변경을 리셋하지 않았으며, 격리 worktree에서 통합·커밋했습니다.
 
@@ -61,3 +61,10 @@ Solar 도형 AI는 학생 메뉴에 연결하지 않았습니다. 소리 명령�
 - [운영 갤러리](review-figures/2026-11-07/production-gallery.png)
 - [운영 도형 가이드](review-figures/2026-11-07/production-docs.png)
 - [운영 캐릭터 아이템 획득](review-figures/2026-11-07/production-character-collect.png)
+
+- [운영 사용 안내](review-figures/2026-11-07/production-guide-desktop.png)
+- [운영 사용 안내: 대장간 설명](review-figures/2026-11-07/production-guide-forge.png)
+- [운영 사용 안내: 모바일](review-figures/2026-11-07/production-guide-360.png)
+- [가이드 릴리스 CI](https://github.com/greatsong/vpylab/actions/runs/42303218108)
+
+마지막 증거 기록 커밋은 문서·캡처·JSON만 포함합니다. 가이드 릴리스 이후 애플리케이션 코드는 변경하지 않았습니다.
