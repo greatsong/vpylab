@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
 
-function GuideSection({ title, children }) {
+function GuideSection({ id, title, children }) {
   return (
-    <section className="mb-10">
+    <section id={id} className="mb-10 scroll-mt-24">
       <h2 className="font-display text-xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>
         {title}
       </h2>
@@ -21,13 +21,65 @@ export default function Guide() {
       <main className="max-w-3xl mx-auto px-6 py-12">
         <header className="mb-10">
           <h1 className="font-display text-3xl font-bold mb-3" style={{ color: 'var(--color-text-primary)' }}>
-            팀 프로젝트 안내
+            사용 안내
           </h1>
           <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-            친구와 코드를 나누어 만들고, 실행 결과를 비교하며 함께 문제를 해결합니다.
-            저장 이력과 작업 기록을 보며 서로의 시도를 이어갈 수 있습니다.
+            처음 코딩하는 중·고등학생도 모양을 바꾸고, 움직임과 소리를 붙여 자기 작품을 만듭니다.
+            작은 시도를 친구와 나누고 재사용하며 배워 보세요.
           </p>
         </header>
+
+        <nav aria-label="사용 안내 목차" className="flex flex-wrap gap-3 mb-10 text-sm" style={{ color: 'var(--color-accent)' }}>
+          {[['start','처음 시작하기'],['forge','대장간'],['fork','포크와 출처'],['character','캐릭터 튜토리얼'],['projects','팀 프로젝트']].map(([id,label]) => <a key={id} href={'#'+id}>{label}</a>)}
+        </nav>
+
+        <GuideSection id="start" title="어디에서 시작할까요?">
+          <ul className="list-disc pl-5 space-y-2">
+            <li><Link to="/tutorials">튜토리얼</Link>: 빛·소리·상호작용을 짧게 체험합니다.</li>
+            <li><Link to="/missions">트레이닝</Link>: 처음 코딩하는 학생을 위한 코스를 순서대로 연습합니다.</li>
+            <li><Link to="/forge">대장간</Link>: 슬라이더로 하나의 오브젝트를 만들고 여러 작품에서 재사용합니다.</li>
+            <li><Link to="/gallery">갤러리</Link>: 실제 학생 작품과 원본 프로젝트를 살펴봅니다.</li>
+            <li><Link to="/sandbox">만들기</Link>: Python 코드를 직접 쓰고 실행하며 내 프로젝트를 만듭니다.</li>
+          </ul>
+          <p>교사가 제공한 GlowScript 원본 33개는 갤러리에서 볼 수 있습니다. 학생 작품 7개와 교사·참고 자료 26개를 구분하고, 참고 자료 목록은 접어 둡니다. 각 상세 화면에서 원본과 VPyLab 실습을 열 수 있습니다. 원본 실행과 VPyLab 실행은 환경에 따라 차이가 있을 수 있습니다.</p>
+        </GuideSection>
+
+        <GuideSection id="forge" title="대장간: 내 모양을 재사용할 부품으로">
+          <ol className="list-decimal pl-5 space-y-2">
+            <li>작업대에서 캐릭터 8종, 종, 기본 모양 5종 중 하나를 고릅니다. 캐릭터는 기본 도형으로 단순화한 연습 모양입니다.</li>
+            <li>슬라이더로 비율과 크기를 바꾸고, 색·표정·장식을 조절합니다. 마우스로 돌려 보거나 정면·위 시점을 선택하세요.</li>
+            <li>이름과 설명을 적어 내 모듈 보관함에 등록합니다. 작업 중 초안과 이 보관함은 현재 브라우저에 저장됩니다.</li>
+            <li>완성 모듈 코드 복사 후 만들기 화면에 붙여 넣습니다. 함수의 위치와 크기를 바꾸면 여러 개를 만들 수 있습니다. Python 파일로도 내려받을 수 있습니다.</li>
+          </ol>
+          <p>대장간은 문서·튜토리얼 밖에서도 독립적으로 사용합니다. 제작 대상은 다른 작품에 넣어 쓸 하나의 오브젝트입니다. 슬라이더 값은 생성 코드에 반영되며, 실습에서 고친 코드를 슬라이더로 되돌리지는 않습니다.</p>
+          <p>복사한 코드의 <code>my_module.object</code>가 완제품 compound입니다. 일반 VPython 속성으로 직접 이동하고 색·투명도를 바꿀 수 있습니다.</p>
+          <pre className="overflow-x-auto rounded-lg p-4" style={{ backgroundColor: 'var(--color-bg-panel)' }}><code>{`obj = my_module.object
+obj.pos.x += 0.1
+obj.pos = vector(2, 0, 0)
+obj.color = vector(0.5, 1, 0.7)
+obj.opacity = 0.6`}</code></pre>
+          <p>compound의 색은 원래 부품 색에 곱해집니다. 흰 부품은 새 색이 잘 나타나고 검은 부품은 검게 남습니다. 특정 부품을 따로 바꾸려면 복사한 코드의 해당 부품 속성을 살펴보세요. <Link to="/docs#compound">compound 문서</Link>와 <Link to="/docs#shape-dome">반구·돔 가이드</Link>를 함께 볼 수 있습니다.</p>
+          <p><strong>종 만들기</strong>는 ① 모양만 만들기 → ② 클릭하면 소리 → ③ 음파 효과까지 순서로 체험합니다. 소리 높이를 바꾸고 종을 눌러 보세요. 음파 고리는 소리를 눈으로 표현하는 효과입니다.</p>
+          <p><strong>VPyLab 자체 기능:</strong> 대장간과 생성 편의 함수, 소리 명령은 VPyLab에서 제공합니다. 일반 도형·compound·위치 속성과 구분해 문서에 표시합니다. 소리 명령을 외부 VPython으로 옮길 때는 해당 환경에 맞게 바꿔야 합니다. 압출 모양은 공유 HTML에서 표현 범위가 더 좁습니다.</p>
+        </GuideSection>
+
+        <GuideSection id="fork" title="다른 사람의 모듈을 포크하고 출처 남기기">
+          <ol className="list-decimal pl-5 space-y-2">
+            <li>모듈 보관함의 모두의 모듈에서 모양을 고릅니다. 목록에서는 코드를 기본으로 펼쳐 보여 주지 않습니다.</li>
+            <li>로그인한 뒤 포크해서 가져오기를 누릅니다. 내 계정에 비공개 포크 기록을 남긴 뒤 작업대에 엽니다.</li>
+            <li>내 모양으로 고치고, 추가로 참고한 프로젝트가 있으면 이름과 링크를 남깁니다. 참고 링크는 8개까지 넣을 수 있습니다.</li>
+            <li>다시 공개할 때는 공개할 별명을 확인합니다. 같은 포크 기록에 수정본이 반영되고 원본 제목·제작자와 참고 기록이 이어집니다.</li>
+          </ol>
+          <p>내 모듈에서 공개 상태를 확인하고 내 모듈 공개 내리기로 비공개로 바꿀 수 있습니다. 내가 공개한 모듈은 내 모듈 이어 만들기로 수정하세요. 원본이 삭제되어도 저장된 출처 제목과 제작자 기록은 유지됩니다.</p>
+          <p>공개 모듈의 코드는 다른 사람이 열고 가져갈 수 있습니다. 대장간 목록의 기본 접힘은 코드의 비공개 설정을 뜻하지 않습니다. 공개 이름과 설명에는 개인정보를 넣지 마세요.</p>
+          <p>작업 초안·브라우저 보관함과 계정에 기록된 포크·공개 모듈은 다릅니다. 다른 기기에서 이어 쓸 항목은 계정 기록을 확인하고, 코드만 옮길 때는 복사하면 됩니다.</p>
+        </GuideSection>
+
+        <GuideSection id="character" title="캐릭터를 만들고 움직이며 배우기">
+          <p><Link to="/tutorials/forge-character">대장간 캐릭터 튜토리얼</Link>은 ① 부품을 compound로 묶기 → ② 완제품 움직이기 → ③ 아이템을 먹으면 색 바꾸기의 세 단계입니다.</p>
+          <p>방향키·WASD 또는 화면 버튼으로 움직여 보세요. 아이템을 먹으면 조작한 캐릭터의 색이 바뀌고, 옆 캐릭터와 검은 눈은 유지됩니다. 조건과 색 값을 하나씩 바꿔 결과를 예상하고 확인합니다.</p>
+          <p>친구와 몸통·표정·움직임·소리를 나누어 실험하고, 서로 만든 부품을 읽고 조합해 보세요. 기본 학습은 AI 없이 직접 예상·실행·수정·설명하는 흐름입니다.</p>
+        </GuideSection>
 
         <p className="mb-10 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           GitHub 연결이 처음이라면{' '}
@@ -35,7 +87,7 @@ export default function Guide() {
           에서 프로젝트 생성부터 저장·복원·공유까지 순서대로 실습할 수 있습니다.
         </p>
 
-        <GuideSection title="함께 만들며 배우는 것">
+        <GuideSection id="projects" title="팀 프로젝트: 함께 만들며 배우는 것">
           <ul className="list-disc pl-5 space-y-2">
             <li>예상한 움직임과 실제 실행 결과를 비교하며 코드의 원리를 이해합니다.</li>
             <li>오류가 생긴 조건과 수정 방법을 설명하며 자신의 생각을 점검합니다.</li>

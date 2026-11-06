@@ -4,6 +4,8 @@
 
 > **새 교실 로컬 검토 (`codex/classroom-v2`)**: `npm run dev:classroom`으로 별도 포트에서 실행합니다. [직접 테스트하는 방법](docs/CLASSROOM_V2_LOCAL_TEST.md) · [새 시스템 설계와 승인 후 교체 기준](docs/CLASSROOM_V2_ARCHITECTURE.md). 기존 운영 진입점과 수업 자료는 유지합니다.
 
+학생·교사는 [서비스 사용 안내](https://vpylab.vercel.app/guide) 또는 [대장간·포크·캐릭터 학습 가이드](docs/USER_GUIDE_KO.md)에서 시작하세요. 아래 내용은 운영자를 위한 배포 안내입니다.
+
 ---
 
 ## 이 문서는 누구를 위한 건가요?
