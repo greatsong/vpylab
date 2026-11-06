@@ -23,12 +23,15 @@ const GITHUB_SYNC_RETRY_BASE_MS = 60_000;
 const GITHUB_SYNC_RETRY_MAX_MS = 30 * 60_000;
 const GITHUB_SYNC_PENDING_STORAGE_KEY = 'vpylab:github-sync-pending:v1';
 const GITHUB_SYNC_MAX_PENDING_JOBS = 50;
+const GITHUB_SYNC_MAX_ATTEMPTS = 5;
 const DEBUG_PROJECTS = import.meta.env.DEV;
 const GITHUB_SYNC_FORCE_RETRYABLE_BLOCKED_CODES = new Set([
+  'auth_required',
   'github_auth_required',
   'github_2fa_required',
   'github_permission_required',
   'github_repo_unavailable',
+  'github_job_user_mismatch',
 ]);
 const githubSyncChains = new Map();
 const githubSyncInFlightJobs = new Map();
@@ -69,7 +72,7 @@ function classifyGithubSyncError(error) {
   }
 
   // 서버 GitHub 프록시의 프로젝트 멤버십 검증 실패 (403 code: 'not_project_member')
-  if (['project_read_only', 'project_repo_mismatch', 'project_required', 'project_repo_missing', 'repo_moved', 'revision_not_found', 'project_sync_required'].includes(code)) {
+  if (['project_read_only', 'project_repo_mismatch', 'project_required', 'project_repo_missing', 'repo_moved', 'revision_not_found', 'project_sync_required', 'revision_required', 'revision_snapshot_mismatch', 'github_snapshot_missing', 'github_conflict_exhausted', 'github_commit_rejected', 'github_retry_exhausted'].includes(code)) {
     return { code, blocked: true, message };
   }
   if (code === 'not_project_member') {
@@ -198,7 +201,7 @@ async function getCurrentUserForSave(message = '로그인 확인이 지연되고
 // 서버 GitHub 프록시 인증용 Supabase access token (없으면 null)
 async function getSupabaseAccessToken() {
   try {
-    return (await useAuthStore.getState().getAccessToken?.()) || null;
+    return (await withTimeout(useAuthStore.getState().getAccessToken?.(), AUTH_TIMEOUT_MS, '로그인 확인이 지연되고 있습니다.')) || null;
   } catch {
     return null;
   }
@@ -271,17 +274,23 @@ function markPendingGithubJobFailed(jobId, error) {
   const failure = classifyGithubSyncError(error);
   setPendingGithubJobs(jobs.map((job) => (
     job.id === jobId
-      ? {
+      ? (() => {
+        const attempts = (job.attempts || 0) + 1;
+        const exhausted = !failure.blocked && attempts >= GITHUB_SYNC_MAX_ATTEMPTS;
+        return {
           ...job,
-          attempts: (job.attempts || 0) + 1,
-          blocked: failure.blocked,
-          lastError: failure.message,
-          lastErrorCode: failure.code,
-          nextRetryAt: failure.blocked
+          attempts,
+          blocked: failure.blocked || exhausted,
+          lastError: exhausted
+            ? 'GitHub 반영이 다섯 번 실패해 자동 재시도를 중단했습니다. VPyLab 저장은 유지됩니다. 연결 상태를 확인하고 현재 코드를 새로 저장해주세요.'
+            : failure.message,
+          lastErrorCode: exhausted ? 'github_retry_exhausted' : failure.code,
+          nextRetryAt: failure.blocked || exhausted
             ? null
-            : new Date(Date.now() + getGithubRetryDelayMs((job.attempts || 0) + 1)).toISOString(),
+            : new Date(Date.now() + getGithubRetryDelayMs(attempts)).toISOString(),
           updatedAt: new Date().toISOString(),
-        }
+        };
+      })()
       : job
   )));
 }
@@ -310,11 +319,20 @@ function enqueuePendingGithubJob(job, task) {
   }
   const inFlight = enqueueProjectGithubSync(
     job.projectId,
-    () => withTimeout(
-      Promise.resolve().then(task),
-      GITHUB_SYNC_TIMEOUT_MS + SUPABASE_TIMEOUT_MS,
-      'GitHub 반영이 제한 시간을 넘었습니다. 대기열에 남겨두고 다음에 다시 시도합니다.',
-    ),
+    // 각 네트워크 단계는 자체 제한 시간을 갖습니다. 전체 Promise만 일찍 풀면
+    // 취소되지 않은 이전 작업과 다음 작업이 겹치므로 실제 종료까지 체인을 유지합니다.
+    () => {
+      if (globalThis.navigator?.locks?.request) {
+        return navigator.locks.request(`vpylab:github-sync:${job.projectId}`, () => {
+          // 다른 탭이 먼저 끝낸 동일 작업은 다시 전송하지 않습니다.
+          if (!getPendingGithubJobs().some(pending => pending.id === job.id)) {
+            return { synchronizedElsewhere: true, savedCodeId: job.codeId };
+          }
+          return task();
+        });
+      }
+      return task();
+    },
   )
     .finally(() => {
       githubSyncInFlightJobs.delete(job.id);
@@ -325,9 +343,23 @@ function enqueuePendingGithubJob(job, task) {
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = GITHUB_SYNC_TIMEOUT_MS) {
   const controller = new AbortController();
-  const timerId = setTimeout(() => controller.abort(), timeoutMs);
+  let timerId;
+  const timeout = new Promise((_, reject) => {
+    timerId = setTimeout(() => {
+      controller.abort();
+      reject(new Error(`요청이 ${Math.round(timeoutMs / 1000)}초 안에 끝나지 않았습니다.`));
+    }, timeoutMs);
+  });
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    return await Promise.race([timeout, (async () => {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      // 헤더만 도착하고 본문이 멈추는 경우도 같은 제한 시간으로 종료합니다.
+      const body = await response.json().catch(error => {
+        if (controller.signal.aborted) throw error;
+        return {};
+      });
+      return { ok: response.ok, status: response.status, headers: response.headers, json: async () => body };
+    })()]);
   } catch (error) {
     if (error?.name === 'AbortError') {
       throw new Error(`요청이 ${Math.round(timeoutMs / 1000)}초 안에 끝나지 않았습니다.`);
@@ -1515,6 +1547,9 @@ const useProjectStore = create((set, get) => ({
       error.code = 'github_invalid_pending_job';
       throw error;
     }
+    if (job.kind !== 'record' && !job.revisionId) {
+      throw Object.assign(new Error('저장 이력이 없어 GitHub 반영을 중단했습니다. 현재 코드를 새로 저장해주세요.'), { code: 'revision_required' });
+    }
 
     const githubToken = await withTimeout(
       useAuthStore.getState().getGitHubToken(),
@@ -1558,6 +1593,7 @@ const useProjectStore = create((set, get) => ({
       }, GITHUB_SYNC_TIMEOUT_MS);
       const commitResult = await parseApiJson(r);
       if (!r.ok) {
+        if (r.status === 401 && commitResult.code !== 'auth_required') useAuthStore.getState().markGitHubTokenExpired?.();
         const error = new Error(commitResult.error || `GitHub 기록 저장 실패 (${r.status})`);
         error.status = r.status;
         error.code = commitResult.code || null;
@@ -1606,7 +1642,7 @@ const useProjectStore = create((set, get) => ({
           .eq('code_id', job.codeId),
         SUPABASE_TIMEOUT_MS,
         '기록 개수 조회가 지연되고 있습니다.',
-      );
+      ).catch(() => ({ count: null }));
 
       const repoUrl = commitResult.repoUrl || `https://github.com/${job.repoFullName}`;
       const recordPath = commitResult.voyageEntry?.path || null;
@@ -1638,7 +1674,7 @@ const useProjectStore = create((set, get) => ({
       if (error) throw error;
       code = data?.code_snapshot || '';
     }
-    if (!code) throw new Error('GitHub에 반영할 코드 스냅샷을 찾을 수 없습니다.');
+    if (!code) throw Object.assign(new Error('GitHub에 반영할 코드 스냅샷을 찾을 수 없습니다. 현재 코드를 새로 저장해주세요.'), { code: 'github_snapshot_missing' });
 
     const htmlContent = await buildProjectPageHtml(code, job.title);
     const r = await fetchWithTimeout(`${API_BASE}/api/projects/commit`, {
@@ -1661,6 +1697,7 @@ const useProjectStore = create((set, get) => ({
     }, GITHUB_SYNC_TIMEOUT_MS);
     const commitResult = await parseApiJson(r);
     if (!r.ok) {
+      if (r.status === 401 && commitResult.code !== 'auth_required') useAuthStore.getState().markGitHubTokenExpired?.();
       const error = new Error(commitResult.error || `GitHub commit 실패 (${r.status})`);
       error.status = r.status;
       error.code = commitResult.code || null;
@@ -1709,7 +1746,7 @@ const useProjectStore = create((set, get) => ({
         .not('github_commit_sha', 'is', null),
       SUPABASE_TIMEOUT_MS,
       'GitHub 반영 횟수 조회가 지연되고 있습니다.',
-    );
+    ).catch(() => ({ count: null }));
 
     return {
       commitSha: commitResult.commitSha,
@@ -1755,7 +1792,7 @@ const useProjectStore = create((set, get) => ({
       ) {
         return false;
       }
-      if (!force && job.nextRetryAt && Date.parse(job.nextRetryAt) > now) return false;
+      if (job.nextRetryAt && Date.parse(job.nextRetryAt) > now) return false;
       return true;
     });
 
@@ -1886,21 +1923,13 @@ const useProjectStore = create((set, get) => ({
     );
     if (saveErr) return failWithError(saveErr);
 
-    // 방금 만든 revision을 우선 사용하고, 구버전 반환값이면 1건 조회로 보완
-    let lastRev = saved?._revision || null;
-    if (!lastRev && !saved?._revisionPending) {
-      const { data } = await withTimeout(
-        supabase
-          .from('vpylab_code_revisions')
-          .select('id')
-          .eq('code_id', activeCodeId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        SUPABASE_TIMEOUT_MS,
-        '방금 저장한 이력 조회가 지연되고 있습니다.',
-      );
-      lastRev = data;
+    // 다른 사용자의 최신 revision이나 이력이 없는 코드로 최신성 검사를 우회하지 않습니다.
+    const lastRev = saved?._revision || null;
+    if (!lastRev?.id) {
+      return finishLocalCodeSave({
+        saved,
+        warning: '코드는 VPyLab에 저장됐지만 저장 이력을 확인하지 못해 GitHub 반영을 중단했습니다. 잠시 뒤 현재 코드를 새로 저장해주세요.',
+      });
     }
 
     const syncJob = {

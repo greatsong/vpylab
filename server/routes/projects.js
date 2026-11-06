@@ -243,24 +243,23 @@ async function commitFile(owner, repo, path, content, message, token, branch = '
 
 const COMMIT_RETRY_DELAYS_MS = [200, 500, 1200];
 
-async function commitFilesAtomic(owner, repo, files, message, token, branch = 'main', assertCurrent = null) {
+async function commitFilesAtomic(owner, repo, files, message, token, branch, assertCurrent, headSha) {
   const cleanFiles = (files || [])
     .filter((file) => file?.path && typeof file.content === 'string');
   if (cleanFiles.length === 0) return null;
   if (assertCurrent) await assertCurrent();
 
-  const headSha = await getBranchHeadSha(owner, repo, token, branch);
   const baseTreeSha = await getCommitTreeSha(owner, repo, headSha, token);
 
   const changedFiles = [];
   await Promise.all(cleanFiles.map(async (file) => {
-    const existing = await getContentsFile(owner, repo, file.path, token, branch);
+    const existing = await getContentsFile(owner, repo, file.path, token, headSha);
     if (existing?.text === file.content) return;
     changedFiles.push(file);
   }));
   if (changedFiles.length === 0) {
     console.log(`[projects] ${owner}/${repo} 변경 없음, commit 생략`);
-    return null;
+    return headSha;
   }
 
   const treeResult = await ghFetch(
@@ -312,13 +311,16 @@ async function commitFilesAtomic(owner, repo, files, message, token, branch = 'm
 async function commitGeneratedFiles(owner, repo, token, message, buildFiles, branch = 'main', assertCurrent = null) {
   let lastErr = null;
   for (let attempt = 0; attempt <= COMMIT_RETRY_DELAYS_MS.length; attempt++) {
+    // 이력을 읽기 전에 기준 커밋을 고정합니다. 읽는 중 외부 커밋이 생기면 ref 갱신이
+    // 충돌하고, 다음 시도에서 이력과 기준 커밋을 함께 다시 읽습니다.
+    const headSha = await getBranchHeadSha(owner, repo, token, branch);
     const built = await buildFiles();
     try {
-      const commitSha = await commitFilesAtomic(owner, repo, built.files, message, token, branch, assertCurrent);
+      const commitSha = await commitFilesAtomic(owner, repo, built.files, message, token, branch, assertCurrent, headSha);
       return { ...built, commitSha };
     } catch (e) {
       lastErr = e;
-      const conflict = e.status === 409 || e.status === 422;
+      const conflict = e.status === 409 || (e.status === 422 && /fast.?forward|reference update failed/i.test(e.message));
       if (!conflict || attempt === COMMIT_RETRY_DELAYS_MS.length) throw e;
       await new Promise((resolve) => setTimeout(resolve, COMMIT_RETRY_DELAYS_MS[attempt]));
     }
@@ -691,9 +693,11 @@ async function buildVoyageFileUpdate(owner, repo, voyageEntry, token, branch = '
   if (!prev || !prev.startsWith('# ')) {
     prev = `# 항해 일지: ${voyageEntry.localDate}\n\n`;
   }
+  const marker = voyageEntry.revisionId ? `<!-- vpylab-revision:${voyageEntry.revisionId} -->` : '';
+  if (marker && prev.includes(marker)) return { file: { path, content: prev }, path, kind, isNewDay };
   const sep = prev.endsWith('\n\n') ? '' : (prev.endsWith('\n') ? '\n' : '\n\n');
   return {
-    file: { path, content: prev + sep + formatter(voyageEntry) },
+    file: { path, content: prev + sep + formatter(voyageEntry) + (marker ? `\n${marker}\n` : '') },
     path,
     kind,
     isNewDay,
@@ -802,14 +806,14 @@ async function getRepoAccess(owner, repo, token) {
   };
 }
 
-async function getStaleCodeRevisionInfo({ revisionId, projectId, codeId }) {
+async function getStaleCodeRevisionInfo({ revisionId, projectId, codeId, code }) {
   if (!revisionId) return null;
 
   try {
     const supabase = getSupabase();
     const { data: revision, error: revisionError } = await supabase
       .from('vpylab_code_revisions')
-      .select('id, project_id, code_id, created_at')
+      .select('id, project_id, code_id, code_snapshot, created_at')
       .eq('id', revisionId)
       .maybeSingle();
     if (revisionError) {
@@ -830,6 +834,11 @@ async function getStaleCodeRevisionInfo({ revisionId, projectId, codeId }) {
     }
     if (codeId && revision.code_id !== codeId) {
       return { stale: true, reason: 'code_mismatch', latestRevisionId: null };
+    }
+    if (typeof code === 'string' && revision.code_snapshot !== code) {
+      throw Object.assign(new Error('저장한 이력과 GitHub에 보낼 코드가 다릅니다. 현재 코드를 새로 저장해주세요.'), {
+        status: 409, code: 'revision_snapshot_mismatch',
+      });
     }
 
     const targetCodeId = codeId || revision.code_id;
@@ -853,7 +862,7 @@ async function getStaleCodeRevisionInfo({ revisionId, projectId, codeId }) {
         }
       : null;
   } catch (e) {
-    if (e.code === 'revision_not_found') throw e;
+    if (['revision_not_found', 'revision_snapshot_mismatch'].includes(e.code)) throw e;
     console.warn('[projects/commit] stale revision 확인 실패:', e.message);
     throw Object.assign(new Error('저장 이력을 확인하지 못해 GitHub 반영을 보류했습니다. 잠시 후 다시 저장해주세요.'), {
       status: 503, code: 'revision_check_unavailable',
@@ -1189,6 +1198,10 @@ async function buildHistoryFileUpdate(owner, repo, entry, token, branch = 'main'
     }
   } else {
     prev = '# 📜 작업 이력\n\n';
+  }
+
+  if (entry.revisionId && prev.includes(`- VPyLab revision: \`${entry.revisionId}\``)) {
+    return { path: 'history.md', content: prev };
   }
 
   const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
@@ -1696,6 +1709,9 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
     if (!recordOnly && typeof htmlContent === 'string' && Buffer.byteLength(htmlContent, 'utf-8') > MAX_HTML_BYTES)
       return res.status(413).json({ error: `GitHub Pages HTML이 너무 큽니다 (최대 ${MAX_HTML_BYTES / 1024}KB).` });
     if (!githubToken) return res.status(401).json({ error: 'GitHub 인증 필요' });
+    if (!recordOnly && req.authorizedProjectId && !revisionId) {
+      return res.status(409).json({ error: '저장 이력을 확인할 수 없어 GitHub 반영을 중단했습니다. 현재 코드를 다시 저장해주세요.', code: 'revision_required' });
+    }
     if (voyageEntry) {
       const voyageInputError = validateVoyageEntryInput(voyageEntry);
       if (voyageInputError) {
@@ -1717,7 +1733,7 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
     }
 
     if (!recordOnly && revisionId) {
-      const staleInfo = await getStaleCodeRevisionInfo({ revisionId, projectId: projectId || req.authorizedProjectId, codeId });
+      const staleInfo = await getStaleCodeRevisionInfo({ revisionId, projectId: projectId || req.authorizedProjectId, codeId, code });
       if (staleInfo?.stale) {
         const headSha = await getBranchHeadSha(owner, repo, githubToken, branch).catch(() => null);
         console.log(
@@ -1853,7 +1869,7 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
         },
         branch,
         revisionId ? async () => {
-          const staleInfo = await getStaleCodeRevisionInfo({ revisionId, projectId: projectId || req.authorizedProjectId, codeId });
+          const staleInfo = await getStaleCodeRevisionInfo({ revisionId, projectId: projectId || req.authorizedProjectId, codeId, code });
           if (staleInfo?.stale) {
             throw Object.assign(new Error('더 최신 코드가 저장됐습니다.'), { code: 'stale_revision', staleInfo });
           }
@@ -1935,7 +1951,7 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
     });
   } catch (e) {
     console.error('[projects/commit]', e.message);
-    if (e.code === 'revision_not_found') {
+    if (['revision_not_found', 'revision_snapshot_mismatch'].includes(e.code)) {
       return res.status(409).json({ error: e.message, code: e.code });
     }
     if (e.code === 'revision_check_unavailable') {
@@ -1966,6 +1982,14 @@ router.post('/commit', requireSupabaseUser, writeLimiter, requireTeamProjectAcce
       });
     }
     if (e.status === 413) return res.status(413).json({ error: e.message, code: 'github_content_too_large' });
+    if (e.status === 409) return res.status(409).json({
+      error: 'GitHub 동시 저장 충돌이 반복되어 자동 반영을 중단했습니다. VPyLab 저장은 유지됩니다. 잠시 뒤 최신 코드를 확인하고 새로 저장해주세요.',
+      code: 'github_conflict_exhausted',
+    });
+    if (e.status === 422) return res.status(422).json({
+      error: 'GitHub가 반영을 거부했습니다. 저장소의 보호 브랜치와 저장 설정을 확인한 뒤 새로 저장해주세요.',
+      code: 'github_commit_rejected',
+    });
     if (e.status === 403) return res.status(403).json({ error: `GitHub 권한 부족: ${e.message}`, code: 'github_forbidden' });
     // GitHub API 유래 에러는 메시지 유지, 내부 예외는 일반 메시지로 대체
     res.status(500).json({

@@ -411,4 +411,93 @@ describe('projectStore saveAndPush', () => {
     expect(results[1].data.commitSha).toBe('shared123');
     expect(JSON.parse(localStorage.getItem('vpylab:github-sync-pending:v1'))).toEqual([]);
   });
+
+  it.each(['github_conflict_exhausted', 'github_commit_rejected', 'revision_required', 'revision_snapshot_mismatch'])(
+    '%s 실패는 VPyLab 저장을 유지하고 자동 재시도와 force 재시도를 중단한다', async code => {
+      mockGithubSyncSupabase();
+      mocks.authState.getGitHubToken.mockResolvedValue('gh-token');
+      fetch.mockResolvedValue(jsonResponse(false, code === 'github_commit_rejected' ? 422 : 409, { code, error: '반영을 중단했습니다.' }));
+      const result = await useProjectStore.getState().saveAndPush({ code: 'safe-local', message: '검증' });
+      expect(result.error).toBeNull();
+      expect(result.data.localOnly).toBe(true);
+      expect(mocks.codeState.saveCode).toHaveBeenCalledWith(expect.objectContaining({ code: 'safe-local' }));
+      expect(JSON.parse(localStorage.getItem('vpylab:github-sync-pending:v1'))[0]).toMatchObject({ blocked: true, lastErrorCode: code, nextRetryAt: null });
+      for (let n = 0; n < 5; n++) expect((await useProjectStore.getState().flushPendingGithubSync('project-1', { force: true })).started).toBe(0);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('네트워크·서버 실패가 다섯 번 누적되면 이전 작업은 자동 반복하지 않는다', async () => {
+    mockGithubSyncSupabase();
+    mocks.authState.getGitHubToken.mockResolvedValue('gh-token');
+    fetch.mockRejectedValue(new Error('Network unavailable'));
+    localStorage.setItem('vpylab:github-sync-pending:v1', JSON.stringify([{
+      id: 'code:retry-limit', kind: 'code', projectId: 'project-1', codeId: 'code-1', repoFullName: 'owner/repo',
+      revisionId: 'retry-limit', authorId: 'user-a', attempts: 4, createdAt: new Date().toISOString(),
+    }]));
+    await useProjectStore.getState().flushPendingGithubSync('project-1');
+    await waitForCondition(() => expect(JSON.parse(localStorage.getItem('vpylab:github-sync-pending:v1'))[0]).toMatchObject({
+      attempts: 5, blocked: true, lastErrorCode: 'github_retry_exhausted', nextRetryAt: null,
+    }));
+    for (let n = 0; n < 10; n++) await useProjectStore.getState().flushPendingGithubSync('project-1', { force: true });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('새 저장이 force 검사를 요청해도 실패 작업의 backoff 시간을 무시하지 않는다', async () => {
+    mockGithubSyncSupabase();
+    mocks.authState.getGitHubToken.mockResolvedValue('gh-token');
+    localStorage.setItem('vpylab:github-sync-pending:v1', JSON.stringify([{
+      id: 'code:backoff', kind: 'code', projectId: 'project-1', codeId: 'code-1', repoFullName: 'owner/repo',
+      revisionId: 'backoff', authorId: 'user-a', attempts: 1, nextRetryAt: new Date(Date.now() + 60000).toISOString(),
+    }]));
+    const result = await useProjectStore.getState().flushPendingGithubSync('project-1', { force: true });
+    expect(result).toMatchObject({ started: 0, skipped: 1 });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('코드는 저장됐지만 이력 생성이 실패하면 검증 없이 GitHub에 보내지 않는다', async () => {
+    mockGithubSyncSupabase();
+    mocks.authState.getGitHubToken.mockResolvedValue('gh-token');
+    mocks.codeState.saveCode.mockResolvedValue({ data: { id: 'code-1', _revisionPending: true, _revisionWarning: '이력 생성 실패' }, error: null });
+    const result = await useProjectStore.getState().saveAndPush({ code: 'local-only', message: '검증' });
+    expect(result.error).toBeNull();
+    expect(result.data.localOnly).toBe(true);
+    expect(result.data.pagesWarning).toContain('이력');
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('GitHub 커밋 후 표시용 횟수 조회가 실패해도 성공을 재시도 대기열로 되돌리지 않는다', async () => {
+    mocks.authState.getGitHubToken.mockResolvedValue('gh-token');
+    mocks.supabaseFrom.mockImplementation(() => ({
+      select: () => {
+        const promise = Promise.reject(new Error('표시용 DB 조회 실패'));
+        const chain = { eq: () => chain, not: () => chain, then: promise.then.bind(promise) };
+        return chain;
+      },
+      update: () => makeResolvedChain({ data: null, error: null }),
+    }));
+    fetch.mockResolvedValue(jsonResponse(true, 200, { commitSha: 'completed-commit', repoUrl: 'https://github.com/owner/repo' }));
+    const result = await useProjectStore.getState().saveAndPush({ code: 'saved-on-github', message: '검증' });
+    expect(result.error).toBeNull();
+    expect(result.data.commitSha).toBe('completed-commit');
+    expect(JSON.parse(localStorage.getItem('vpylab:github-sync-pending:v1'))).toEqual([]);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('응답 헤더 뒤 본문이 멈춰도 45초에 요청을 종료하고 무한 대기하지 않는다', async () => {
+    vi.useFakeTimers();
+    try {
+      mockGithubSyncSupabase();
+      mocks.authState.getGitHubToken.mockResolvedValue('gh-token');
+      fetch.mockResolvedValue({ ok: true, status: 200, json: () => new Promise(() => {}) });
+      const saving = useProjectStore.getState().saveAndPush({ code: 'local-code', message: '느린 네트워크' });
+      await vi.advanceTimersByTimeAsync(3500);
+      const result = await saving;
+      expect(result.error).toBeNull();
+      expect(result.data.pendingGitHub).toBe(true);
+      await vi.advanceTimersByTimeAsync(45000);
+      expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
+      expect(JSON.parse(localStorage.getItem('vpylab:github-sync-pending:v1'))[0]).toMatchObject({ attempts: 1, blocked: false });
+    } finally { vi.useRealTimers(); }
+  });
 });

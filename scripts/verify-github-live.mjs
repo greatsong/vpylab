@@ -81,6 +81,7 @@ try {
     app.use(express.json({ limit: '2mb' }));
     app.use('/api/projects', (await import(pathToFileURL(join(root, 'server/routes/projects.js')))).default);
     app.use('/api/sync', (await import(pathToFileURL(join(root, 'server/routes/sync.js')))).default);
+    app.use('/api/publish', (await import(pathToFileURL(join(root, 'server/routes/publish.js')))).default);
     server = app.listen(0, '127.0.0.1');
     await once(server, 'listening');
     api = `http://127.0.0.1:${server.address().port}`;
@@ -218,6 +219,11 @@ try {
   }
   assert(pageReady, '최신 코드와 실행기를 포함한 Pages 배포 확인이 끝나지 않았습니다.');
   checked('실제 공개 Pages HTTP에서 최신 코드와 학생 코드 변환기 포함 확인');
+  if (args.includes('--two-accounts')) {
+    const { verifyGithubPeers } = await import('./verify-github-peers.mjs');
+    await verifyGithubPeers({ owner, peer: viewer, token, api, request, checked, report,
+      repo: setup.repoFullName, project, codeRow, codeA, codeB });
+  }
   report.status = 'passed';
 } catch (error) {
   report.status = 'failed';
