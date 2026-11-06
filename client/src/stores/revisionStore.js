@@ -100,7 +100,7 @@ const useRevisionStore = create((set, get) => ({
 
       const { data: currentRow, error: readError } = await supabase
         .from('vpylab_saved_code')
-        .select('id, code, project_id, updated_at')
+        .select('id, title, code, project_id, updated_at')
         .eq('id', snapshot.code_id)
         .single();
       if (readError || !currentRow) {
@@ -130,6 +130,21 @@ const useRevisionStore = create((set, get) => ({
       }
 
       // 보관 중 다른 멤버가 저장했다면 덮어쓰지 않고 다시 확인하도록 합니다.
+      let codeRow;
+      let warning = '';
+      const shortId = revisionId.slice(0, 8);
+      if (currentRow.project_id) {
+        const result = await useCodeStore.getState().saveCode({
+          id: snapshot.code_id, projectId: currentRow.project_id, title: currentRow.title,
+          expectedCode: currentRow.code, code: snapshot.code_snapshot,
+          source: 'restore', commitMessage: `이전 버전으로 복원 (${shortId})`,
+        });
+        if (result.error) return { error: result.error };
+        if (result.data?._superseded) return { error: { code: 'saved_code_conflict', latestCode: result.data._latestCode,
+          message: '이 복원 요청은 이미 반영됐지만 이후 다른 저장이 추가됐습니다. 편집본을 유지했으니 최신 코드와 비교해주세요.' } };
+        codeRow = result.data;
+        restored = true;
+      } else {
       let query = supabase
         .from('vpylab_saved_code')
         .update({
@@ -138,7 +153,8 @@ const useRevisionStore = create((set, get) => ({
         })
         .eq('id', snapshot.code_id);
       if (currentRow.updated_at) query = query.eq('updated_at', currentRow.updated_at);
-      const { data: codeRow, error: updateError } = await query.select('id, project_id').maybeSingle();
+      const { data, error: updateError } = await query.select('id, project_id').maybeSingle();
+      codeRow = data;
 
       if (updateError) {
         console.warn('[revisionStore] restore update 실패:', updateError.message);
@@ -148,8 +164,6 @@ const useRevisionStore = create((set, get) => ({
       restored = true;
 
       // 본문 복원 후 이력 추가만 실패했다면 실제 복원 결과와 경고를 함께 전달합니다.
-      const shortId = revisionId.slice(0, 8);
-      let warning = '';
       try {
         const { data, error } = await useCodeStore.getState()._createRevision({
           codeId: snapshot.code_id,
@@ -164,9 +178,14 @@ const useRevisionStore = create((set, get) => ({
       } catch {
         warning = '코드는 복원됐지만 복원 이력을 추가하지 못했습니다. 코드 저장으로 이력을 다시 남겨주세요.';
       }
+      }
 
       // 3) UI 갱신
       // 목록 갱신 실패가 이미 완료한 본문 복원과 에디터 반영을 막지 않게 합니다.
+      const { default: projectStore } = await import('./projectStore');
+      if (projectStore.getState().activeCodeId === snapshot.code_id) {
+        projectStore.setState({ activeCodeSnapshot: snapshot.code_snapshot });
+      }
       if (onRestored) onRestored(snapshot.code_snapshot);
       try {
         await get().fetchRevisions(snapshot.code_id);

@@ -1,0 +1,96 @@
+{
+  "runId": "project-concurrency-20261106-649d34",
+  "checks": [
+    {
+      "name": "동일 줄 동시 저장 1: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 2: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 3: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 4: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 5: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 6: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 7: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 8: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 9: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 10: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 11: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "동일 줄 동시 저장 12: 한 요청만 반영, 다른 편집본은 충돌, 재전송 이력 중복 없음",
+      "status": "passed"
+    },
+    {
+      "name": "잘못된 저장 종류는 본문과 이력을 바꾸지 않음",
+      "status": "passed"
+    },
+    {
+      "name": "이전 REST·projectId 분리·행 ID 교체로 공동 저장 보호를 우회할 수 없음",
+      "status": "passed"
+    },
+    {
+      "name": "비멤버·읽기 전용 멤버가 RPC로도 본문을 바꿀 수 없음",
+      "status": "passed"
+    },
+    {
+      "name": "비로그인 호출은 RPC 실행 거부",
+      "status": "passed"
+    },
+    {
+      "name": "GitHub 표시 시각 변경 후에도 복원 본문과 이력을 함께 저장",
+      "status": "passed"
+    },
+    {
+      "name": "응답 유실 후 제3의 저장이 있어도 재전송은 최신 코드를 덮어쓰지 않고 알려줌",
+      "status": "passed"
+    },
+    {
+      "name": "정상 프로젝트 삭제의 FK 해제는 보호 트리거가 막지 않음",
+      "status": "passed"
+    }
+  ],
+  "cleanup": [
+    {
+      "fixture": "synthetic-user",
+      "status": "removed"
+    },
+    {
+      "fixture": "synthetic-user",
+      "status": "removed"
+    },
+    {
+      "fixture": "synthetic-user",
+      "status": "removed"
+    }
+  ],
+  "status": "passed"
+}

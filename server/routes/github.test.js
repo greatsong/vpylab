@@ -21,11 +21,12 @@ globalThis.fetch = async (input, options = {}) => {
     if (url.pathname.endsWith('/vpylab_projects')) return response(mode === 'linked-project' ? [{ id: 'project-a', github_repo: 'maintainer/team' }] : []);
     if (url.pathname.endsWith('/vpylab_project_members')) return response([{ project_id: 'project-a', role: 'owner' }]);
     if (url.pathname.endsWith('/vpylab_gallery')) return response([]);
+    if (url.pathname.endsWith('/vpylab_saved_code')) return response([{ id: 'code-a', code: newer ? 'print("newer")' : 'print("new")' }]);
     if (url.pathname.endsWith('/vpylab_code_revisions')) {
       if (mode === 'revision-unavailable') return response({ message: 'fixture read failure' }, 400);
       if (mode === 'revision-missing') return response([]);
       if (url.searchParams.has('id')) return response([{ id: 'revision-a', code_id: 'code-a', code_snapshot: 'print("new")', created_at: '2026-11-06T00:00:00Z' }]);
-      return response([{ id: newer ? 'revision-b' : 'revision-a', created_at: '2026-11-06T00:00:01Z' }]);
+      return response([{ id: newer || mode === 'newer-note' ? 'revision-b' : 'revision-a', created_at: '2026-11-06T00:00:01Z' }]);
     }
     throw new Error(`알 수 없는 fixture 조회: ${url.pathname}`);
   }
@@ -244,4 +245,12 @@ test('각 학생의 항해 일지가 누적되고 같은 기록의 재전송은 
   assert.equal(diary.split('vpylab-revision:note-b').length - 1, 1);
   assert.equal(patches, 2);
   assert(!files.has('main.py'));
+});
+
+test('친구가 항해 일지를 추가했어도 저장 본문과 같은 코드의 GitHub 반영을 버리지 않는다', async () => {
+  mode = 'newer-note';
+  const result = await post('/projects/commit', current());
+  assert.equal(result.status, 200);
+  assert(!result.body.staleRevision);
+  assert.equal(patches, 1);
 });

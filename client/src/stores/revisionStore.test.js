@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   from: vi.fn(), getUser: vi.fn(), createRevision: vi.fn(), fetchSavedCodes: vi.fn(), pauseAutoSave: vi.fn(), resumeAutoSave: vi.fn(),
+  projectState: { activeCodeId: 'code-1' }, setProjectState: vi.fn(),
+  saveCode: vi.fn(),
 }));
+vi.mock('./projectStore', () => ({ default: { getState: () => mocks.projectState, setState: mocks.setProjectState } }));
 vi.mock('../lib/supabase', () => ({ supabase: { from: mocks.from, auth: { getUser: mocks.getUser } } }));
-vi.mock('./codeStore', () => ({ default: { getState: () => ({ _createRevision: mocks.createRevision, fetchSavedCodes: mocks.fetchSavedCodes, pauseAutoSave: mocks.pauseAutoSave }) } }));
+vi.mock('./codeStore', () => ({ default: { getState: () => ({ saveCode: mocks.saveCode, _createRevision: mocks.createRevision, fetchSavedCodes: mocks.fetchSavedCodes, pauseAutoSave: mocks.pauseAutoSave }) } }));
 
 import useRevisionStore from './revisionStore';
 
@@ -16,7 +19,7 @@ let conditions;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  saved = { id: 'code-1', project_id: 'project-1', code: 'saved-latest', updated_at: '2026-11-06T09:00:00Z' };
+  saved = { id: 'code-1', project_id: null, code: 'saved-latest', updated_at: '2026-11-06T09:00:00Z' };
   update = vi.fn();
   onRestored = vi.fn();
   updateResult = { data: { id: saved.id, project_id: saved.project_id }, error: null };
@@ -43,7 +46,7 @@ beforeEach(() => {
   });
   useRevisionStore.setState({
     restoring: false,
-    fetchRevisionSnapshot: vi.fn().mockResolvedValue({ id: 'old-revision', code_id: 'code-1', project_id: 'project-1', code_snapshot: 'old-code' }),
+    fetchRevisionSnapshot: vi.fn().mockResolvedValue({ id: 'old-revision', code_id: 'code-1', project_id: null, code_snapshot: 'old-code' }),
     fetchRevisions: vi.fn().mockResolvedValue([]),
   });
 });
@@ -149,5 +152,24 @@ describe('교재의 코드 복원과 복원 전 작업 보관', () => {
     expect(failed.error).toBeTruthy();
     expect(update).not.toHaveBeenCalled();
     expect(onRestored).not.toHaveBeenCalled();
+  });
+
+  it('공동 작품 복원도 본문·이력을 원자 저장하고 충돌 기준을 갱신한다', async () => {
+    saved.project_id = 'project-1';
+    mocks.saveCode.mockResolvedValue({ data: { id: 'code-1', code: 'old-code' }, error: null });
+    const result = await useRevisionStore.getState().restoreRevision('old-revision', { onRestored });
+    expect(result.error).toBeNull();
+    expect(mocks.saveCode).toHaveBeenCalledWith(expect.objectContaining({ projectId: 'project-1', expectedCode: 'saved-latest', code: 'old-code', source: 'restore' }));
+    expect(update).not.toHaveBeenCalled();
+    expect(mocks.setProjectState).toHaveBeenCalledWith({ activeCodeSnapshot: 'old-code' });
+  });
+
+  it('공동 복원 중 친구가 먼저 저장하면 에디터를 바꾸지 않는다', async () => {
+    saved.project_id = 'project-1';
+    mocks.saveCode.mockResolvedValue({ data: null, error: { code: 'saved_code_conflict', message: '다른 친구가 저장했습니다.' } });
+    const result = await useRevisionStore.getState().restoreRevision('old-revision', { onRestored });
+    expect(result.error.code).toBe('saved_code_conflict');
+    expect(onRestored).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
   });
 });

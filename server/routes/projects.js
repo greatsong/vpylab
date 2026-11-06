@@ -853,7 +853,13 @@ async function getStaleCodeRevisionInfo({ revisionId, projectId, codeId, code })
       throw new Error('최신 저장 이력을 확인하지 못했습니다.');
     }
 
-    return latest.id !== revisionId
+    // 항해 일지는 revision을 추가해도 본문을 바꾸지 않습니다. 이력 ID만 비교하면
+    // 친구가 일지를 남긴 순간 정상 코드 반영도 버리므로 실제 저장 본문을 기준으로 봅니다.
+    const { data: savedCode, error: savedError } = await supabase.from('vpylab_saved_code')
+      .select('id, code').eq('id', targetCodeId).maybeSingle();
+    if (savedError || !savedCode) throw new Error('현재 코드 본문을 확인하지 못했습니다.');
+
+    return savedCode.code !== revision.code_snapshot
       ? {
           stale: true,
           reason: 'newer_revision_exists',

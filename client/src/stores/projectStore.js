@@ -501,6 +501,7 @@ const useProjectStore = create((set, get) => ({
   activeProject: null,        // { id, owner_id, title, description, invite_code, ... }
   activeMembers: [],          // [{ user_id, role, joined_at, profile? }]
   activeCodeId: null,         // vpylab_saved_code.id (이 프로젝트의 코드)
+  activeCodeSnapshot: null,   // 이 창에서 편집을 시작한 코드: 공동 저장 충돌 검사 기준
   loadingActive: false,
 
   // 다른 멤버가 코드를 저장했음을 알리는 신호 (UI 토스트용)
@@ -764,6 +765,7 @@ const useProjectStore = create((set, get) => ({
         activeProject: enriched,
         activeMembers: [ownerMember],
         activeCodeId: codeRow.id,
+        activeCodeSnapshot: codeRow.code,
         lastRemoteUpdate: null,
         loadingProjects: false,
         githubSetupStatusById: setupGithub
@@ -1156,6 +1158,7 @@ const useProjectStore = create((set, get) => ({
       activeProject: project || null,
       activeMembers: memberWithProfile,
       activeCodeId: codeRow?.id || null,
+      activeCodeSnapshot: codeRow?.code ?? null,
       loadingActive: false,
       lastRemoteUpdate: null,
     });
@@ -1175,6 +1178,7 @@ const useProjectStore = create((set, get) => ({
       activeProject: null,
       activeMembers: [],
       activeCodeId: null,
+      activeCodeSnapshot: null,
       lastRemoteUpdate: null,
     });
   },
@@ -1835,7 +1839,7 @@ const useProjectStore = create((set, get) => ({
     };
     set({ projectSaveStatus: '저장 준비 중입니다.' });
 
-    const { activeProject, activeCodeId } = get();
+    const { activeProject, activeCodeId, activeCodeSnapshot } = get();
     if (!activeProject || !activeCodeId) {
       return fail('활성 프로젝트가 없습니다.');
     }
@@ -1890,11 +1894,14 @@ const useProjectStore = create((set, get) => ({
           commitMessage: revisionMessage || message || '',
           source: 'manual',
           skipParentLookup: true,
+          expectedCode: activeCodeSnapshot,
         }),
         SUPABASE_WRITE_TIMEOUT_MS,
         'VPyLab 코드 저장이 40초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 저장해주세요.',
       );
       if (saveErr) return failWithError(saveErr);
+      if (saved._superseded) return failWithError({ code: 'saved_code_conflict', latestCode: saved._latestCode, message: '이 요청은 이미 저장됐지만 이후 다른 저장이 추가됐습니다. 편집본을 유지했으니 최신 코드와 비교해주세요.' });
+      if (get().activeCodeId === activeCodeId) set({ activeCodeSnapshot: saved.code ?? code });
 
       return finishLocalCodeSave({
         saved,
@@ -1917,11 +1924,14 @@ const useProjectStore = create((set, get) => ({
         commitMessage: revisionMessage || message || '',
         source: 'manual',
         skipParentLookup: true,
+        expectedCode: activeCodeSnapshot,
       }),
       SUPABASE_WRITE_TIMEOUT_MS,
       'VPyLab 코드 저장이 40초 안에 끝나지 않았습니다. 네트워크가 느린 상태입니다. 잠시 후 다시 저장해주세요.',
     );
     if (saveErr) return failWithError(saveErr);
+    if (saved._superseded) return failWithError({ code: 'saved_code_conflict', latestCode: saved._latestCode, message: '이 요청은 이미 저장됐지만 이후 다른 저장이 추가됐습니다. 편집본을 유지했으니 최신 코드와 비교해주세요.' });
+    if (get().activeCodeId === activeCodeId) set({ activeCodeSnapshot: saved.code ?? code });
 
     // 다른 사용자의 최신 revision이나 이력이 없는 코드로 최신성 검사를 우회하지 않습니다.
     const lastRev = saved?._revision || null;

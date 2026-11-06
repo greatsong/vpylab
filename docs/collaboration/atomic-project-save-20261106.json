@@ -1,0 +1,76 @@
+{
+  "date": "2026-11-06",
+  "scope": "동일 코드 동시 수정·응답 지연·본문/이력 원자 저장",
+  "behavior": "같은 기준 코드에서 한 저장만 반영하고 나머지는 편집본을 유지한 채 비교한다. 자동 줄 병합이나 실시간 공동 편집 기능은 아니다.",
+  "automated": {
+    "client_files": 47,
+    "client_passed": 651,
+    "server_passed": 150,
+    "skipped": 0,
+    "production_build": "passed",
+    "modified_client_eslint": "passed"
+  },
+  "production_database": {
+    "migration": "020_atomic_project_save.sql",
+    "applied": true,
+    "new_function": "vpylab_save_project_code",
+    "anonymous_execute": false,
+    "authenticated_execute": true,
+    "scope": "VPyLab 저장 테이블의 요청 UUID·원자 저장 함수·공동 본문 직접 변경 보호 트리거. 인증 설정과 기존 학생 본문은 변경하지 않음"
+  },
+  "live_database": {
+    "report": "project-concurrency-20261106-649d34.json",
+    "checks": 19,
+    "same_line_race_rounds": 12,
+    "actors": "일반 JWT로 로그인한 신규 합성 계정 3개",
+    "cleanup": [
+      {
+        "fixture": "synthetic-user",
+        "status": "removed"
+      },
+      {
+        "fixture": "synthetic-user",
+        "status": "removed"
+      },
+      {
+        "fixture": "synthetic-user",
+        "status": "removed"
+      }
+    ]
+  },
+  "claude_reviews": [
+    {
+      "actor": "claude",
+      "seconds": 89.77,
+      "response": "코드 본문만 읽고 검토했으며, 실행하지 않았습니다. **적용 전에 1~5번은 수정이 필요합니다.**\n\n**차단**\n1. **REST 경로로 CAS를 우회할 수 있습니다.**\n   - `skipRevision: true`(자동저장 등)이거나 `projectId`가 빠진 호출은 `expectedCode` 없이 REST update로 갑니다. 배포 전 클라이언트나 열려 있는 탭도 마찬가지입니다.\n   - RLS가 멤버의 `code` UPDATE를 계속 허용하므로 친구의 저장을 덮어쓸 수 있습니다. INVOKER RPC도 같은 UPDATE 권한이 필요해 권한 회수만으로는 막지 못합니다.\n   - 수정: 공동 작품 본문 저장을 DEFINER RPC로 일원화하세요. 내부 권한 검사를 명시하고, `project_id`가 있는 행의 직접 `code` 변경은 트리거로 거부합니다.\n\n2. **커밋 후 응답을 놓치면 거짓 충돌이 납니다.**\n   - `withTimeout`이 요청을 취소하지 않는다면 timeout 후에도 커밋될 수 있습니다. 응답이 유실돼도 `activeCodeSnapshot`은 갱신되지 않습니다.\n   - 재시도하면 자기 저장과 충돌해 \"친구의 저장이 먼저 반영됐다\"고 안내합니다. 실패로 표시된 저장이 실제로는 성공한 상태입니다.\n   - 수정: `p_client_save_id`와 유니크 제약을 추가해, 같은 키의 재시도에는 기존 결과를 반환하세요. timeout은 실패가 아닌 \"결과 미확인\"으로 처리해야 합니다.\n\n3. **충돌 뒤 복구 경로가 보이지 않습니다.**\n   - 충돌 응답에 최신 코드나 revision이 없고, 제시된 코드에는 snapshot을 최신값으로 옮기는 흐름도 없습니다. 이대로면 다시 저장해도 계속 충돌합니다.\n   - 수정: 최신 본문을 조회해 비교하고, 사용자가 확인한 시점에만 snapshot을 그 값으로 갱신하세요.\n\n4. **`40001`을 업무 충돌 코드로 쓰면 안 됩니다.**\n   - 실제 serialization failure도 \"친구가 먼저 저장\"으로 표시되고, 재시도 계층이 있으면 자동 재시도 대상이 될 수 있습니다.\n   - 수정: 전용 SQLSTATE를 쓰고 message까지 함께 판별하세요. PostgREST의 `PT409`로 HTTP 409를 주는 방법도 있습니다.\n\n5. **기존 호출자에서 회귀가 생깁니다.**\n   - RPC는 `mission_id`를 갱신하지 않아 `missionId`가 조용히 무시됩니다.\n   - `restore`, `mission_submit`, `github_pull` 호출이 `expectedCode`를 넘기지 않으면 `save_context_missing`으로 실패합니다. 호출부를 모두 확인해야 합니다.\n\n**중요**\n\n6. **`title`은 CAS 대상이 아닙니다.** 본문이 같으면 비교를 통과해, 오래된 `activeProject.title`이 친구가 바꾼 제목을 되돌릴 수 있습니다. 저장 시 제목을 변경하지 않거나 `expected_title`도 비교하세요.\n\n7. **같은 클라이언트의 연속 저장이 충돌합니다.** 첫 저장이 끝나기 전 두 번째 저장이 옛 snapshot을 쓰면 자기 저장과 충돌합니다. 작품별 in-flight 잠금이나 저장 큐가 필요합니다.\n\n8. **GitHub 반영에 TOCTOU가 남습니다.** stale 검사 뒤 GitHub 쓰기 전에 친구가 저장할 수 있습니다. GitHub 쓰기가 base SHA 조건을 쓰지 않으면, 늦게 도착한 옛 commit이 HEAD가 되어 VPyLab과 어긋납니다. expected SHA 조건을 걸고 실패 시 재검사하세요.\n\n9. **`p_source`를 검증하지 않습니다.** 멤버가 `restore`나 `github_pull` 이력을 위조할 수 있습니다. 이 RPC에서 허용할 값만 whitelist로 제한하세요.\n\n10. **`anon` 권한이 남을 수 있습니다.** Supabase default privileges가 `anon`에 EXECUTE를 직접 부여했다면 `REVOKE ... FROM PUBLIC`으로는 제거되지 않습니다. `auth.uid()` 검사로 실제 쓰기는 막히지만, `FROM anon`도 명시하세요.\n\n11. **`parent_revision_id` 체인이 갈라질 수 있습니다.** 항해일지 insert가 같은 행 잠금을 잡지 않으면 저장과 경합해 parent가 분기됩니다. 또한 `created_at`이 `now()` 기본값이면 트랜잭션 시작 시각이라, 잠금 대기 후 커밋된 revision의 순서가 뒤집힐 수 있습니다. 동일 본문 저장이 동시에 일어날 때 발생하므로, 일지도 같은 잠금을 쓰고 `clock_timestamp()`나 증가 시퀀스로 정렬하세요.\n\n**경미**\n\n12. **크기 단위가 다릅니다.** 제한은 `octet_length`인데 `code_size`는 `length`로 저장합니다. 컬럼이 바이트 의미라면 한글 코드에서 값이 틀립니다. 기존 100KB 초과 본문의 저장 실패 여부도 확인하세요.\n\n13. **오류 표시가 불완전합니다.**\n    - `project_write_forbidden` 같은 내부 코드가 학생에게 그대로 노출될 수 있습니다.\n    - 횟수 조회 실패 시 `count: 1`로 대체되어 잘못된 `nthCommit`이 표시됩니다.\n\n**제시된 코드만으로 확인 불가**\n- **snapshot 기준:** `activeCodeSnapshot`은 편집 시작 시점의 DB 원문이어야 합니다. 로컬 임시본을 복원하면서 snapshot만 최신 DB 값으로 잡으면 CAS를 통과해 친구의 코드를 덮어씁니다. 에디터의 줄바꿈 정규화도 거짓 충돌을 만듭니다.\n- **외부 timeout:** `withTimeout`이 reject하면 호출부에 catch가 필요합니다. 제시된 범위에는 없어서, 없다면 `projectSaveStatus`가 계속 남습니다."
+    },
+    {
+      "actor": "claude",
+      "seconds": 116.56,
+      "response": "**판정: 운영 적용 전 수정 필요.** 코드 실행 없이 제공된 코드만 검토했고, RLS 정책과 호출부는 보지 못했습니다. CAS, 행 잠금 뒤 재요청 확인, 권한 검사 순서, `search_path`, anon revoke에서는 큰 문제를 찾지 못했습니다.\n\n**수정 필요**\n1. **권한 우회: trigger의 조기 `RETURN NEW`**\n   - `owner_id`가 NULL인 프로젝트가 가능하면, UPDATE 권한이 있는 사용자가 `project_id=NULL`과 `code` 변경을 함께 보내 guard를 통과합니다.\n   - PostgreSQL의 FK 동작은 FK 테이블 소유자 권한으로 실행되므로 `current_user` 검사를 이미 통과할 것입니다. 이 분기는 삭제하고 FK 삭제 테스트로 확인하는 편이 안전합니다. 유지한다면 `OLD.code IS NOT DISTINCT FROM NEW.code`를 추가하세요.\n\n2. **옛 REST: `vpylab_code_revisions` 직접 쓰기**\n   - 공동 작품 이력의 직접 INSERT/UPDATE/DELETE가 RLS에서 허용되면 `code_snapshot`, `source`, `created_at`, `client_save_id`를 위조할 수 있습니다.\n   - 위조 이력은 복원 대상이 되고, `parent_id` 계산과 재요청 판정도 오염시킵니다. `project_id IS NOT NULL`인 행의 직접 쓰기를 막아야 합니다.\n\n3. **옛 REST: 본문 guard 밖의 경로**\n   - trigger는 UPDATE의 `code`와 `project_id`만 막습니다. 편집자에게 DELETE 권한이 있으면 같은 `id`로 삭제 후 재INSERT해 CAS를 우회할 수 있고, 이력도 함께 사라질 수 있습니다.\n   - `id` 변경도 막고, 옛 클라이언트가 `mission_id`를 NULL로 덮어쓰는 경로도 차단하세요.\n\n4. **복원 회귀: `_superseded` 무시**\n   - 응답 유실 뒤 재시도했을 때 이미 제3자가 저장했다면 `superseded=true`가 옵니다. 그런데 `revisionStore`는 snapshot을 `activeCodeSnapshot`과 `onRestored`에 반영합니다.\n   - 화면과 DB가 달라지고 사용자는 복원 성공으로 오인합니다. 일반 저장을 포함한 모든 호출부에서 최신 코드를 조회해 충돌 UI로 보내세요.\n\n5. **충돌 UI: 확인 상태와 조회 실패**\n   - 다이얼로그가 remount되지 않으면 재충돌 후에도 `confirmed=true`가 유지되어 새 코드를 보지 않고 저장할 수 있습니다. `remoteCode` 변경 시 체크를 해제하되 `combined`는 유지하세요.\n   - `latestCode`가 `undefined`이면 빈 비교창이 표시됩니다. 조회 실패 상태와 재조회 버튼을 두고 저장은 비활성화하세요.\n   - 재저장의 `expectedCode`는 화면에 표시한 `remoteCode`여야 합니다. 저장 직전에 다시 읽은 값을 쓰면 제3자의 저장을 덮어씁니다.\n\n6. **응답 유실: 5xx 처리**\n   - 502/503/504는 커밋 후 응답만 유실됐을 수 있는데, 지금은 `clearRequest()`로 요청 ID를 버립니다. 데이터는 CAS로 보호되지만, 재시도하면 내 저장을 \"친구의 저장\"으로 표시합니다.\n   - 이 상태도 `save_result_unknown`으로 처리하고 ID를 유지하세요. 충돌 시 `latestCode === code`이면 별도 안내하는 편이 좋습니다.\n\n**호출부와 배포 확인**\n- `currentRow` 조회에 `code`, `title`, `project_id`가 포함되는지, 복원 전 보관 저장 후 `currentRow`를 다시 읽는지 확인하세요. 다시 읽지 않으면 자기 자신과 충돌합니다.\n- 공동 작품의 자동저장(`skipRevision`), `projectId` 생략, 개인 코드를 프로젝트로 연결하는 UPDATE는 이제 모두 PT409입니다. 자동저장은 끄거나 로컬 보관으로 바꾸고, 연결 기능은 별도 RPC가 필요한지 확인하세요.\n- 기존 SECURITY DEFINER 함수와 service_role 경로는 guard를 통과합니다. 공동 본문을 쓰는 경로가 있는지 점검하세요.\n- 기존 BEFORE UPDATE trigger가 `updated_at`을 덮어쓰는지 확인하세요.\n- `p_title`은 쓰이지 않습니다. 의도라면 저장 화면의 제목 변경이 조용히 무시되지 않게 UI를 맞추세요.\n- SQL을 클라이언트보다 먼저 적용하고 `NOTIFY pgrst, 'reload schema'`를 포함하세요.\n\n**필수 테스트:** 프로젝트 삭제 시 SET NULL, 직접 revision 쓰기 거부, 삭제 후 재INSERT, 응답 유실 뒤 제3자 저장과 복원 재시도, 연속 재충돌."
+    }
+  ],
+  "adopted": [
+    "직접 REST 저장 우회와 행 ID·project_id 변경 차단",
+    "본문·revision 단일 트랜잭션과 편집 시작 코드 비교",
+    "요청 UUID 중복 방지와 응답 유실 뒤 동일 결과 확인",
+    "비로그인·viewer·비멤버 호출 거부",
+    "제3의 저장 뒤 늦은 재시도는 superseded로 구분하고 최신 본문 보존",
+    "개인 복원과 공동 복원 경로 분리 및 공동 복원 RPC 사용",
+    "충돌 비교 화면의 재확인과 편집본 유지",
+    "본문과 관계없는 항해 일지가 GitHub 정상 코드 반영을 취소하지 않도록 실제 본문 비교"
+  ],
+  "verified_context": [
+    "project owner_id는 NOT NULL이고 정상 프로젝트 삭제/FK 해제는 실제 DB 검사 통과",
+    "공동 본문에 쓰는 saveCode 호출부는 projectStore 두 곳과 revisionStore이며 모두 expectedCode를 전달",
+    "자동저장·이전 클라이언트·projectId 생략 요청도 DB 트리거로 공동 본문 직접 덮어쓰기 불가",
+    "기존 직접 revision 생성은 복원 전 보관·항해 기록에 사용하므로 유지한다. 학생이 작성하는 성찰 기록을 조작 불가능한 평가 감사 자료로 보장하지 않는다."
+  ],
+  "limits": [
+    "네트워크·GitHub·Supabase 응답 지연이 없다고 보장하지 않음",
+    "사용자 질문에 답한 시점의 배포본 41f79ad에는 이 본문 충돌 보호 UI가 없었음. SQL 적용 후 새 클라이언트 배포 필요",
+    "fork 및 메인 화면 이슈·PR 기능 검증·연결은 별도 진행 항목",
+    "기존 개인정보 안내의 자동 파기·외부 식별정보 전송 관련 문구는 구현과 운영 절차 대조가 필요함",
+    "학교와 관계없이 로그인하면 관리하는 Supabase에 OAuth 계정 정보와 저장 데이터가 남음"
+  ]
+}

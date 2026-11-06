@@ -4,6 +4,7 @@ import useAuthStore from './authStore';
 
 const CODE_WRITE_TIMEOUT_MS = 22000;
 const REVISION_WRITE_TIMEOUT_MS = 12000;
+const projectSaveRequests = new Map();
 
 function withTimeout(promise, timeoutMs, message) {
   let timerId;
@@ -149,9 +150,63 @@ const useCodeStore = create((set, get) => ({
     source = 'manual',
     skipRevision = false,
     skipParentLookup = false,
+    expectedCode,
   }) => {
     const user = await getCurrentUser();
     if (!user) return { error: { message: '로그인이 필요합니다' } };
+
+    if (id && projectId && !skipRevision) {
+      if (typeof expectedCode !== 'string') {
+        return { data: null, error: { code: 'save_context_missing', message: '편집을 시작한 코드를 확인하지 못했습니다. 내 코드를 복사해 보관한 뒤 프로젝트를 다시 열어주세요.' } };
+      }
+      const requestKey = `${user.id}:${id}`;
+      const requestBody = JSON.stringify([projectId, code, commitMessage, source, missionId]);
+      const pending = projectSaveRequests.get(requestKey);
+      const sameRequest = pending?.body === requestBody;
+      const requestId = sameRequest ? pending.id : crypto.randomUUID();
+      const requestExpectedCode = sameRequest ? pending.expectedCode : expectedCode;
+      projectSaveRequests.set(requestKey, { id: requestId, body: requestBody, expectedCode: requestExpectedCode });
+      const clearRequest = () => {
+        if (projectSaveRequests.get(requestKey)?.id === requestId) projectSaveRequests.delete(requestKey);
+      };
+      const controller = new AbortController();
+      try {
+        let rpc = supabase.rpc('vpylab_save_project_code', {
+          p_code_id: id, p_project_id: projectId, p_expected_code: requestExpectedCode,
+          p_code: code, p_title: title, p_message: commitMessage, p_source: source,
+          p_client_save_id: requestId, p_mission_id: missionId,
+        });
+        if (rpc.abortSignal) rpc = rpc.abortSignal(controller.signal);
+        const { data, error, status } = await withTimeout(rpc, CODE_WRITE_TIMEOUT_MS,
+          '저장 응답이 지연되어 결과를 아직 확인하지 못했습니다. 같은 코드로 다시 저장하면 기존 요청 결과를 확인합니다.');
+        if (error) {
+          if (status === 0 || status >= 500 || /AbortError|Failed to fetch|NetworkError|fetch failed/i.test(error.message || '')) {
+            return { data: null, error: { code: 'save_result_unknown', message: '통신이 끊겨 저장 결과를 아직 확인하지 못했습니다. 같은 코드로 다시 저장해 기존 요청 결과를 확인해주세요.' } };
+          }
+          clearRequest();
+          if (error.code === 'PT409' && error.message === 'saved_code_conflict') {
+            let latestCode;
+            try {
+              const latest = await withTimeout(supabase.from('vpylab_saved_code').select('code').eq('id', id).maybeSingle(),
+                REVISION_WRITE_TIMEOUT_MS, '최신 코드 조회가 지연되고 있습니다.');
+              if (!latest.error) latestCode = latest.data?.code;
+            } catch { /* 최신 코드를 못 읽어도 내 편집본과 충돌 정보는 유지합니다. */ }
+            return { data: null, error: { code: 'saved_code_conflict', latestCode,
+              message: '다른 친구의 저장이 먼저 반영됐습니다. 내 코드는 편집기에 그대로 남아 있습니다. 새 작품으로 보관하거나 최신 코드와 비교한 뒤 다시 저장해주세요.' } };
+          }
+          return { data: null, error: error.code === '42501'
+            ? { code: error.code, message: '이 작품을 저장할 편집 권한이 없습니다. 프로젝트 초대와 멤버 권한을 확인해주세요.' }
+            : error };
+        }
+        if (!data?.saved || !data?.revision) return { data: null, error: { message: '코드와 저장 이력의 완료 결과를 확인하지 못했습니다.' } };
+        clearRequest();
+        get().fetchSavedCodes().catch(() => {});
+        return { data: { ...data.saved, _revision: data.revision, _superseded: !!data.superseded, _latestCode: data.latest_code }, error: null };
+      } catch (error) {
+        controller.abort();
+        return { data: null, error: { code: 'save_result_unknown', message: error.message || '저장 결과를 아직 확인하지 못했습니다. 같은 코드로 다시 저장해 기존 요청 결과를 확인해주세요.' } };
+      }
+    }
 
     let savedRow;
     let saveError;
@@ -363,6 +418,7 @@ const useCodeStore = create((set, get) => ({
 
   // 로그아웃 시 개인 데이터/타이머 초기화 (authStore._cleanupStoresOnSignOut에서 호출)
   resetOnSignOut: () => {
+    projectSaveRequests.clear();
     const { _saveTimer } = get();
     if (_saveTimer) clearTimeout(_saveTimer);
     set({

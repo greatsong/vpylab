@@ -1,6 +1,6 @@
 // 실제 Supabase RLS·GitHub API를 사용하는 검증. --write로 지정한 새 fixture만 만들고 정리합니다.
 import assert from 'node:assert/strict';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, resolve, join } from 'node:path';
@@ -173,8 +173,11 @@ try {
   assert.equal(badToken.code, 'github_auth_required');
   checked('만료·잘못된 GitHub 인증 거부');
   await new Promise(resolve => setTimeout(resolve, 1000));
-  unwrap(await owner.client.from('vpylab_saved_code').update({ code: codeB }).eq('id', codeRow.id));
-  const second = await revision(codeB, 'B 저장');
+  const savedB = unwrap(await owner.client.rpc('vpylab_save_project_code', {
+    p_code_id: codeRow.id, p_project_id: project.id, p_client_save_id: randomUUID(),
+    p_expected_code: codeA, p_code: codeB, p_title: title, p_message: 'B 저장', p_source: 'manual',
+  }));
+  const second = savedB.revision;
   const pushed = await request('/api/projects/commit', owner, { ...payload(codeB), revisionId: second.id, message: '검증 B 저장' });
   assert(pushed.commitSha);
   assert.equal(await content('main.py'), codeB);
@@ -185,7 +188,11 @@ try {
   assert.equal(await content('main.py'), codeB);
   checked('늦게 도착한 이전 A 저장이 최신 B를 덮어쓰지 않음');
   await new Promise(resolve => setTimeout(resolve, 1000));
-  const restored = await revision(codeA, 'A 복원');
+  const restoredSave = unwrap(await owner.client.rpc('vpylab_save_project_code', {
+    p_code_id: codeRow.id, p_project_id: project.id, p_client_save_id: randomUUID(),
+    p_expected_code: codeB, p_code: codeA, p_title: title, p_message: 'A 복원', p_source: 'restore',
+  }));
+  const restored = restoredSave.revision;
   const restorePush = await request('/api/projects/commit', owner, { ...payload(codeA), revisionId: restored.id, message: '검증 A 복원' });
   assert.equal(await content('main.py'), codeA);
   assert((await content('history.md')).includes('검증 A 복원'));

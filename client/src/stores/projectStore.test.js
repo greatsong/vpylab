@@ -160,6 +160,7 @@ describe('projectStore saveAndPush', () => {
       },
       activeMembers: [],
       activeCodeId: 'code-1',
+      activeCodeSnapshot: 'loaded-base',
       projectSaveStatus: null,
       lastRemoteUpdate: null,
     });
@@ -499,5 +500,14 @@ describe('projectStore saveAndPush', () => {
       expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
       expect(JSON.parse(localStorage.getItem('vpylab:github-sync-pending:v1'))[0]).toMatchObject({ attempts: 1, blocked: false });
     } finally { vi.useRealTimers(); }
+  });
+
+  it('공동 본문 충돌 시 내 편집본과 비교 기준을 유지하고 GitHub 반영을 시작하지 않는다', async () => {
+    mocks.codeState.saveCode.mockResolvedValue({ data: null, error: { code: 'saved_code_conflict', message: '다른 친구의 저장이 먼저 반영됐습니다.' } });
+    const result = await useProjectStore.getState().saveAndPush({ code: 'my-edits', message: '검증' });
+    expect(result.error.code).toBe('saved_code_conflict');
+    expect(mocks.codeState.saveCode).toHaveBeenCalledWith(expect.objectContaining({ expectedCode: 'loaded-base', code: 'my-edits' }));
+    expect(useProjectStore.getState().activeCodeSnapshot).toBe('loaded-base');
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

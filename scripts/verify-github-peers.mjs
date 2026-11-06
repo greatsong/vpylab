@@ -1,6 +1,7 @@
 // verify-github-live.mjs --write --two-accounts 전용. 실제 두 GitHub 계정의 토큰은 메모리에서만 사용합니다.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 
 export async function verifyGithubPeers({ owner, peer, token, request, checked, report, repo, project, codeRow, codeA, codeB }) {
   const peerToken = execFileSync('gh', ['auth', 'token', '--user', 'greatsong-danggok'], { encoding: 'utf8' }).trim();
@@ -54,8 +55,11 @@ export async function verifyGithubPeers({ owner, peer, token, request, checked, 
       message, code_snapshot: code, code_size: code.length, source: 'manual',
     }).select().single());
   }
-  const peerRevision = await revision(peer, project, codeRow, codeB, '학생 B가 수정');
-  unwrap(await peer.client.from('vpylab_saved_code').update({ code: codeB }).eq('id', codeRow.id));
+  const peerSaved = unwrap(await peer.client.rpc('vpylab_save_project_code', {
+    p_code_id: codeRow.id, p_project_id: project.id, p_client_save_id: randomUUID(),
+    p_expected_code: codeA, p_code: codeB, p_title: '두 계정 검증', p_message: '학생 B가 수정', p_source: 'manual',
+  }));
+  const peerRevision = peerSaved.revision;
   const payload = { repoFullName: repo, projectId: project.id, codeId: codeRow.id, code: codeB,
     revisionId: peerRevision.id, githubToken: peerToken, title: '두 계정 협업 검증', message: '학생 B 저장', authorLabel: '검증 학생 B' };
   const peerPush = await request('/api/projects/commit', peer, payload);
@@ -108,6 +112,7 @@ export async function verifyGithubPeers({ owner, peer, token, request, checked, 
   assert(forkInfo.fork);
   assert.equal(forkInfo.parent.full_name, setup.repoFullName);
   assert.equal(await content(fork.forkedRepo, 'main.py'), codeA);
+  assert((await content(fork.forkedRepo, 'index.html')).includes(`repo=${encodeURIComponent(fork.forkedRepo)}`), 'fork 실행 페이지의 편집 링크가 원작 대신 내 fork를 열어야 합니다.');
   report.forkRepository = `https://github.com/${fork.forkedRepo}`;
   checked('학생 A가 학생 B의 저장소를 실제 GitHub fork로 이어가며 parent 출처와 코드 유지');
 
@@ -125,8 +130,11 @@ export async function verifyGithubPeers({ owner, peer, token, request, checked, 
   checked('실제 갤러리 RLS로 리믹스 원작 연결·제목·원작자 출처 스냅샷 저장');
 
   // 기존 단일 계정 검증의 종료 상태를 유지하여 다음 실행도 안전하게 같은 fixture를 재사용합니다.
-  const restore = await revision(owner, project, codeRow, codeA, '두 계정 검증 후 A 복원');
-  unwrap(await owner.client.from('vpylab_saved_code').update({ code: codeA }).eq('id', codeRow.id));
+  const restored = unwrap(await owner.client.rpc('vpylab_save_project_code', {
+    p_code_id: codeRow.id, p_project_id: project.id, p_client_save_id: randomUUID(),
+    p_expected_code: codeB, p_code: codeA, p_title: '두 계정 검증', p_message: '두 계정 검증 후 A 복원', p_source: 'restore',
+  }));
+  const restore = restored.revision;
   await request('/api/projects/commit', owner, { ...payload, code: codeA, revisionId: restore.id, githubToken: token, authorLabel: '검증 학생 A', message: '검증 후 A 복원' });
   assert.equal(await content(repo, 'main.py'), codeA);
   checked('두 계정 검증 후 전용 작품 A를 복원하고 양쪽 저장소의 기록 보존');

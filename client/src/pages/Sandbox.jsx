@@ -26,6 +26,7 @@ import {
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
 import useAuthStore from '../stores/authStore';
 import useCodeStore from '../stores/codeStore';
+import SaveConflictDialog from '../components/code/SaveConflictDialog';
 import useGalleryStore from '../stores/galleryStore';
 import TeamProjectsPanel from '../components/team/TeamProjectsPanel';
 import ProjectGate from '../components/team/ProjectGate';
@@ -51,7 +52,7 @@ function waitForSaveTimeout(ms, message) {
   return new Promise((resolve) => {
     window.setTimeout(() => resolve({
       timedOut: true,
-      error: { message },
+      error: { code: 'save_result_unknown', message },
     }), ms);
   });
 }
@@ -81,6 +82,7 @@ export default function Sandbox() {
   const [commitMustDetailed, setCommitMustDetailed] = useState(false);
   const [commitSaving, setCommitSaving] = useState(false);
   const [commitError, setCommitError] = useState('');
+  const [saveConflict, setSaveConflict] = useState(null);
   const [commitElapsed, setCommitElapsed] = useState(0);
   const [commitStartedAt, setCommitStartedAt] = useState(null);
   const [pushToast, setPushToast] = useState(null);  // { nthCommit, message, commitUrl, repoUrl, pagesUrl } | null
@@ -798,7 +800,7 @@ export default function Sandbox() {
    * 모달이 이번 작업 유형(코드 저장/기록 남기기)을 넘기면,
    * 코드 저장은 최신 코드를 반영하고 기록 남기기는 코드를 덮어쓰지 않습니다.
    */
-  const handleProjectCommit = async (payload) => {
+  const handleProjectCommit = async (payload, codeOverride) => {
     const projStore = (await import('../stores/projectStore')).default.getState();
     const proj = projStore.activeProject;
     if (!proj) {
@@ -828,7 +830,7 @@ export default function Sandbox() {
       return;
     }
 
-    const currentCode = codeRef.current;
+    const currentCode = typeof codeOverride === 'string' ? codeOverride : codeRef.current;
     const { localDate, localTime, tzOffset } = nowLocalParts();
     const codeLines = countCodeLines(currentCode);
     const lastLines = readLastCodeLines(proj.id, userId);
@@ -880,8 +882,8 @@ export default function Sandbox() {
         waitForSaveTimeout(
           saveType === 'record' ? 50000 : 60000,
           saveType === 'record'
-            ? '기록 저장이 50초 안에 끝나지 않았습니다. 화면을 새로고침한 뒤 이력에 반영됐는지 확인해주세요.'
-            : '코드 저장이 60초 안에 끝나지 않았습니다. 화면을 새로고침한 뒤 이력에 반영됐는지 확인해주세요.',
+            ? '기록 저장 응답이 늦어 결과를 아직 확인하지 못했습니다. 편집본을 유지한 채 저장 이력을 확인해주세요.'
+            : '코드 저장 응답이 늦어 결과를 아직 확인하지 못했습니다. 편집본을 유지한 채 같은 코드로 다시 저장해 기존 요청 결과를 확인해주세요.',
         ),
       ]);
       result = response?.data || null;
@@ -895,7 +897,11 @@ export default function Sandbox() {
     }
 
     if (error) {
-      setSaveMsg(saveType === 'record' ? '기록 실패' : '저장 실패');
+      if (error.code === 'saved_code_conflict' && typeof error.latestCode === 'string') {
+        setSaveConflict({ projectId: proj.id, codeId: projStore.activeCodeId, userId,
+          localCode: codeRef.current, remoteCode: error.latestCode, payload });
+      }
+      setSaveMsg(error.code === 'save_result_unknown' ? '결과 확인 필요' : saveType === 'record' ? '기록 실패' : '저장 실패');
       setCommitError(error.message);
       setTimeout(() => setSaveMsg(''), 2500);
       return;
@@ -1339,6 +1345,21 @@ export default function Sandbox() {
           }}
         />
       )}
+
+      {saveConflict && <SaveConflictDialog key={`${saveConflict.codeId}:${saveConflict.remoteCode}`}
+        localCode={saveConflict.localCode} remoteCode={saveConflict.remoteCode}
+        onClose={() => setSaveConflict(null)}
+        onApply={(combined) => {
+          const state = useProjectStore.getState();
+          if (state.activeProject?.id !== saveConflict.projectId || state.activeCodeId !== saveConflict.codeId
+            || useAuthStore.getState().user?.id !== saveConflict.userId) {
+            setSaveConflict(null); setCommitError('프로젝트 또는 계정이 바뀌었습니다. 편집본을 보관하고 다시 확인해주세요.'); return;
+          }
+          useProjectStore.setState({ activeCodeSnapshot: saveConflict.remoteCode });
+          codeRef.current = combined; updateCode(combined);
+          const payload = saveConflict.payload; setSaveConflict(null);
+          handleProjectCommit(payload, combined);
+        }} />}
 
       {/* 프로젝트 사이드패널 */}
       {showTeam && (
