@@ -43,4 +43,18 @@
 
 `amount`의 배율, 만두 주름의 모임 비율 `0.68`, 뚜껑 각도 `0.2`, 입의 높이 배율 `1.65`, 빛 투명도 `0.12` 중 하나만 바꿔 예상과 결과를 비교하세요. 팀에서는 각자 친구 하나의 함수를 맡아 고친 뒤 프렌즈 목록으로 모아 볼 수 있습니다.
 
-배포·운영 확인 결과는 이어 기록합니다.
+## 배포·운영 확인 완료
+
+- 애플리케이션 커밋 `7b5a75a60358db8bc26f20ba8bb2f9a173c5e868`. Vercel·Railway 성공, 서버 health의 commitSha 일치 확인.
+- [CI 42321934842](https://github.com/greatsong/vpylab/actions/runs/42321934842): 7개 작업 성공. 클라이언트 70개 파일/799개 검사 및 서버·교실·권한 등 159개 검사 통과.
+- 운영 실제 UI 17개, 모션 Python 예제 5개 모두 통과. 각 모션 4종의 전후 원상복귀·실습 연결을 별도로 확인했습니다. 계정·DB 쓰기 없이 검증합니다.
+- [운영 사이트](https://vpylab.vercel.app) 및 로컬 `http://127.0.0.1:4033/`에서 같은 버튼과 실습을 사용할 수 있습니다.
+- 가이드 페이지·USER_GUIDE_KO·DESIGN에 전용 모션과 compound 결합 시점을 반영했습니다.
+
+근거: [CI](collaboration/actions-ci-2026-11-07.json), [배포](collaboration/actions-deployment-2026-11-07.json), [health](collaboration/actions-health-2026-11-07.json), [운영 UI 17개](collaboration/actions-production-ui-2026-11-07.json), [운영 실습 5개](collaboration/actions-production-programs-2026-11-07.json), [운영 모션 원상복귀 4종](collaboration/actions-production-restoration-2026-11-07.json), [최종 손전등 HTML](collaboration/actions-final-light-2026-11-07.json).
+
+![운영 프렌즈 모션 캡처](review-figures/2026-11-07/actions-friends-preview.gif)
+
+운영 최대 변형 캡처: [만두](review-figures/2026-11-07/action-production-dumpling-peak.png), [손전등](review-figures/2026-11-07/action-production-flashlight-peak.png), [공구상자](review-figures/2026-11-07/action-production-toolbox-peak.png), [분홍 친구](review-figures/2026-11-07/action-production-kirby-peak.png).
+
+후속 증거·보고서 커밋에는 애플리케이션 소스 변경이 없습니다.

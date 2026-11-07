@@ -1,0 +1,29 @@
+{
+  "url": "https://vpylab.vercel.app",
+  "results": [
+    {
+      "id": "dumpling",
+      "passed": true,
+      "meanChannelError": 0,
+      "restoredWithinMeanChannelError": 0.05
+    },
+    {
+      "id": "flashlight",
+      "passed": true,
+      "meanChannelError": 0,
+      "restoredWithinMeanChannelError": 0.05
+    },
+    {
+      "id": "toolbox",
+      "passed": true,
+      "meanChannelError": 0,
+      "restoredWithinMeanChannelError": 0.05
+    },
+    {
+      "id": "kirby",
+      "passed": true,
+      "meanChannelError": 0,
+      "restoredWithinMeanChannelError": 0.05
+    }
+  ]
+}
