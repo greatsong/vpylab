@@ -1,0 +1,26 @@
+Vercel CLI 48.12.0
+Fetching deployment "vpylab.vercel.app" in greatsongs-projects
+> Fetched deployment "vpylab-2xnmhso3e-greatsongs-projects.vercel.app" in greatsongs-projects [380ms]
+
+  General
+
+    id		dpl_6Eg9mSMEQsoNcEgA98TibvEQwt77
+    name	vpylab
+    target	production
+    status	● Ready
+    url		https://vpylab-2xnmhso3e-greatsongs-projects.vercel.app
+    created	Sat Nov 07 2026 13:05:29 GMT+0900 (Korean Standard Time) [8m ago]
+
+
+  Aliases
+
+    ╶ https://vpylab.vercel.app
+    ╶ https://vpylab-greatsongs-projects.vercel.app
+    ╶ https://vpylab-git-main-greatsongs-projects.vercel.app
+
+
+  Builds
+
+    ┌ .        [0ms]
+    ├── λ api/og (8.1KB) [iad1]
+    └── λ api/og-image (7.24KB) [iad1]

@@ -15,7 +15,10 @@ VPy Lab의 다국어 지원 구조와 새 언어 추가 방법을 설명합니�
 
 ```
 client/src/i18n/
-  index.jsx       # I18nProvider, useI18n hook
+  index.jsx       # I18nProvider
+  context.js      # 언어 메시지 등록
+  useI18n.js      # t/locale hook
+  catalogs/       # 고정 원문 키의 보조 사전
   ko.json         # 한국어 (기준 파일)
   en.json         # 영어
   ja.json         # 새 언어 파일 예시
@@ -51,7 +54,7 @@ cp client/src/i18n/en.json client/src/i18n/ja.json
 
 ### Step 2: i18n 모듈에 등록
 
-`client/src/i18n/index.jsx`에 import를 추가합니다:
+`client/src/i18n/context.js`에 import를 추가합니다:
 
 ```javascript
 import ko from './ko.json';
@@ -161,3 +164,5 @@ Phase 2에서 Crowdin 또는 Weblate 연동을 계획하고 있습니다:
 영문 사용자 안내: [USER_GUIDE_EN.md](USER_GUIDE_EN.md).
 
 언어별 같은 키를 가진 `ko.json`/`en.json`과 한국어 원문 키의 보조 사전 `catalogs/en-ui-text.json`은 구조가 다릅니다. 보조 사전은 하위 폴더에 두고 자체 자리표시자·교재 검사를 적용하며, 기존 언어 키 비교 검사는 그대로 유지합니다.
+
+새 언어를 추가할 때는 `locale.js`의 허용 코드, Header의 언어 선택, `ui-text.js`의 보조 사전 연결도 함께 준비합니다. 현재 공개 지원 언어는 한국어와 영어입니다.

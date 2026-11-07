@@ -1,0 +1,28 @@
+{
+  "url": "https://vpylab.vercel.app",
+  "results": [
+    {
+      "name": "shared-history-locale-switch-preserves-edit-and-does-not-autorun",
+      "passed": true
+    },
+    {
+      "name": "legacy-base64-locale-switch-preserves-edit-and-does-not-autorun",
+      "passed": true
+    },
+    {
+      "name": "english-core-note-waits-before-changing-color",
+      "passed": true,
+      "yellowMilliseconds": 505.1999999284744
+    },
+    {
+      "name": "english-ui-preserves-identical-student-stdout",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Actual Monaco and Pyodide. Shared route uses controlled Router history fixture; legacy base64 uses real decoder. Guest only, no account/DB writes.",
+  "sourceCommit": "ae8104491d62e920370c03d1f11247ce00cfc714",
+  "uiLocale": "en",
+  "verifiedBy": "Host Chromium against public production alias; alias/commit linkage in english-postdeploy-proof-2026-11-07.json",
+  "completedAtUtc": "2026-11-07T04:08:37.409801+00:00"
+}

@@ -12,7 +12,7 @@ Open [VPyLab in English](https://vpylab.vercel.app/?lang=en), or choose **More �
 - **Docs**: look up VPython APIs, shape guides, and marked VPyLab extensions.
 - **Guide**: read the full in-app instructions for individual and team work.
 
-The English foundation lessons use `play_note_and_wait("C4", 0.4)`; the Korean alias `음표("도", 0.4)` remains supported. Light and sound commands beyond VPython are marked as VPyLab extensions.
+The English foundation lessons use `play_note_and_wait("C4", 0.4)`; the Korean alias `음표("도", 0.4)` remains supported. This helper waits for the note duration; `play_note()` starts the sound and continues immediately. Light and sound commands beyond VPython are marked as VPyLab extensions.
 
 ## Create and learn without AI
 

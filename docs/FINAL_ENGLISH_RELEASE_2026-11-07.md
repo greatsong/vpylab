@@ -45,4 +45,17 @@ CI에서 보조 사전을 별도의 언어 파일로 오인한 문제가 있어 
 
 ## 배포 확인
 
-최종 앱 소스 SHA, CI와 운영 브라우저 검사 결과를 배포 뒤 이 항목에 기록합니다.
+- 검증한 앱 소스: `ae8104491d62e920370c03d1f11247ce00cfc714`. 이후 증거·문서 전용 커밋은 앱 소스 변경과 구분합니다.
+- [GitHub CI 42336887215](https://github.com/greatsong/vpylab/actions/runs/42336887215): 7개 작업 모두 성공. 실제 CI 로그에서 클라이언트 81개 파일/848개 검사, 서버+백업 159개 검사를 확인했습니다. 로컬 서버만의 155개 검사와 같은 범위로 합산하지 않습니다.
+- Vercel 운영 별칭 `https://vpylab.vercel.app` → `dpl_6Eg9mSMEQsoNcEgA98TibvEQwt77` (production/Ready). 이 ID가 해당 소스 SHA의 Vercel 성공 상태 URL과 일치합니다. Railway 성공 및 실제 health의 `commitSha=ae8104491d62`도 확인했습니다.
+- 최종 운영 Chromium 55개 검사 통과: 영문 UI 24, 공유 소스/대기/출력 4, 한국어 편집기의 입력·완성·뜻 카드 27. 영문 고정 UI 검사의 17번째 경로는 `/sandbox`이며 경로별 초기 확인 16개와 별도로 검사했습니다. 실제 17개 목록은 증거 JSON에 포함합니다.
+- 영어 대기형 음표의 실제 색 유지 시간: 약 505ms (0.5초 요구). 학생 stdout을 시스템 안내로 번역하지 않는 것도 확인했습니다.
+- 사전 경로 변경 전후 SHA-256은 `3599788c35c9d62e21c77d09571ae60115e1d3afdbf9448295f19ff123d412f7`로 동일합니다. 기존 290키 언어 사전 비교는 유지하며, 보조 사전 1,663개는 CI의 `ui-text.test.jsx` 자리표시자 검사와 영어 교재/실제 UI 검사로 별도 검증합니다.
+- 배포 후 두 모델에게도 증거의 정합성을 대조했습니다. Gemini는 불일치 없음으로 응답했습니다. Claude가 요청한 17개 경로 목록·운영 별칭 식별·사전 내용 동일성·CI 검사 범위는 원본 도구 출력으로 보완했습니다. 추가 문맥 없이 수행한 Claude 보충 검토의 SHA/결과 재요구는 원래 종합 증거의 CI·배포 SHA와 55개 결과, 보충 도구 기록을 함께 대조해 호스트가 해소했습니다. 두 모델이 실제 브라우저를 직접 실행했다는 뜻은 아닙니다.
+- [종합 배포 증거](collaboration/english-postdeploy-proof-2026-11-07.json), [영문 24개](collaboration/english-24-production-2026-11-07.json), [공유/대기 4개](collaboration/english-source-4-production-2026-11-07.json), [입력 27개](collaboration/completion-27-production-2026-11-07.json).
+
+## 실제 운영 캡처
+
+![영문 대장간](collaboration/screenshots/forge-en-2026-11-07.png)
+
+![조명 1·2 선택과 슬라이더](collaboration/screenshots/light-picker-ko-2026-11-07.png)
