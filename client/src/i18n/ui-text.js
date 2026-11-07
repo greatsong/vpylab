@@ -1,5 +1,5 @@
 import useAppStore from '../stores/appStore';
-import english from './en-ui-text.json';
+import english from './catalogs/en-ui-text.json';
 
 const normalize = value => value.replace(/\s+/g, ' ').trim();
 

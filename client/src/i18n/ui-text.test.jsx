@@ -4,7 +4,7 @@ import useAppStore from '../stores/appStore';
 import { translateUi, translateSystemMessage, useUiText } from './ui-text';
 import { localizeCourse, localizeLessonCode } from './owned-content';
 import courses from '../data/courses';
-import english from './en-ui-text.json';
+import english from './catalogs/en-ui-text.json';
 
 const originalLocale = useAppStore.getState().locale;
 afterEach(() => act(() => useAppStore.getState().setLocale(originalLocale)));
