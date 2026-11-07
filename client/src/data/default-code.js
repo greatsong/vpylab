@@ -17,4 +17,3 @@ while True:
 export function getDefaultCode(locale = 'ko') {
   return locale === 'en' ? DEFAULT_CODE.replace('# 구를 만들고 움직여보세요', '# Create and move a sphere').replace('# 벽에 부딪히면 반사', '# Bounce at the walls') : DEFAULT_CODE;
 }
-
