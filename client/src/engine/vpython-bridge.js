@@ -72,7 +72,7 @@ const curveRegistry = new Map();
 
 // axis·up 기준 좌표계(basis)로 방향을 정하는 객체 종류 — box와 같은 방식으로 회전한다
 // group은 GlowScript 명세대로 Python이 하위 객체를 하나씩 돌리므로 여기 없다 (그룹 자체는 위치만 갖는다)
-const BASIS_TYPES = new Set(['box', 'ellipsoid', 'compound', 'extrusion', 'text', 'curve', 'points', 'helix']);
+const BASIS_TYPES = new Set(['box', 'pyramid', 'ellipsoid', 'compound', 'extrusion', 'text', 'curve', 'points', 'helix']);
 
 // 기본 재질 설정
 const DEFAULT_MATERIAL_PARAMS = {
@@ -468,18 +468,11 @@ function createObject(cmd, scene) {
     }
 
     case 'pyramid': {
-      // 사각뿔 — ConeGeometry(radialSegments=4) 사용
-      const size = cmd.size || DEFAULT_OBJECT_PROPS.pyramid.size;
-      const axis = cmd.axis || DEFAULT_OBJECT_PROPS.pyramid.axis;
-      // size = [length(축방향 높이), height(상하), width(좌우)] 단순화: 평균 반경 사용
-      const baseRadius = Math.max(size[1], size[2]) / 2 || 0.5;
-      const height = size[0] || 1;
-      geometry = new THREE.ConeGeometry(baseRadius, height, 4);
+      const size = resolveBoxSize(cmd, DEFAULT_OBJECT_PROPS.pyramid.size);
+      geometry = primitiveGeometry.pyramid(size);
       mesh = new THREE.Mesh(geometry, material);
-      // Cone 기본 축은 +Y, axis 방향으로 회전
-      const dir = new THREE.Vector3(...axis).normalize();
-      const up = new THREE.Vector3(0, 1, 0);
-      mesh.quaternion.setFromUnitVectors(up, dir);
+      mesh.userData = {vpType:'pyramid',boxSize:size,boxAxis:asVectorArray(cmd.axis,[1,0,0]),boxUp:asVectorArray(cmd.up,[0,1,0])};
+      applyBoxOrientation(mesh,mesh.userData.boxAxis,mesh.userData.boxUp);
       break;
     }
 
@@ -917,7 +910,7 @@ function updateMesh(cmd) {
     let newGeom;
     if (mesh.geometry.type === 'SphereGeometry') {
       newGeom = new THREE.SphereGeometry(cmd.radius, 32, 16);
-    } else if (mesh.geometry.type === 'ConeGeometry') {
+    } else if (mesh.geometry.type === 'ConeGeometry' && mesh.userData?.vpType !== 'pyramid') {
       const h = mesh.geometry.parameters?.height || 1;
       newGeom = primitiveGeometry.cone(cmd.radius, h);
     } else if (mesh.geometry.type === 'CylinderGeometry') {
@@ -952,7 +945,9 @@ function updateMesh(cmd) {
       ? resolveBoxSize(cmd, mesh.userData?.boxSize || DEFAULT_OBJECT_PROPS.box.size)
       : cmd.size;
     registryUpdates.size = s;
-    if (mesh.geometry.type === 'BoxGeometry') {
+    if(mesh.userData?.vpType==='pyramid'){
+      mesh.geometry.dispose();mesh.geometry=primitiveGeometry.pyramid(s);mesh.userData.boxSize=s;
+    } else if (mesh.geometry.type === 'BoxGeometry') {
       const newGeom = new THREE.BoxGeometry(s[0], s[1], s[2]);
       mesh.geometry.dispose();
       mesh.geometry = newGeom;

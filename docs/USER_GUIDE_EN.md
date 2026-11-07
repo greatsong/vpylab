@@ -32,7 +32,7 @@ Home preferences, word-help history, and browser drafts belong to the current br
 
 ## Forge: one object, many projects
 
-Choose a starting shape, change proportions and colors, and rotate the preview. Characters become a single `compound`. Give the module a name and description, then add it to your browser library. Copy the finished module code into another project, or download the Python file. The factory function accepts position and scale.
+Choose one of four home characters (Dumpling, Flashlight, Toolbox, and Pink friend/Kirby), a bell, six project assets (crystal, coin, tree, rocket, chest, and goal flag), or five basic shapes. Previously saved characters stay available for editing and forking. Each new asset includes a project idea and a short line to try below the copied module code. Change proportions and colors, and rotate the preview. Characters become a single `compound`. Give the module a name and description, then add it to your browser library. Copy the finished module code into another project, or download the Python file. The factory function accepts position and scale.
 
 ```python
 friend = make_your_module(pos=vector(0, 0, 0), scale=1)

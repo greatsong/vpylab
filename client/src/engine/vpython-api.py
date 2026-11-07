@@ -1086,35 +1086,9 @@ class ring(_GObject):
 
 
 # === 새 프리미티브: pyramid (4면 피라미드) ===
-class pyramid(_GObject):
-    """사각뿔 — VPython의 pyramid. size=vector(length, height, width)"""
-    def __init__(self, **kwargs):
-        self._size = kwargs.pop('size', vector(1, 1, 1))
-        self._axis = kwargs.pop('axis', vector(1, 0, 0))
-        s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
-        super().__init__('pyramid', size=s, axis=self._axis.to_list(), **kwargs)
-
-    @property
-    def size(self):
-        return self._size
-
-    @size.setter
-    def size(self, value):
-        self._size = value
-        s = value.to_list() if isinstance(value, vector) else list(value)
-        _add_command({"action": "update", "id": self._id, "size": s})
-
-    @property
-    def axis(self):
-        return self._axis
-
-    @axis.setter
-    def axis(self, value):
-        self._axis = value
-        _add_command({"action": "update", "id": self._id, "axis": value.to_list()})
-
-    def _clone_kwargs(self):
-        return {**super()._clone_kwargs(), 'size': self._size.clone(), 'axis': self._axis.clone()}
+class pyramid(box):
+    """밑면 중심에서 axis 방향으로 뻗는 사각뿔. size·axis·up은 box와 연동됩니다."""
+    _geometry_type = 'pyramid'
 
 
 # === 새 프리미티브: ellipsoid (타원체) ===
@@ -1996,10 +1970,17 @@ def _object_extent(obj):
     if t == 'pyramid':
         s = getattr(obj, '_size', vector(1, 1, 1))
         a = getattr(obj, '_axis', vector(1, 0, 0))
-        end = pos + a.hat * s.x
-        r = max(abs(s.y), abs(s.z)) / 2
-        return vector(min(pos.x, end.x) - r, min(pos.y, end.y) - r, min(pos.z, end.z) - r), \
-            vector(max(pos.x, end.x) + r, max(pos.y, end.y) + r, max(pos.z, end.z) + r)
+        x = a.hat if a.mag > 1e-12 else vector(1, 0, 0)
+        y = getattr(obj, '_up', vector(0, 1, 0))
+        y = y - x * dot(y, x)
+        if y.mag < 1e-12:
+            y = vector(0, 1, 0) if abs(x.y) < .9 else vector(0, 0, 1)
+            y = y - x * dot(y, x)
+        y = y.hat
+        z = cross(x, y)
+        points = [pos + x*s.x] + [pos + y*(sy*s.y/2) + z*(sz*s.z/2) for sy in (-1,1) for sz in (-1,1)]
+        return vector(*(min(getattr(p,k) for p in points) for k in ('x','y','z'))), \
+               vector(*(max(getattr(p,k) for p in points) for k in ('x','y','z')))
     if t in ('cylinder', 'cone', 'arrow', 'helix'):
         a = getattr(obj, '_axis', vector(1, 0, 0))
         r = float(getattr(obj, '_radius', getattr(obj, '_shaftwidth', 0.1)))

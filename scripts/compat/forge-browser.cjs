@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'../..'),base=process.env.VPYLAB_TEST_URL||'ht
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const setCode=vm.runInNewContext(fs.readFileSync(path.join(root,'scripts/compat/browser-harness.mjs'),'utf8').match(/const SET_CODE_FN = (`[\s\S]*?`);/)[1]);
 (async()=>{
- const {forgePresets,createRecipe}=await import(path.join(root,'client/src/forge/recipes.js')),{builtInModule,makeForgeModule,moduleProgram,moduleDefinition,factoryName}=await import(path.join(root,'client/src/forge/modules.js'));
+ const {visibleForgePresets:forgePresets,createRecipe,buildForgeModel}=await import(path.join(root,'client/src/forge/recipes.js')),{builtInModule,makeForgeModule,moduleProgram,moduleDefinition,factoryName}=await import(path.join(root,'client/src/forge/modules.js'));
  fs.mkdirSync(out,{recursive:true});const browser=await puppeteer.launch({headless:'shell',args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--mute-audio']});
  const page=await browser.newPage(),results=[],errors=[],writes=[],syntheticWrites=[];let shelfModule;
  const record=(name,data={})=>{results.push({name,passed:true,...data});console.log(name,'passed')};
@@ -26,8 +26,8 @@ const setCode=vm.runInNewContext(fs.readFileSync(path.join(root,'scripts/compat/
   const old=await page.$eval('#forge-width',e=>Number(e.value)),rect=await page.$eval('#forge-width',e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width}});
   await page.mouse.move(rect.x+rect.w*(old-1.3)/1.5,rect.y+8);await page.mouse.down();await page.mouse.move(rect.x+rect.w-5,rect.y+8,{steps:8});await page.mouse.up();await pause(100);assert((await page.$eval('#forge-width',e=>Number(e.value)))>old);await click(page,'button[aria-label="되돌리기"]');assert.equal(await page.$eval('#forge-width',e=>Number(e.value)),old);await click(page,'button[aria-label="다시 하기"]');assert((await page.$eval('#forge-width',e=>Number(e.value)))>old);record('forge-drag-single-undo-and-redo');await click(page,'button[aria-label="되돌리기"]');
   for(const p of forgePresets){
-   await clickText(page,({character:'캐릭터',interactive:'쓸모 있는 물건',shape:'기본 모양'})[p.kind]);await click(page,`[data-forge-preset="${p.id}"]`);await page.waitForSelector(`[data-forge-preview="${p.id}"] canvas`);await pause(80);
-   const first=p.kind==='character'?'body':p.id==='bell'?'bell_shell':p.id==='dome'?'dome_0':p.id==='cup'?'cup_wall':p.id==='ring'?'donut':p.id;
+   await clickText(page,({character:'캐릭터',asset:'프로젝트 에셋',shape:'기본 모양'})[p.kind]);await click(page,`[data-forge-preset="${p.id}"]`);await page.waitForSelector(`[data-forge-preview="${p.id}"] canvas`);await pause(80);
+   const first=buildForgeModel(createRecipe(p.id)).parts[0].name;
    const state=await inspect(page,'forge_'+first);assert(state.pixels>100,p.id+' is visible');record('forge-preset-'+p.id,{pixels:state.pixels,memory:state.memory});
    if(['doraemon','chiikawa','bell','cup','dome'].includes(p.id))await page.screenshot({path:path.join(out,'forge-'+p.id+'.png')});
    if(p.id==='bell'){

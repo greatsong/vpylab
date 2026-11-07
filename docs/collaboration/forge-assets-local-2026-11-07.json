@@ -1,0 +1,79 @@
+{
+  "url": "http://127.0.0.1:4033",
+  "results": [
+    {
+      "name": "only-four-home-character-starters",
+      "passed": true
+    },
+    {
+      "name": "kirby-visible-slider-undo-copy",
+      "passed": true
+    },
+    {
+      "name": "dumpling-visible-slider-undo-copy",
+      "passed": true
+    },
+    {
+      "name": "flashlight-visible-slider-undo-copy",
+      "passed": true
+    },
+    {
+      "name": "toolbox-visible-slider-undo-copy",
+      "passed": true
+    },
+    {
+      "name": "crystal-visible-slider-undo-copy",
+      "passed": true
+    },
+    {
+      "name": "coin-visible-slider-undo-copy",
+      "passed": true
+    },
+    {
+      "name": "pine-visible-slider-undo-copy",
+      "passed": true
+    },
+    {
+      "name": "rocket-visible-slider-undo-copy",
+      "passed": true
+    },
+    {
+      "name": "chest-visible-slider-undo-copy",
+      "passed": true
+    },
+    {
+      "name": "flag-visible-slider-undo-copy",
+      "passed": true
+    },
+    {
+      "name": "mobile-360-no-overflow",
+      "passed": true
+    },
+    {
+      "name": "english-asset-labels-and-guidance",
+      "passed": true
+    },
+    {
+      "name": "old-saved-character-still-editable",
+      "passed": true
+    },
+    {
+      "name": "all-ten-copied-models-run-in-pyodide",
+      "passed": true,
+      "compoundParts": [
+        15,
+        63,
+        62,
+        63,
+        7,
+        4,
+        4,
+        9,
+        10,
+        4
+      ]
+    }
+  ],
+  "errors": [],
+  "scope": "Actual Chromium/WebGL sliders, screenshots, and real Pyodide; synthetic guest drafts; no account or DB writes."
+}

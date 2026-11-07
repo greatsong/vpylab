@@ -1,4 +1,4 @@
-import { activeParameters, buildForgeModel, createRecipe, forgeParameters, validateRecipe, forgeColorVector } from './recipes.js';
+import { activeParameters, buildForgeModel, createRecipe, forgeParameters, validateRecipe, forgeColorVector, isForgeStudio } from './recipes.js';
 
 export const MODULE_PREFIX = '# vpylab-forge:v1 ';
 export const MODULE_FORMAT = 'vpylab-forge';
@@ -46,7 +46,8 @@ export function moduleDefinition(module) {
   push('# 슬라이더에서 바꾼 값입니다. size는 세 방향의 전체 길이입니다.');
   for(const key of activeParameters(module.recipe))push(`${forgeParameters[key].variable} = ${module.recipe.params[key]}`);
   // 사용하지 않는 조절기도 부품 식에서 필요할 수 있어 기본 상수를 둡니다.
-  for(const [key,spec]of Object.entries(forgeParameters))if(!activeParameters(module.recipe).includes(key))push(`${spec.variable} = ${module.recipe.params[key]}`);
+  const neededCode=model.parts.flatMap(p=>Object.values(p.props).map(v=>v.code)).join(' ')+' '+model.derived.join(' ');
+  for(const [key,spec]of Object.entries(forgeParameters))if(!activeParameters(module.recipe).includes(key)&&(!model.preset.studio||neededCode.includes(spec.variable)))push(`${spec.variable} = ${module.recipe.params[key]}`);
   if(module.recipe.appearance==='welcome-v1')push('# 색은 VPyLab 메인과 같은 선형 RGB입니다. 조명에 따라 보이는 색은 달라질 수 있습니다.');
   for(const [i,color]of module.recipe.colors.entries()){
     const rgb=forgeColorVector(module.recipe,color).map(n=>Number(n.toFixed(6)));
@@ -58,6 +59,15 @@ export function moduleDefinition(module) {
     push('def scale_shape(items):');
     push('return [scale_shape(item) if isinstance(item, (list, tuple)) else item * scale for item in items]',2);
   }
+  const writeSmile=()=>{
+    const start=model.parts.find(p=>p.name==='smile_joint_0'),bottom=model.parts.find(p=>p.name==='smile_joint_12');
+    push('face_start = '+start.props.pos.code);push('face_bottom = '+bottom.props.pos.code);push('previous = None');
+    push('for i in range(25):');push('angle = i * pi / 24',2);
+    push('point = origin + vector(face_start.x*cos(angle), face_start.y+(face_bottom.y-face_start.y)*sin(angle), face_start.z) * scale',2);
+    push('parts.append(sphere(pos=point, radius='+start.props.radius.code+' * scale, shininess=0.28, color='+start.props.color.code+'))',2);
+    push('if previous is not None:',2);push('parts.append(cylinder(pos=previous, axis=point-previous, radius='+start.props.radius.code+' * scale, shininess=0.28, color='+start.props.color.code+'))',3);
+    push('previous = point',2);
+  };
   if(model.preset.id==='dome'){
     push('normalized_faces = '+python(model.parts.map(p=>JSON.parse(p.props.vertices.code))));
     push('for face in normalized_faces:');
@@ -67,6 +77,7 @@ export function moduleDefinition(module) {
     push('corners.append(vertex(pos=point, normal=normal, color=body_color))',3);
     push('parts.append(triangle(vs=corners))',2);
   }else for(const part of model.parts){
+    if(model.preset.studio&&part.name.startsWith('smile_')){if(part.name==='smile_joint_0')writeSmile();continue;}
     const props=[];
     for(const [key,value]of Object.entries(part.props)){
       let code=value.code;
@@ -108,7 +119,7 @@ export function moduleDefinition(module) {
 }
 export function moduleProgram(module,{file=false,metadata=!file}={}) {
   const model=buildForgeModel(module.recipe),fn=factoryName(module),header=MODULE_PREFIX+encode(JSON.stringify(module));
-  const demo=[`scene.range = ${model.range}`,`scene.center = vector(${model.center.join(', ')})`,model.recipe.appearance==='welcome-v1'?'scene.forward = vector(-0.13, -0.145, -1)':'scene.forward = vector(-0.25, -0.12, -1)',`my_module = ${fn}(pos=vector(0, 0, 0), scale=1)`,'# 다른 위치에 더 만들기: '+`friend = ${fn}(pos=vector(3,0,0), scale=0.7)`];
+  const demo=[`scene.range = ${model.range}`,`scene.center = vector(${model.center.join(', ')})`,isForgeStudio(model.recipe)?'scene.forward = vector(-0.13, -0.145, -1)':'scene.forward = vector(-0.25, -0.12, -1)',`my_module = ${fn}(pos=vector(0, 0, 0), scale=1)`,'# 다른 위치에 더 만들기: '+`friend = ${fn}(pos=vector(3,0,0), scale=0.7)`];
   demo.push('# 이동: my_module.move_to(vector(2,0,0))','# 제거: my_module.dispose()');
   const body=moduleDefinition(module);
   return (metadata?header+'\n':'')+'from vpython import *\n\n'+body+'\n'+(file?'if __name__ == "__main__":\n'+demo.map(s=>'    '+s).join('\n'):demo.join('\n'))+'\n';

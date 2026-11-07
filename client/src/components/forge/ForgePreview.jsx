@@ -5,13 +5,13 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { clearScene, getMesh, processBatch } from '../../engine/vpython-bridge';
-import { forgeCommands } from '../../forge/recipes';
+import { forgeCommands, isForgeStudio } from '../../forge/recipes';
 
 export default function ForgePreview({model,view,onBell,onCapture,waveTick=0}) {
   const ui = useUiText();
   const host=useRef(null),state=useRef(null),processedWave=useRef(waveTick),callback=useRef({onBell,onCapture});
   const [error,setError]=useState('');
-  const welcomeKirby=model.recipe.appearance==='welcome-v1';
+  const studioView=isForgeStudio(model.recipe);
   const centerKey=model.center.join(','),range=model.range;
   useEffect(()=>{callback.current={onBell,onCapture};},[onBell,onCapture]);
   useEffect(()=>{
@@ -52,25 +52,26 @@ export default function ForgePreview({model,view,onBell,onCapture,waveTick=0}) {
   useEffect(()=>{
     const s=state.current;if(!s)return;
     clearScene(s.scene);processBatch(forgeCommands(model),s.scene);
-    const matching=model.recipe.appearance==='welcome-v1';
+    const matching=isForgeStudio(model.recipe);
     s.ambient.intensity=matching?.95:1.8;s.key.intensity=matching?1.3:2.5;s.fill.intensity=matching?.45:1.1;
     s.key.color.set(matching?0xfff7ee:0xffffff);s.fill.color.set(matching?0xdceaff:0xdfe9ff);
     s.key.position.set(...(matching?[-3,5,6]:[4,7,6]));s.fill.position.set(...(matching?[4,2,2]:[-5,2,-3]));
     s.grid.visible=!matching;s.stage.setVisible(matching);
     s.scene.background.set(matching?'#f8fafc':'#f0f1ec');
     if(matching){
-      s.stage.setGround(Math.min(...model.parts.filter(p=>p.name.includes('foot')).map(p=>p.props.pos.value[1]-p.props.size.value[1]/2))-.05);
-      s.stage.setLighting(true,welcomeLighting.kirby,null);
-      for(const p of model.parts){const mesh=getMesh('forge_'+p.name);if(mesh){mesh.castShadow=!/^(eye|cheek|mouth|tongue)/.test(p.name);mesh.receiveShadow=true;}}
+      const bounds=new THREE.Box3();for(const p of model.parts){if(!p.effect){const mesh=getMesh('forge_'+p.name);if(mesh){mesh.updateMatrixWorld(true);bounds.union(new THREE.Box3().setFromObject(mesh));}}}
+      if(!bounds.isEmpty())s.stage.setGround(bounds.min.y-.05);
+      s.stage.setLighting(true,welcomeLighting[model.preset.id]||{left:model.recipe.colors[1],right:'#c5dcf3'},null);
+      for(const p of model.parts){const mesh=getMesh('forge_'+p.name);if(mesh){mesh.castShadow=!/^(eye|cheek|mouth|tongue|smile)/.test(p.name);mesh.receiveShadow=true;}}
     }
   },[model]);
   useEffect(()=>{
     const s=state.current;if(!s)return;
     const center=new THREE.Vector3(...centerKey.split(',').map(Number)),distance=range*2.05;
     s.controls.target.copy(center);
-    s.camera.position.copy(center).add(new THREE.Vector3(...(view.mode==='front'?[0,0,distance]:view.mode==='top'?[0,distance,.001]:[distance*(welcomeKirby?.13:.42),distance*(welcomeKirby?.145:.22),distance])));
+    s.camera.position.copy(center).add(new THREE.Vector3(...(view.mode==='front'?[0,0,distance]:view.mode==='top'?[0,distance,.001]:[distance*(studioView?.13:.42),distance*(studioView?.145:.22),distance])));
     s.camera.lookAt(center);s.controls.update();
-  },[centerKey,range,view,welcomeKirby]);
+  },[centerKey,range,view,studioView]);
   useEffect(()=>{
     if(waveTick===processedWave.current)return;
     processedWave.current=waveTick;

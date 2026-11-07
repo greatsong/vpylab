@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { activeParameters, buildForgeModel, createRecipe, forgeCommands, forgeParameters, forgePresets } from './recipes';
+import { activeParameters, buildForgeModel, createRecipe, forgeCommands, forgeParameters, forgePresets, visibleForgePresets } from './recipes';
 import { builtInModule, factoryName, makeForgeModule, moduleDefinition, moduleFromPublishedCode, moduleProgram, parseModuleFile, readForgeShelf, writeForgeShelf, writeForgeDraft, saveForgeShelfModule, initialForgeShelf, stageForgeLogin } from './modules';
 import { hasPython, runPythonJobs } from '../test/python-runner';
 import { clearScene, getMesh, processBatch } from '../engine/vpython-bridge';
@@ -10,8 +10,8 @@ const scene=new THREE.Scene();afterEach(()=>clearScene(scene));
 const run=(code,rateLimit=20000)=>runPythonJobs([{id:'forge',label:'case',code,rateLimit}]).get('forge:case');
 const box=()=>{scene.updateMatrixWorld(true);return new THREE.Box3().setFromObject(scene);};
 it('단일 오브젝트를 다루고 공전 시스템을 포함하지 않는다',()=>{
-  expect(forgePresets).toHaveLength(14);expect(forgePresets.map(p=>p.id)).not.toContain('earth-moon');
-  expect(forgePresets.every(p=>['character','shape','interactive'].includes(p.kind))).toBe(true);
+  expect(visibleForgePresets).toHaveLength(16);expect(visibleForgePresets.filter(p=>p.kind==='character')).toHaveLength(4);expect(forgePresets.map(p=>p.id)).not.toContain('earth-moon');
+  expect(forgePresets.every(p=>['character','shape','asset'].includes(p.kind))).toBe(true);
 });
 it('파일의 설정만 가져오며 잘못된 값·알 수 없는 형식·큰 입력을 거부한다',()=>{
   const module=builtInModule('kirby');expect(parseModuleFile(JSON.stringify(module)).recipe).toEqual(module.recipe);

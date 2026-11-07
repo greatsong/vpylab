@@ -628,10 +628,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
         }
         case 'ring': mesh = new THREE.Mesh(new THREE.TorusGeometry(cmd.radius||1, cmd.thickness||0.1, 16, 48), mat); mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), new THREE.Vector3(...(cmd.axis||[1,0,0])).normalize()); break;
         case 'pyramid': {
-          const sz = cmd.size || [1,1,1]; const a = cmd.axis||[1,0,0];
-          const baseR = Math.max(sz[1], sz[2])/2 || 0.5;
-          mesh = new THREE.Mesh(new THREE.ConeGeometry(baseR, sz[0]||1, 4), mat);
-          mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), new THREE.Vector3(...a).normalize());
+          mesh = new THREE.Mesh(primitiveGeometry.pyramid(cmd.size || [1,1,1]), mat);
           break;
         }
         case 'ellipsoid': {
@@ -736,7 +733,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
       mesh.userData = Object.assign(mesh.userData || {}, { vpType: cmd.type });
       if (cmd.type === 'arrow') { const a0 = cmd.axis || [1,0,0]; mesh.userData.arrowLen = Math.hypot(...a0) || 1; mesh.userData.shaftwidth = cmd.shaftwidth || 0.1; }
       if (cmd.type === 'helix') { mesh.userData.helixRadius = cmd.radius || 1; mesh.userData.helixCoils = cmd.coils || 5; }
-      if (['box','ellipsoid'].includes(cmd.type) && (cmd.axis || cmd.up)) { mesh.userData.boxAxis = cmd.axis || [1,0,0]; mesh.userData.boxUp = cmd.up || [0,1,0]; applyBoxOrientation(mesh); }
+      if (['box','pyramid','ellipsoid'].includes(cmd.type) && (cmd.axis || cmd.up)) { mesh.userData.boxAxis = cmd.axis || [1,0,0]; mesh.userData.boxUp = cmd.up || [0,1,0]; applyBoxOrientation(mesh); }
       scene.add(mesh);
       meshes.set(cmd.id, mesh);
       if (cmd.make_trail) createTrail(cmd);
@@ -766,20 +763,21 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
       if (cmd.radius !== undefined && m.geometry) {
         let ng;
         if(m.geometry.type==='SphereGeometry') ng=new THREE.SphereGeometry(cmd.radius,32,16);
-        else if(m.geometry.type==='ConeGeometry') ng=primitiveGeometry.cone(cmd.radius,m.geometry.parameters?.height||1);
+        else if(m.geometry.type==='ConeGeometry'&&m.userData?.vpType!=='pyramid') ng=primitiveGeometry.cone(cmd.radius,m.geometry.parameters?.height||1);
         else if(m.geometry.type==='CylinderGeometry') ng=primitiveGeometry.cylinder(cmd.radius,m.geometry.parameters?.height||1);
         else if(m.geometry.type==='TorusGeometry') ng=new THREE.TorusGeometry(cmd.radius,m.geometry.parameters?.tube||0.1,16,48);
         if(ng){m.geometry.dispose();m.geometry=ng;}
       }
       if (cmd.size !== undefined && m.geometry) {
         const s=cmd.size;
-        if (m.geometry.type==='SphereGeometry') { m.scale.set(s[0],s[1],s[2]); } // ellipsoid: sphere+scale — 상자로 바꾸지 않음
+        if(m.userData?.vpType==='pyramid'){m.geometry.dispose();m.geometry=primitiveGeometry.pyramid(s);}
+        else if (m.geometry.type==='SphereGeometry') { m.scale.set(s[0],s[1],s[2]); } // ellipsoid: sphere+scale — 상자로 바꾸지 않음
         else { const ng=new THREE.BoxGeometry(s[0],s[1],s[2]); m.geometry.dispose(); m.geometry=ng; }
       }
       if (cmd.thickness !== undefined && m.geometry?.type==='TorusGeometry') { const r=m.geometry.parameters?.radius||1; const ng=new THREE.TorusGeometry(r,cmd.thickness,16,48); m.geometry.dispose(); m.geometry=ng; }
       if (cmd.axis !== undefined || cmd.up !== undefined) {
         const vpType = m.userData?.vpType;
-        if (['box','ellipsoid','compound'].includes(vpType)) {
+        if (['box','pyramid','ellipsoid','compound'].includes(vpType)) {
           if (cmd.axis) m.userData.boxAxis = cmd.axis;
           if (cmd.up) m.userData.boxUp = cmd.up;
           applyBoxOrientation(m);
@@ -923,6 +921,7 @@ _vpython_names = [
     'scatter3d', 'surface3d', 'line3d', 'bar3d',
     '산점도', '표면그래프', '선그래프', '막대그래프',
 ]
+_vpython_names += [n for n in dir(math) if not n.startswith('_')]
 for _name in _vpython_names:
     if _name in dir():
         setattr(vpython_module, _name, eval(_name))
@@ -934,7 +933,7 @@ sys.modules['vpython'] = vpython_module
     // postMessage를 processBatch로 연결
     pyodide.globals.set('_js_compound_bounds', (idsJson) => {
       const bounds=new THREE.Box3();
-      for(const id of JSON.parse(idsJson)){const object=meshes.get(id);if(object){object.updateWorldMatrix(true,true);bounds.union(new THREE.Box3().setFromObject(object));}}
+      for(const id of JSON.parse(idsJson)){const object=meshes.get(id);if(object){object.updateWorldMatrix(true,true);bounds.union(new THREE.Box3().setFromObject(object,object.userData?.vpType==='pyramid'));}}
       const center=bounds.isEmpty()?new THREE.Vector3():bounds.getCenter(new THREE.Vector3());
       const size=bounds.isEmpty()?new THREE.Vector3(1,1,1):bounds.getSize(new THREE.Vector3());
       return JSON.stringify({center:center.toArray(),size:size.toArray()});
@@ -1015,6 +1014,7 @@ def _send_commands():
 import json
 import asyncio
 import math
+from math import *
 
 _command_buffer = []
 _object_counter = 0
@@ -1038,6 +1038,8 @@ def _new_id():
 class vector:
     def __init__(self, x=0, y=0, z=0):
         self._change_callback = None
+        if isinstance(x, vector): x, y, z = x.x, x.y, x.z
+        elif isinstance(x, (list, tuple)) and len(x)==3: x, y, z = x
         self._x = float(x); self._y = float(y); self._z = float(z)
     @property
     def x(self): return self._x
@@ -1474,13 +1476,6 @@ class compound:
         _add_command({'action':'update','id':self._id,'emissive':self._emissive})
 
 # === 새 프리미티브 (v3) ===
-class pyramid(_GObject):
-    def __init__(self, **kw):
-        self._size = kw.pop('size', vector(1,1,1))
-        self._axis = kw.pop('axis', vector(1,0,0))
-        s = self._size.to_list() if isinstance(self._size, vector) else list(self._size)
-        super().__init__('pyramid', size=s, axis=self._axis.to_list(), **kw)
-
 def _ellipsoid_vector(v):
     return v.clone() if isinstance(v, vector) else vector(*v)
 
@@ -1543,6 +1538,9 @@ class ellipsoid(box):
     def width(self, value): self.size = vector(self._size.x,self._size.y,value)
     def _clone_kwargs(self):
         return {**super()._clone_kwargs(), 'size':self._size.clone(), 'axis':self._axis.clone(), 'up':self._up.clone()}
+
+class pyramid(ellipsoid):
+    _geometry_type = 'pyramid'
 
 class helix(_GObject):
     def __init__(self, **kw):

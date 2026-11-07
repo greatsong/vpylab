@@ -1,23 +1,27 @@
+import { studioPresets, buildStudioAsset } from './studio-assets.js';
 import { welcomeParts, welcomeColorVector } from '../data/welcome-friends.js';
 const pinkReference = welcomeParts('kirby');
 
 // 대장간 레시피는 실행 코드를 받지 않습니다. 같은 부품 명세를 화면과 Python에 씁니다.
 export const forgePresets = [
   { id: 'kirby', name: '커비처럼 동그랗게', icon: '✦', kind: 'character', note: '둥근 몸통 · 타원 눈 · 큰 발', colors: [pinkReference.find(p=>p.name==='body').color, pinkReference.find(p=>p.name==='left_foot').color], params: { width: 1.72, height: 1.72, depth: 1.72, eyeSize: .26, eyeGap: .14, cheekSize: .21, armSize: .5, feetSize: .6 } },
-  { id: 'doraemon', name: '도라에몽처럼 조합', icon: '◉', kind: 'character', note: '파란 몸통 · 흰 얼굴 · 방울', colors: ['#229cde', '#ef5050'], params: { width: 2.05, height: 2, depth: 1.75 } },
-  { id: 'chiikawa', name: '치이카와처럼 작게', icon: 'ᴗ', kind: 'character', note: '하얀 몸통 · 작은 귀 · 볼', colors: ['#fff9ee', '#f5a9b9'], params: { width: 1.95, height: 1.8, depth: 1.55, earLength: .4, feetSize: .38 } },
-  { id: 'rabbit', name: '긴 귀 토끼', icon: '⋈', kind: 'character', note: '길쭉한 귀를 가진 친구', colors: ['#f2e3fc', '#ba91e1'], params: { earLength: 1.15, height: 1.9 } },
-  { id: 'bear', name: '폭신한 곰', icon: '●', kind: 'character', note: '동그란 귀와 주둥이', colors: ['#c79871', '#805f49'], params: { earLength: .55, height: 2.1 } },
-  { id: 'cat', name: '작은 고양이', icon: '△', kind: 'character', note: '뾰족한 귀와 꼬리', colors: ['#f3c984', '#b87c46'], params: { earLength: .7 } },
-  { id: 'penguin', name: '펭귄 친구', icon: '◒', kind: 'character', note: '하얀 배와 주황 부리', colors: ['#34475d', '#f2b346'], params: { height: 2.35, width: 1.8, feetSize: .6 } },
-  { id: 'monster', name: '외눈박이 괴물', icon: '◎', kind: 'character', note: '하나의 눈 · 두 개의 뿔', colors: ['#a3dca8', '#6baf80'], params: { eyeSize: .37, earLength: .7 } },
-  { id: 'bell', name: '종 만들기', icon: '♬', kind: 'interactive', note: '모양 → 클릭 소리 → 음파 효과', colors: ['#f4bf58', '#a2653c'], params: { width: 1.7, height: 1.7, depth: 1.7, tone: 880 } },
+  { id: 'doraemon', hidden:true, name: '도라에몽처럼 조합', icon: '◉', kind: 'character', note: '파란 몸통 · 흰 얼굴 · 방울', colors: ['#229cde', '#ef5050'], params: { width: 2.05, height: 2, depth: 1.75 } },
+  { id: 'chiikawa', hidden:true, name: '치이카와처럼 작게', icon: 'ᴗ', kind: 'character', note: '하얀 몸통 · 작은 귀 · 볼', colors: ['#fff9ee', '#f5a9b9'], params: { width: 1.95, height: 1.8, depth: 1.55, earLength: .4, feetSize: .38 } },
+  { id: 'rabbit', hidden:true, name: '긴 귀 토끼', icon: '⋈', kind: 'character', note: '길쭉한 귀를 가진 친구', colors: ['#f2e3fc', '#ba91e1'], params: { earLength: 1.15, height: 1.9 } },
+  { id: 'bear', hidden:true, name: '폭신한 곰', icon: '●', kind: 'character', note: '동그란 귀와 주둥이', colors: ['#c79871', '#805f49'], params: { earLength: .55, height: 2.1 } },
+  { id: 'cat', hidden:true, name: '작은 고양이', icon: '△', kind: 'character', note: '뾰족한 귀와 꼬리', colors: ['#f3c984', '#b87c46'], params: { earLength: .7 } },
+  { id: 'penguin', hidden:true, name: '펭귄 친구', icon: '◒', kind: 'character', note: '하얀 배와 주황 부리', colors: ['#34475d', '#f2b346'], params: { height: 2.35, width: 1.8, feetSize: .6 } },
+  { id: 'monster', hidden:true, name: '외눈박이 괴물', icon: '◎', kind: 'character', note: '하나의 눈 · 두 개의 뿔', colors: ['#a3dca8', '#6baf80'], params: { eyeSize: .37, earLength: .7 } },
+  { id: 'bell', name: '종 만들기', icon: '♬', kind: 'asset', note: '모양 → 클릭 소리 → 음파 효과', colors: ['#f4bf58', '#a2653c'], params: { width: 1.7, height: 1.7, depth: 1.7, tone: 880 } },
   { id: 'star', name: '입체 별', icon: '☆', kind: 'shape', note: '뾰족함과 두께를 조절', colors: ['#ffd26f', '#edaa47'] },
   { id: 'heart', name: '입체 하트', icon: '♡', kind: 'shape', note: '단면과 압출로 만드는 하트', colors: ['#f69cb9', '#d96d92'] },
   { id: 'dome', name: '반구와 돔', icon: '◠', kind: 'shape', note: '높이를 줄이면 납작한 돔', colors: ['#80c9bf', '#499d94'] },
   { id: 'cup', name: '속이 빈 컵', icon: '∪', kind: 'shape', note: '벽 두께와 높이 바꾸기', colors: ['#9fb7eb', '#6583b9'] },
   { id: 'ring', name: '고리와 도넛', icon: '○', kind: 'shape', note: '반지름과 고리 두께', colors: ['#d3a1dd', '#a86cbd'] },
+  ...studioPresets,
 ];
+export const visibleForgePresets=forgePresets.filter(p=>!p.hidden);
+export const isForgeStudio=recipe=>recipe.appearance==='welcome-v1'||!!forgePresets.find(p=>p.id===recipe.presetId)?.studio;
 
 export const forgeParameters = {
   width: { label: '너비', variable: 'body_width', min: 1.3, max: 2.8, step: .01, group: 'body', value: 2 },
@@ -58,7 +62,9 @@ export function validateRecipe(input) {
 }
 export function activeParameters(recipe) {
   const preset = forgePresets.find(p => p.id === recipe.presetId);
-  if (preset.kind === 'interactive') return ['width', 'height', ...(recipe.bellMode==='shape'?[]:['tone'])];
+  if (preset.id === 'bell') return ['width', 'height', ...(recipe.bellMode==='shape'?[]:['tone'])];
+  if (preset.kind === 'asset') return ['width','height','depth'].filter(key=>!(['coin','pine','rocket'].includes(preset.id)&&key===(preset.id==='coin'?'height':'depth')));
+  if (preset.studio&&preset.kind==='character')return ['width','height',...(preset.id==='flashlight'?[]:['depth']),'eyeSize','eyeGap','cheekSize','armSize','feetSize'];
   if (preset.kind === 'shape') return ['width', ...(preset.id === 'ring' ? ['wall'] : preset.id === 'cup' ? ['height','wall'] : ['height', 'depth']), ...(preset.id === 'star' ? ['point'] : [])];
   return ['width', 'height', 'depth', 'eyeSize', ...(preset.id === 'monster' ? [] : ['eyeGap']), 'cheekSize', ...(['kirby', 'doraemon', 'penguin'].includes(preset.id) ? [] : ['earLength']), 'armSize', 'feetSize'];
 }
@@ -73,7 +79,7 @@ const neg = a => mul(a,-1);
 const vector = (x,y,z) => { const a = [x,y,z].map(expr); return { value: a.map(x => x.value), code: `vector(${a.map(x => x.code).join(', ')})` }; };
 export function hexVector(hex) { return [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)/255); }
 // 메인의 CSS 색은 sRGB입니다. 새 모양의 VPython 색도 같은 선형 값으로 맞춥니다.
-export function forgeColorVector(recipe,hex){return recipe.appearance==='welcome-v1'?welcomeColorVector(hex):hexVector(hex);}
+export function forgeColorVector(recipe,hex){return isForgeStudio(recipe)?welcomeColorVector(hex):hexVector(hex);}
 
 
 export function buildForgeModel(input) {
@@ -82,7 +88,7 @@ export function buildForgeModel(input) {
   const values = Object.fromEntries(Object.entries(recipe.params).map(([k,v]) => [k,{ value:v, code:forgeParameters[k].variable }]));
   const { width:w, height:h, depth:d, eyeSize:eye, eyeGap:gap, earLength:ear, armSize:arm, feetSize:foot, cheekSize:cheek } = values;
   const colors = { body: forgeColorVector(recipe,recipe.colors[0]), accent: forgeColorVector(recipe,recipe.colors[1]), white:[1,.985,.96], ink:[.09,.12,.18], blush:[1,.6,.7], gold:[1,.78,.25] };
-  const paint = color => ({ value: typeof color === 'string' ? colors[color] : color, code: typeof color === 'string' && ['body','accent'].includes(color) ? color+'_color' : `vector(${(typeof color === 'string' ? colors[color] : color).map(x => number(x).code).join(', ')})` });
+  const paint = color => color?.code?color:({ value: typeof color === 'string' ? colors[color] : color, code: typeof color === 'string' && ['body','accent'].includes(color) ? color+'_color' : `vector(${(typeof color === 'string' ? colors[color] : color).map(x => number(x).code).join(', ')})` });
   const derivedValue = (name, value) => { derived.push(`${name} = ${value.code}`); return { ...value, code:name }; };
   const part = (name, type, props, color='body') => { const p = { name:name.replaceAll('-','minus'),type,props:{ ...props,color:paint(color) } };parts.push(p);return p; };
   const egg = (name,x,y,z,sx,sy,sz,color='body') => part(name,'ellipsoid',{pos:vector(x,y,z),size:vector(sx,sy,sz)},color);
@@ -95,7 +101,9 @@ export function buildForgeModel(input) {
     return add(mul(mul(d,.5),root),preset.id==='doraemon'?mul(d,.13):offset);
   };
   const welcomeKirby=preset.id==='kirby'&&recipe.appearance==='welcome-v1';
-  if (preset.kind === 'character') {
+  if(preset.studio){
+    buildStudioAsset(preset,{...recipe,bodyColor:colors.body},{part,egg,sphere,cone,expr,vector,mul,add,sub,neg,div,w,h,d,eye,gap,cheek,arm,foot});
+  } else if (preset.kind === 'character') {
     if (welcomeKirby) {
       // 메인 화면의 부품을 기준으로 슬라이더와 Python 수식을 함께 만듭니다.
       const reference=pinkReference,base=reference.find(p=>p.name==='body'),diameter=base.radius*2;
@@ -224,7 +232,7 @@ export function buildForgeModel(input) {
       part(preset.id,'extrusion',{pos:vector(0,0,0),path,shape},'body');
     }
   }
-  return {recipe,preset,parts,derived,range:preset.id==='doraemon'?3.1:welcomeKirby?2.5:3,center:preset.id==='doraemon'?[0,-.6,0]:welcomeKirby?[0,.08,0]:[0,.15,0]};
+  return {recipe,preset,parts,derived,range:preset.id==='doraemon'?3.1:welcomeKirby||preset.studio?2.5:3,center:preset.id==='doraemon'?[0,-.6,0]:welcomeKirby?[0,.08,0]:[0,.15,0]};
 }
 
 export function forgeCommands(model) {

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { builtInModule, readForgeShelf } from '../../forge/modules';
 import { fetchOwnForgeModules, fetchPublicForgeModules, unpublishForgeModule } from '../../forge/registry';
-import { forgePresets } from '../../forge/recipes';
+import { forgePresets, visibleForgePresets } from '../../forge/recipes';
 import useAuthStore from '../../stores/authStore';
 
 export default function ForgeLibrary({onChoose,localModules,onRemove}) {
@@ -16,7 +16,7 @@ export default function ForgeLibrary({onChoose,localModules,onRemove}) {
   const hide=async id=>{setError('');try{await unpublishForgeModule(id);setRemote(old=>old.filter(m=>m.id!==id));setAccount(old=>old.map(m=>m.recordId===id?{...m,published:false}:m));}catch(e){setError(e.message);}};
   useEffect(()=>{let live=true;if(owner)fetchOwnForgeModules().then(data=>{if(live)setAccount(data);}).catch(e=>{if(live)setError(e.message);});return()=>{live=false;};},[owner]);
   const choose=async module=>{setForking(module.id);try{await onChoose(module);}catch(e){setError(e.message);}finally{setForking(null);}};
-  const modules=tab==='mine'?own:tab==='public'?remote:forgePresets.map(p=>builtInModule(p.id));
+  const modules=tab==='mine'?own:tab==='public'?remote:visibleForgePresets.map(p=>builtInModule(p.id));
   return <section className="forge-library-section">
     <h2 className="text-lg font-bold mb-3">{ui("모듈 보관함")}</h2>
     <p className="text-sm leading-relaxed mb-5">{ui("다른 사람의 모양은 포크해서 내 작업대로 가져옵니다. 포크 기록은 내 계정에 비공개로 남고, 다시 공개할 때 원본 출처가 이어집니다.")}</p>

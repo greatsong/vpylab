@@ -114,3 +114,17 @@ describe('공유 페이지의 시야 범위', () => {
     expect(offset.length() * Math.tan(THREE.MathUtils.degToRad(runtime.camera.fov / 2)) * runtime.camera.aspect).toBeCloseTo(range);
   });
 });
+
+it.skipIf(!hasPython())('pyramid의 size·axis·up과 clone은 편집기와 독립 HTML에서 같다',()=>{
+ const code='from vpython import *\np=pyramid(pos=vec(1,2,3),axis=vec(0,2,0),size=vec(2,4,6),up=vec(1,0,0))\np.size=vec(3,2,4)\np.axis=vec(4,0,0)\np.up=vec(0,0,1)\nq=p.clone(pos=vec(8,0,0))\nassert isinstance(q,pyramid) and q.size==p.size\n';
+ const jobs=[{id:'pyramid',label:'export',code}],html=generateStandaloneHTML(code);
+ const exported=spawnSync('python3',['-I','src/test/run-export-python.py'],{input:JSON.stringify({api:exportedApi(html),transform:source,jobs})+'\n',encoding:'utf8'});expect(exported.status,exported.stderr).toBe(0);
+ const result=JSON.parse(exported.stdout)[0];expect(result.error).toBeNull();const original=runPythonJobs(jobs).get('pyramid:export');expect(original.error).toBeNull();
+ const objects=commands=>{const state=new Map();for(const c of commands){if(c.action==='create')state.set(c.id,{...c});if(c.action==='update')Object.assign(state.get(c.id)||{},c);}return [...state.values()].map(o=>Object.fromEntries(['type','pos','size','axis','up'].map(k=>[k,o[k]])));};
+ expect(objects(result.commands)).toEqual(objects(original.commands));
+});
+
+it.skipIf(!hasPython())('독립 HTML의 vector(v)는 새 복사본이며 모듈 위치·차이 벡터를 받을 수 있다',()=>{
+ const jobs=[{id:'copy',code:'from vpython import *\na=vec(1,2,3)\nb=vector(a)\nb.x+=5\nassert a==vec(1,2,3) and b==vec(6,2,3)\nassert vector(b-a)==vec(5,0,0)\nassert vector([1,2,3])==a\n'}];
+ const result=spawnSync('python3',['-I','src/test/run-export-python.py'],{input:JSON.stringify({api:exportedApi(generateStandaloneHTML(jobs[0].code)),transform:source,jobs})+'\n',encoding:'utf8'});expect(result.status,result.stderr).toBe(0);expect(JSON.parse(result.stdout)[0].error).toBeNull();
+});
