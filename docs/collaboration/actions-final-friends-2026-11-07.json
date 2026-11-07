@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-11-07T00:57:49.864Z",
+  "url": "http://127.0.0.1:4035",
+  "results": [
+    {
+      "name": "standalone-friends-motion",
+      "passed": true,
+      "meshes": 204
+    },
+    {
+      "name": "sandbox-real-pyodide-friends-motion",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Real Python/Three rendering. Export CDN dependencies substituted with matching installed assets; Sandbox uses actual application loading. No authentication or live DB writes."
+}

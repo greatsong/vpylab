@@ -18,3 +18,5 @@
 @media(max-width:700px){.home-hero{grid-template-columns:1fr;padding-top:2.5rem;gap:2.2rem;padding-bottom:2.5rem}.home-hero h1{font-size:2.6rem}.welcome-friends{min-height:430px;max-width:410px;width:100%;margin:auto}.welcome-stage{height:290px}.home-paths{grid-template-columns:1fr;gap:0}.home-paths a{padding:1.3rem 0}.home-paths .home-path-number{float:left;margin:.2rem 1.3rem 0 0}.home-paths h3,.home-paths p{margin-left:2.3rem}}
 
 .welcome-light-label{font-size:.7rem;line-height:1.6;color:var(--color-text-secondary);margin-top:.6rem}.welcome-note{margin-top:.35rem}.welcome-actions button:disabled{cursor:default}
+
+.welcome-motion-guide{font-size:.72rem;margin-top:.7rem}.welcome-motion-guide a{color:var(--color-accent);text-decoration:none}.welcome-motion-guide a:hover{text-decoration:underline}

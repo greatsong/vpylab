@@ -1,0 +1,25 @@
+{
+  "url": "http://127.0.0.1:4035",
+  "results": [
+    {
+      "id": "dumpling",
+      "passed": true,
+      "restoredWithinMeanChannelError": 0.05
+    },
+    {
+      "id": "flashlight",
+      "passed": true,
+      "restoredWithinMeanChannelError": 0.05
+    },
+    {
+      "id": "toolbox",
+      "passed": true,
+      "restoredWithinMeanChannelError": 0.05
+    },
+    {
+      "id": "kirby",
+      "passed": true,
+      "restoredWithinMeanChannelError": 0.05
+    }
+  ]
+}

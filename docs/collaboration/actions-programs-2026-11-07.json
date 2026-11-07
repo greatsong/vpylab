@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-11-07T00:52:58.527Z",
+  "url": "http://127.0.0.1:4035",
+  "results": [
+    {
+      "name": "standalone-dumpling-motion",
+      "passed": true,
+      "meshes": 63
+    },
+    {
+      "name": "standalone-flashlight-motion",
+      "passed": true,
+      "meshes": 63
+    },
+    {
+      "name": "standalone-toolbox-motion",
+      "passed": true,
+      "meshes": 63
+    },
+    {
+      "name": "standalone-kirby-motion",
+      "passed": true,
+      "meshes": 15
+    },
+    {
+      "name": "standalone-friends-motion",
+      "passed": true,
+      "meshes": 204
+    },
+    {
+      "name": "sandbox-real-pyodide-dumpling-motion",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-flashlight-motion",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-toolbox-motion",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-kirby-motion",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-friends-motion",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Real Python/Three rendering. Export CDN dependencies substituted with matching installed assets; Sandbox uses actual application loading. No authentication or live DB writes."
+}
