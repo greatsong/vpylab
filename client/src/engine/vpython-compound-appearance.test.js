@@ -8,6 +8,28 @@ const run = code => runPythonJobs([{ id: 'compound', label: 'case', code: `from 
 afterEach(() => clearScene(scene));
 
 describe.skipIf(!hasPython())('compound 속성의 Python→실제 재질 연결', () => {
+  it('생성자 위치는 독립적이고 저장한 위치 참조를 연속 수정하면 실제 그룹도 움직인다',()=>{
+    const r=run(`origin=vec(3,0,0)
+a=compound([sphere()],pos=origin)
+b=compound([sphere()],pos=origin)
+origin.x=9
+assert a.pos.x==3 and b.pos.x==3
+p=a.pos
+p.x=1
+p.y=2
+assert a.pos==vec(1,2,0)
+s=sphere(pos=origin)
+q=s.pos
+q.x=4
+q.y=5
+assert s.pos==vec(4,5,0) and origin==vec(9,0,0)
+`);
+    expect(r.error).toBeNull();processBatch(r.commands,scene);
+    expect(getMesh('obj_2').position.toArray()).toEqual([1,2,0]);
+    expect(getMesh('obj_4').position.toArray()).toEqual([3,0,0]);
+    expect(getMesh('obj_5').position.toArray()).toEqual([4,5,0]);
+  });
+
   it('기본 색은 흰색 벡터이며 성분 변경이 원본 팔레트를 바꾸지 않고 전송된다', () => {
     const r = run(`c=compound([sphere(),box(pos=vec(2,0,0))])
 assert c.color == color.white

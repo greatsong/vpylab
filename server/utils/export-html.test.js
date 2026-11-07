@@ -116,3 +116,40 @@ print(json.dumps(results, ensure_ascii=False))
   for (const job of jobs) assert.equal(job.error, null, JSON.stringify(job));
   assert(jobs[0].commands.some(command => command.action === 'sound'));
 });
+
+test('공유 HTML의 위치 벡터는 입력을 공유하지 않고 저장한 참조의 연속 수정도 화면 명령으로 보낸다', t => {
+  if (!requirePython(t)) return;
+  const expression = generateStandaloneHTML('').match(/const vpythonApi = (`[\s\S]*?`);/);
+  assert(expression);
+  const verify = `import sys, json
+commands=[]
+namespace={'_js_process_batch':lambda message:commands.extend(json.loads(message)['commands']),
+ '_js_compound_bounds':lambda ids:json.dumps({'center':[0,0,0],'size':[1,1,1]})}
+exec(json.load(sys.stdin)['api'],namespace)
+exec('''
+origin=vector(3,0,0)
+a=compound([sphere()],pos=origin)
+b=compound([sphere()],pos=origin)
+origin.x=9
+assert a.pos.x==3 and b.pos.x==3
+p=a.pos
+p.x=1
+p.y=2
+assert a.pos==vector(1,2,0)
+a.pos=vector(7,8,9)
+p.z=6
+assert a.pos==vector(7,8,9)
+s=sphere(pos=origin)
+q=s.pos
+q.x=4
+q.y=5
+assert s.pos==vector(4,5,0) and origin==vector(9,0,0)
+_send_commands()
+''',namespace)
+assert [c for c in commands if c.get('id')==namespace['a']._id and c['action']=='update'][-1]['pos']==[7,8,9]
+assert [c for c in commands if c.get('id')==namespace['s']._id and c['action']=='update'][-1]['pos']==[4,5,0]
+print('POSITION_REFERENCES_OK')
+`;
+  const result=spawnSync('python3',['-I','-c',verify],{input:JSON.stringify({api:runInNewContext(expression[1])}),encoding:'utf8',timeout:15000});
+  assert.equal(result.status,0,result.stderr);assert.match(result.stdout,/POSITION_REFERENCES_OK/);
+});

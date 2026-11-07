@@ -779,7 +779,7 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
       if (cmd.thickness !== undefined && m.geometry?.type==='TorusGeometry') { const r=m.geometry.parameters?.radius||1; const ng=new THREE.TorusGeometry(r,cmd.thickness,16,48); m.geometry.dispose(); m.geometry=ng; }
       if (cmd.axis !== undefined || cmd.up !== undefined) {
         const vpType = m.userData?.vpType;
-        if (['box','ellipsoid'].includes(vpType)) {
+        if (['box','ellipsoid','compound'].includes(vpType)) {
           if (cmd.axis) m.userData.boxAxis = cmd.axis;
           if (cmd.up) m.userData.boxUp = cmd.up;
           applyBoxOrientation(m);
@@ -822,10 +822,13 @@ export function generateStandaloneHTML(code, title = 'VPyLab', options = {}, tra
       const group = new THREE.Group();
       for (const subId of (cmd.sub_ids||[])) {
         const subMesh = meshes.get(subId);
-        if (subMesh) { scene.remove(subMesh); group.add(subMesh); }
+        if (subMesh) { subMesh.updateWorldMatrix(true,true);const world=subMesh.matrixWorld.clone();subMesh.removeFromParent();world.decompose(subMesh.position,subMesh.quaternion,subMesh.scale);group.add(subMesh); }
       }
-      if (cmd.pos) group.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
-      group.userData.vpType='compound';
+      const center=cmd.center?new THREE.Vector3(...cmd.center):new THREE.Box3().setFromObject(group).getCenter(new THREE.Vector3());
+      group.children.forEach(child=>child.position.sub(center));
+      group.position.copy(cmd.pos?new THREE.Vector3(...cmd.pos):center);
+      group.userData={vpType:'compound',boxAxis:cmd.axis||[1,0,0],boxUp:cmd.up||[0,1,0]};
+      applyBoxOrientation(group);
       compoundAppearance.init(group);
       compoundAppearance.apply(group,cmd);
       group.visible = cmd.visible !== false;
@@ -929,6 +932,13 @@ sys.modules['vpython'] = vpython_module
     progress.style.width = '90%';
 
     // postMessage를 processBatch로 연결
+    pyodide.globals.set('_js_compound_bounds', (idsJson) => {
+      const bounds=new THREE.Box3();
+      for(const id of JSON.parse(idsJson)){const object=meshes.get(id);if(object){object.updateWorldMatrix(true,true);bounds.union(new THREE.Box3().setFromObject(object));}}
+      const center=bounds.isEmpty()?new THREE.Vector3():bounds.getCenter(new THREE.Vector3());
+      const size=bounds.isEmpty()?new THREE.Vector3(1,1,1):bounds.getSize(new THREE.Vector3());
+      return JSON.stringify({center:center.toArray(),size:size.toArray()});
+    });
     pyodide.globals.set('_js_process_batch', (jsonStr) => {
       const msg = JSON.parse(jsonStr);
       if (msg.type === 'batch' && msg.commands) {
@@ -1133,6 +1143,19 @@ color = _ColorPalette()
 색상 = color
 
 
+# 위치는 입력 벡터를 복사하고, 성분 수정 시 같은 벡터에서 갱신합니다.
+def _bind_position(owner, value, notify=True):
+    if hasattr(owner, '_pos'):
+        owner._pos._change_callback = None
+    owner._pos = value.clone()
+    def changed():
+        pos = owner._pos.to_list()
+        _add_command({'action':'update','id':owner._id,'pos':pos})
+        if getattr(owner, '_make_trail', False):
+            _add_command({'action':'trail_update','id':owner._id,'pos':pos})
+    owner._pos._change_callback = changed
+    if notify: changed()
+
 # === 3D 객체 베이스 클래스 ===
 class _GObject:
     def __init__(self, obj_type, **kwargs):
@@ -1140,7 +1163,7 @@ class _GObject:
         self._type = obj_type
         self._make_trail = kwargs.pop('make_trail', False)
         self._trail_color = kwargs.pop('trail_color', None)
-        self._pos = kwargs.get('pos', vector(0,0,0))
+        _bind_position(self, kwargs.get('pos', vector(0,0,0)), False)
         self._color = kwargs.get('color', color.white)
         self._visible = kwargs.get('visible', True)
         self._opacity = kwargs.get('opacity', 1.0)
@@ -1160,10 +1183,7 @@ class _GObject:
     def pos(self): return self._pos
     @pos.setter
     def pos(self, v):
-        self._pos = v
-        _add_command({"action":"update","id":self._id,"pos":v.to_list()})
-        if self._make_trail:
-            _add_command({"action":"trail_update","id":self._id,"pos":v.to_list()})
+        _bind_position(self, v)
     @property
     def color(self): return self._color
     @color.setter
@@ -1356,7 +1376,14 @@ class compound:
     def __init__(self, objects, **kw):
         self._id = _new_id()
         self._objects = list(objects)
-        self._pos = kw.get('pos', vector(0,0,0))
+        _send_commands()
+        bounds = json.loads(str(_js_compound_bounds(json.dumps([o._id for o in self._objects]))))
+        self._center0 = vector(*bounds['center'])
+        self._size0 = vector(*bounds['size'])
+        _bind_position(self, kw.get('pos', self._center0), False)
+        axis = kw.get('axis', vector(1,0,0))
+        self._axis = (axis.hat if axis.mag else vector(1,0,0)) * self._size0.x
+        self._up = kw.get('up', vector(0,1,0))
         self._set_color(kw.get('color') or color.white)
         self._visible = kw.get('visible', True)
         self._opacity = self._check_unit(kw.get('opacity',1.0),'opacity')
@@ -1367,6 +1394,7 @@ class compound:
         cmd = {
             "action":"compound","id":self._id,
             "sub_ids":[obj._id for obj in self._objects],
+            "center":self._center0.to_list(), "axis":self._axis.to_list(), "up":self._up.to_list(),
             "pos":self._pos.to_list(),
             "color":self._color.to_list() if self._color else None,
             "visible":self._visible,"opacity":self._opacity,
@@ -1376,6 +1404,25 @@ class compound:
         if 'shininess' in kw: cmd['shininess']=self._shininess
         if 'emissive' in kw: cmd['emissive']=bool(kw['emissive'])
         _add_command(cmd)
+    @property
+    def axis(self): return self._axis
+    @axis.setter
+    def axis(self,v):
+        self._axis=v.clone()
+        _add_command({'action':'update','id':self._id,'axis':self._axis.to_list()})
+    @property
+    def up(self): return self._up
+    @up.setter
+    def up(self,v):
+        self._up=v.clone()
+        _add_command({'action':'update','id':self._id,'up':self._up.to_list()})
+    def rotate(self,angle,axis=None,origin=None):
+        axis=axis if axis is not None else self._axis
+        origin=origin if origin is not None else self._pos
+        self.pos=origin+(self._pos-origin).rotate(angle,axis=axis)
+        self.axis=self._axis.rotate(angle,axis=axis)
+        self.up=self._up.rotate(angle,axis=axis)
+
     @staticmethod
     def _check_unit(v,name):
         import math
@@ -1391,10 +1438,7 @@ class compound:
     def pos(self): return self._pos
     @pos.setter
     def pos(self, v):
-        self._pos = v
-        _add_command({"action":"update","id":self._id,"pos":v.to_list()})
-        if self._make_trail:
-            _add_command({"action":"trail_update","id":self._id,"pos":v.to_list()})
+        _bind_position(self, v)
     @property
     def color(self): return self._color
     @color.setter

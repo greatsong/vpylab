@@ -1,0 +1,85 @@
+{
+  "url": "http://127.0.0.1:4035",
+  "generatedAt": "2026-11-07T00:29:08.734Z",
+  "results": [
+    {
+      "name": "desktop-seven-menu-order",
+      "passed": true
+    },
+    {
+      "name": "welcome-dumpling",
+      "passed": true,
+      "pixels": 9512,
+      "lighting": "따뜻한 금빛"
+    },
+    {
+      "name": "welcome-flashlight",
+      "passed": true,
+      "pixels": 9176,
+      "lighting": "파랑·레몬빛"
+    },
+    {
+      "name": "welcome-toolbox",
+      "passed": true,
+      "pixels": 10463,
+      "lighting": "살구·청록빛"
+    },
+    {
+      "name": "welcome-kirby",
+      "passed": true,
+      "pixels": 10169,
+      "lighting": "분홍·보랏빛"
+    },
+    {
+      "name": "character-stage-light-toggle",
+      "passed": true
+    },
+    {
+      "name": "compound-greeting-replay-changes-pixels",
+      "passed": true
+    },
+    {
+      "name": "four-compound-friends-bounce",
+      "passed": true
+    },
+    {
+      "name": "reduced-motion-stops-animation",
+      "passed": true
+    },
+    {
+      "name": "responsive-navigation-1024",
+      "passed": true
+    },
+    {
+      "name": "responsive-navigation-900",
+      "passed": true
+    },
+    {
+      "name": "responsive-navigation-768",
+      "passed": true
+    },
+    {
+      "name": "responsive-navigation-360",
+      "passed": true
+    },
+    {
+      "name": "long-account-button-layout",
+      "passed": true
+    },
+    {
+      "name": "english-seven-menu-layout",
+      "passed": true
+    },
+    {
+      "name": "webgl-unavailable-keeps-static-friends-and-links",
+      "passed": true
+    },
+    {
+      "name": "lazy-chunk-failure-keeps-static-friend",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "liveWrites": 0,
+  "scope": "Real WebGL and native UI. Long-account layout uses a DOM-only account-button substitute, without account/DB writes."
+}
