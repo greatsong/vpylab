@@ -168,7 +168,7 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
   useEffect(() => { stopRef.current = stopExecution; }, [stopExecution]);
 
   const runCode = useCallback((rawCode) => {
-    if (singleton.getStatus() !== 'ready') return null;
+    if (!mountedRef.current || singleton.getStatus() !== 'ready') return null;
     // 변환(rate() 등이 든 함수의 async 전환)은 Worker 안의 Python이 맡는다. 경고는 'warning' 메시지로 돌아온다.
     clearTimers();
     stoppingRef.current = false;

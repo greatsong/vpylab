@@ -177,4 +177,20 @@ describe('실제 Python hook와 싱글톤의 Worker 수명', () => {
     expect(workers[0].terminate).toHaveBeenCalledOnce();
     expect(hook.result.current.status).toBe('loading');
   });
+  it('정지 직후 늦은 묶음의 소리는 버리고 다시 실행한 새 소리는 허용한다',async()=>{
+    const onBatch=vi.fn(),hook=createRuntime({onBatch});await prepare(hook);let runId;
+    act(()=>{runId=hook.result.current.runCode('while True: rate(30)');});act(()=>hook.result.current.stopExecution());
+    act(()=>workers[0].emit({type:'batch',runId,commands:[{action:'sound',method:'beep',frequency:440},{action:'update',id:'ball',pos:[1,0,0]}]}));
+    expect(onBatch).toHaveBeenLastCalledWith([{action:'update',id:'ball',pos:[1,0,0]}]);
+    act(()=>workers[0].emit({type:'done',runId}));const before=workers[0].postMessage.mock.calls.length;singleton.postEvent({name:'click'});expect(workers[0].postMessage).toHaveBeenCalledTimes(before);
+    act(()=>{runId=hook.result.current.runCode('play_note("C4")');});act(()=>workers[0].emit({type:'batch',runId,commands:[{action:'sound',method:'note',name:'C4'}]}));expect(onBatch).toHaveBeenLastCalledWith([{action:'sound',method:'note',name:'C4'}]);
+  });
+  it('본문 종료 후 소리만 정지한 경우에도 늦은 소리와 이벤트를 재생하지 않는다',async()=>{
+    const onBatch=vi.fn(),hook=createRuntime({onBatch});await prepare(hook);let runId;act(()=>{runId=hook.result.current.runCode('play_note("C4",10)');});act(()=>workers[0].emit({type:'done',runId}));
+    act(()=>hook.result.current.stopExecution());act(()=>workers[0].emit({type:'batch',runId,commands:[{action:'sound',method:'bgm_start',name:'adventure'}]}));expect(onBatch).not.toHaveBeenCalled();
+  });
+  it('화면을 떠난 실행 콜백은 다른 화면의 새 Worker를 실행하지 못한다',async()=>{
+    const first=createRuntime();await prepare(first);const stale=first.result.current.runCode;first.unmount();const second=createRuntime();await prepare(second);expect(stale('play_note("C4")')).toBeNull();expect(workers.at(-1).postMessage).toHaveBeenCalledTimes(1);
+  });
+
 });

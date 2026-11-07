@@ -119,6 +119,12 @@ describe('수업 음원의 출력 경로와 자연스러운 수명', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('전체 정지 후 긴 시퀀스와 반복 BGM이 2분 뒤에도 다시 울리지 않는다',()=>{
+    sound.playSequence(Array.from({length:8},()=>({freq:440,duration:1})));sound.startBgm('adventure',true);sound.beep(660,10);
+    vi.advanceTimersByTime(100);const created=context.sources.length;sound.stopAllSounds();vi.advanceTimersByTime(120_000);
+    expect(context.sources).toHaveLength(created);expect(sound.getAudioState()).toMatchObject({playing:false,voiceCount:0,pendingCount:0});for(const source of context.sources)expect(source.disconnect).toHaveBeenCalled();
+  });
+
   it('suspended 상태에서 예약한 음표를 resume 뒤 중복 재생하지 않는다', async () => {
     let release;
     context.state = 'suspended';

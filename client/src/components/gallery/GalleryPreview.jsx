@@ -1,10 +1,11 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Viewport3D from '../viewport/Viewport3D';
 import OutputConsole from '../console/OutputConsole';
+import useAudioState from '../../hooks/useAudioState';
 import usePyodide from '../../hooks/usePyodide';
 import { processBatch, clearScene } from '../../engine/vpython-bridge';
 import { clearRegistry } from '../../engine/object-registry';
-import { stopBgm } from '../../engine/sound-system';
+import { stopAllSounds } from '../../engine/sound-system';
 import { useI18n } from '../../i18n/useI18n';
 
 /**
@@ -13,6 +14,7 @@ import { useI18n } from '../../i18n/useI18n';
  */
 export default function GalleryPreview({ code }) {
   const { t, locale } = useI18n();
+  const audio=useAudioState();
   const sceneRef = useRef(null);
   const [outputs, setOutputs] = useState([]);
   const [ran, setRan] = useState(false);
@@ -25,19 +27,20 @@ export default function GalleryPreview({ code }) {
     if (sceneRef.current) processBatch(commands, sceneRef.current);
   }, []);
 
-  const { runCode, stopExecution, isReady, isRunning } = usePyodide({
+  const { initWorker, runCode, stopExecution, isReady, isRunning } = usePyodide({
     onOutput: addOutput,
     onError: (err, details) => {
       addOutput(err, 'error', details);
-      stopBgm();
+      stopAllSounds();
     },
     onBatch: handleBatch,
-    onDone: () => stopBgm(),
+    onDone: ({stopped}) => {if(stopped)stopAllSounds();},
     locale,
   });
 
+  useEffect(()=>{initWorker();},[initWorker]);
   // 컴포넌트 언마운트 시 정리
-  useEffect(() => () => stopBgm(), []);
+  useEffect(() => () => stopAllSounds(), []);
 
   const handleRun = () => {
     if (!isReady || !code) return;
@@ -53,7 +56,7 @@ export default function GalleryPreview({ code }) {
 
   const handleStop = () => {
     stopExecution();
-    stopBgm();
+    stopAllSounds();
   };
 
   return (
@@ -68,7 +71,7 @@ export default function GalleryPreview({ code }) {
           style={{ backgroundColor: isRunning ? 'var(--color-text-muted)' : 'var(--color-accent)', opacity: (!isReady || isRunning) ? 0.5 : 1 }}>
           {!isReady ? (t('common.loading')) : isRunning ? (t('editor.stop')) : '▶ ' + t('editor.run')}
         </button>
-        {isRunning && (
+        {(isRunning||audio.playing) && (
           <button onClick={handleStop}
             className="px-3 py-1.5 rounded-lg border-none cursor-pointer text-xs font-medium text-white"
             style={{ backgroundColor: 'var(--color-error, #e74c3c)' }}>
@@ -84,7 +87,7 @@ export default function GalleryPreview({ code }) {
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         {/* 3D */}
         <div style={{ flex: 7, minWidth: 0 }}>
-          <Viewport3D sceneRef={sceneRef} onSceneReady={() => {}} controls={{ onRun: handleRun, onStop: handleStop, isRunning, isReady: isReady && !!code }} />
+          <Viewport3D sceneRef={sceneRef} onSceneReady={() => {}} controls={{ onRun: handleRun, onStop: handleStop, isRunning:isRunning||audio.playing, isReady: isReady && !!code }} />
         </div>
         {/* 콘솔 */}
         {ran && (

@@ -8,6 +8,7 @@ import SoundSettings from '../components/editor/SoundSettings';
 import Viewport3D from '../components/viewport/Viewport3D';
 import OutputConsole from '../components/console/OutputConsole';
 import LoadingScreen from '../components/shared/LoadingScreen';
+import useAudioState from '../hooks/useAudioState';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
@@ -27,6 +28,7 @@ import {
 // export-html은 큰 모듈이므로 사용 시점에 lazy import
 import useAuthStore from '../stores/authStore';
 import useCodeStore from '../stores/codeStore';
+import HomeSettingsDialog from '../components/home/HomeSettingsDialog';
 import SaveConflictDialog from '../components/code/SaveConflictDialog';
 import useGalleryStore from '../stores/galleryStore';
 import TeamProjectsPanel from '../components/team/TeamProjectsPanel';
@@ -68,6 +70,9 @@ function waitForSaveTimeout(ms, message) {
  */
 export default function Sandbox() {
   const { t, locale } = useI18n();
+  const audio=useAudioState(),playEpoch=useRef(0);
+  const [homePin,setHomePin]=useState(null);
+  const lastStartedCode=useRef(null);
   const [code, setCode] = useState(DEFAULT_CODE);
   const [outputs, setOutputs] = useState([]);
   const [activeTab, setActiveTab] = useState('editor');
@@ -129,6 +134,7 @@ export default function Sandbox() {
   // 초기화 시 되돌릴 "원본 코드" — 예제/lesson/remix 로드 시 갱신, 미설정 시 DEFAULT_CODE
   const initialCodeRef = useRef(DEFAULT_CODE);
   const codeRef = useRef(DEFAULT_CODE);
+  const homeDraftTitle=useRef(null),consumedHomeDraft=useRef(null);
   const practiceContextRef = useRef(null);
   const draftWriteFailedRef = useRef(false);
   const pendingPlayRef = useRef(null); // 자동 실행할 코드
@@ -158,7 +164,7 @@ export default function Sandbox() {
 
   const loadPracticeCode = useCallback((source, context) => {
     practiceContextRef.current = context;
-    initialCodeRef.current = source;
+    homeDraftTitle.current=null; initialCodeRef.current = source;
     const draft = readPracticeDraft(context, user?.id);
     updateCode(draft ?? source);
   }, [updateCode, user?.id]);
@@ -212,7 +218,7 @@ export default function Sandbox() {
 
     if (location.state?.restoredCode != null) {
       updateCode(location.state.restoredCode);
-      initialCodeRef.current = location.state.restoredCode;
+      homeDraftTitle.current=null; initialCodeRef.current = location.state.restoredCode;
       window.history.replaceState({}, '');
       continueAfterAuth();
     } else if (returnAction === 'publish') {
@@ -229,14 +235,17 @@ export default function Sandbox() {
   // /s/:id에서 넘어온 공유 코드 로드
   useEffect(() => {
     if (location.state?.sharedCode) {
+      if(location.state.homeDraft&&consumedHomeDraft.current===location.key)return;
+      if(location.state.homeDraft)consumedHomeDraft.current=location.key;
       updateCode(location.state.sharedCode);
-      initialCodeRef.current = location.state.sharedCode;
+      homeDraftTitle.current=null; initialCodeRef.current = location.state.sharedCode;
+      homeDraftTitle.current=location.state.homeDraft?String(location.state.sharedTitle||'').slice(0,80):null;
       if (location.state?.autoPlay) {
         // 극장 모드: 클릭 대기 → 클릭 시 오디오 잠금 해제 + 실행
         setTheaterMode(true);
         setTheaterWaiting(true);
       } else {
-        setOutputs([{ text: t('share.externalCode'), type: 'warning', id: Date.now() }]);
+        setOutputs([{ text: location.state?.homeDraft ? '내 메인의 코드 사본을 열었습니다. 수정 후 다시 내 메인으로 설정해 주세요.' : t('share.externalCode'), type: 'warning', id: Date.now() }]);
       }
       // state 정리 (뒤로가기 시 다시 로드 방지)
       window.history.replaceState({}, '');
@@ -257,7 +266,7 @@ export default function Sandbox() {
           if (!response.ok) throw new Error(`GitHub main.py 로드 실패 (${response.status})`);
           const repoCode = await response.text();
           updateCode(repoCode);
-          initialCodeRef.current = repoCode;
+          homeDraftTitle.current=null; initialCodeRef.current = repoCode;
           setRepoLoadStatus(null);
           if (repoAutorun) {
             pendingPlayRef.current = repoCode;
@@ -272,7 +281,7 @@ export default function Sandbox() {
               .catch(() => null);
             if (playCode) {
               updateCode(playCode);
-              initialCodeRef.current = playCode;
+              homeDraftTitle.current=null; initialCodeRef.current = playCode;
               pendingPlayRef.current = playCode;
               setRepoLoadStatus(null);
               setOutputs([{ text: '저장소를 불러올 수 없어 갤러리 스냅샷으로 실행합니다', type: 'warning', id: Date.now() }]);
@@ -289,15 +298,15 @@ export default function Sandbox() {
     const { code: shared, isExternal } = decodeCodeFromURL();
     if (shared) {
       updateCode(shared);
-      initialCodeRef.current = shared;
+      homeDraftTitle.current=null; initialCodeRef.current = shared;
       if (repoAutorun) {
         pendingPlayRef.current = shared;
       }
       if (isExternal) {
-        setOutputs([{ text: t('share.externalCode'), type: 'warning', id: Date.now() }]);
+        setOutputs([{ text: location.state?.homeDraft ? '내 메인의 코드 사본을 열었습니다. 수정 후 다시 내 메인으로 설정해 주세요.' : t('share.externalCode'), type: 'warning', id: Date.now() }]);
       }
     }
-  }, [location.state?.sharedCode, location.state?.autoPlay, repoAutorun, repoParam, playParam, t, updateCode]);
+  }, [location.state?.sharedCode, location.state?.sharedTitle, location.state?.autoPlay, location.state?.homeDraft, location.key, repoAutorun, repoParam, playParam, t, updateCode]);
 
   // 자동 저장: 코드 변경 시 2초 debounce
   // 활성 프로젝트가 있으면 GitHub commit 흐름(수동 저장)을 사용하므로 자동 저장은 건너뜁니다.
@@ -420,7 +429,7 @@ export default function Sandbox() {
         const work = useGalleryStore.getState().currentWork;
         if (work) {
           updateCode(work.code);
-          initialCodeRef.current = work.code;
+          homeDraftTitle.current=null; initialCodeRef.current = work.code;
           setRemixInfo({ title: work.title, author: work.vpylab_profiles?.display_name });
           addOutput(`"${work.title}" 작품을 Remix합니다. 자유롭게 수정해보세요!`, 'success');
         }
@@ -439,7 +448,7 @@ export default function Sandbox() {
       const playCode = await useGalleryStore.getState().fetchWorkCode(playId);
       if (cancelled || !playCode) return;
       updateCode(playCode);
-      initialCodeRef.current = playCode;
+      homeDraftTitle.current=null; initialCodeRef.current = playCode;
       pendingPlayRef.current = playCode;
     })();
     return () => { cancelled = true; };
@@ -457,7 +466,7 @@ export default function Sandbox() {
       import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
       if (sceneRef.current) clearScene(sceneRef.current);
       updateCode(ex.code);
-      initialCodeRef.current = ex.code;  // 초기화 시 이 예제로 복귀
+      homeDraftTitle.current=null; initialCodeRef.current = ex.code;  // 초기화 시 이 예제로 복귀
       addOutput(`예제 "${ex.title}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
     } else {
       addOutput(`예제 ID "${exampleId}"를 찾을 수 없습니다.`, 'error');
@@ -556,14 +565,14 @@ export default function Sandbox() {
               const { code: fetchedCode } = await useGalleryStore.getState().fetchCodeFromGitHub(work.github_repo, token);
               const c = fetchedCode || work.code;
               updateCode(c);
-              initialCodeRef.current = c;
+              homeDraftTitle.current=null; initialCodeRef.current = c;
             } catch {
               updateCode(work.code);
-              initialCodeRef.current = work.code;
+              homeDraftTitle.current=null; initialCodeRef.current = work.code;
             }
           } else {
             updateCode(work.code);
-            initialCodeRef.current = work.code;
+            homeDraftTitle.current=null; initialCodeRef.current = work.code;
           }
           setEditMode({ id: editId, githubRepo: work.github_repo, title: work.title });
           addOutput(`"${work.title}" 수정 모드. 수정 후 "업데이트"를 눌러주세요.`, 'success');
@@ -606,7 +615,7 @@ export default function Sandbox() {
     onOutput: addOutput,
     onError: (err, details) => {
       addOutput(err, 'error', details);
-      stopBgm();  // 에러 시 BGM 자동 정지
+      stopAllSounds();
       errorSound();
     },
     onBatch: handleBatch,
@@ -635,6 +644,7 @@ export default function Sandbox() {
     setActiveTab('3d');
     runSound();
     addOutput('실행을 시작했습니다.', 'log');
+    lastStartedCode.current=sourceCode;
     runCode(sourceCode);
   }, [addOutput, runCode, stopExecution]);
 
@@ -654,7 +664,8 @@ export default function Sandbox() {
       }
       pendingPlayRef.current = null;
       // 다음 프레임에서 실행 (코드 state 반영 보장)
-      requestAnimationFrame(() => startProgram(playCode));
+      const epoch=playEpoch.current;
+      requestAnimationFrame(() => {if(epoch===playEpoch.current)startProgram(playCode);});
     }
   }, [isReady, code, startProgram]);
 
@@ -665,9 +676,12 @@ export default function Sandbox() {
     resumeAndRun(() => startProgram(playCode));
   };
 
+  useEffect(()=>()=>{playEpoch.current++;},[]);
+
   const handleStop = () => {
     stopExecution();
-    stopBgm();  // 실행 정지 시 BGM 자동 정지
+    playEpoch.current++;pendingPlayRef.current=null;setPlayStartRequired(false);
+    stopAllSounds();
     // 정지 시 코드 에디터로 복귀. 모바일 전체 화면(CSS 대체 모드) 중에는 탭을 바꾸면 전체 화면이 풀리므로 유지합니다.
     if (!isViewportFullscreen()) setActiveTab('editor');
     addOutput('⏹ 실행 중지됨', 'warning');
@@ -698,7 +712,7 @@ export default function Sandbox() {
     if (sceneRef.current) clearScene(sceneRef.current);
     clearRegistry();
     updateCode(latestCode);
-    initialCodeRef.current = latestCode;
+    homeDraftTitle.current=null; initialCodeRef.current = latestCode;
     setActiveTab('editor');
     addOutput('다른 멤버가 저장한 최신 코드를 가져왔습니다.', 'success');
   };
@@ -723,7 +737,7 @@ export default function Sandbox() {
     setOutputs([]);
     setActiveTab('editor');
     updateCode(codeRow.code);
-    initialCodeRef.current = codeRow.code;
+    homeDraftTitle.current=null; initialCodeRef.current = codeRow.code;
     if (codeRow.id) useCodeStore.getState().setCurrentCodeId(codeRow.id);
     addOutput(`프로젝트 "${result.project?.title || '제목 없음'}"을 열었습니다.`, 'success');
     if (!result.project?.github_repo) {
@@ -794,6 +808,7 @@ export default function Sandbox() {
   const shareTitle = () => {
     const projectTitle = activeProject?.title?.trim();
     if (projectTitle) return projectTitle.slice(0, 80);
+    if(homeDraftTitle.current)return homeDraftTitle.current;
     const firstComment = String(codeRef.current || '').split('\n').map((line) => line.trim()).find((line) => line.startsWith('#'));
     const fromComment = firstComment ? firstComment.replace(/^#+\s*/, '').trim() : '';
     return (fromComment || 'VPyLab 코드').slice(0, 80);
@@ -1122,7 +1137,7 @@ export default function Sandbox() {
 
     return (
       <div className="h-screen w-screen relative" style={{ backgroundColor: '#000' }}>
-        <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning, isReady }} />
+        <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning:isRunning||audio.playing, isReady }} />
 
         {/* 클릭하여 시작 오버레이 */}
         {theaterWaiting && (
@@ -1210,7 +1225,7 @@ export default function Sandbox() {
 
       <div className="flex flex-wrap items-center gap-2 shrink-0 px-4 py-3 border-b" style={{ backgroundColor: 'var(--color-bg-panel)', borderColor: 'var(--color-border)' }}>
         <button onClick={handleRun} disabled={!isReady || isRunning || repoLoadStatus === 'loading'} className="toolbar-btn --run">{repoLoadStatus === 'loading' ? '불러오는 중' : t('editor.run')}</button>
-        {isRunning && <button onClick={handleStop} className="toolbar-btn --stop">{t('editor.stop')}</button>}
+        {(isRunning||audio.playing) && <button onClick={handleStop} className="toolbar-btn --stop">{t('editor.stop')}</button>}
         <button onClick={handleSave} disabled={!activeProjectCanEdit} className="toolbar-btn" title="현재 코드 저장 (Ctrl/Cmd+S)">{activeProjectRole === 'viewer' ? '보기 전용' : (saveMsg || '저장')}</button>
         <button onClick={() => { setTeamInitialAction('browse'); setShowTeam(true); }} className="toolbar-btn max-w-36 truncate" title={activeProject?.title || '프로젝트'}>{activeProject ? activeProject.title : '프로젝트'}</button>
         <div className="relative">
@@ -1219,6 +1234,7 @@ export default function Sandbox() {
             <button type="button" aria-label="실습 도구 닫기" className="fixed inset-0 z-40 cursor-default border-0 bg-transparent" onClick={() => setMobileMore(false)} />
             <div className="absolute right-0 top-full mt-2 w-60 max-h-[calc(100dvh-170px)] overflow-y-auto py-2 z-50 border" style={{ backgroundColor: 'var(--color-bg-panel)', borderColor: 'var(--color-border)', boxShadow: 'var(--shadow-md)' }}>
               {[
+                { label: '현재 프로젝트를 내 메인으로 설정', action: () => setHomePin({code:codeRef.current,title:shareTitle(),thumbnail:lastStartedCode.current===codeRef.current?captureThumbnail(sceneRef.current?._renderer?.domElement,600,.7):null,userId:user?.id}) },
                 { label: '초기 코드로 돌아가기', action: handleReset },
                 { label: shareMsg || t('editor.share'), action: handleShare },
                 { label: 'HTML 내려받기', action: handleExport },
@@ -1264,7 +1280,7 @@ export default function Sandbox() {
             className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex w-full`}
             style={{ height: '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
-            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning, isReady }} />
+            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning:isRunning||audio.playing, isReady }} />
           </div>
 
           {/* 리사이저 (데스크톱) */}
@@ -1334,6 +1350,7 @@ export default function Sandbox() {
       )}
 
       {/* 예제 패널 */}
+      {homePin&&<HomeSettingsDialog userId={homePin.userId} pin={homePin} ko={locale==='ko'} onClose={()=>setHomePin(null)}/>}
       {showExamples && (
         <div
           style={{
@@ -1390,7 +1407,7 @@ export default function Sandbox() {
                       if (sceneRef.current) clearScene(sceneRef.current);
                       clearRegistry();
                       updateCode(ex.code);
-                      initialCodeRef.current = ex.code;
+                      homeDraftTitle.current=null; initialCodeRef.current = ex.code;
                       // 예제 로드 = 활성 프로젝트와 무관 → 컨텍스트 해제
                       useProjectStore.getState().closeProject();
                       useCodeStore.getState().setCurrentCodeId(null);
@@ -1495,7 +1512,7 @@ export default function Sandbox() {
           onClose={() => setHistoryTarget(null)}
           onRestored={(snapshotCode) => {
             updateCode(snapshotCode);
-            initialCodeRef.current = snapshotCode;
+            homeDraftTitle.current=null; initialCodeRef.current = snapshotCode;
             setHistoryTarget(null);
             addOutput('VPyLab 저장 코드와 에디터를 복원했습니다. GitHub에도 맞추려면 코드 저장을 눌러주세요.', 'success');
           }}
@@ -1509,7 +1526,7 @@ export default function Sandbox() {
           onClose={() => setShowSavedCodes(false)}
           onLoadCode={(loadedCode, codeId) => {
             updateCode(loadedCode);
-            initialCodeRef.current = loadedCode;
+            homeDraftTitle.current=null; initialCodeRef.current = loadedCode;
             if (codeId) setCurrentCodeId(codeId);
             setShowSavedCodes(false);
             addOutput('저장된 코드를 에디터로 불러왔습니다.', 'success');

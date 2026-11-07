@@ -59,8 +59,8 @@ export default function Embed() {
     initWorker, runCode, stopExecution, isReady, isRunning, isLoading, progress, progressMessage,
   } = usePyodide({
     onBatch: handleBatch,
-    onError: (message) => { setLastError(String(message || '')); stopBgm(); },
-    onDone: () => stopBgm(),
+    onError: (message) => { setLastError(String(message || '')); stopAllSounds(); },
+    onDone: ({stopped}) => {if(stopped)stopAllSounds();},
     locale,
   });
 
@@ -100,7 +100,7 @@ export default function Embed() {
 
   const stop = () => {
     stopExecution();
-    stopBgm();
+    stopAllSounds();
   };
 
   const enableSound = async () => {
@@ -136,7 +136,7 @@ export default function Embed() {
         <span className="text-sm font-semibold truncate flex-1 min-w-0" title={work?.title || ''} data-testid="embed-title">
           {work?.title || (notFound ? t('embed.notFound') : 'VPyLab')}
         </span>
-        {isRunning ? (
+        {(isRunning||audio.playing) ? (
           <button type="button" onClick={stop} className="toolbar-btn --stop" style={smallButton}>
             {t('editor.stop')}
           </button>
@@ -175,7 +175,7 @@ export default function Embed() {
       </div>
 
       <div className="flex-1 min-h-0 relative">
-        <Viewport3D sceneRef={sceneRef} onSceneReady={() => {}} controls={{ onRun: run, onStop: stop, isRunning, isReady: isReady && !!work }} />
+        <Viewport3D sceneRef={sceneRef} onSceneReady={() => {}} controls={{ onRun: run, onStop: stop, isRunning:isRunning||audio.playing, isReady: isReady && !!work }} />
         {statusText && (
           <div
             className="absolute left-2 bottom-2 text-xs px-2 py-1 rounded max-w-[90%] whitespace-pre-wrap"

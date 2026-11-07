@@ -7,11 +7,12 @@ import CodeEditor from '../components/editor/CodeEditor';
 import Viewport3D from '../components/viewport/Viewport3D';
 import OutputConsole from '../components/console/OutputConsole';
 import LoadingScreen from '../components/shared/LoadingScreen';
+import useAudioState from '../hooks/useAudioState';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { gradeMission } from '../engine/grading-engine';
 import { clearRegistry } from '../engine/object-registry';
-import { runSound, successSound, errorSound, stopBgm, initAudioOnUserGesture, resumeAndRun } from '../engine/sound-system';
+import { runSound, successSound, errorSound, stopBgm, stopAllSounds, initAudioOnUserGesture, resumeAndRun } from '../engine/sound-system';
 import { getMissionById } from '../data/missions';
 import { getTrainingPosition } from '../data/training';
 
@@ -32,6 +33,7 @@ export default function MissionPlay() {
 }
 
 function MissionSession({ missionId }) {
+  const audio=useAudioState();
   const { t, locale: lang } = useI18n();
   const navigate = useNavigate();
 
@@ -120,7 +122,7 @@ function MissionSession({ missionId }) {
     onOutput: addOutput,
     onError: (err, details) => {
       addOutput(err, 'error', details);
-      stopBgm();  // 에러 시 BGM 자동 정지
+      stopAllSounds();
       errorSound();
       if (pendingGradeRef.current) {
         pendingGradeRef.current = false;
@@ -169,7 +171,7 @@ function MissionSession({ missionId }) {
 
   const handleStop = () => {
     stopExecution();
-    stopBgm();
+    stopAllSounds();
     setActiveTab('editor');  // 정지 시 코드 에디터로 복귀
     addOutput('⏹ 실행 중지됨', 'warning');
     // 채점 대기 중이면 정지 후 자동 채점 (무한 루프 미션 대응)
@@ -341,7 +343,7 @@ function MissionSession({ missionId }) {
             className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex w-full`}
             style={{ height: '60%', minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
           >
-            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning, isReady }} />
+            <Viewport3D sceneRef={sceneRef} onSceneReady={handleSceneReady} controls={{ onRun: handleRun, onStop: handleStop, isRunning:isRunning||audio.playing, isReady }} />
           </div>
           <div
             className={`${activeTab === '3d' ? 'flex' : 'hidden'} md:flex flex-col w-full`}

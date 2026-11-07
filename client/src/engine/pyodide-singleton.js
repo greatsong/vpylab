@@ -4,6 +4,7 @@
  */
 import vpythonApiRaw from './vpython-api.py?raw';
 import transformRaw from './student-code-transform.py?raw';
+import { stopAllSounds } from './sound-system';
 import { warmPyodideCache } from '../lib/service-worker.js';
 
 const INIT_TIMEOUT = 45_000;
@@ -14,6 +15,7 @@ let initializationTimer = null;
 const listeners = new Set();
 let runSeq = 0;
 let activeRunId = 0;
+let soundSuppressed = false;
 
 function broadcast(message) {
   for (const listener of listeners) listener.onMessage(message);
@@ -45,6 +47,7 @@ function terminateWorker() {
 }
 
 function failWorker(message, phase) {
+  soundSuppressed=true;stopAllSounds();
   terminateWorker();
   updateStatus('error');
   settleInitialization(new Error(message));
@@ -62,6 +65,9 @@ function createWorker() {
     if (!message || typeof message !== 'object') return;
     if (message.runId != null && message.runId !== activeRunId) return;
 
+    // 정지 직후 큐에 남은 묶음이 예약음을 다시 만들지 못하게 합니다.
+    if(message.type==='batch'&&soundSuppressed&&Array.isArray(message.commands))message={...message,commands:message.commands.filter(command=>command.action!=='sound')};
+    if(message.type==='error'){soundSuppressed=true;stopAllSounds();}
     if (message.type === 'ready') {
       updateStatus('ready');
       settleInitialization();
@@ -71,7 +77,7 @@ function createWorker() {
       failWorker(message.error || 'Python 엔진을 준비하지 못했습니다.', 'init');
       return;
     } else if (message.type === 'event_start') {
-      updateStatus('running');
+      if(!soundSuppressed&&status!=='stopping')updateStatus('running');
     } else if (['done', 'error', 'event_done'].includes(message.type)) {
       updateStatus('ready');
     }
@@ -113,6 +119,7 @@ export function initIfNeeded() {
 /** 실행 중이거나 정지 확인 중인 Worker에 다음 코드를 넣지 않습니다. */
 export function runCode(code) {
   if (!worker || status !== 'ready') return null;
+  soundSuppressed=false;
   activeRunId = ++runSeq;
   updateStatus('running');
   worker.postMessage({ type: 'run', code, runId: activeRunId });
@@ -120,6 +127,7 @@ export function runCode(code) {
 }
 
 export function softStop() {
+  soundSuppressed=true;stopAllSounds();
   if (!worker || status !== 'running') return false;
   updateStatus('stopping');
   worker.postMessage({ type: 'stop' });
@@ -127,11 +135,11 @@ export function softStop() {
 }
 
 export function postEvent(payload) {
-  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'event', payload });
+  if (!soundSuppressed && worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'event', payload });
 }
 
 export function postWidgetValue(id, value) {
-  if (worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'widget_value', id, value });
+  if (!soundSuppressed && worker && ['running', 'ready'].includes(status)) worker.postMessage({ type: 'widget_value', id, value });
 }
 
 /** input() 입력 위젯의 답을 Worker에 보낸다. value가 null이면 취소(Python 쪽 EOFError). */
@@ -154,6 +162,7 @@ export function postCameraState(state, canvasId = 'scene') {
 
 /** 구독은 유지하므로 종료 후 다시 준비해도 메시지가 유실되지 않습니다. */
 export function hardStop() {
+  soundSuppressed=true;stopAllSounds();
   terminateWorker();
   const error = new Error('Python 엔진 준비가 취소되었습니다.');
   error.name = 'AbortError';
