@@ -35,16 +35,16 @@ export function pythonContext(source){
  return{masked,blocked:!!quote||comment,call:[...stack].reverse().find(s=>s.open==='('&&s.name)};
 }
 function declarations(masked){
- const result=new Map();let depth=0;
- for(const line of masked.split('\n')){
-  if(depth===0){
-   const assignment=line.match(/^[ \t]*([\p{L}_][\p{L}\p{N}_]*)[ \t]*=(?!=)[ \t]*([^\n]*)/u);
-   if(assignment){const type=assignment[2].match(/^([\w]+)\s*\(/)?.[1];result.set(assignment[1],shapes.has(type)?type:type==='vector'?'vector':assignment[2].trim().startsWith('[')?'list':null);}
-   const fn=line.match(/^[ \t]*def[ \t]+([\p{L}_][\p{L}\p{N}_]*)[ \t]*\((.*)/u);
-   if(fn){result.set(fn[1],'function');const args=fn[2].slice(0,fn[2].lastIndexOf(')'));let nested=0,start=0;for(let i=0;i<=args.length;i++){const c=args[i];if(c&&'([{'.includes(c))nested++;else if(c&&')]}'.includes(c))nested--;if(i===args.length||c===','&&nested===0){const name=args.slice(start,i).trim().match(/^[*]*([\p{L}_][\p{L}\p{N}_]*)/u)?.[1];if(name)result.set(name,null);start=i+1;}}}
-   const loop=line.match(/^[ \t]*for[ \t]+(.+?)[ \t]+in[ \t]/u);if(loop)for(const name of loop[1].split(',').map(x=>x.trim()))if(/^[\p{L}_][\p{L}\p{N}_]*$/u.test(name))result.set(name,null);
-  }
-  for(const c of line){if('([{'.includes(c))depth++;else if(')]}'.includes(c))depth=Math.max(0,depth-1);}
+ const result=new Map(),statements=[];let depth=0,start=0;
+ for(let i=0;i<=masked.length;i++){const c=masked[i];if(c&&'([{'.includes(c))depth++;else if(c&&')]}'.includes(c))depth=Math.max(0,depth-1);if(i===masked.length||depth===0&&(c==='\n'||c===';')){statements.push(masked.slice(start,i));start=i+1;}}
+ for(const line of statements){
+  let expression=line.trim(),assigned=[],unpacked=false;
+  for(;;){const m=expression.match(/^([\p{L}_][\p{L}\p{N}_]*(?:[ \t]*,[ \t]*[\p{L}_][\p{L}\p{N}_]*)*)[ \t]*=(?!=)[ \t]*([\s\S]*)$/u);if(!m)break;unpacked=unpacked||m[1].includes(',');assigned.push(...m[1].split(',').map(x=>x.trim()));expression=m[2];}
+  const type=expression.match(/^([\w]+)\s*\(/)?.[1],inferred=shapes.has(type)?type:type==='vector'?'vector':expression.startsWith('[')?'list':null;
+  for(const name of assigned)result.set(name,unpacked?null:inferred);
+  const fn=line.match(/^[ \t]*def[ \t]+([\p{L}_][\p{L}\p{N}_]*)[ \t]*\(([\s\S]*)/u);
+  if(fn){result.set(fn[1],'function');const args=fn[2].slice(0,fn[2].lastIndexOf(')'));let nested=0,offset=0;for(let i=0;i<=args.length;i++){const c=args[i];if(c&&'([{'.includes(c))nested++;else if(c&&')]}'.includes(c))nested--;if(i===args.length||c===','&&nested===0){const name=args.slice(offset,i).trim().match(/^[*]*([\p{L}_][\p{L}\p{N}_]*)/u)?.[1];if(name)result.set(name,null);offset=i+1;}}}
+  const loop=line.match(/^[ \t]*for[ \t]+(.+?)[ \t]+in[ \t]/u);if(loop)for(const name of loop[1].split(',').map(x=>x.trim()))if(/^[\p{L}_][\p{L}\p{N}_]*$/u.test(name))result.set(name,null);
  }
  return result;
 }

@@ -1,0 +1,31 @@
+{
+  "url": "https://vpylab.vercel.app",
+  "results": [
+    {
+      "name": "lighting-panel-collapsed-by-default",
+      "passed": true
+    },
+    {
+      "name": "xyz-angle-size-brightness-color-update-real-scene",
+      "passed": true
+    },
+    {
+      "name": "lighting-persists-and-reloads-collapsed",
+      "passed": true
+    },
+    {
+      "name": "mobile-lighting-controls-fit",
+      "passed": true
+    },
+    {
+      "name": "lighting-reset-restores-character-palette",
+      "passed": true
+    },
+    {
+      "name": "lighting-keeps-hidden-home-copy-greeting-and-background",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Real WebGL and native range/color input events; local guest preferences only."
+}

@@ -23,3 +23,5 @@ it('위치 인자는 변수로 완성하고 함수 인자를 지역 변수로 �
  expect(completionChoices('y=2\nvector(0, y').find(x=>x.name==='y').insertText).toBe('y');expect(completionChoices('speed=30\nrate(sp').find(x=>x.name==='speed').insertText).toBe('speed');expect(names('sphere(radius=1)\nra')).not.toContain('radius');expect(names('ball=sphere(\n    radius=1\n)\nra')).not.toContain('radius');expect(names('def move(delta, target=vector(1,2,0)):\n    de')).toContain('delta');expect(names('for i in range(3):\n    i')).toContain('i');expect(names('items[0].')).toEqual([]);expect(names('make().')).toEqual([]);
 });
 it('scene.width는 화면 픽셀 크기로 설명한다',()=>{expect(completionChoices('scene.').find(x=>x.name==='width').detail).toBe('화면 가로 크기');});
+
+it('여러 변수·연쇄 대입·세미콜론의 이름도 값 후보로 보존한다',()=>{expect(names('x,y=1,2\nvector(x, y')).toContain('y');expect(names('a=b=vector(1,2,3)\nb.')).toContain('x');expect(names('a=b=0\npr')).toEqual(expect.arrayContaining(['a','b']));expect(names('a=1; b=2\npr')).toEqual(expect.arrayContaining(['a','b']));});

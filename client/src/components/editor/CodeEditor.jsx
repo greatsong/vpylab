@@ -65,29 +65,32 @@ export default function CodeEditor({ code, onChange, fontSize = 14, readOnly = f
     const changed=editor.onDidChangeModelContent(event=>{
       hide();
       const model=editor.getModel();
-      if(!model?.getValue()||event.changes.some(c=>c.rangeLength>0)){lastKey='';candidate=null;}
       if(!model||event.isFlush||event.isUndoing||event.isRedoing||event.changes.length!==1||event.changes[0].text.length>30||event.changes[0].text.includes('\n')){lastKey='';candidate=null;return;}
-      const edit=event.changes[0],end=model.getOffsetAt({lineNumber:edit.range.startLineNumber,column:edit.range.startColumn})+edit.text.length,prefix=model.getValue().slice(0,end);
+      const edit=event.changes[0],editStart=model.getOffsetAt({lineNumber:edit.range.startLineNumber,column:edit.range.startColumn}),end=editStart+edit.text.length,prefix=model.getValue().slice(0,end);
+      if(!model.getValue()||edit.rangeLength>0&&(!candidate||editStart<candidate.end)){lastKey='';candidate=null;}
       if(prefix.length>100000||pythonContext(prefix).blocked){candidate=null;return;}
-      const match=prefix.match(/([\p{L}_][\p{L}\p{N}_]*)[ \t]*(?:[=(])?[ \t]*$/u),term=match&&vocabularyWord(match[1],prefix);
-      if(term)candidate={term,key:term.id+':'+(prefix.length-match[0].length),line:edit.range.startLineNumber,time:Date.now()};
-      else if(candidate&&(candidate.line!==edit.range.startLineNumber||Date.now()-candidate.time>2000))candidate=null;
-      pending=setTimeout(()=>{
+      const match=prefix.match(/([\p{L}_][\p{L}\p{N}_]*)[ \t]*(?:[=(])?[ \t]*$/u),term=match&&vocabularyWord(match[1],prefix),start=match?prefix.length-match[0].length:-1;
+      if(term)candidate={term,key:term.id+':'+start,start,end:start+match[1].length,line:edit.range.startLineNumber,time:Date.now()};
+      else if(candidate&&(candidate.line!==edit.range.startLineNumber||Date.now()-candidate.time>6000||start===candidate.start))candidate=null;
+      const show=(attempt=0)=>{
         if(!editor.hasTextFocus()||!candidate||candidate.key===lastKey)return;
-        const p=editor.getPosition();if(!p)return;
-        if(editor.getDomNode()?.querySelector('.suggest-widget.visible')){
-          const exact=term?.id===candidate.term.id&&completionChoices(prefix).some(c=>c.name===candidate.term.id&&c.insertText===c.name);
-          if(!exact)return;
-          editor.trigger('word-help','hideSuggestWidget',{});
+        const p=editor.getPosition();if(!p||p.lineNumber!==candidate.line||model.getOffsetAt(p)<candidate.end)return;
+        const widget=editor.getDomNode()?.querySelector('.suggest-widget.visible');
+        if(widget){
+          const options=completionChoices(prefix).filter(c=>c.name===candidate.term.id);
+          const exact=match?.[0].trim()===candidate.term.id&&term?.id===candidate.term.id&&options.length>0&&options.every(c=>c.insertText===c.name);
+          if(!exact){if(attempt<5)pending=setTimeout(()=>show(attempt+1),200);return;}
         }
         const userId=useAuthStore.getState().user?.id,point=editor.getScrolledVisiblePosition(p),host=hostRef.current,dom=editor.getDomNode();
         if(!point||!host||!dom||!claimWordTip(userId,candidate.term.id))return;
+        if(widget)editor.trigger('word-help','hideSuggestWidget',{});
         lastKey=candidate.key;const width=Math.min(320,host.clientWidth-16),relativeTop=dom.getBoundingClientRect().top-host.getBoundingClientRect().top,below=relativeTop+point.top+point.height+8;
         setTip({term:candidate.term,owner:userId,left:Math.max(8,Math.min(point.left,host.clientWidth-width-8)),top:below+215<host.clientHeight?below:Math.max(8,relativeTop+point.top-215),width});
         hideTimer=setTimeout(()=>setTip(null),6000);
-      },320);
+      };
+      pending=setTimeout(show,320);
     });
-    const scroll=editor.onDidScrollChange(e=>{if(e.scrollTopChanged||e.scrollLeftChanged)dismiss();}),blur=editor.onDidBlurEditorWidget(dismiss),mouse=editor.onMouseDown(dismiss),keys=editor.onKeyDown(e=>{if(e.keyCode===monaco.KeyCode.Escape)dismiss();});
+    const scroll=editor.onDidScrollChange(e=>{if(e.scrollTopChanged||e.scrollLeftChanged)dismiss();}),blur=editor.onDidBlurEditorWidget(dismiss),mouse=editor.onMouseDown(e=>{if(!e.target.element?.closest('.suggest-widget'))dismiss();}),keys=editor.onKeyDown(e=>{if(e.keyCode===monaco.KeyCode.Escape)dismiss();});
     cleanupRef.current=()=>{clearTimeout(pending);clearTimeout(hideTimer);changed.dispose();scroll.dispose();blur.dispose();mouse.dispose();keys.dispose();};
 
   }, []);
@@ -125,7 +128,7 @@ export default function CodeEditor({ code, onChange, fontSize = 14, readOnly = f
           quickSuggestions: {other:true,comments:false,strings:false},
           suggestOnTriggerCharacters: true,
           acceptSuggestionOnEnter: 'off',
-          wordBasedSuggestions: 'currentDocument',
+          wordBasedSuggestions: 'off',
           parameterHints: {enabled:true},
           suggest: {
             showKeywords: true,

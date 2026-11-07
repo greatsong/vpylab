@@ -1,0 +1,28 @@
+{
+  "route": [
+    "claude"
+  ],
+  "hops": [
+    {
+      "actor": "claude",
+      "input": "최종 배포 후 짧은 정적 후속 검토. 한국어 P1/P2만, 없으면 없음, 최대2000자. 편집/실행/릴레이호출 금지. FILE_MAP와CHANGE_DIFF먼저, 필요한원본만읽으세요. 이전Claude 지적 3개는 수정: (1) vector/rate/sleep은 인자명=를 삽입하지 않고 내 변수·값을 제안. 일반호출도 변수후보를 합치고 도형은키워드우선. (2) 현재단어끝까지range확장+이미=있으면등호안삽입. (3) Tab뿐아니라 직접sphere/compound타이핑도 의미카드; 현재인식한토큰후보를잠깐유지해값완성뒤에도 표시. 완전히입력해더완성할글자가없는동일함수/속성후보만닫고카드로, 인자값=완성은그대로. 코드중간교체시이전카드후보초기화; 단어별2회+알겠어요스킵+포커스안뺏음+다음입력닫힘 유지. P3도수정: kwargs를변수로오해않도록라인시작/괄호깊이로선언추출, def매개변수/for변수포함, items[0]./foo(). 모르는멤버는추천없음, scene.width/height는픽셀설명, 카드최대높이210px/overflow. 기존직접타이핑·중간철자/등호보존 실제Monaco검사통과. 추가위치변수/실행검사와전체단위검사도진행. 이변경만논리적누락확인. 아키텍처확장·일반권고제외. 이건 AI없는로컬완성과교육사전 UI입니다.",
+      "output": "P1 없음. P2 5건입니다. 코드를 읽어서만 판단했고 실행은 하지 않았습니다. Monaco 내부 동작에 근거한 2·5번은 실제 편집기로 재현해 확인이 필요합니다.\n\n**P2-1. 더 긴 식별자에도 이전 단어 카드가 표시됩니다 (회귀)**\n- 위치: `CodeEditor.jsx:72-74`\n- `sphere_count`, `box1`, `position`을 빠르게 치면 마지막 글자에서 `term`은 null이지만, 같은 줄이고 2초 이내라 candidate가 남습니다.\n- 위젯이 닫혀 있으면 `sphere`/`box`/`pos` 카드가 뜨고, 단어별 2회 횟수도 소진됩니다. 이전 코드는 `!term`이면 바로 return했습니다.\n- 수정: 현재 토큰이 candidate 시작 위치에서 이어지는 다른 식별자면 candidate를 비웁니다.\n\n**P2-2. 빠르게 친 `sphere(`/`compound(`에서 카드가 누락됩니다**\n- 위치: `CodeEditor.jsx:70-80`\n- 자동 닫기로 변경 text가 `()`가 되면 prefix가 `sphere()`로 끝나 `term`이 null입니다. `(` 트리거로 위젯이 열려 있으면 `exact`가 false여서 return하고 재시도도 없습니다.\n- 다음 입력 `radius`가 candidate를 덮어써 `sphere` 카드는 사라집니다. 320ms 멈춘 경우에만 표시되므로 지적 (3)의 주 경로가 일부 남습니다.\n- 자동 닫기가 안 되는 위치(뒤에 글자가 있을 때)에서는 반대로 `term`이 `sphere`, `exact`가 true가 되어 인자 목록을 닫습니다.\n- 수정: `(`가 붙은 경우 `exact` 판정에서 빼고, 위젯이 닫힌 뒤 재시도합니다.\n\n**P2-3. 같은 이름 변수가 있으면 `radius=` 완성이 닫힙니다**\n- 위치: `CodeEditor.jsx:79`\n- `radius=2\\nsphere(radius`에서는 인자 후보(`radius=`)와 변수 후보(`radius`)가 함께 나옵니다. `.some`이 변수 후보로 true가 되어 위젯을 닫습니다.\n- \"인자값= 완성은 그대로\" 조건과 어긋납니다.\n- 수정: 같은 이름 후보 중 `insertText!==name`이 하나라도 있으면 닫지 않습니다.\n\n**P2-4. 값을 Tab으로 완성하면 카드가 사라집니다**\n- 위치: `CodeEditor.jsx:68`\n- `radius=my`에서 Tab으로 `my_r`을 고르면 `rangeLength>0`이라 candidate가 초기화됩니다. 값 완성 뒤에도 표시한다는 요구가 직접 타이핑에서만 충족됩니다.\n- 수정: 같은 줄에서 candidate 뒤쪽 단어만 교체된 경우는 유지합니다.\n\n**P2-5. 모르는 멤버에 문서 단어가 추천될 수 있습니다**\n- 위치: `CodeEditor.jsx:128`, `python-completions.js`의 `return[]`\n- `.` 직후에는 괜찮습니다. 그러나 `items[0].na`처럼 글자를 치면 provider가 빈 결과를 주고, `wordBasedSuggestions:'currentDocument'` fallback이 문서 단어를 보여줄 수 있습니다.\n- 단위 테스트는 `completionChoices`만 검사해서 이 경로를 잡지 못합니다.\n- 수정: 이 옵션을 `'off'`로 바꿉니다.\n\n**참고 (P2 하한, 회귀)**\n- 위치: `python-completions.js:41`\n- 라인 시작 정규식으로 바뀌어 `x, y = 1, 2`, `a = b = 0`, `a=1; b=2`의 일부 변수가 후보에서 빠집니다.",
+      "seconds": 177.32,
+      "usage": {
+        "num_turns": 11,
+        "total_cost_usd": 0.6312827999999999
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "timeout_seconds": 180,
+          "status": "success",
+          "seconds": 177.32
+        }
+      ],
+      "timeout_retries": 0
+    }
+  ],
+  "result": "P1 없음. P2 5건입니다. 코드를 읽어서만 판단했고 실행은 하지 않았습니다. Monaco 내부 동작에 근거한 2·5번은 실제 편집기로 재현해 확인이 필요합니다.\n\n**P2-1. 더 긴 식별자에도 이전 단어 카드가 표시됩니다 (회귀)**\n- 위치: `CodeEditor.jsx:72-74`\n- `sphere_count`, `box1`, `position`을 빠르게 치면 마지막 글자에서 `term`은 null이지만, 같은 줄이고 2초 이내라 candidate가 남습니다.\n- 위젯이 닫혀 있으면 `sphere`/`box`/`pos` 카드가 뜨고, 단어별 2회 횟수도 소진됩니다. 이전 코드는 `!term`이면 바로 return했습니다.\n- 수정: 현재 토큰이 candidate 시작 위치에서 이어지는 다른 식별자면 candidate를 비웁니다.\n\n**P2-2. 빠르게 친 `sphere(`/`compound(`에서 카드가 누락됩니다**\n- 위치: `CodeEditor.jsx:70-80`\n- 자동 닫기로 변경 text가 `()`가 되면 prefix가 `sphere()`로 끝나 `term`이 null입니다. `(` 트리거로 위젯이 열려 있으면 `exact`가 false여서 return하고 재시도도 없습니다.\n- 다음 입력 `radius`가 candidate를 덮어써 `sphere` 카드는 사라집니다. 320ms 멈춘 경우에만 표시되므로 지적 (3)의 주 경로가 일부 남습니다.\n- 자동 닫기가 안 되는 위치(뒤에 글자가 있을 때)에서는 반대로 `term`이 `sphere`, `exact`가 true가 되어 인자 목록을 닫습니다.\n- 수정: `(`가 붙은 경우 `exact` 판정에서 빼고, 위젯이 닫힌 뒤 재시도합니다.\n\n**P2-3. 같은 이름 변수가 있으면 `radius=` 완성이 닫힙니다**\n- 위치: `CodeEditor.jsx:79`\n- `radius=2\\nsphere(radius`에서는 인자 후보(`radius=`)와 변수 후보(`radius`)가 함께 나옵니다. `.some`이 변수 후보로 true가 되어 위젯을 닫습니다.\n- \"인자값= 완성은 그대로\" 조건과 어긋납니다.\n- 수정: 같은 이름 후보 중 `insertText!==name`이 하나라도 있으면 닫지 않습니다.\n\n**P2-4. 값을 Tab으로 완성하면 카드가 사라집니다**\n- 위치: `CodeEditor.jsx:68`\n- `radius=my`에서 Tab으로 `my_r`을 고르면 `rangeLength>0`이라 candidate가 초기화됩니다. 값 완성 뒤에도 표시한다는 요구가 직접 타이핑에서만 충족됩니다.\n- 수정: 같은 줄에서 candidate 뒤쪽 단어만 교체된 경우는 유지합니다.\n\n**P2-5. 모르는 멤버에 문서 단어가 추천될 수 있습니다**\n- 위치: `CodeEditor.jsx:128`, `python-completions.js`의 `return[]`\n- `.` 직후에는 괜찮습니다. 그러나 `items[0].na`처럼 글자를 치면 provider가 빈 결과를 주고, `wordBasedSuggestions:'currentDocument'` fallback이 문서 단어를 보여줄 수 있습니다.\n- 단위 테스트는 `completionChoices`만 검사해서 이 경로를 잡지 못합니다.\n- 수정: 이 옵션을 `'off'`로 바꿉니다.\n\n**참고 (P2 하한, 회귀)**\n- 위치: `python-completions.js:41`\n- 라인 시작 정규식으로 바뀌어 `x, y = 1, 2`, `a = b = 0`, `a=1; b=2`의 일부 변수가 후보에서 빠집니다.",
+  "workspace": "/private/tmp/vpylab-completion-addendum-review"
+}

@@ -1,0 +1,50 @@
+{
+  "url": "https://vpylab.vercel.app",
+  "results": [
+    {
+      "name": "manual-stop-notes-sequence-bgm",
+      "passed": true,
+      "signalBefore": 0.18715209266358968,
+      "signalAfter300ms": 0,
+      "signalAfter2600ms": 0,
+      "signalAfter8600ms": 0
+    },
+    {
+      "name": "stop-scheduled-audio-after-python-done",
+      "passed": true,
+      "signalBefore": 0.09217219146136774,
+      "signalAfter300ms": 0,
+      "signalAfter2600ms": 0
+    },
+    {
+      "name": "route-leave-stops-audio",
+      "passed": true,
+      "signalBefore": 0.09217219146136774,
+      "signalAfter300ms": 0,
+      "signalAfter2600ms": 0
+    },
+    {
+      "name": "python-error-stops-audio",
+      "passed": true,
+      "signalBefore": 0.09217219146136774,
+      "signalAfter300ms": 0,
+      "signalAfter2600ms": 0
+    },
+    {
+      "name": "noncooperative-worker-stop",
+      "passed": true,
+      "signalBefore": 0.09217219146136774,
+      "signalAfter300ms": 0,
+      "signalAfter2600ms": 0
+    },
+    {
+      "name": "sandbox-stop-all-sound",
+      "passed": true,
+      "signalBefore": 0.14974743013683225,
+      "signalAfter300ms": 0,
+      "signalAfter2600ms": 0
+    }
+  ],
+  "errors": [],
+  "scope": "Actual Web Audio graph with an inserted AnalyserNode, actual Pyodide/Worker, controlled guest code. Muted speaker output; measures graph signal, not physical speaker listening."
+}
