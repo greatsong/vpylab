@@ -10,6 +10,7 @@ import OutputConsole from '../components/console/OutputConsole';
 import LoadingScreen from '../components/shared/LoadingScreen';
 import useAudioState from '../hooks/useAudioState';
 import usePyodide from '../hooks/usePyodide';
+import { getStatus as getPythonStatus } from '../engine/pyodide-singleton';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
 import { clearRegistry } from '../engine/object-registry';
 import { runSound, errorSound, stopBgm, stopAllSounds, initAudioOnUserGesture, isAudioUnlocked, isTouchPlaybackEnvironment, resumeAndRun } from '../engine/sound-system';
@@ -70,7 +71,7 @@ function waitForSaveTimeout(ms, message) {
  */
 export default function Sandbox() {
   const { t, locale } = useI18n();
-  const audio=useAudioState(),playEpoch=useRef(0);
+  const audio=useAudioState(),playEpoch=useRef(0),stopSourceRef=useRef(null);
   const [homePin,setHomePin]=useState(null);
   const lastStartedCode=useRef(null);
   const [code, setCode] = useState(DEFAULT_CODE);
@@ -217,6 +218,7 @@ export default function Sandbox() {
     };
 
     if (location.state?.restoredCode != null) {
+      stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
       updateCode(location.state.restoredCode);
       homeDraftTitle.current=null; initialCodeRef.current = location.state.restoredCode;
       window.history.replaceState({}, '');
@@ -237,6 +239,7 @@ export default function Sandbox() {
     if (location.state?.sharedCode) {
       if(location.state.homeDraft&&consumedHomeDraft.current===location.key)return;
       if(location.state.homeDraft)consumedHomeDraft.current=location.key;
+      stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
       updateCode(location.state.sharedCode);
       homeDraftTitle.current=null; initialCodeRef.current = location.state.sharedCode;
       homeDraftTitle.current=location.state.homeDraft?String(location.state.sharedTitle||'').slice(0,80):null;
@@ -258,6 +261,7 @@ export default function Sandbox() {
       loadedRepoParamRef.current = repoLoadKey;
       const [owner, repo] = repoParam.split('/');
       (async () => {
+        stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
         setRepoLoadStatus('loading');
         pendingPlayRef.current = null;
         setOutputs([{ text: `${repoParam} 프로젝트 코드를 불러오는 중입니다.`, type: 'log', id: Date.now() }]);
@@ -428,6 +432,7 @@ export default function Sandbox() {
       useGalleryStore.getState().fetchWork(remixId).then(() => {
         const work = useGalleryStore.getState().currentWork;
         if (work) {
+          stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
           updateCode(work.code);
           homeDraftTitle.current=null; initialCodeRef.current = work.code;
           setRemixInfo({ title: work.title, author: work.vpylab_profiles?.display_name });
@@ -564,13 +569,16 @@ export default function Sandbox() {
             try {
               const { code: fetchedCode } = await useGalleryStore.getState().fetchCodeFromGitHub(work.github_repo, token);
               const c = fetchedCode || work.code;
+              stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
               updateCode(c);
               homeDraftTitle.current=null; initialCodeRef.current = c;
             } catch {
+              stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
               updateCode(work.code);
               homeDraftTitle.current=null; initialCodeRef.current = work.code;
             }
           } else {
+            stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
             updateCode(work.code);
             homeDraftTitle.current=null; initialCodeRef.current = work.code;
           }
@@ -626,6 +634,8 @@ export default function Sandbox() {
     locale,
   });
 
+  useEffect(()=>{stopSourceRef.current=stopExecution;},[stopExecution]);
+
   // 최초 Worker 초기화
   useEffect(() => {
     initWorker();
@@ -634,7 +644,7 @@ export default function Sandbox() {
   const startProgram = useCallback((sourceCode) => {
     // 이전 코드의 잔존음 + BGM + 3D 객체를 모두 정리
     stopAllSounds();
-    stopExecution();  // 이전 무한 루프 강제 종료 (rate에서 stop signal 감지)
+    if(getPythonStatus()!=='ready'){pendingPlayRef.current=sourceCode;stopExecution();return;}
     if (sceneRef.current) clearScene(sceneRef.current);
     clearRegistry();
     if (sceneRef.current?._cameraSystem) {
@@ -1120,19 +1130,8 @@ export default function Sandbox() {
   if (theaterMode) {
     const handleTheaterStart = () => {
       setTheaterWaiting(false);
-            pendingPlayRef.current = codeRef.current;
-            resumeAndRun(() => {
-              if (isReady) {
-                requestAnimationFrame(() => {
-            if (sceneRef.current) clearScene(sceneRef.current);
-            clearRegistry();
-            if (sceneRef.current?._cameraSystem) sceneRef.current._cameraSystem.onCodeStart();
-                  setOutputs([]);
-                  runSound();
-                  runCode(codeRef.current);
-                });
-              }
-            });
+      pendingPlayRef.current = null;
+      resumeAndRun(() => startProgram(codeRef.current));
     };
 
     return (
@@ -1177,7 +1176,7 @@ export default function Sandbox() {
         )}
 
         {/* 좌하단: 정지 버튼 (실행 중일 때만) */}
-        {isRunning && (
+        {(isRunning||audio.playing) && (
           <button
             onClick={handleStop}
             style={{
@@ -1259,6 +1258,7 @@ export default function Sandbox() {
         </div>
         <div className="w-full flex md:hidden gap-1 pt-1" aria-label="실습 패널">{[['editor', '코드'], ['3d', '화면'], ['console', '출력']].map(([tab, label]) => <button key={tab} onClick={() => setActiveTab(tab)} aria-pressed={activeTab === tab} className={`tab-btn flex-1 ${activeTab === tab ? '--active' : ''}`}>{label}</button>)}</div>
       </div>
+
 
       {/* === 3패널 레이아웃 === */}
       <div className="flex-1 flex min-h-0">
@@ -1511,6 +1511,7 @@ export default function Sandbox() {
           currentCodeId={historyTarget.id}
           onClose={() => setHistoryTarget(null)}
           onRestored={(snapshotCode) => {
+            stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
             updateCode(snapshotCode);
             homeDraftTitle.current=null; initialCodeRef.current = snapshotCode;
             setHistoryTarget(null);
@@ -1525,6 +1526,7 @@ export default function Sandbox() {
           currentCode={code === DEFAULT_CODE ? undefined : code}
           onClose={() => setShowSavedCodes(false)}
           onLoadCode={(loadedCode, codeId) => {
+            stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
             updateCode(loadedCode);
             homeDraftTitle.current=null; initialCodeRef.current = loadedCode;
             if (codeId) setCurrentCodeId(codeId);
@@ -1570,6 +1572,7 @@ export default function Sandbox() {
         <CodeSharePanel
           onClose={() => setPanelOpen(false)}
           onReplaceCode={(newCode) => {
+            stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
             updateCode(newCode);
             setOutputs(prev => [...prev, { text: t('codeShare.replaced'), type: 'success', id: Date.now() }]);
           }}

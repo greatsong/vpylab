@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
+import CodeVocabulary from '../components/learning/CodeVocabulary';
 
 function GuideSection({ id, title, children }) {
   return (
@@ -65,6 +66,7 @@ obj.pos.x += 0.1
 obj.pos = vector(2, 0, 0)
 obj.color = vector(0.5, 1, 0.7)
 obj.opacity = 0.6`}</code></pre>
+          <CodeVocabulary code={'sphere(radius=0.5, opacity=0.6)\nfriend = compound([body, eye])'}/>
           <p>compound의 색은 원래 부품 색에 곱해집니다. 흰 부품은 새 색이 잘 나타나고 검은 부품은 검게 남습니다. 특정 부품을 따로 바꾸려면 복사한 코드의 해당 부품 속성을 살펴보세요. <Link to="/docs#compound">compound 문서</Link>와 <Link to="/docs#shape-dome">반구·돔 가이드</Link>를 함께 볼 수 있습니다.</p>
           <p><strong>종 만들기</strong>는 ① 모양만 만들기 → ② 클릭하면 소리 → ③ 음파 효과까지 순서로 체험합니다. 소리 높이를 바꾸고 종을 눌러 보세요. 음파 고리는 소리를 눈으로 표현하는 효과입니다.</p>
           <p><strong>VPyLab 자체 기능:</strong> 대장간과 생성 편의 함수, 소리 명령은 VPyLab에서 제공합니다. 일반 도형·compound·위치 속성과 구분해 문서에 표시합니다. 소리 명령을 외부 VPython으로 옮길 때는 해당 환경에 맞게 바꿔야 합니다. 압출 모양은 공유 HTML에서 표현 범위가 더 좁습니다.</p>

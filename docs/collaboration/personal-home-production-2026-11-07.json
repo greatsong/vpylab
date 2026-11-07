@@ -1,0 +1,66 @@
+{
+  "generatedAt": "2026-11-07T02:01:59.073Z",
+  "url": "https://vpylab.vercel.app",
+  "results": [
+    {
+      "name": "pin-current-code-and-defer-worker",
+      "passed": true
+    },
+    {
+      "name": "customize-greeting-and-tint",
+      "passed": true
+    },
+    {
+      "name": "refresh-keeps-personal-home-without-autoplay",
+      "passed": true
+    },
+    {
+      "name": "personal-project-real-pyodide-run",
+      "passed": true
+    },
+    {
+      "name": "personal-project-orbit",
+      "passed": true
+    },
+    {
+      "name": "close-preview-terminates-worker",
+      "passed": true
+    },
+    {
+      "name": "mobile-personal-home-layout",
+      "passed": true
+    },
+    {
+      "name": "edit-snapshot-opens-correct-code",
+      "passed": true
+    },
+    {
+      "name": "new-code-source-clears-home-draft-title",
+      "passed": true
+    },
+    {
+      "name": "restore-default-home",
+      "passed": true
+    },
+    {
+      "name": "restore-retains-code-and-can-reactivate",
+      "passed": true
+    },
+    {
+      "name": "default-welcome-orbit-after-animation",
+      "passed": true
+    },
+    {
+      "name": "default-welcome-reset-view",
+      "passed": true
+    },
+    {
+      "name": "navigate-away-from-running-project-terminates-worker",
+      "passed": true,
+      "scope": "Stored guest code fixture executed by the actual Worker."
+    }
+  ],
+  "errors": [],
+  "liveWrites": 0,
+  "scope": "Guest real UI, actual Pyodide, WebGL drag and cleanup. Account isolation is covered by unit tests, without live account or DB writes."
+}

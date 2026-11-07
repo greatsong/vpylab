@@ -30,3 +30,9 @@ it('다른 계정의 사본을 버리지 않고 전체 슬롯 수를 제한한�
  for(let i=0;i<24;i++)expect(writePersonalHome('limit-'+i,{greeting:'작업실 '+i}).ok).toBe(true);
  expect(writePersonalHome('limit-new',{greeting:'새 공간'}).ok).toBe(false);expect(readPersonalHome('limit-0').greeting).toBe('작업실 0');
 });
+
+it('기본 복구 뒤 조명만 바꿔도 이전 문구·배경·사본은 보존되고 개인 화면은 다시 켜지지 않는다',()=>{
+ writePersonalHome('a',{greeting:'나의 우주',background:'#123456',project:{title:'별',code:'sphere()'},lights:[{brightness:.5}]});
+ resetPersonalHome('a');expect(readPersonalHome('a').lights).toBeNull();writePersonalHome('a',{lights:[{brightness:.7}]});
+ expect(readPersonalHome('a')).toMatchObject({enabled:false,greeting:'나의 우주',background:'#123456',project:{code:'sphere()'},lights:[{brightness:.7},{}]});
+});

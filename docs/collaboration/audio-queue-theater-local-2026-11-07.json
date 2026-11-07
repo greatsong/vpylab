@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:4035",
+  "results": [
+    {
+      "name": "theater-start-runs-exactly-once",
+      "passed": true,
+      "runCount": 1
+    },
+    {
+      "name": "theater-stop-after-main-done",
+      "passed": true,
+      "after350ms": 0,
+      "after2550ms": 0
+    },
+    {
+      "name": "queued-event-stop-silences-audio",
+      "passed": true,
+      "after350ms": 0,
+      "after2550ms": 0
+    },
+    {
+      "name": "worker-stop-discards-queued-callbacks",
+      "passed": true
+    },
+    {
+      "name": "new-run-reenables-fresh-event-handlers",
+      "passed": true
+    },
+    {
+      "name": "fresh-event-stop",
+      "passed": true,
+      "after350ms": 0,
+      "after2550ms": 0
+    }
+  ],
+  "errors": [],
+  "scope": "Actual Pyodide/WebAudio. Controlled history-state theater entry and queued native Worker event messages, guest fixture only. No DB writes."
+}

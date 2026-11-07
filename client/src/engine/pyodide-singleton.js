@@ -128,7 +128,9 @@ export function runCode(code) {
 
 export function softStop() {
   soundSuppressed=true;stopAllSounds();
-  if (!worker || status !== 'running') return false;
+  if (!worker) return false;
+  if(status==='ready'){worker.postMessage({type:'stop'});return false;}
+  if(status!=='running')return false;
   updateStatus('stopping');
   worker.postMessage({ type: 'stop' });
   return true;

@@ -44,6 +44,7 @@ export default function GalleryPreview({ code }) {
 
   const handleRun = () => {
     if (!isReady || !code) return;
+    stopAllSounds();
     if (sceneRef.current) clearScene(sceneRef.current);
     clearRegistry();
     if (sceneRef.current?._cameraSystem) {

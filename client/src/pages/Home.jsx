@@ -19,7 +19,7 @@ export default function Home() {
   const ko = locale === 'ko';
   const user=useAuthStore(s=>s.user),authLoading=useAuthStore(s=>s.loading),home=usePersonalHome(user?.id),[settings,setSettings]=useState(false);
   const personal=authLoading||home?.enabled===false?null:home;
-  const saveLights=lights=>{if(useAuthStore.getState().loading||(useAuthStore.getState().user?.id||'guest')!==(user?.id||'guest'))return{ok:false,error:ko?'계정이 바뀌었습니다. 다시 시도해 주세요.':'Your account changed. Try again.'};return writePersonalHome(user?.id,home?.enabled===false?{lights,enabled:true,showProject:false,greeting:'',background:null}:{lights});};
+  const saveLights=lights=>{if(useAuthStore.getState().loading||(useAuthStore.getState().user?.id||'guest')!==(user?.id||'guest'))return{ok:false,error:ko?'계정이 바뀌었습니다. 다시 시도해 주세요.':'Your account changed. Try again.'};return writePersonalHome(user?.id,{lights});};
   const paths = [
     { number: '01', title: ko ? '트레이닝' : 'Training', description: ko ? '변수부터 반복까지, 작은 작품을 만들며 차근차근 배워요.' : 'Learn step by step, from variables to loops and a small project.', to: '/missions' },
     { number: '02', title: ko ? '튜토리얼' : 'Tutorials', description: ko ? '빛과 소리, 움직임과 클릭. 궁금한 기능부터 짧게 체험해요.' : 'Explore light, sound, motion, and clicks in a short experience.', to: '/tutorials' },
@@ -41,7 +41,7 @@ export default function Home() {
           </div>
           <p className="mt-4 text-xs" style={{ color: 'var(--color-text-secondary)' }}>{ko ? '설치나 로그인 없이 시작할 수 있어요.' : 'Start without installing or signing in.'}</p>
           </div>
-          <Suspense fallback={<div className="welcome-friends" aria-hidden="true"><div className="welcome-stage" /></div>}>{authLoading?<div className="welcome-friends" role="status" aria-label={ko?'내 메인 준비 중':'Preparing home'}><div className="welcome-stage"/></div>:personal?.showProject!==false&&personal?.project?<HomePreviewBoundary key={(user?.id||'guest')+personal.project.code} project={personal.project} ko={ko}><PersonalHomeProject project={personal.project} ko={ko}/></HomePreviewBoundary>:<WelcomeFriends ko={ko} lightSettings={personal?.lights} onLightChange={saveLights}/>}</Suspense>
+          <Suspense fallback={<div className="welcome-friends" aria-hidden="true"><div className="welcome-stage" /></div>}>{authLoading?<div className="welcome-friends" role="status" aria-label={ko?'내 메인 준비 중':'Preparing home'}><div className="welcome-stage"/></div>:personal?.showProject!==false&&personal?.project?<HomePreviewBoundary key={(user?.id||'guest')+personal.project.code} project={personal.project} ko={ko}><PersonalHomeProject project={personal.project} ko={ko}/></HomePreviewBoundary>:<WelcomeFriends ko={ko} lightSettings={home?.lights} onLightChange={saveLights}/>}</Suspense>
         </section>
         <section className="pb-14" aria-labelledby="learning-path-title">
           <h2 id="learning-path-title" className="text-sm font-semibold pb-5" style={{ borderBottom: '1px solid var(--color-border)' }}>{ko ? '체험에서 내 작품까지' : 'From trying to creating'}</h2>

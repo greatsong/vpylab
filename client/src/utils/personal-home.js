@@ -42,7 +42,7 @@ export function resetPersonalHome(userId,storage){
   const target=storage||globalThis.localStorage,raw=target.getItem(personalHomeKey(userId));if(raw===null)return true;
   if(!parsePersonalHome(raw))return false;
   // 화면만 기본으로 되돌립니다. 이것이 유일한 코드 사본이어도 잃지 않습니다.
-  return writePersonalHome(userId,{enabled:false},target).ok;
+  return writePersonalHome(userId,{enabled:false,lights:null},target).ok;
  }catch{return false;}
 }
 

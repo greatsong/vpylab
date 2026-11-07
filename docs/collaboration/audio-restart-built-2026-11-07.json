@@ -1,0 +1,81 @@
+{
+  "url": "http://127.0.0.1:4036",
+  "results": [
+    {
+      "name": "training-normal-toolbar-stops-after-main-done",
+      "passed": true,
+      "after1000ms": 0,
+      "after2800ms": 0
+    },
+    {
+      "name": "training-restart-retires-prior-voices",
+      "passed": true,
+      "count": 6,
+      "allDisconnected": true
+    },
+    {
+      "name": "training-grade-retires-prior-voices",
+      "passed": true,
+      "count": 9,
+      "allDisconnected": true
+    },
+    {
+      "name": "training-stop-after-grade",
+      "passed": true,
+      "after1000ms": 0,
+      "after2800ms": 0
+    },
+    {
+      "name": "gallery-restart-retires-prior-voices",
+      "passed": true,
+      "count": 2,
+      "allDisconnected": true
+    },
+    {
+      "name": "gallery-stop-after-main-done",
+      "passed": true,
+      "after1000ms": 0,
+      "after2800ms": 0
+    }
+  ],
+  "errors": [],
+  "workerMessages": [
+    {
+      "type": "progress"
+    },
+    {
+      "type": "progress"
+    },
+    {
+      "type": "progress"
+    },
+    {
+      "type": "progress"
+    },
+    {
+      "type": "progress"
+    },
+    {
+      "type": "ready"
+    },
+    {
+      "type": "batch"
+    },
+    {
+      "type": "batch"
+    },
+    {
+      "type": "done"
+    },
+    {
+      "type": "batch"
+    },
+    {
+      "type": "batch"
+    },
+    {
+      "type": "done"
+    }
+  ],
+  "scope": "Actual Pyodide/WebAudio in guest training and real GalleryPreview UI with intercepted fixture data. Gallery API and view-count writes intercepted; no live account or DB mutations."
+}

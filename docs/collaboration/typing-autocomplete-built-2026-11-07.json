@@ -1,0 +1,60 @@
+{
+  "url": "http://127.0.0.1:4036",
+  "results": [
+    {
+      "name": "function-completion-with-tab",
+      "passed": true
+    },
+    {
+      "name": "completed-function-and-argument-run-in-python",
+      "passed": true
+    },
+    {
+      "name": "object-properties",
+      "passed": true
+    },
+    {
+      "name": "filtered-radius-property",
+      "passed": true
+    },
+    {
+      "name": "nested-vector-components",
+      "passed": true
+    },
+    {
+      "name": "color-namespace",
+      "passed": true
+    },
+    {
+      "name": "scene-properties",
+      "passed": true
+    },
+    {
+      "name": "remaining-keyword-arguments",
+      "passed": true
+    },
+    {
+      "name": "enter-remains-newline",
+      "passed": true
+    },
+    {
+      "name": "no-automatic-popup-in-comments-or-strings",
+      "passed": true
+    },
+    {
+      "name": "typing-word-card-only-first-two-times-without-focus-loss",
+      "passed": true
+    },
+    {
+      "name": "got-it-stops-repeat-meaning-cards",
+      "passed": true
+    },
+    {
+      "name": "mobile-completion-button",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "aiRequests": [],
+  "scope": "Actual Monaco keyboard/Tab/Enter/button and actual guest Pyodide execution. No AI service or DB writes."
+}

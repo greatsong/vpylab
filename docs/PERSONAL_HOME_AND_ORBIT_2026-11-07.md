@@ -34,4 +34,14 @@
 
 준비 실패 재시도·오류 노출, 인증 준비 placeholder, 보관 총량 제한·손님 안내·명시적 삭제, 정상 본문 종료와 소리 정지 구분, 대화상자 CSS 직접 로드, 사본 제목의 잔존 방지, 썸네일 선검증·빈 코드 오류 분리, 초기화 시 코드 보존, 기본 환영 문구 유지 등 9개 지적을 검토해 반영했습니다. Viewport3D·썸네일·인증 구현도 확인하고 실제 브라우저에서 회전·사본 편집·복구를 검증했습니다.
 
-배포 후 Claude·Gemini 검토와 운영 확인 결과는 최종 검증 보고서에 기록합니다.
+## 운영 확인
+
+운영 `https://vpylab.vercel.app`의 개인 메인 14개 브라우저 검사와 기본 환영 17개 회귀 검사가 통과했습니다. 실제 Python 실행, 회전·시점 복구, 사본 편집 후 다른 예제 선택 시 제목 갱신, 모바일, 초기화 후 코드 복구, 닫기·화면 이동 시 Worker 종료를 포함합니다. 브라우저 오류 0개, DB 쓰기 0개입니다. 계정 격리는 단위 검사이며 실제 로그인 검사로 주장하지 않습니다.
+
+- [개인 메인 운영 결과](collaboration/personal-home-production-2026-11-07.json)
+- [환영 화면 운영 결과](collaboration/home-welcome-regression-production-2026-11-07.json)
+- [CI 결과](collaboration/home-audio-lighting-ci-2026-11-07.json)
+- [운영 내 메인 회전 캡처](review-figures/2026-11-07/home-personal-orbit-production.png)
+- [운영 모바일 캡처](review-figures/2026-11-07/home-personal-mobile-production.png)
+
+배포 후 Claude·Gemini 독립 검토 결과는 최종 검증 보고서에 기록합니다.

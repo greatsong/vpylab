@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import CodeVocabulary from '../learning/CodeVocabulary';
 
 // React 텍스트 노드로 그려 예제의 부등호·문자열·주석을 그대로 보존합니다.
 function highlightPython(code) {
@@ -8,7 +9,7 @@ function highlightPython(code) {
   return kind?<span key={index} style={{color:`var(--color-${kind==='muted'?'text-muted':kind})`}}>{value}</span>:value;
  });
 }
-export default function DocCodeBlock({code,copyCode=code,label='Python 예제 코드',locale='ko'}) {
+export default function DocCodeBlock({code,copyCode=code,label='Python 예제 코드',locale='ko',vocabulary=true}) {
  const ko=locale==='ko';
  const [message,setMessage]=useState('');const timer=useRef(null);
  useEffect(()=>()=>clearTimeout(timer.current),[]);
@@ -19,5 +20,6 @@ export default function DocCodeBlock({code,copyCode=code,label='Python 예제 �
  };
  return <div className="mb-3 min-w-0"><div className="flex items-center justify-between gap-3 mb-2"><span role="status" className="text-xs" style={{color:'var(--color-text-muted)'}}>{message}</span><button type="button" onClick={copy} className="btn-secondary text-xs shrink-0" aria-label={copyCode===code?(ko?'예제 코드 복사':'Copy example code'):(ko?'제공 함수 포함 전체 코드 복사':'Copy complete code with helper')}>{copyCode===code?(ko?'코드 복사':'Copy code'):(ko?'전체 코드 복사':'Copy all code')}</button></div>
   <pre tabIndex={0} aria-label={label} className="overflow-x-auto text-[13px] leading-relaxed p-4 m-0 rounded-lg border" style={{fontFamily:'var(--font-mono)',backgroundColor:'var(--color-bg-secondary)',borderColor:'var(--color-border)',color:'var(--color-text-primary)'}}><code>{highlightPython(code)}</code></pre>
+  {vocabulary&&<CodeVocabulary code={code} locale={locale}/>}
  </div>;
 }

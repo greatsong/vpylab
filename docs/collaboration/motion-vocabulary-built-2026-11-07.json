@@ -1,0 +1,75 @@
+{
+  "url": "http://127.0.0.1:4036",
+  "results": [
+    {
+      "name": "dumpling-explicit-action-under-reduced-motion",
+      "passed": true
+    },
+    {
+      "name": "dumpling-stop-restores-shape",
+      "passed": true
+    },
+    {
+      "name": "flashlight-explicit-action-under-reduced-motion",
+      "passed": true
+    },
+    {
+      "name": "flashlight-stop-restores-shape",
+      "passed": true
+    },
+    {
+      "name": "toolbox-explicit-action-under-reduced-motion",
+      "passed": true
+    },
+    {
+      "name": "toolbox-stop-restores-shape",
+      "passed": true
+    },
+    {
+      "name": "kirby-explicit-action-under-reduced-motion",
+      "passed": true
+    },
+    {
+      "name": "action-repeats-after-original-2-4-second-limit",
+      "passed": true
+    },
+    {
+      "name": "kirby-stop-restores-shape",
+      "passed": true
+    },
+    {
+      "name": "friends-explicit-action-under-reduced-motion",
+      "passed": true
+    },
+    {
+      "name": "friends-stop-restores-shape",
+      "passed": true
+    },
+    {
+      "name": "word-help-is-quiet-and-collapsed-by-default",
+      "passed": true
+    },
+    {
+      "name": "docs-word-tip-shows-meaning-picture-example",
+      "passed": true
+    },
+    {
+      "name": "tutorial-vocabulary-expands-to-compound",
+      "passed": true
+    },
+    {
+      "name": "workspace-tips-do-not-edit-code",
+      "passed": true
+    },
+    {
+      "name": "mobile-vocabulary-fits-and-keeps-editor",
+      "passed": true
+    },
+    {
+      "name": "guide-opacity-tip-is-correct",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Real WebGL pixel changes and repeat/stop for every friend, explicit reduced-motion playback, actual docs/tutorial/workspace word tips. Guest only; no DB writes."
+}

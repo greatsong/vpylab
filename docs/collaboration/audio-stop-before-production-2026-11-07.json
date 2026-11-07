@@ -1,0 +1,15 @@
+{
+  "url": "https://vpylab.vercel.app",
+  "results": [
+    {
+      "name": "legacy-production-stop-leaves-notes",
+      "passed": true,
+      "problemReproduced": true,
+      "signalBefore": 0.052539374404361794,
+      "signalAfter300ms": 0.1269817302441457,
+      "signalAfter2600ms": 0.011620659385788202
+    }
+  ],
+  "errors": [],
+  "scope": "Actual Web Audio graph with an inserted AnalyserNode, actual Pyodide/Worker, controlled guest code. Muted speaker output; measures graph signal, not physical speaker listening."
+}

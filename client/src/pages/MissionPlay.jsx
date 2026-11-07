@@ -154,6 +154,7 @@ function MissionSession({ missionId }) {
     if (!isReady) return;
     // 클릭 제스처에서 AudioContext resume 후 코드 실행 (최대 500ms 대기)
     resumeAndRun(() => {
+      stopAllSounds();
       pendingGradeRef.current = false;
       if (sceneRef.current) clearScene(sceneRef.current);
       if (sceneRef.current?._cameraSystem) {
@@ -226,6 +227,7 @@ function MissionSession({ missionId }) {
     }
 
     resumeAndRun(() => {
+      stopAllSounds();
       if (sceneRef.current) clearScene(sceneRef.current);
       if (sceneRef.current?._cameraSystem) {
         sceneRef.current._cameraSystem.onCodeStart();
@@ -277,7 +279,7 @@ function MissionSession({ missionId }) {
         <button onClick={handleRun} disabled={!isReady || isRunning} className="toolbar-btn --run">
           {t('editor.run')}
         </button>
-        <button onClick={handleStop} disabled={!isRunning} className="toolbar-btn --stop">
+        <button onClick={handleStop} disabled={!isRunning&&!audio.playing} className="toolbar-btn --stop">
           {t('editor.stop')}
         </button>
         <button onClick={handleGrade} disabled={!isReady && !isRunning} className="toolbar-btn --grade">
@@ -326,6 +328,7 @@ function MissionSession({ missionId }) {
           </span>
         </div>
       </div>
+
 
       {/* === 메인 레이아웃 === */}
       <div className="flex-1 flex min-h-0">

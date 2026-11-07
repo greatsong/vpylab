@@ -154,22 +154,23 @@ async function flushOutputStreams(runId = currentRunId) {
 }
 
 async function dispatchQueuedEvents() {
-  if (!pyodide || isRunningCode || isDispatchingEvents || _eventQueue.length === 0) return;
+  if (!pyodide || shouldStop || isRunningCode || isDispatchingEvents || _eventQueue.length === 0) return;
   isDispatchingEvents = true;
-  shouldStop = false;
   sendRunMessage(currentRunId, 'event_start');
   try {
     // 핸들러가 rate()·sleep()·input()을 쓰면 별도 태스크로 돈다. 그 태스크가 끝날 때까지
     // 실행 상태(event_start~event_done)를 유지해 하트비트·정지 버튼·입력 위젯이 동작하게 한다.
     await pyodide.runPythonAsync('await _vpylab_dispatch_events()');
     await flushOutputStreams();
-    sendRunMessage(currentRunId, 'event_done');
+    if(shouldStop){clearInputQueues();await pyodide.runPythonAsync('_event_handlers.clear()');}
+    sendRunMessage(currentRunId, 'event_done', {stopped:shouldStop});
   } catch (err) {
     const msg = takePythonTraceback(err);
     await flushOutputStreams();
     if (shouldStop || msg.includes('_StopExecution') || msg.includes('실행이 중지되었습니다')) {
-      sendRunMessage(currentRunId, 'event_done', { stopped: true });
       clearInputQueues();
+      try{await pyodide.runPythonAsync('_event_handlers.clear()');}catch{/* 정지 중 정리 실패는 다음 실행의 reset에서 회수 */}
+      sendRunMessage(currentRunId, 'event_done', { stopped: true });
     } else {
       sendRunMessage(currentRunId, 'error', { error: formatPythonError(msg), raw: msg, detail: parsePythonTraceback(msg, err.type) });
     }
@@ -179,7 +180,7 @@ async function dispatchQueuedEvents() {
       const next = queuedRun;
       queuedRun = null;
       await runCode(next.code, next.runId);
-    } else if (_eventQueue.length > 0) {
+    } else if (!shouldStop && _eventQueue.length > 0) {
       await dispatchQueuedEvents();
     }
   }
@@ -479,7 +480,8 @@ sys.stderr = _VPLBoundedOutput('stderr')
     // 사용자 중지로 인한 예외는 에러가 아닌 정상 종료로 처리
     // shouldStop 플래그 또는 예외 메시지로 판별
     if (shouldStop || msg.includes('_StopExecution') || msg.includes('실행이 중지되었습니다')) {
-      shouldStop = false;
+      clearInputQueues();
+      try{await pyodide.runPythonAsync('_event_handlers.clear()');}catch{/* 다음 실행의 reset에서 회수 */}
       isRunningCode = false;
       sendRunMessage(runId, 'done');
       if (queuedRun) {
@@ -611,10 +613,13 @@ self.onmessage = async (event) => {
     case 'stop':
       // 소프트 스톱 — rate()에서 플래그 확인 후 Python 예외 발생
       shouldStop = true;
+      clearInputQueues();
+      if(pyodide&&!isRunningCode&&!isDispatchingEvents){try{pyodide.runPython('_event_handlers.clear()');}catch{/* 다음 실행의 reset에서 회수 */}}
       break;
 
     case 'event':
       // 메인 스레드의 사용자 입력 이벤트 — 큐에 적재하면 rate()에서 디스패치
+      if (shouldStop) break;
       if (event.data.payload) {
         try {
           _eventQueue.push(JSON.stringify(event.data.payload));
@@ -625,6 +630,7 @@ self.onmessage = async (event) => {
 
     case 'widget_value':
       // 위젯 값 동기화
+      if (shouldStop) break;
       if (event.data.id !== undefined) {
         _widgetValues[event.data.id] = event.data.value;
       }
@@ -632,6 +638,7 @@ self.onmessage = async (event) => {
 
     case 'input_value':
       // input() 응답 — value가 null이면 취소. Python의 input()이 폴링으로 읽는다.
+      if (shouldStop) break;
       if (event.data.id !== undefined) {
         try {
           _inputValues[event.data.id] = JSON.stringify(
