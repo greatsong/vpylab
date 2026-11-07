@@ -28,5 +28,13 @@ export function vocabularyForCode(code = '') {
   // 주석·문자열에 우연히 등장한 단어는 안내 대상으로 고르지 않습니다.
   const source = String(code).slice(0, 100_000).replace(/"""[\s\S]*?(?:"""|$)|'''[\s\S]*?(?:'''|$)|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|#[^\n]*/g, match => ' '.repeat(match.length));
   return codeVocabulary.map(term => ({ term, index: source.search(new RegExp('\\b' + term.id + '\\b')) }))
-    .filter(item => item.index >= 0).sort((a, b) => a.index - b.index).map(item => item.term);
+    .filter(item => item.index >= 0).sort((a, b) => a.index - b.index).map(item => vocabularyWord(item.term.id, source.slice(0,item.index+item.term.id.length)));
+}
+
+export function vocabularyWord(id,prefix=''){
+ const term=codeVocabulary.find(w=>w.id===id);if(!term)return undefined;
+ if(['width','height'].includes(id)&&/\bscene[ \t]*\.[ \t]*(?:width|height)[ \t]*=?[ \t]*$/.test(prefix)){
+  const horizontal=id==='width';return{...term,meaning:horizontal?'화면 가로 크기':'화면 세로 크기',explanation:horizontal?'3D 화면의 가로 길이예요. 단위는 픽셀이고, 도형의 두께와는 달라요.':'3D 화면의 세로 길이예요. 단위는 픽셀이고, 도형의 높이와는 달라요.',example:'scene.'+id+' = '+(horizontal?'800':'500')};
+ }
+ return term;
 }

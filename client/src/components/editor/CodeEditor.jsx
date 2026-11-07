@@ -3,11 +3,11 @@ import Editor, { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import useAppStore from '../../stores/appStore';
-import { codeVocabulary } from '../../data/code-vocabulary';
+import { vocabularyWord } from '../../data/code-vocabulary';
 import { claimWordTip, rememberWord } from '../../utils/word-help';
 import useAuthStore from '../../stores/authStore';
 import TypingWordTip from '../learning/TypingWordTip';
-import { registerPythonHelp, pythonContext } from './python-completions';
+import { registerPythonHelp, pythonContext, completionChoices } from './python-completions';
 
 // Monaco Web Worker 설정 — 누락 시 "MonacoEnvironment.getWorker" 오류 발생
 self.MonacoEnvironment = {
@@ -59,29 +59,36 @@ export default function CodeEditor({ code, onChange, fontSize = 14, readOnly = f
     // 폰트 합자 명시적 OFF — props만으로 안 먹는 환경 방어
     editor.updateOptions({ fontLigatures: false });
     cleanupRef.current();
-    let pending=null,hideTimer=null,lastKey='';
+    let pending=null,hideTimer=null,lastKey='',candidate=null;
     const hide=()=>{clearTimeout(pending);clearTimeout(hideTimer);setTip(null);};
+    const dismiss=()=>{candidate=null;hide();};
     const changed=editor.onDidChangeModelContent(event=>{
       hide();
-      if(!editor.getModel()?.getValue()||event.changes.some(c=>c.rangeLength>0))lastKey='';
-      if(event.isFlush||event.isUndoing||event.isRedoing||event.changes.length!==1||event.changes[0].text.length>30||event.changes[0].text.includes('\n')){lastKey='';return;}
+      const model=editor.getModel();
+      if(!model?.getValue()||event.changes.some(c=>c.rangeLength>0)){lastKey='';candidate=null;}
+      if(!model||event.isFlush||event.isUndoing||event.isRedoing||event.changes.length!==1||event.changes[0].text.length>30||event.changes[0].text.includes('\n')){lastKey='';candidate=null;return;}
+      const edit=event.changes[0],end=model.getOffsetAt({lineNumber:edit.range.startLineNumber,column:edit.range.startColumn})+edit.text.length,prefix=model.getValue().slice(0,end);
+      if(prefix.length>100000||pythonContext(prefix).blocked){candidate=null;return;}
+      const match=prefix.match(/([\p{L}_][\p{L}\p{N}_]*)[ \t]*(?:[=(])?[ \t]*$/u),term=match&&vocabularyWord(match[1],prefix);
+      if(term)candidate={term,key:term.id+':'+(prefix.length-match[0].length),line:edit.range.startLineNumber,time:Date.now()};
+      else if(candidate&&(candidate.line!==edit.range.startLineNumber||Date.now()-candidate.time>2000))candidate=null;
       pending=setTimeout(()=>{
-        if(!editor.hasTextFocus()||editor.getDomNode()?.querySelector('.suggest-widget.visible'))return;
-        const p=editor.getPosition(),model=editor.getModel();if(!p||!model)return;
-        const prefix=model.getValueInRange({startLineNumber:1,startColumn:1,endLineNumber:p.lineNumber,endColumn:p.column});
-        if(prefix.length>100000||pythonContext(prefix).blocked)return;
-        const match=prefix.match(/([\p{L}_][\p{L}\p{N}_]*)[ \t]*(?:[=(])?[ \t]*$/u),term=match&&codeVocabulary.find(w=>w.id===match[1]);
-        if(!term){lastKey='';return;}
-        const tokenKey=term.id+':'+(prefix.length-match[0].length);if(tokenKey===lastKey)return;
-        const userId=useAuthStore.getState().user?.id;
-        const point=editor.getScrolledVisiblePosition(p),host=hostRef.current,dom=editor.getDomNode();if(!point||!host||!dom||!claimWordTip(userId,term.id))return;
-        lastKey=tokenKey;const width=Math.min(320,host.clientWidth-16),relativeTop=dom.getBoundingClientRect().top-host.getBoundingClientRect().top,below=relativeTop+point.top+point.height+8;
-        setTip({term,owner:userId,left:Math.max(8,Math.min(point.left,host.clientWidth-width-8)),top:below+215<host.clientHeight?below:Math.max(8,relativeTop+point.top-215),width});
+        if(!editor.hasTextFocus()||!candidate||candidate.key===lastKey)return;
+        const p=editor.getPosition();if(!p)return;
+        if(editor.getDomNode()?.querySelector('.suggest-widget.visible')){
+          const exact=term?.id===candidate.term.id&&completionChoices(prefix).some(c=>c.name===candidate.term.id&&c.insertText===c.name);
+          if(!exact)return;
+          editor.trigger('word-help','hideSuggestWidget',{});
+        }
+        const userId=useAuthStore.getState().user?.id,point=editor.getScrolledVisiblePosition(p),host=hostRef.current,dom=editor.getDomNode();
+        if(!point||!host||!dom||!claimWordTip(userId,candidate.term.id))return;
+        lastKey=candidate.key;const width=Math.min(320,host.clientWidth-16),relativeTop=dom.getBoundingClientRect().top-host.getBoundingClientRect().top,below=relativeTop+point.top+point.height+8;
+        setTip({term:candidate.term,owner:userId,left:Math.max(8,Math.min(point.left,host.clientWidth-width-8)),top:below+215<host.clientHeight?below:Math.max(8,relativeTop+point.top-215),width});
         hideTimer=setTimeout(()=>setTip(null),6000);
       },320);
     });
-    const scroll=editor.onDidScrollChange(e=>{if(e.scrollTopChanged||e.scrollLeftChanged)hide();}),blur=editor.onDidBlurEditorWidget(hide),keys=editor.onKeyDown(e=>{if(e.keyCode===monaco.KeyCode.Escape)hide();});
-    cleanupRef.current=()=>{clearTimeout(pending);clearTimeout(hideTimer);changed.dispose();scroll.dispose();blur.dispose();keys.dispose();};
+    const scroll=editor.onDidScrollChange(e=>{if(e.scrollTopChanged||e.scrollLeftChanged)dismiss();}),blur=editor.onDidBlurEditorWidget(dismiss),mouse=editor.onMouseDown(dismiss),keys=editor.onKeyDown(e=>{if(e.keyCode===monaco.KeyCode.Escape)dismiss();});
+    cleanupRef.current=()=>{clearTimeout(pending);clearTimeout(hideTimer);changed.dispose();scroll.dispose();blur.dispose();mouse.dispose();keys.dispose();};
 
   }, []);
 

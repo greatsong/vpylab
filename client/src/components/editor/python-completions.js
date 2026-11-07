@@ -1,5 +1,5 @@
 import { apiReferenceDocs } from '../../data/docs';
-import { codeVocabulary } from '../../data/code-vocabulary';
+import { vocabularyWord } from '../../data/code-vocabulary';
 
 const extensions=new Set(['play_sound','play_note','play_chord','play_sequence','play_sfx','bgm','scatter3d','surface3d','line3d','bar3d']);
 const functions=new Map(apiReferenceDocs.filter(d=>/^\w+$/.test(d.id)&&(d.signature?.startsWith(d.id+'(')||extensions.has(d.id))).map(d=>[d.id,d]));
@@ -14,7 +14,7 @@ const members={
  color:['red','green','blue','white','black','yellow','cyan','magenta','orange','purple','pink','gray','hsv_to_rgb','rgb_to_hsv'],
 };
 const extras={print:'값을 출력하기',len:'개수',range:'반복할 숫자',abs:'절댓값',round:'반올림',min:'가장 작은 값',max:'가장 큰 값',sum:'합계',enumerate:'번호와 값',zip:'나란히 묶기',int:'정수로',float:'실수로',str:'문자열로',list:'목록으로',dict:'키와 값으로',sorted:'정렬한 목록',sin:'사인',cos:'코사인',sqrt:'제곱근',pi:'원주율',random:'0부터 1 사이 난수',True:'참',False:'거짓',None:'값 없음',for:'하나씩 반복',while:'조건 동안 반복',if:'조건 확인',else:'그렇지 않으면',elif:'다른 조건',def:'함수 정의',return:'값 돌려주기',break:'반복 끝내기',continue:'다음 반복',from:'가져올 곳',import:'가져오기',in:'안에',and:'그리고',or:'또는',not:'아님'};
-const word=id=>codeVocabulary.find(w=>w.id===id);
+const word=(id,prefix)=>vocabularyWord(id,prefix);
 const docText=(d,locale)=>d?.[locale]||d?.ko||'';
 const identifier=/[\p{L}_][\p{L}\p{N}_]*/u;
 
@@ -34,28 +34,43 @@ export function pythonContext(source){
  }
  return{masked,blocked:!!quote||comment,call:[...stack].reverse().find(s=>s.open==='('&&s.name)};
 }
-function declarations(masked){const result=new Map();for(const m of masked.matchAll(/\b([\p{L}_][\p{L}\p{N}_]*)\s*=\s*([^\n]*)/gu)){const type=m[2].match(/^([\w]+)\s*\(/)?.[1];result.set(m[1],shapes.has(type)?type:type==='vector'?'vector':m[2].trim().startsWith('[')?'list':null);}for(const m of masked.matchAll(/\bdef\s+([\p{L}_][\p{L}\p{N}_]*)\s*\(/gu))result.set(m[1],'function');return result;}
+function declarations(masked){
+ const result=new Map();let depth=0;
+ for(const line of masked.split('\n')){
+  if(depth===0){
+   const assignment=line.match(/^[ \t]*([\p{L}_][\p{L}\p{N}_]*)[ \t]*=(?!=)[ \t]*([^\n]*)/u);
+   if(assignment){const type=assignment[2].match(/^([\w]+)\s*\(/)?.[1];result.set(assignment[1],shapes.has(type)?type:type==='vector'?'vector':assignment[2].trim().startsWith('[')?'list':null);}
+   const fn=line.match(/^[ \t]*def[ \t]+([\p{L}_][\p{L}\p{N}_]*)[ \t]*\((.*)/u);
+   if(fn){result.set(fn[1],'function');const args=fn[2].slice(0,fn[2].lastIndexOf(')'));let nested=0,start=0;for(let i=0;i<=args.length;i++){const c=args[i];if(c&&'([{'.includes(c))nested++;else if(c&&')]}'.includes(c))nested--;if(i===args.length||c===','&&nested===0){const name=args.slice(start,i).trim().match(/^[*]*([\p{L}_][\p{L}\p{N}_]*)/u)?.[1];if(name)result.set(name,null);start=i+1;}}}
+   const loop=line.match(/^[ \t]*for[ \t]+(.+?)[ \t]+in[ \t]/u);if(loop)for(const name of loop[1].split(',').map(x=>x.trim()))if(/^[\p{L}_][\p{L}\p{N}_]*$/u.test(name))result.set(name,null);
+  }
+  for(const c of line){if('([{'.includes(c))depth++;else if(')]}'.includes(c))depth=Math.max(0,depth-1);}
+ }
+ return result;
+}
 function receiverType(receiver,declared){if(receiver==='scene'||receiver==='color')return receiver;if(/\.(pos|axis|up|size|color|velocity|center|forward)$/.test(receiver))return'vector';return declared.get(receiver);}
 function typeMembers(type){if(type==='vector'||type==='list'||type==='scene'||type==='color')return members[type];if(shapes.has(type))return[...new Set([...(type==='label'?['visible','delete']:type==='curve'?['visible','append','modify','clear','point','npoints','pop','shift','unshift']:members.object),...(functions.get(type)?.params||[]).map(p=>p.name)])];return[];}
 export function completionChoices(source,locale='ko'){
  const context=pythonContext(source);if(context.blocked||/(?:^|[^\p{L}\p{N}_])\d+\.$/u.test(context.masked))return[];const declared=declarations(context.masked),member=context.masked.match(/([\p{L}_][\p{L}\p{N}_.]*)\.([\p{L}\p{N}_]*)$/u),ko=locale==='ko';
  const choice=(name,detail,description,kind='property',insertText=name)=>({name,detail,description,kind,insertText});
- if(member){const type=receiverType(member[1],declared);return typeMembers(type).map(name=>choice(name,ko?(word(name)?.meaning||'속성·동작'):'Property / method',ko?(word(name)?.explanation||'현재 객체에서 사용할 수 있는 이름입니다.'):(word(name)?.english||'A member of this object.')));}
+ if(member){const type=receiverType(member[1],declared);return typeMembers(type).map(name=>choice(name,ko?(word(name,member[1]+'.'+name)?.meaning||'속성·동작'):'Property / method',ko?(word(name,member[1]+'.'+name)?.explanation||'현재 객체에서 사용할 수 있는 이름입니다.'):(word(name)?.english||'A member of this object.')));}
+ if(/\.[\p{L}\p{N}_]*$/u.test(context.masked))return[];
+ const values=[...[...declared].filter(([name])=>identifier.test(name)&&!functions.has(name)&&!extras[name]).map(([name])=>choice(name,ko?'내 코드의 이름':'Name in this code',ko?'이 코드에서 정의한 이름입니다.':'A name defined in this code.','variable')),...[...functions].map(([name,d])=>choice(name,ko?(word(name)?.meaning||docText(d.title,locale)):(d.title?.en||name),docText(d.description,locale),'function')),...Object.entries(extras).map(([name,meaning])=>choice(name,ko?meaning:'Python',ko?meaning:name,'keyword'))];
  const call=context.call,doc=call&&functions.get(call.name),segment=call?context.masked.slice(call.start):'';
  if(doc&&/^\s*[\p{L}\p{N}_]*$/u.test(segment)){
   const used=new Set(call.segments.map(s=>s.trim().match(/^([\w]+)\s*=(?!=)/)?.[1]).filter(Boolean)),positional=call.segments.filter(s=>s.trim()&&!/^\s*\w+\s*=(?!=)/.test(s)).length;
-  return(doc.params||[]).filter((p,i)=>i>=positional&&!used.has(p.name)&&/^\w+$/.test(p.name)).map(p=>choice(p.name,docText(p.desc||p.description,locale),ko?(word(p.name)?.explanation||docText(p.desc||p.description,locale)):(word(p.name)?.english||docText(p.desc||p.description,locale)),'parameter',p.name+'='));
+  if(['vector','rate','sleep'].includes(doc.id))return values;
+  const params=(doc.params||[]).filter((p,i)=>i>=positional&&!used.has(p.name)&&/^\w+$/.test(p.name)).map(p=>choice(p.name,docText(p.desc||p.description,locale),ko?(word(p.name)?.explanation||docText(p.desc||p.description,locale)):(word(p.name)?.english||docText(p.desc||p.description,locale)),'parameter',p.name+'='));
+  return shapes.has(doc.id)?[...params,...values]:[...values,...params];
  }
- const list=[...functions].map(([name,d])=>choice(name,ko?(word(name)?.meaning||docText(d.title,locale)):(d.title?.en||name),docText(d.description,locale),'function'));
- list.push(...Object.entries(extras).map(([name,meaning])=>choice(name,ko?meaning:'Python',ko?meaning:name,'keyword')),...[...declared].filter(([name])=>identifier.test(name)&&!functions.has(name)&&!extras[name]).map(([name])=>choice(name,ko?'내 코드의 이름':'Name in this code',ko?'이 코드에서 정의한 이름입니다.':'A name defined in this code.','variable')));
- return list;
+ return values;
 }
 const registrations=new WeakMap();
 export function registerPythonHelp(monaco,getLocale=()=> 'ko'){
  if(registrations.has(monaco))return registrations.get(monaco);
  const textBefore=(model,p)=>model.getValueInRange({startLineNumber:1,startColumn:1,endLineNumber:p.lineNumber,endColumn:p.column});
- const completion=monaco.languages.registerCompletionItemProvider('python',{triggerCharacters:['.','(',','],provideCompletionItems(model,p){const prefix=textBefore(model,p);if(prefix.length>100_000)return{suggestions:[]};const w=model.getWordUntilPosition(p),range={startLineNumber:p.lineNumber,endLineNumber:p.lineNumber,startColumn:w.startColumn,endColumn:w.endColumn};return{suggestions:completionChoices(prefix,getLocale()).map((c,i)=>({label:{label:c.name,description:c.detail},kind:c.kind==='function'?monaco.languages.CompletionItemKind.Function:c.kind==='variable'?monaco.languages.CompletionItemKind.Variable:c.kind==='keyword'?monaco.languages.CompletionItemKind.Keyword:monaco.languages.CompletionItemKind.Property,detail:c.detail,documentation:c.description,insertText:c.insertText,range,sortText:String(i).padStart(4,'0')}))};}});
- const hover=monaco.languages.registerHoverProvider('python',{provideHover(model,p){const before=textBefore(model,p);if(pythonContext(before).blocked)return null;const w=model.getWordAtPosition(p);if(!w)return null;const term=word(w.word),d=functions.get(w.word),locale=getLocale();if(!term&&!d)return null;return{range:{startLineNumber:p.lineNumber,endLineNumber:p.lineNumber,startColumn:w.startColumn,endColumn:w.endColumn},contents:[{value:'**'+w.word+'** · '+(locale==='ko'?(term?.meaning||docText(d?.title,locale)):(d?.title?.en||w.word))},{value:locale==='ko'?(term?.explanation||docText(d?.description,locale)):(term?.english||docText(d?.description,locale))}]};}});
+ const completion=monaco.languages.registerCompletionItemProvider('python',{triggerCharacters:['.','(',','],provideCompletionItems(model,p){const prefix=textBefore(model,p);if(prefix.length>100_000)return{suggestions:[]};const w=model.getWordUntilPosition(p),whole=model.getWordAtPosition(p),range={startLineNumber:p.lineNumber,endLineNumber:p.lineNumber,startColumn:w.startColumn,endColumn:whole?.endColumn||w.endColumn};const hasEquals=/^\s*=/.test(model.getLineContent(p.lineNumber).slice(range.endColumn-1));return{suggestions:completionChoices(prefix,getLocale()).map((c,i)=>({label:{label:c.name,description:c.detail},kind:c.kind==='function'?monaco.languages.CompletionItemKind.Function:c.kind==='variable'?monaco.languages.CompletionItemKind.Variable:c.kind==='keyword'?monaco.languages.CompletionItemKind.Keyword:monaco.languages.CompletionItemKind.Property,detail:c.detail,documentation:c.description,insertText:c.kind==='parameter'&&hasEquals?c.name:c.insertText,range,sortText:String(i).padStart(4,'0')}))};}});
+ const hover=monaco.languages.registerHoverProvider('python',{provideHover(model,p){const before=textBefore(model,p);if(pythonContext(before).blocked)return null;const w=model.getWordAtPosition(p);if(!w)return null;const term=word(w.word,model.getLineContent(p.lineNumber).slice(0,w.endColumn-1)),d=functions.get(w.word),locale=getLocale();if(!term&&!d)return null;return{range:{startLineNumber:p.lineNumber,endLineNumber:p.lineNumber,startColumn:w.startColumn,endColumn:w.endColumn},contents:[{value:'**'+w.word+'** · '+(locale==='ko'?(term?.meaning||docText(d?.title,locale)):(d?.title?.en||w.word))},{value:locale==='ko'?(term?.explanation||docText(d?.description,locale)):(term?.english||docText(d?.description,locale))}]};}});
  const signature=monaco.languages.registerSignatureHelpProvider('python',{signatureHelpTriggerCharacters:['(',','],signatureHelpRetriggerCharacters:[','],provideSignatureHelp(model,p){const c=pythonContext(textBefore(model,p));if(c.blocked||!c.call)return null;const d=functions.get(c.call.name);if(!d)return null;const params=d.params||[],locale=getLocale(),value={signatures:[{label:c.call.name+'('+params.map(x=>x.name).join(', ')+')',documentation:locale==='ko'?(word(c.call.name)?.meaning||''):undefined,parameters:params.map(x=>({label:x.name,documentation:docText(x.desc||x.description,locale)}))}],activeSignature:0,activeParameter:Math.max(0,params.findIndex(x=>x.name===c.masked.slice(c.call.start).trim().match(/^(\w+)\s*=/)?.[1])>=0?params.findIndex(x=>x.name===c.masked.slice(c.call.start).trim().match(/^(\w+)\s*=/)?.[1]):Math.min(c.call.segments.length,Math.max(0,params.length-1)))};return{value,dispose(){}};}});
  const handle={dispose(){completion.dispose();hover.dispose();signature.dispose();registrations.delete(monaco);}};registrations.set(monaco,handle);return handle;
 }

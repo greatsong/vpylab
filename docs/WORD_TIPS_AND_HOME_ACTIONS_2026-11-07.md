@@ -22,7 +22,7 @@ opacity는 **불투명도**로 0이 투명하고 1이 불투명합니다. VPytho
 
 ## 검증
 
-전체 단위 검사·빌드·린트, 모션 감소 환경에서 모든 캐릭터의 실제 WebGL 변형/정지/원형 복구, 2.4초 이후 반복, 문서·튜토리얼·만들기의 실제 안내 동작, 모바일 배치를 검사합니다. 최종 로컬 전체 79개 파일/831개 검사 통과, 린트 오류 0개(기존 LoadingScreen 경고 1개), 빌드 성공입니다. 실제 배포 빌드의 자동 완성·타이핑 카드 13개, 트레이닝·갤러리 소리 재실행 6개, 극장·이벤트 큐 6개 검사를 통과했습니다. 소리 관련 모델 검토의 지적을 반영하고 실제 런타임 검사로 확인했습니다.
+전체 단위 검사·빌드·린트, 모션 감소 환경에서 모든 캐릭터의 실제 WebGL 변형/정지/원형 복구, 2.4초 이후 반복, 문서·튜토리얼·만들기의 실제 안내 동작, 모바일 배치를 검사합니다. 최종 로컬 전체 79개 파일/834개 검사 통과, 린트 오류 0개(기존 LoadingScreen 경고 1개), 빌드 성공입니다. 실제 배포 빌드의 자동 완성·타이핑 카드 19개, 트레이닝·갤러리 소리 재실행 6개, 극장·이벤트 큐 6개 검사를 통과했습니다. 소리 관련 모델 검토의 지적을 반영하고 실제 런타임 검사로 확인했습니다.
 
 - [입력·자동 완성 검사](collaboration/typing-autocomplete-built-2026-11-07.json)
 - [재실행 음원 검사](collaboration/audio-restart-built-2026-11-07.json)
@@ -36,3 +36,14 @@ opacity는 **불투명도**로 0이 투명하고 1이 불투명합니다. VPytho
 기존에는 기본 suggest 설정만 있고 VPython용 provider가 없었습니다. 문서 기반 함수·인자, 알려진 도형·벡터·scene·색·리스트의 멤버, 내 변수·함수, Python 기본 이름을 로컬 규칙으로 제안합니다. 코드의 괄호·주석·문자열 문맥을 확인하고, 이미 사용한 인자와 위치 인자를 구별합니다. 타입을 모르는 객체의 멤버는 지어내지 않습니다. Enter는 줄바꿈, Tab은 제안 적용, Esc는 닫기를 유지하며 자동 완성 버튼으로도 열 수 있습니다. hover와 짧은 signature help도 제공합니다.
 
 문서와 규칙만 사용하며 AI 호출·코드 외부 전송이 없습니다. Monaco 공식 [CompletionItemProvider](https://microsoft.github.io/monaco-editor/typedoc/interfaces/editor_editor_api.languages.CompletionItemProvider.html) 인터페이스와 설치 버전의 타입 정의를 확인했습니다. 등록은 인스턴스별 한 번만 수행합니다.
+
+## 후속 검토 반영
+
+Claude는 위치 인자와 값 후보의 혼동, 기존 철자·등호 중복, 직접 타이핑의 카드 누락을 지적했습니다. vector/rate/sleep의 값 자리에는 변수·값을 제안하고, 일반 호출에서도 내 이름을 제공합니다. 단어 전체를 교체하되 기존 등호를 보존합니다. 직접 입력한 알려진 단어는 잠깐 기억해, 자동 완성 선택 없이도 뜻 카드를 제공합니다. 이전 토큰을 다른 글자로 교체하면 카드 후보도 지웁니다.
+
+추가로 scene.width/height는 화면 픽셀 크기로 구분하고, 함수 인자를 지역 변수로 오해하지 않도록 괄호 깊이와 줄 시작을 확인합니다. for 변수와 def 매개변수를 포함하고, 모르는 배열 원소·함수 반환값의 속성은 지어내지 않습니다. 카드 최대 높이를 제한해 입력 줄을 가리지 않도록 했습니다. Gemini 4 Argon의 해당 선행 검토에는 P1/P2가 없었으며, 두 모델의 정적 코드 검토와 실제 브라우저 검증을 구분합니다.
+
+- [Claude 검토 원문](collaboration/typing-completion-postdeploy-claude-2026-11-07.json)
+- [Gemini 4 Argon 검토 원문](collaboration/typing-completion-postdeploy-gemini-2026-11-07.json)
+- [최종 편집기 19개 검사](collaboration/reviewed-completion-built-2026-11-07.json)
+- [직접 타이핑 화면](review-figures/2026-11-07/literal-typing-sphere-reviewed.png)
