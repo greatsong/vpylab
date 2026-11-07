@@ -35,3 +35,11 @@ Claude는 정적 파일을 읽었습니다. 실제 브라우저·Python 실행�
 대장간:
 
 ![메인과 같은 커비](collaboration/screenshots/kirby-forge-local-2026-11-07.png)
+
+## 운영 배포 결과
+
+기능 소스 `58ba2bf7ad54cd09f860bdbe43204d9381023416`를 main에 반영했습니다. Vercel·Railway 배포 성공과 실제 서버 health의 `commitSha=58ba2bf7ad54`를 확인했습니다. [GitHub CI](https://github.com/greatsong/vpylab/actions/runs/42355054815) 7개 작업 모두 성공했습니다.
+
+[운영 Chromium 검사](collaboration/kirby-production-browser-2026-11-07.json)도 10개 모두 통과했습니다. 로컬과 같은 모양·슬라이더·되돌리기·세 표정·모바일·구형 초안 보존과 갱신·복사 코드의 실제 Pyodide 실행을 확인했습니다. [배포와 CI 증거](collaboration/kirby-production-proof-2026-11-07.json)를 남깁니다.
+
+![실제 운영 대장간](collaboration/screenshots/kirby-forge-production-2026-11-07.png)

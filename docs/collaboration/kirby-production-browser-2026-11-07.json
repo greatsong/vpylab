@@ -1,0 +1,62 @@
+{
+  "url": "https://vpylab.vercel.app",
+  "results": [
+    {
+      "name": "main-reference-captured",
+      "passed": true
+    },
+    {
+      "name": "fresh-forge-uses-main-pink-friend",
+      "passed": true
+    },
+    {
+      "name": "large-eye-slider-and-undo",
+      "passed": true
+    },
+    {
+      "name": "three-expressions-render",
+      "passed": true
+    },
+    {
+      "name": "mobile-shape-controls-fit",
+      "passed": true
+    },
+    {
+      "name": "untouched-old-starter-upgrades",
+      "passed": true
+    },
+    {
+      "name": "edited-old-draft-preserved",
+      "passed": true
+    },
+    {
+      "name": "explicit-shape-update-keeps-module-title-and-id",
+      "passed": true
+    },
+    {
+      "name": "copied-code-contains-complete-main-style-compound",
+      "passed": true
+    },
+    {
+      "name": "copied-code-runs-in-real-pyodide",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "audit": {
+    "executedCopiedCode": true,
+    "runtimeMessages": [
+      "progress",
+      "progress",
+      "progress",
+      "progress",
+      "progress",
+      "ready",
+      "done"
+    ],
+    "compoundParts": [
+      15
+    ]
+  },
+  "scope": "Actual WebGL, native sliders and real Pyodide. Guest browser only; no account/DB writes."
+}
