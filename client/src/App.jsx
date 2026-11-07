@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import AuthCallback from './pages/AuthCallback';
 import AuthModal from './components/auth/AuthModal';
 import useAuthStore from './stores/authStore';
+import { resetForSessionChange } from './engine/pyodide-singleton';
 import './index.css';
 
 // 배포 후 구 청크 404 → 자동 새로고침 (Vite + SPA 배포 공통 이슈)
@@ -42,8 +43,11 @@ function AppContent() {
   const { t } = useI18n();
 
   useEffect(() => {
+    const stopForAccountChange = useAuthStore.subscribe((next, previous) => {
+      if (next.user?.id !== previous.user?.id) resetForSessionChange();
+    });
     const cleanup = initialize();
-    return () => { if (cleanup) cleanup(); };
+    return () => { stopForAccountChange(); if (cleanup) cleanup(); };
   }, [initialize]);
 
   return (

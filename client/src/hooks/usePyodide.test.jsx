@@ -18,7 +18,10 @@ function createRuntime(callbacks = {}) {
   return hook;
 }
 async function prepare(hook, worker = workers.at(-1)) {
-  await act(async () => { worker.emit({ type: 'ready' }); });
+  await act(async () => {
+    const park = worker.postMessage.mock.calls.map(([message]) => message).findLast((message) => message.type === 'park');
+    worker.emit(park ? { type: 'parked', token: park.token } : { type: 'ready' });
+  });
   expect(hook.result.current.isReady).toBe(true);
 }
 
@@ -45,7 +48,7 @@ describe('실제 Python hook와 싱글톤의 Worker 수명', () => {
     expect(onOutput).toHaveBeenLastCalledWith('📦 Installing numpy...');
   });
 
-  it('동시 초기화는 한 Worker를 공유하고 마지막 화면 이탈 때 종료한다', async () => {
+  it('동시 초기화는 한 Worker를 공유하고 마지막 화면 이탈 때 실행만 정리한다', async () => {
     const first = createRuntime();
     const second = createRuntime();
     expect(workers).toHaveLength(1);
@@ -53,12 +56,18 @@ describe('실제 Python hook와 싱글톤의 Worker 수명', () => {
     act(() => { expect(first.result.current.runCode('print(1)')).toBeNull(); });
     await prepare(first);
     expect(second.result.current.isReady).toBe(true);
-    act(() => { expect(first.result.current.runCode('print(1)')).toBeGreaterThan(0); });
+    let runId;
+    act(() => { runId = first.result.current.runCode('print(1)'); expect(runId).toBeGreaterThan(0); });
     expect(first.result.current.isRunning).toBe(true);
     first.unmount();
     expect(workers[0].terminate).not.toHaveBeenCalled();
     second.unmount();
-    expect(workers[0].terminate).toHaveBeenCalledOnce();
+    expect(workers[0].terminate).not.toHaveBeenCalled();
+    workers[0].emit({ type: 'done', runId });
+    const park = workers[0].postMessage.mock.calls.at(-1)[0];
+    expect(park.type).toBe('park');
+    workers[0].emit({ type: 'parked', token: park.token });
+    expect(singleton.getStatus()).toBe('ready');
   });
 
   it('초기화 실패 후 자동 반복 없이 수동 재시도로 복구한다', async () => {
@@ -135,6 +144,8 @@ describe('실제 Python hook와 싱글톤의 Worker 수명', () => {
     act(() => { hook.result.current.runCode('while True:\n    pass'); });
     act(() => { hook.result.current.stopExecution(); });
     hook.unmount();
+    expect(workers[0].terminate).not.toHaveBeenCalled();
+    act(() => { vi.advanceTimersByTime(750); });
     expect(workers[0].terminate).toHaveBeenCalledOnce();
     act(() => { vi.advanceTimersByTime(60_000); });
     expect(workers).toHaveLength(1);
@@ -202,7 +213,7 @@ describe('실제 Python hook와 싱글톤의 Worker 수명', () => {
     act(()=>hook.result.current.stopExecution());act(()=>workers[0].emit({type:'batch',runId,commands:[{action:'sound',method:'bgm_start',name:'adventure'}]}));expect(onBatch).not.toHaveBeenCalled();
   });
   it('화면을 떠난 실행 콜백은 다른 화면의 새 Worker를 실행하지 못한다',async()=>{
-    const first=createRuntime();await prepare(first);const stale=first.result.current.runCode;first.unmount();const second=createRuntime();await prepare(second);expect(stale('play_note("C4")')).toBeNull();expect(workers.at(-1).postMessage).toHaveBeenCalledTimes(1);
+    const first=createRuntime();await prepare(first);const stale=first.result.current.runCode;first.unmount();const second=createRuntime();await prepare(second);const calls=workers.at(-1).postMessage.mock.calls.length;expect(stale('play_note("C4")')).toBeNull();expect(workers.at(-1).postMessage).toHaveBeenCalledTimes(calls);expect(workers).toHaveLength(1);
   });
 
 });

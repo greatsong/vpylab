@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import useAppStore from '../stores/appStore';
+import { resetForSessionChange } from '../engine/pyodide-singleton';
 import { request, setTokenProvider } from './api';
 import CurriculumLibrary from './CurriculumLibrary';
 import { curriculumCounts, projectAppearance } from './curriculum';
@@ -34,6 +35,14 @@ export default function ClassroomApp() {
   const generation = useRef(0);
   const theme = useAppStore((state) => state.theme);
   const user = session?.user;
+  const runtimeOwner = user?.id ?? null;
+  const runtimeOwnerRef = useRef(null);
+
+  useEffect(() => {
+    if (runtimeOwnerRef.current === runtimeOwner) return;
+    runtimeOwnerRef.current = runtimeOwner;
+    resetForSessionChange();
+  }, [runtimeOwner]);
 
   useEffect(() => {
     if (!menuOpen) return undefined;

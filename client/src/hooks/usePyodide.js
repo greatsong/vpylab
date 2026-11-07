@@ -36,7 +36,7 @@ export function buildErrorDetails(data, rawCode, locale = 'ko') {
   return { message: String(data.error || ''), raw: data.raw || '', type, pyMessage, line, column: detail.column ?? null, codeLine, frames, explanation };
 }
 
-/** 실행 화면이 Worker를 소유하며 정지 확인 전에는 재실행을 허용하지 않습니다. */
+/** 실행 화면은 엔진을 빌려 쓰며 정지·정리 확인 전에는 재실행을 허용하지 않습니다. */
 export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone, locale = 'ko' } = {}) {
   const [status, setStatus] = useState(singleton.getStatus);
   const [progress, setProgress] = useState(singleton.getStatus() === 'ready' ? 100 : 0);
@@ -73,6 +73,11 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
 
     switch (type) {
       case 'status':
+        if (data.status === 'idle') {
+          clearTimers();
+          activeRunRef.current = 0;
+          stoppingRef.current = false;
+        }
         setStatus(data.status);
         break;
       case 'progress':

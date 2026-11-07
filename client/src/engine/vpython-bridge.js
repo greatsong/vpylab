@@ -1127,9 +1127,16 @@ export function processBatch(commands, scene) {
     }
     if (cmd.action === 'canvas_move') {
       const mesh = meshRegistry.get(cmd.id);
-      if (mesh) { scene.add(mesh); mesh.userData.vpCanvasId = canvasId; }
+      if (mesh) {
+        const previousScene = mesh.parent;
+        scene.add(mesh);
+        mesh.userData.vpCanvasId = canvasId;
+        previousScene?._requestRender?.();
+        scene._requestRender?.();
+      }
       continue;
     }
+    scene._requestRender?.();
     switch (cmd.action) {
       case 'create':
         if (canvasId === 'scene') root._canvasHost?.showDefault?.();
@@ -1430,6 +1437,7 @@ function deleteSceneObjects(scene, { markRegistry = false, all = false } = {}) {
  * 씬 초기화 (모든 VPython 객체 제거)
  */
 export function clearScene(scene) {
+  scene._requestRender?.();
   deleteSceneObjects(scene, { all: true });
   scene._canvasScenes?.clear();
   scene._canvasPending?.clear();

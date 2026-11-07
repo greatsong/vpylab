@@ -237,10 +237,13 @@ describe('sound-system', () => {
       ]);
 
       expect(mockCtx.createOscillator).toHaveBeenCalledTimes(1);
-      vi.advanceTimersByTime(300);
+      mockCtx.currentTime = 0.2;
+      vi.advanceTimersByTime(25);
       expect(mockCtx.createOscillator).toHaveBeenCalledTimes(2);
-      vi.advanceTimersByTime(300);
+      mockCtx.currentTime = 0.5;
+      vi.advanceTimersByTime(25);
       expect(mockCtx.createOscillator).toHaveBeenCalledTimes(3);
+      expect(mockCtx.createOscillator.mock.results.map(({ value }) => value.start.mock.calls[0][0])).toEqual([0, 0.3, 0.6]);
 
       vi.useRealTimers();
     });
@@ -536,7 +539,8 @@ describe('sound-system', () => {
         ],
       });
       expect(mockCtx.createOscillator).toHaveBeenCalledTimes(1);
-      vi.advanceTimersByTime(200);
+      mockCtx.currentTime = 0.1;
+      vi.advanceTimersByTime(25);
       expect(mockCtx.createOscillator).toHaveBeenCalledTimes(2);
       vi.useRealTimers();
     });

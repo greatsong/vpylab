@@ -59,6 +59,82 @@ beforeEach(async () => {
 afterEach(() => { sound.stopAllSounds(); vi.runOnlyPendingTimers(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe('수업 음원의 출력 경로와 자연스러운 수명', () => {
+  it('오디오가 잠겨 있는 동안 첫 예약음을 버리지 않고 재개와 정지에 맞춰 정리한다', () => {
+    context.state = 'suspended';
+    context.resume.mockImplementation(() => new Promise(() => {}));
+    sound.playSequence([{ freq: 261.63, duration: 0.1 }, { freq: 329.63, duration: 0.1 }]);
+    vi.advanceTimersByTime(3000);
+    expect(context.sources).toHaveLength(2);
+    expect(context.sources.every(source => !source.disconnect.mock.calls.length)).toBe(true);
+    expect(sound.getPlayingNotes()).toEqual([]);
+    context.state = 'running'; context.currentTime = 0.1;
+    expect(sound.getPlayingNotes()).toEqual(['E4']);
+    sound.stopAllSounds(); vi.advanceTimersByTime(30);
+    expect(context.sources.every(source => source.disconnect.mock.calls.length > 0)).toBe(true);
+  });
+
+  it('실행 확인음은 작품의 현재 음에 섞이지 않는다', () => {
+    sound.runSound();
+    expect(sound.getPlayingNotes()).toEqual([]);
+    sound.playNote('C4');
+    expect(sound.getPlayingNotes()).toEqual(['C4']);
+  });
+
+  it('타이머가 흔들려도 다음 음의 시작과 envelope는 절대 오디오 시각에 예약한다', () => {
+    sound.playSequence([{ freq: 261.63, duration: 0.1 }, { freq: 329.63, duration: 0.1 }, { freq: 392, duration: 0.1 }]);
+    expect(context.sources.map(source => source.start.mock.calls[0][0])).toEqual([0, 0.1]);
+    expect(sound.getPlayingNotes()).toEqual(['C4']);
+    context.currentTime = 0.095;
+    vi.advanceTimersByTime(25);
+    expect(context.sources[2].start).toHaveBeenCalledWith(0.2);
+    expect(context.gains[3].gain.events[0].time).toBe(0.2);
+    context.currentTime = 0.1;
+    expect(sound.getPlayingNotes()).toEqual(['E4']);
+    context.currentTime = 0.2;
+    expect(sound.getPlayingNotes()).toEqual(['G4']);
+    sound.stopAllSounds();
+    expect(sound.getPlayingNotes()).toEqual([]);
+    vi.advanceTimersByTime(5000);
+    expect(context.sources).toHaveLength(3);
+  });
+
+  it('배경 탭에서 늦게 복귀해도 지난 음을 몰아치지 않고 반복의 원래 위상을 유지한다', () => {
+    sound.startBgm('peaceful');
+    const before = context.sources.length;
+    context.currentTime = 3600.05;
+    vi.advanceTimersByTime(25);
+    expect(context.sources.length - before).toBeLessThanOrEqual(2);
+    const scheduled = context.sources.slice(before).map(source => source.start.mock.calls[0][0]);
+    expect(scheduled.every(time => time >= context.currentTime && time < context.currentTime + 0.12)).toBe(true);
+    sound.stopBgm();
+    const stopped = context.sources.length;
+    context.currentTime += 3600;
+    vi.advanceTimersByTime(1000);
+    expect(context.sources).toHaveLength(stopped);
+  });
+
+  it('늦게 도착한 유한 시퀀스는 지나간 음을 생략하고 종료하며 앞으로 예약한 음도 음소거로 취소한다', () => {
+    sound.playSequence([{ freq: 440, duration: 0.1 }, { freq: 660, duration: 0.1 }, { freq: 880, duration: 0.1 }]);
+    const count = context.sources.length;
+    context.currentTime = 5;
+    vi.advanceTimersByTime(25);
+    expect(context.sources).toHaveLength(count);
+    sound.setMasterMuted(true);
+    expect(context.sources.every(source => source.stop.mock.calls.some(([time]) => time <= 5.02))).toBe(true);
+    context.currentTime = 100;
+    vi.advanceTimersByTime(10000);
+    expect(context.sources).toHaveLength(count);
+    expect(sound.getAudioState()).toMatchObject({ playing: false, pendingCount: 0 });
+  });
+
+  it('출력 시각을 지원하면 실제 청취 위치의 음을 표시한다', () => {
+    sound.playSequence([{ freq: 261.63, duration: 0.1 }, { freq: 329.63, duration: 0.1 }]);
+    context.currentTime = 0.12;
+    vi.spyOn(performance, 'now').mockReturnValue(1000);
+    context.getOutputTimestamp = () => ({ contextTime: 0.05, performanceTime: performance.now() });
+    expect(sound.getPlayingNotes()).toEqual(['C4']);
+  });
+
   it('기본음과 노이즈 모두 동일한 master·compressor·limiter를 거친다', () => {
     sound.beep(440, 0.5); sound.sfxExplosion();
     const master = context.gains[0];

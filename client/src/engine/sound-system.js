@@ -31,13 +31,14 @@ let audioGeneration = 0;
 let pendingPreviewCancel = null;
 const activeVoices = new Map();
 const activeTimeouts = new Set();
+const activeScores = new Set();
 const audioListeners = new Set();
 let audioState = { volume: masterVolume, muted: masterMuted, playing: false, voiceCount: 0, pendingCount: 0 };
 
 function notifyAudioState() {
   const voiceCount = [...activeVoices.values()].filter((voice) => !voice.retiring).length;
-  const playing = voiceCount > 0 || activeTimeouts.size > 0 || pendingPreviewCancel !== null;
-  const pendingCount = activeTimeouts.size + (pendingPreviewCancel ? 1 : 0);
+  const playing = voiceCount > 0 || activeTimeouts.size > 0 || activeScores.size > 0 || pendingPreviewCancel !== null;
+  const pendingCount = activeTimeouts.size + activeScores.size + (pendingPreviewCancel ? 1 : 0);
   if (audioState.volume === masterVolume && audioState.muted === masterMuted && audioState.playing === playing && audioState.voiceCount === voiceCount && audioState.pendingCount === pendingCount) return;
   audioState = { volume: masterVolume, muted: masterMuted, playing, voiceCount, pendingCount };
   for (const listener of audioListeners) listener(audioState);
@@ -111,8 +112,8 @@ function createMasterGraph(ctx) {
 
 function connectOutput(node) { node.connect(masterGain); }
 
-function trackOsc(source, gain, duration = 10, nodes = [], group = 'lesson') {
-  const voice = { source, gain, nodes, group, retiring: false, timer: null };
+function trackOsc(source, gain, duration = 10, nodes = [], group = 'lesson', note = null) {
+  const voice = { source, gain, nodes, group, note, retiring: false, timer: null };
   const cleanup = () => {
     if (!activeVoices.has(source)) return;
     clearTimeout(voice.timer);
@@ -127,7 +128,15 @@ function trackOsc(source, gain, duration = 10, nodes = [], group = 'lesson') {
   activeVoices.set(source, voice);
   source.addEventListener?.('ended', cleanup, { once: true });
   // 비표준 환경이나 중단된 context에서도 노드를 무기한 남기지 않습니다.
-  voice.timer = setTimeout(cleanup, Math.max(0.03, duration) * 1000 + 250);
+  const checkEnded = () => {
+    // 잠긴 오디오 시계가 멈춘 동안에도 예약한 첫 음을 보존합니다.
+    if (!voice.retiring && note && audioCtx?.state !== 'closed' && audioCtx.currentTime < note.end) {
+      voice.timer = setTimeout(checkEnded, 1000);
+      return;
+    }
+    cleanup();
+  };
+  voice.timer = setTimeout(checkEnded, Math.max(0.03, duration) * 1000 + 250);
   notifyAudioState();
 }
 
@@ -162,6 +171,8 @@ export function stopAllSounds() {
   audioGeneration += 1;
   pendingPreviewCancel?.();
   stopBgm();
+  for (const cancel of activeScores) cancel();
+  activeScores.clear();
   for (const id of activeTimeouts) clearTimeout(id);
   activeTimeouts.clear();
   for (const voice of activeVoices.values()) retireVoice(voice);
@@ -455,8 +466,7 @@ export function resumeAndRun(callback) {
  * @param {string} type - 파형 ('sine'|'square'|'sawtooth'|'triangle')
  * @param {number} volume - 볼륨 (0~1)
  */
-function scheduleEnvelope(gain, ctx, peak, duration, attack = 0.008) {
-  const time = ctx.currentTime;
+function scheduleEnvelope(gain, ctx, peak, duration, attack = 0.008, time = ctx.currentTime) {
   const rise = Math.min(attack, duration / 4);
   gain.gain.value = 0;
   gain.gain.setValueAtTime(0, time);
@@ -465,7 +475,7 @@ function scheduleEnvelope(gain, ctx, peak, duration, attack = 0.008) {
   gain.gain.linearRampToValueAtTime(0, time + duration);
 }
 
-function richTone(ctx, frequency, duration, timbre, volume, group) {
+function richTone(ctx, frequency, duration, timbre, volume, group, time) {
   const partials = timbre === 'musicbox' ? [[1, 0.78], [2, 0.16], [3.01, 0.06]] : [[1, 0.72], [2, 0.2], [3, 0.08]];
   const tail = timbre === 'musicbox' ? 0.28 : 0.16;
   for (const [ratio, strength] of partials) {
@@ -475,28 +485,29 @@ function richTone(ctx, frequency, duration, timbre, volume, group) {
     const length = duration + tail / ratio;
     osc.type = 'sine';
     osc.frequency.value = frequency * ratio;
-    scheduleEnvelope(gain, ctx, volume * strength, length, timbre === 'musicbox' ? 0.006 : 0.01);
+    scheduleEnvelope(gain, ctx, volume * strength, length, timbre === 'musicbox' ? 0.006 : 0.01, time);
     osc.connect(gain); connectOutput(gain);
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + length);
-    trackOsc(osc, gain, length, [], group);
+    osc.start(time); osc.stop(time + length);
+    trackOsc(osc, gain, time - ctx.currentTime + length, [], group, { name: freqToNoteName(frequency), start: time, end: time + duration });
   }
 }
 
-export function beep(frequency = 440, duration = 0.3, type = 'sine', volume = 0.3, group = 'lesson') {
+export function beep(frequency = 440, duration = 0.3, type = 'sine', volume = 0.3, group = 'lesson', startAt = null) {
   const pitch = Number(frequency); const seconds = Number(duration); const level = Number(volume);
   if (!Number.isFinite(pitch) || pitch < 20 || pitch > 18_000 || !Number.isFinite(seconds) || seconds <= 0 || !Number.isFinite(level) || level <= 0) return;
   const length = Math.max(0.025, Math.min(10, seconds));
   const peak = Math.min(1, level);
   withRunningContext(ctx => {
-    if (type === 'piano' || type === 'musicbox') { richTone(ctx, pitch, length, type, peak, group); return; }
+    const time = Number.isFinite(startAt) ? Math.max(ctx.currentTime, startAt) : ctx.currentTime;
+    if (type === 'piano' || type === 'musicbox') { richTone(ctx, pitch, length, type, peak, group, time); return; }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = ['sine', 'triangle', 'square', 'sawtooth'].includes(type) ? type : 'sine';
     osc.frequency.value = pitch;
-    scheduleEnvelope(gain, ctx, peak, length);
+    scheduleEnvelope(gain, ctx, peak, length, 0.008, time);
     osc.connect(gain); connectOutput(gain);
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + length);
-    trackOsc(osc, gain, length, [], group);
+    osc.start(time); osc.stop(time + length);
+    trackOsc(osc, gain, time - ctx.currentTime + length, [], group, { name: freqToNoteName(pitch), start: time, end: time + length });
   });
 }
 
@@ -601,17 +612,77 @@ export function playChord(frequencies, duration = 1.0, type = 'sine', volume = 0
  * 노트 배열을 순차적으로 재생
  * @param {Array<{freq: number, duration: number, type?: string, volume?: number}>} notes
  */
+// JavaScript 타이머는 예약 창을 채우기만 합니다. 실제 박자는 AudioContext가 결정합니다.
+function scheduleScore(entries, loop = false, group = 'lesson') {
+  if (masterMuted || masterVolume === 0 || activeScores.size >= 16 || !entries.length) return () => {};
+  const ctx = getAudioContext();
+  if (!ctx) return () => {};
+  const generation = audioGeneration;
+  const origin = ctx.currentTime;
+  const length = entries.reduce((sum, note) => sum + note.duration, 0);
+  let cycle = 0;
+  let index = 0;
+  let offset = 0;
+  let timer = null;
+  let cancelled = false;
+  const cancel = () => {
+    cancelled = true;
+    clearTimeout(timer);
+    activeTimeouts.delete(timer);
+    activeScores.delete(cancel);
+    notifyAudioState();
+  };
+  activeScores.add(cancel);
+  const pump = () => {
+    if (cancelled || generation !== audioGeneration || ctx.state === 'closed') { cancel(); return; }
+    const now = ctx.currentTime;
+    // 배경 탭이 오래 멈췄어도 지난 마디를 한꺼번에 따라잡지 않습니다.
+    if (loop && now > origin + (cycle + 1) * length) {
+      cycle = Math.floor((now - origin) / length);
+      index = 0;
+      offset = 0;
+    }
+    while (origin + cycle * length + offset < now + 0.12) {
+      const time = origin + cycle * length + offset;
+      const note = entries[index];
+      if (time >= now - 0.04) beep(note.freq, note.duration * (group === 'bgm' ? 0.9 : 1), note.type || 'sine', note.volume ?? 0.4, group, time);
+      offset += note.duration;
+      index += 1;
+      if (index === entries.length) {
+        if (!loop) { cancel(); return; }
+        cycle += 1; index = 0; offset = 0;
+      }
+    }
+    timer = _st(pump, 25);
+    if (timer === null) cancel();
+  };
+  pump();
+  return cancel;
+}
+
 export function playSequence(notes) {
-  if (!Array.isArray(notes) || notes.length === 0) return;
-  let delay = 0;
-  for (const n of notes.slice(0, 128)) {
-    if (delay > 60_000) break;
-    const duration = Number.isFinite(Number(n.duration)) && Number(n.duration) > 0 ? Math.min(10, Number(n.duration)) : 0.3;
-    const sound = () => beep(n.freq, duration, n.type || 'sine', n.volume ?? 0.4);
-    if (delay === 0) sound();
-    else _st(sound, delay);
-    delay += duration * 1000;
+  if (!Array.isArray(notes) || !notes.length) return;
+  let length = 0;
+  const entries = [];
+  for (const note of notes.slice(0, 128)) {
+    if (length > 60) break;
+    if (!note || typeof note !== 'object') continue;
+    const duration = Number.isFinite(Number(note.duration)) && Number(note.duration) > 0 ? Math.max(0.025, Math.min(10, Number(note.duration))) : 0.3;
+    entries.push({ ...note, duration });
+    length += duration;
   }
+  scheduleScore(entries);
+}
+
+/** 미리 예약된 음은 아직 표시하지 않고, 실제 오디오 시각에 맞춰 읽습니다. */
+export function getPlayingNotes() {
+  if (!audioCtx || audioCtx.state !== 'running' || masterMuted || masterVolume === 0) return [];
+  const stamp = audioCtx.getOutputTimestamp?.();
+  const outputTime = stamp?.performanceTime > 0 ? stamp.contextTime + (performance.now() - stamp.performanceTime) / 1000 : audioCtx.currentTime;
+  const time = Math.max(0, Math.min(audioCtx.currentTime, outputTime));
+  return [...new Set([...activeVoices.values()]
+    .filter(voice => !voice.retiring && voice.group !== 'ui' && voice.note && voice.note.start <= time && time < voice.note.end)
+    .map(voice => voice.note.name).filter(Boolean))];
 }
 
 // ===================================================================
@@ -634,7 +705,7 @@ export function hintSound() {
 }
 
 export function runSound() {
-  beep(660, 0.08, 'sine', 0.1);
+  beep(660, 0.08, 'sine', 0.1, 'ui');
 }
 
 export function levelUpSound() {
@@ -983,49 +1054,15 @@ export function startBgm(name, loop = true) {
   if (_onSoundEvent) _onSoundEvent('bgm', name.toLowerCase());
 
   const { notes, durations, type, volume } = pattern;
-  let running = true;
-  const timeoutIds = new Set();
-
-  function schedule(fn, delay) {
-    let id;
-    id = _st(() => { timeoutIds.delete(id); fn(); }, delay);
-    if (id !== null) timeoutIds.add(id);
-  }
-
-  function playPattern() {
-    if (!running) return;
-    let delay = 0;
-
-    for (let i = 0; i < notes.length; i++) {
-      const freq = noteToFreq(notes[i]);
-      const dur = durations[i] || 0.2;
-      if (freq) {
-        const d = delay;
-        schedule(() => {
-          if (running) beep(freq, dur * 0.9, type, volume, 'bgm');
-        }, d);
-      }
-      delay += dur * 1000;
-    }
-
-    // 패턴이 끝나면 루프
-    if (loop) {
-      schedule(() => { if (running) playPattern(); }, delay);
-    }
-  }
-
+  const cancel = scheduleScore(notes.map((note, index) => ({ freq: noteToFreq(note), duration: durations[index] || 0.2, type, volume })), loop, 'bgm');
   currentBgm = {
     name,
     stop: () => {
-      running = false;
-      timeoutIds.forEach(id => { clearTimeout(id); activeTimeouts.delete(id); });
-      timeoutIds.clear();
+      cancel();
       for (const voice of activeVoices.values()) if (voice.group === 'bgm') retireVoice(voice);
       notifyAudioState();
     },
   };
-
-  playPattern();
 }
 
 /**

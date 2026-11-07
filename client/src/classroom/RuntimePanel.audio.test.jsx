@@ -17,6 +17,7 @@ vi.mock('../engine/vpython-bridge', async () => {
 
 let worker;
 let oscillators;
+let context;
 const parameter = () => ({ value: 1, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn(), cancelScheduledValues: vi.fn() });
 const node = () => ({ connect: vi.fn(), disconnect: vi.fn() });
 class WorkerDouble {
@@ -25,7 +26,7 @@ class WorkerDouble {
 }
 beforeEach(() => {
   vi.useFakeTimers(); oscillators = [];
-  const context = {
+  context = {
     currentTime: 0, state: 'running', destination: {}, resume: vi.fn(async () => {}),
     createGain: () => ({ ...node(), gain: parameter() }),
     createOscillator: () => { const source = { ...node(), frequency: parameter(), start: vi.fn(), stop: vi.fn() }; oscillators.push(source); return source; },
@@ -50,7 +51,7 @@ it('실제 음원 엔진은 Python 본문 완료 뒤 시퀀스를 계속 연주�
   expect(oscillators).toHaveLength(3);
   expect(screen.getByRole('status')).toHaveTextContent('실행 준비 완료');
   expect(screen.getByRole('button', { name: '■ 정지' })).toBeEnabled();
-  act(() => { vi.advanceTimersByTime(400); });
+  act(() => { context.currentTime = 0.3; vi.advanceTimersByTime(25); });
   expect(oscillators).toHaveLength(6);
   fireEvent.click(screen.getByRole('button', { name: '■ 정지' }));
   act(() => { vi.advanceTimersByTime(2000); });

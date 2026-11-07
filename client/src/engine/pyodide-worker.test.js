@@ -28,6 +28,31 @@ describe('실제 Worker 스크립트의 출력 제한과 샌드박스', () => {
   beforeEach(() => { vi.useFakeTimers(); });
   afterEach(() => { vi.useRealTimers(); });
 
+  it('실습 이동은 학생 상태 정리가 끝난 뒤에만 보관 완료를 알린다', async () => {
+    const { self, python } = createWorkerContext();
+    await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
+    self.postMessage.mockClear();
+    let finish;
+    python.runPythonAsync.mockImplementation((code) => code === 'await _vpylab_reset_runtime()'
+      ? new Promise(resolve => { finish = resolve; }) : Promise.resolve());
+    const pending = self.onmessage({ data: { type: 'park', token: 12 } });
+    expect(self.postMessage).not.toHaveBeenCalled();
+    finish();
+    await pending;
+    expect(self.postMessage).toHaveBeenCalledExactlyOnceWith({ type: 'parked', token: 12 });
+    expect(self.loadPyodide).toHaveBeenCalledOnce();
+    await expect(self.fetch('/api/projects')).rejects.toThrow('네트워크 요청');
+  });
+
+  it('실습 상태 정리가 실패하면 재사용 가능하다고 알리지 않는다', async () => {
+    const { self, python } = createWorkerContext();
+    await self.onmessage({ data: { type: 'init', vpythonApi: '# API' } });
+    self.postMessage.mockClear();
+    python.runPythonAsync.mockRejectedValue(new Error('정리 실패'));
+    await self.onmessage({ data: { type: 'park', token: 13 } });
+    expect(self.postMessage).toHaveBeenCalledExactlyOnceWith({ type: 'parked', token: 13, error: true });
+  });
+
   it('대량 print는 16KB로 제한하고 묶음 메시지로 전송한다', async () => {
     const { self } = createWorkerContext();
     for (let index = 0; index < 10_000; index++) self._queueOutput('stdout', 'x'.repeat(100));

@@ -617,6 +617,21 @@ self.onmessage = async (event) => {
       if(pyodide&&!isRunningCode&&!isDispatchingEvents){try{pyodide.runPython('_event_handlers.clear()');}catch{/* 다음 실행의 reset에서 회수 */}}
       break;
 
+    case 'park':
+      // 실행 종료를 확인한 뒤 학생 상태만 비우고 Python 엔진·패키지는 보관합니다.
+      shouldStop = true;
+      queuedRun = null;
+      clearInputQueues();
+      resetOutputStreams();
+      try {
+        if (isRunningCode || isDispatchingEvents || !pyodide) throw new Error('실행 정리를 기다리고 있습니다.');
+        await pyodide.runPythonAsync('await _vpylab_reset_runtime()');
+        self.postMessage({ type: 'parked', token: event.data.token });
+      } catch {
+        self.postMessage({ type: 'parked', token: event.data.token, error: true });
+      }
+      break;
+
     case 'event':
       // 메인 스레드의 사용자 입력 이벤트 — 큐에 적재하면 rate()에서 디스패치
       if (shouldStop) break;

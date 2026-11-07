@@ -1,3 +1,4 @@
+import { getLightSoundLab } from './light-sound-labs.js';
 import { getCreativeLab } from './creative-labs.js';
 import { getForgeTutorial } from './forge-tutorial.js';
 import { getWelcomeTutorial } from './welcome-friends.js';
@@ -54,4 +55,4 @@ button(text="색 바꾸기", bind=바꾸기)
   },
 ];
 
-export const getTutorial = (id, step) => tutorials.find(item => item.id === id) || getWelcomeTutorial(id, step) || getForgeTutorial(id, step) || getCreativeLab(id, step);
+export const getTutorial = (id, step) => tutorials.find(item => item.id === id) || getWelcomeTutorial(id, step) || getForgeTutorial(id, step) || getCreativeLab(id, step) || getLightSoundLab(id, step);

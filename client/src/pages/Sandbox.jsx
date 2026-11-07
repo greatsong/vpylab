@@ -10,7 +10,7 @@ import CodeEditor, { DEFAULT_CODE } from '../components/editor/CodeEditor';
 import SoundSettings from '../components/editor/SoundSettings';
 import Viewport3D from '../components/viewport/Viewport3D';
 import OutputConsole from '../components/console/OutputConsole';
-import LoadingScreen from '../components/shared/LoadingScreen';
+import RuntimeStatus from '../components/shared/RuntimeStatus';
 import useAudioState from '../hooks/useAudioState';
 import usePyodide from '../hooks/usePyodide';
 import { getStatus as getPythonStatus } from '../engine/pyodide-singleton';
@@ -629,7 +629,7 @@ export default function Sandbox() {
   const {
     progress, progressMessage,
     initWorker, runCode, stopExecution,
-    isLoading, isReady, isRunning,
+    status: engineStatus, isReady, isRunning,
   } = usePyodide({
     onOutput: addOutput,
     onError: (err, details) => {
@@ -1127,16 +1127,6 @@ export default function Sandbox() {
     }
   };
 
-  // 로딩 중이면 로딩 화면 표시
-  if (isLoading) {
-    return (
-      <div className="h-screen flex flex-col">
-        <Header />
-        <LoadingScreen progress={progress} message={progressMessage} />
-      </div>
-    );
-  }
-
   // 극장 모드: 3D 뷰포트만 전체 화면
   if (theaterMode) {
     const handleTheaterStart = () => {
@@ -1258,11 +1248,11 @@ export default function Sandbox() {
             </div>
           </>}
         </div>
-        <div className="hidden md:flex flex-1 justify-end items-center gap-3 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+        <div className="flex flex-1 justify-end items-center gap-3 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
           {user && saveStatus === 'saving' && <span>{ui("저장 중…")}</span>}
           {user && saveStatus === 'saved' && <span>{ui("저장됨")}</span>}
           {user && saveStatus === 'error' && <span style={{ color: 'var(--color-error)' }}>{ui("자동 저장 실패 · 저장을 눌러주세요")}</span>}
-          <span>{isRunning ? ui("실행 중") : isReady ? ui("준비됨") : ui("Python 준비 중…")}</span>
+          <RuntimeStatus status={engineStatus} progress={progress} message={progressMessage} onRetry={initWorker} locale={locale} />
         </div>
         <div className="w-full flex md:hidden gap-1 pt-1" aria-label={ui("실습 패널")}>{[['editor', ui("코드")], ['3d', ui("화면")], ['console', ui("출력")]].map(([tab, label]) => <button key={tab} onClick={() => setActiveTab(tab)} aria-pressed={activeTab === tab} className={`tab-btn flex-1 ${activeTab === tab ? '--active' : ''}`}>{label}</button>)}</div>
       </div>

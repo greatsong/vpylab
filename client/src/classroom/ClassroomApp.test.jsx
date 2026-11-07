@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ClassroomApp from './ClassroomApp';
 import { request } from './api';
+import { resetForSessionChange } from '../engine/pyodide-singleton';
 
+vi.mock('../engine/pyodide-singleton', () => ({ resetForSessionChange: vi.fn() }));
 vi.mock('./api', () => ({ request: vi.fn(), setTokenProvider: vi.fn(), downloadFile: vi.fn() }));
 vi.mock('../stores/appStore', () => ({ default: Object.assign((selector) => selector({ theme: 'creative-light' }), { getState: () => ({ setTheme: vi.fn() }) }) }));
 vi.mock('../components/editor/CodeEditor', () => ({ default: ({ code, readOnly, onChange }) => <textarea aria-label="Python 코드" value={code} readOnly={readOnly} onChange={(event) => onChange(event.target.value)} /> }));
@@ -33,8 +35,10 @@ describe('교실 계정 전환', () => {
     });
     render(<ClassroomApp />);
     expect(await screen.findByRole('textbox', { name: 'Python 코드' })).toHaveValue('학생 가의 비공개 개인 코드');
+    resetForSessionChange.mockClear();
     fireEvent.click(screen.getByRole('button', { name: /계정 메뉴/ }));
     fireEvent.click(screen.getByRole('button', { name: '학생 나', exact: true }));
+    expect(resetForSessionChange).toHaveBeenCalledOnce();
     expect(screen.queryByRole('textbox', { name: 'Python 코드' })).toBeNull();
     expect(screen.queryByText('학생 가의 비공개 개인 코드')).toBeNull();
     await act(async () => { nextSession.resolve({ user: accounts[1], localMode: true, users: accounts }); });

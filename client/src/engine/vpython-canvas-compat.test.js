@@ -109,3 +109,17 @@ graph()
     expect(document.querySelector('[data-vpylab-canvas-id="canvas_2"] button')).toBeTruthy();
   });
 });
+
+it('객체가 캔버스를 옮기면 출발 화면과 도착 화면 모두 보정 주기 전에 다시 그린다', () => {
+  const first = new THREE.Scene();
+  const second = new THREE.Scene();
+  registerCanvasScene(root, 'canvas_1', first);
+  registerCanvasScene(root, 'canvas_2', second);
+  processBatch([{ action: 'create', type: 'sphere', id: 'moving-render', canvas_id: 'canvas_1' }], root);
+  first._requestRender = vi.fn();
+  second._requestRender = vi.fn();
+  processBatch([{ action: 'canvas_move', id: 'moving-render', canvas_id: 'canvas_2' }], root);
+  expect(getMesh('moving-render').parent).toBe(second);
+  expect(first._requestRender).toHaveBeenCalledOnce();
+  expect(second._requestRender).toHaveBeenCalledOnce();
+});

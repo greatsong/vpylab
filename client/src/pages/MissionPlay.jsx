@@ -7,7 +7,7 @@ import Header from '../components/layout/Header';
 import CodeEditor from '../components/editor/CodeEditor';
 import Viewport3D from '../components/viewport/Viewport3D';
 import OutputConsole from '../components/console/OutputConsole';
-import LoadingScreen from '../components/shared/LoadingScreen';
+import RuntimeStatus from '../components/shared/RuntimeStatus';
 import useAudioState from '../hooks/useAudioState';
 import usePyodide from '../hooks/usePyodide';
 import { processBatch, clearScene } from '../engine/vpython-bridge';
@@ -119,7 +119,7 @@ function MissionSession({ missionId }) {
   const {
     progress, progressMessage,
     initWorker, runCode, stopExecution,
-    isLoading, isReady, isRunning,
+    status: engineStatus, isReady, isRunning,
   } = usePyodide({
     onOutput: addOutput,
     onError: (err, details) => {
@@ -252,15 +252,6 @@ function MissionSession({ missionId }) {
 
   if (!mission) return null;
 
-  if (isLoading) {
-    return (
-      <div className="h-screen flex flex-col">
-        <Header />
-        <LoadingScreen progress={progress} message={progressMessage} />
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <Header />
@@ -321,12 +312,12 @@ function MissionSession({ missionId }) {
         </div>
 
         {/* 상태 */}
-        <div className="hidden md:flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+        <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
           {user && saveStatus === 'saving' && <span>{ui("저장 중...")}</span>}
           {user && saveStatus === 'saved' && <span style={{ color: 'var(--color-success)' }}>{ui("저장됨 ✓")}</span>}
           <span className="flex items-center gap-1.5">
             <span className={`status-dot ${isRunning ? '--running' : isReady ? '--ready' : '--idle'}`} />
-            {isRunning ? t('editor.run') + '...' : isReady ? 'Ready' : '...'}
+            <RuntimeStatus status={engineStatus} progress={progress} message={progressMessage} onRetry={initWorker} locale={lang} />
           </span>
         </div>
       </div>

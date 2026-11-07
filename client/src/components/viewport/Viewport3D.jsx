@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import useAppStore from '../../stores/appStore';
 import CameraSystem from '../../engine/camera-system';
+import { createRenderGate } from '../../engine/render-gate';
+import AudioNoteIndicator from './AudioNoteIndicator';
 import { postCameraState, postEvent, postMouseState, postPressedKeys } from '../../engine/pyodide-singleton';
 import { isEventBound, updateBillboards, registerCanvasScene } from '../../engine/vpython-bridge';
 import useFullscreen from '../../hooks/useFullscreen';
@@ -286,10 +288,14 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
     // 개발 모드의 setup→cleanup→setup에서 폐기될 화면이 명령 큐를 가져가지 않게 한다.
     const readyFrame = requestAnimationFrame(() => onSceneReady?.(scene));
 
-    // 렌더 루프
+    let renderDirty = true;
+    scene._requestRender = () => { renderDirty = true; };
+    const shouldRender = createRenderGate();
+
+    // 카메라 제어는 계속 갱신하되 변함없는 장면의 GPU 그리기는 줄입니다.
     let modeUpdateCounter = 0;
     let cameraStateSeq = 0;
-    function animate() {
+    function animate(now = performance.now()) {
       animFrameRef.current = requestAnimationFrame(animate);
 
       // 카메라 자동 시스템 업데이트
@@ -298,8 +304,11 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       controls.update();
       camSystem.updateClipPlanes();
       // billboard=True 인 3D 글자를 카메라 쪽으로 돌린다 (Group에는 onBeforeRender가 오지 않는다)
-      updateBillboards(camera, scene);
-      renderer.render(scene, camera);
+      if (shouldRender(now, camera, renderDirty)) {
+        renderDirty = false;
+        updateBillboards(camera, scene);
+        renderer.render(scene, camera);
+      }
 
       // 카메라 상태를 Python 쪽에 알림 (6프레임마다, 약 10Hz)
       if (++modeUpdateCounter % 6 === 0) {
@@ -325,10 +334,12 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
       if (w === 0 || h === 0) return;
       camSystem.resize(w, h);
       renderer.setSize(w, h);
+      renderDirty = true;
     });
     observer.observe(container);
 
     return () => {
+      delete scene._requestRender;
       observer.disconnect();
       cancelAnimationFrame(animFrameRef.current);
       cancelAnimationFrame(readyFrame);
@@ -353,6 +364,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
   useEffect(() => {
     if (sceneRef?.current) {
       sceneRef.current.background = new THREE.Color(THEME_BG[theme] || 0xf7f8fa);
+      sceneRef.current._requestRender?.();
     }
   }, [theme, sceneRef]);
 
@@ -360,6 +372,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
   useEffect(() => {
     if (gridRef.current) gridRef.current.visible = showAxes;
     if (axesRef.current) axesRef.current.visible = showAxes;
+    sceneForChildren.current?._requestRender?.();
   }, [showAxes]);
 
   // 줌 고정 토글
@@ -513,6 +526,7 @@ export default function Viewport3D({ sceneRef, onSceneReady, initialCameraPositi
         </label>
       </div>
       </div>
+      {canvasId === 'scene' && <AudioNoteIndicator />}
       {extraCanvases.map(item => <div key={`${item.id}-${item.epoch}`} className="relative border-t" style={{ height: Math.max(180, Math.min(item.height || 320, 1000)), width: item.width ? Math.min(item.width, 1600) : '100%', maxWidth: '100%', borderColor: 'var(--color-border)' }}>
         <Viewport3D canvasId={item.id} onSceneReady={child => registerCanvasScene(sceneRef?.current || sceneForChildren.current, item.id, child)} />
       </div>)}
