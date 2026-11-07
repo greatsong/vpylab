@@ -51,3 +51,9 @@
 ![실제 대장간 모양](collaboration/screenshots/forge-assets-local-2026-11-07.png)
 
 배포 직전 main에 먼저 반영된 빛·소리 실습/런타임 유지 작업 `937eb95`를 강제 push 없이 통합했습니다. **통합된 최종 소스는 86개 파일·896개 검사와 lint·프로덕션 빌드가 모두 통과**했습니다. 로컬 4033의 App·렌더러·런타임 유지 모듈·새 도형·공유 HTML 소스가 통합 소스와 같은 것도 확인했습니다.
+
+## 운영 배포 결과
+
+기능 소스 `b93d5a1eeafea8564a15a707babe3fc0417f4b87`의 Vercel·Railway 배포와 실제 서버 health의 `commitSha=b93d5a1eeafe`를 확인했습니다. [CI 7개 작업](https://github.com/greatsong/vpylab/actions/runs/42358953939) 모두 성공했습니다. [운영 Chromium 검사 15개](collaboration/forge-assets-production-2026-11-07.json)도 전부 통과했습니다. [배포 증거](collaboration/forge-assets-production-proof-2026-11-07.json)를 남깁니다.
+
+![운영 대장간의 네 캐릭터와 프로젝트 에셋](collaboration/screenshots/forge-assets-production-2026-11-07.png)

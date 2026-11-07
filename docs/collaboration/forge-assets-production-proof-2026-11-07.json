@@ -1,0 +1,82 @@
+{
+  "sourceSha": "b93d5a1eeafea8564a15a707babe3fc0417f4b87",
+  "ci": {
+    "url": "https://github.com/greatsong/vpylab/actions/runs/42358953939",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "번역 키 검증",
+        "conclusion": "success",
+        "startedAt": "2026-11-07T09:15:24Z",
+        "completedAt": "2026-11-07T09:15:37Z"
+      },
+      {
+        "name": "미션 데이터 검증",
+        "conclusion": "success",
+        "startedAt": "2026-11-07T09:15:25Z",
+        "completedAt": "2026-11-07T09:17:05Z"
+      },
+      {
+        "name": "린트 검증",
+        "conclusion": "success",
+        "startedAt": "2026-11-07T09:15:25Z",
+        "completedAt": "2026-11-07T09:16:00Z"
+      },
+      {
+        "name": "보안 검사",
+        "conclusion": "success",
+        "startedAt": "2026-11-07T09:15:25Z",
+        "completedAt": "2026-11-07T09:15:32Z"
+      },
+      {
+        "name": "미션 다국어 필드 검증",
+        "conclusion": "success",
+        "startedAt": "2026-11-07T09:15:24Z",
+        "completedAt": "2026-11-07T09:15:40Z"
+      },
+      {
+        "name": "새 교실 저장·권한·GitHub 회귀 검증",
+        "conclusion": "success",
+        "startedAt": "2026-11-07T09:15:24Z",
+        "completedAt": "2026-11-07T09:15:58Z"
+      },
+      {
+        "name": "빌드 검증",
+        "conclusion": "success",
+        "startedAt": "2026-11-07T09:17:08Z",
+        "completedAt": "2026-11-07T09:17:29Z"
+      }
+    ]
+  },
+  "deployments": [
+    {
+      "context": "Vercel",
+      "state": "success",
+      "target_url": "https://vercel.com/greatsongs-projects/vpylab/FkRCdbTJfkgMbQV2MVJHvT8kRDNm"
+    },
+    {
+      "context": "vpylab-server - vpylab-server",
+      "state": "success",
+      "target_url": "https://railway.com/project/42458484-09c1-4069-b88f-9cfdff8bac0d/service/4a24242d-852e-4930-bf4e-466bc55d85d4?id=f28c7db9-8580-4a32-a278-5adcb9103816&environmentId=2d7b134c-c3bd-4fa4-bf3c-249509a3ce0c"
+    }
+  ],
+  "health": {
+    "status": "ok",
+    "timestamp": "2026-11-07T09:17:57.508Z",
+    "version": "0.3.0",
+    "startedAt": "2026-11-07T09:15:48.464Z",
+    "uptimeSeconds": 129,
+    "commitSha": "b93d5a1eeafe"
+  },
+  "checks": {
+    "localTestFiles": 86,
+    "localTestsPassed": 896,
+    "lint": "passed",
+    "build": "passed",
+    "serverExportTestsPassed": 6,
+    "localBrowserPassed": 15,
+    "productionBrowserPassed": 15,
+    "standaloneBrowserPassed": 5
+  },
+  "scope": "Actual Chromium/WebGL and Pyodide, synthetic guest drafts; no real-account writes. Claude static reviews; Codex execution."
+}
