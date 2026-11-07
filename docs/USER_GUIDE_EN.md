@@ -41,6 +41,8 @@ friend.object.opacity = 0.6
 friend.object.color = vector(1, 0.7, 0.3)
 ```
 
+The Kirby starter uses the same eyes, mouth, body, and limbs as the home Pink friend. Its preview uses the same stage lighting; the copied object excludes the stage. Previously edited or saved shapes stay intact. For an older draft, **Use the home character shape** updates the shape while keeping its title and credits. Undo restores it.
+
 Use the actual function name in your copied code. A compound's color multiplies its original part colors: white parts take the new tint and black eyes remain black. Study the generated parts when you want to change one part separately. Sliders generate code in one direction; editing code does not update the sliders.
 
 The bell progresses through **shape only → click sound → sound waves**. The rings visualize sound. Bell sound and helper commands are VPyLab extensions; other VPython environments may need adaptation. Exported standalone HTML supports a narrower extrusion subset.

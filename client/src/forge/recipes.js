@@ -1,6 +1,9 @@
+import { welcomeParts, welcomeColorVector } from '../data/welcome-friends.js';
+const pinkReference = welcomeParts('kirby');
+
 // 대장간 레시피는 실행 코드를 받지 않습니다. 같은 부품 명세를 화면과 Python에 씁니다.
 export const forgePresets = [
-  { id: 'kirby', name: '커비처럼 동그랗게', icon: '✦', kind: 'character', note: '둥근 몸통 · 타원 눈 · 큰 발', colors: ['#f8a8cc', '#da4772'], params: { width: 2.1, height: 1.95, depth: 1.7 } },
+  { id: 'kirby', name: '커비처럼 동그랗게', icon: '✦', kind: 'character', note: '둥근 몸통 · 타원 눈 · 큰 발', colors: [pinkReference.find(p=>p.name==='body').color, pinkReference.find(p=>p.name==='left_foot').color], params: { width: 1.72, height: 1.72, depth: 1.72, eyeSize: .26, eyeGap: .14, cheekSize: .21, armSize: .5, feetSize: .6 } },
   { id: 'doraemon', name: '도라에몽처럼 조합', icon: '◉', kind: 'character', note: '파란 몸통 · 흰 얼굴 · 방울', colors: ['#229cde', '#ef5050'], params: { width: 2.05, height: 2, depth: 1.75 } },
   { id: 'chiikawa', name: '치이카와처럼 작게', icon: 'ᴗ', kind: 'character', note: '하얀 몸통 · 작은 귀 · 볼', colors: ['#fff9ee', '#f5a9b9'], params: { width: 1.95, height: 1.8, depth: 1.55, earLength: .4, feetSize: .38 } },
   { id: 'rabbit', name: '긴 귀 토끼', icon: '⋈', kind: 'character', note: '길쭉한 귀를 가진 친구', colors: ['#f2e3fc', '#ba91e1'], params: { earLength: 1.15, height: 1.9 } },
@@ -17,9 +20,9 @@ export const forgePresets = [
 ];
 
 export const forgeParameters = {
-  width: { label: '너비', variable: 'body_width', min: 1.3, max: 2.8, step: .05, group: 'body', value: 2 },
-  height: { label: '높이', variable: 'body_height', min: 1.3, max: 2.8, step: .05, group: 'body', value: 1.9 },
-  depth: { label: '앞뒤 두께', variable: 'body_depth', min: 1, max: 2.3, step: .05, group: 'body', value: 1.6 },
+  width: { label: '너비', variable: 'body_width', min: 1.3, max: 2.8, step: .01, group: 'body', value: 2 },
+  height: { label: '높이', variable: 'body_height', min: 1.3, max: 2.8, step: .01, group: 'body', value: 1.9 },
+  depth: { label: '앞뒤 두께', variable: 'body_depth', min: 1, max: 2.3, step: .01, group: 'body', value: 1.6 },
   eyeSize: { label: '눈 크기', variable: 'eye_size', min: .1, max: .4, step: .01, group: 'face', value: .18 },
   eyeGap: { label: '눈 사이 간격 비율', variable: 'eye_gap', min: .12, max: .26, step: .01, group: 'face', value: .18 },
   cheekSize: { label: '볼 크기', variable: 'cheek_size', min: 0, max: .38, step: .01, group: 'face', value: .23 },
@@ -35,11 +38,14 @@ const colorPattern = /^#[a-f\d]{6}$/i;
 export function createRecipe(presetId = 'kirby') {
   const p = forgePresets.find(p => p.id === presetId);
   if (!p) throw new Error('알 수 없는 시작 모양입니다.');
-  return { presetId, params: { ...Object.fromEntries(Object.entries(forgeParameters).map(([key, p]) => [key, p.value])), ...p.params }, colors: [...p.colors], expression: 'smile', accessory: 'none', bellMode:'shape' };
+  return { presetId, params: { ...Object.fromEntries(Object.entries(forgeParameters).map(([key, p]) => [key, p.value])), ...p.params }, colors: [...p.colors], expression: 'smile', accessory: 'none', bellMode:'shape', ...(presetId==='kirby'?{appearance:'welcome-v1'}:{}) };
 }
 export function validateRecipe(input) {
   if (!plain(input)) throw new Error('모양 설정을 읽을 수 없습니다.');
   const recipe = createRecipe(input.presetId);
+  if(input.appearance!==undefined&&(input.presetId!=='kirby'||input.appearance!=='welcome-v1'))throw new Error('지원하지 않는 캐릭터 모양 버전입니다.');
+  // 저장·공개된 예전 모듈은 당시 코드와 부품을 그대로 재현합니다.
+  if(input.appearance===undefined)delete recipe.appearance;
   if (!plain(input.params) || !Array.isArray(input.colors) || input.colors.length !== 2 || !input.colors.every(c => typeof c === 'string' && colorPattern.test(c))) throw new Error('모양의 숫자나 색상 형식이 올바르지 않습니다.');
   for (const [key, spec] of Object.entries(forgeParameters)) {
     const n = input.params[key];
@@ -66,13 +72,16 @@ const mul = (a,b) => binary(a,b,'*', (a,b) => a*b), div = (a,b) => binary(a,b,'/
 const neg = a => mul(a,-1);
 const vector = (x,y,z) => { const a = [x,y,z].map(expr); return { value: a.map(x => x.value), code: `vector(${a.map(x => x.code).join(', ')})` }; };
 export function hexVector(hex) { return [1,3,5].map(i => parseInt(hex.slice(i,i+2),16)/255); }
+// 메인의 CSS 색은 sRGB입니다. 새 모양의 VPython 색도 같은 선형 값으로 맞춥니다.
+export function forgeColorVector(recipe,hex){return recipe.appearance==='welcome-v1'?welcomeColorVector(hex):hexVector(hex);}
+
 
 export function buildForgeModel(input) {
   const recipe = validateRecipe(input), preset = forgePresets.find(p => p.id === recipe.presetId);
   const parts = [], derived = [];
   const values = Object.fromEntries(Object.entries(recipe.params).map(([k,v]) => [k,{ value:v, code:forgeParameters[k].variable }]));
   const { width:w, height:h, depth:d, eyeSize:eye, eyeGap:gap, earLength:ear, armSize:arm, feetSize:foot, cheekSize:cheek } = values;
-  const colors = { body: hexVector(recipe.colors[0]), accent: hexVector(recipe.colors[1]), white:[1,.985,.96], ink:[.09,.12,.18], blush:[1,.6,.7], gold:[1,.78,.25] };
+  const colors = { body: forgeColorVector(recipe,recipe.colors[0]), accent: forgeColorVector(recipe,recipe.colors[1]), white:[1,.985,.96], ink:[.09,.12,.18], blush:[1,.6,.7], gold:[1,.78,.25] };
   const paint = color => ({ value: typeof color === 'string' ? colors[color] : color, code: typeof color === 'string' && ['body','accent'].includes(color) ? color+'_color' : `vector(${(typeof color === 'string' ? colors[color] : color).map(x => number(x).code).join(', ')})` });
   const derivedValue = (name, value) => { derived.push(`${name} = ${value.code}`); return { ...value, code:name }; };
   const part = (name, type, props, color='body') => { const p = { name:name.replaceAll('-','minus'),type,props:{ ...props,color:paint(color) } };parts.push(p);return p; };
@@ -85,7 +94,48 @@ export function buildForgeModel(input) {
     const root={value:Math.sqrt(Math.max(.05,inside.value)),code:`sqrt(max(0.05, ${inside.code}))`};
     return add(mul(mul(d,.5),root),preset.id==='doraemon'?mul(d,.13):offset);
   };
+  const welcomeKirby=preset.id==='kirby'&&recipe.appearance==='welcome-v1';
   if (preset.kind === 'character') {
+    if (welcomeKirby) {
+      // 메인 화면의 부품을 기준으로 슬라이더와 Python 수식을 함께 만듭니다.
+      const reference=pinkReference,base=reference.find(p=>p.name==='body'),diameter=base.radius*2;
+      const bodyScale=[div(w,diameter),div(h,diameter),div(d,diameter)];
+      const featureScale=p=>p.name.includes('foot')?div(foot,preset.params.feetSize):p.name.includes('hand')?div(arm,preset.params.armSize):p.name.startsWith('cheek')?div(cheek,preset.params.cheekSize):expr(1);
+      const eyeScale=div(eye,preset.params.eyeSize),eyeFrames=new Map();
+      const component=(v,i)=>({value:v.value[i],code:`${v.code}.${'xyz'[i]}`});
+      const unit=(name,v)=>{const length=Math.hypot(...v.value),result={value:v.value.map(n=>n/length),code:name};derived.push(`${name} = norm(${v.code})`);return result;};
+      const crossVector=(name,a,b)=>{const [x,y,z]=a.value,[u,v,t]=b.value,result={value:[y*t-z*v,z*u-x*t,x*v-y*u],code:name};derived.push(`${name} = cross(${a.code}, ${b.code})`);return result;};
+      for(const side of [-1,1]){
+        const ref=reference.find(p=>p.name==='eye_'+side),center=ref.pos.map(n=>n*base.radius/Math.hypot(...ref.pos));
+        const x=mul(mul(center[0],bodyScale[0]),div(gap,preset.params.eyeGap)),y=mul(center[1],bodyScale[1]),z=front(x,y,0),name=side<0?'left':'right';
+        const normal=unit(name+'_eye_normal',vector(div(x,mul(w,w)),div(y,mul(h,h)),div(z,mul(d,d))));
+        const axis=unit(name+'_eye_axis',vector(component(normal,2),0,neg(component(normal,0)))),up=crossVector(name+'_eye_up',normal,axis);
+        eyeFrames.set(side,{referenceCenter:center,reference:ref,center:[x,y,z],normal,axis,up});
+      }
+      for(const p of reference){
+        if(p.name.startsWith('cheek')&&cheek.value<=.005)continue;
+        const color=p.name==='body'||p.name.includes('hand')?'body':p.name.includes('foot')?'accent':forgeColorVector(recipe,p.color);
+        let props;
+        if(p.name==='body')props={pos:vector(0,0,0),size:vector(w,h,d)};
+        else if(p.name.startsWith('eye')){
+          if(recipe.expression==='sleepy'&&!/^eye_-?1$/.test(p.name))continue;
+          const side=p.name.endsWith('_-1')?-1:1,frame=eyeFrames.get(side),delta=p.pos.map((n,i)=>n-frame.referenceCenter[i]);
+          const dot=v=>v.reduce((sum,n,i)=>sum+n*delta[i],0),axisOffset=dot(frame.reference.axis),upOffset=dot(frame.reference.up),normalOffset=delta.reduce((sum,n,i)=>sum+n*frame.referenceCenter[i]/base.radius,0);
+          const pos=frame.center.map((c,i)=>add(add(add(c,mul(component(frame.axis,i),mul(axisOffset,eyeScale))),mul(component(frame.up,i),mul(upOffset,eyeScale))),mul(component(frame.normal,i),mul(normalOffset,eyeScale))));
+          props={pos:vector(...pos),size:vector(...p.size.map((n,i)=>mul(n,recipe.expression==='sleepy'&&i===1?mul(eyeScale,.18):eyeScale))),axis:frame.axis,up:frame.up};
+        }else{
+          const scale=featureScale(p),pos=p.pos.map((n,i)=>mul(n,bodyScale[i])),size=p.size.map(n=>mul(n,scale));
+          if(p.name==='mouth'||p.name==='tongue'){
+            if(recipe.expression==='surprise'){size[0]=mul(size[0],1.55);size[1]=mul(size[1],1.8);}
+            if(recipe.expression==='sleepy'){if(p.name==='tongue')continue;size[1]=mul(size[1],.25);}
+          }
+          props={pos:vector(...pos),size:vector(...size)};
+          if(p.angle){props.axis=vector(Math.cos(p.angle),Math.sin(p.angle),0);props.up=vector(-Math.sin(p.angle),Math.cos(p.angle),0);}
+        }
+        if(props.axis){const direction=props.axis,length=props.size.value[0];props.axis={value:direction.value.map(v=>v*length),code:`${direction.code} * ${props.size.code}.x`};}
+        part(p.name,'ellipsoid',{...props,shininess:expr(.28)},color);
+      }
+    } else {
     egg('body',0,0,0,w,h,d);
     if (preset.id === 'doraemon') {
       egg('face_patch',0,mul(h,-.06),mul(d,.4),mul(w,.85),mul(h,.8),mul(d,.27),'white');
@@ -123,6 +173,7 @@ export function buildForgeModel(input) {
     else if(recipe.expression==='surprise')egg('mouth',0,mouthY,mouthZ,mul(w,.12),mul(h,.13),.07,'ink');
     else for(const side of [-1,1])egg(`smile_${side}`,mul(w,side*.035),add(mouthY,mul(h,.015)),mouthZ,mul(w,.085),mul(h,.025),.06,'ink');
     if(preset.id==='cat')egg('tail',mul(w,.48),mul(h,-.18),mul(d,-.36),mul(w,.24),mul(h,.9),mul(d,.25),'accent');
+    }
     if(recipe.accessory==='hat'){
       egg('hat_brim',0,add(mul(h,.49),.03),0,mul(w,.9),.12,mul(d,.8),'accent');
       cone('hat_top',0,mul(h,.5),0,mul(w,.28),mul(h,.5),'accent');
@@ -173,7 +224,7 @@ export function buildForgeModel(input) {
       part(preset.id,'extrusion',{pos:vector(0,0,0),path,shape},'body');
     }
   }
-  return {recipe,preset,parts,derived,range:preset.id==='doraemon'?3.1:3,center:preset.id==='doraemon'?[0,-.6,0]:[0,.15,0]};
+  return {recipe,preset,parts,derived,range:preset.id==='doraemon'?3.1:welcomeKirby?2.5:3,center:preset.id==='doraemon'?[0,-.6,0]:welcomeKirby?[0,.08,0]:[0,.15,0]};
 }
 
 export function forgeCommands(model) {

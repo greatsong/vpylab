@@ -1661,5 +1661,8 @@
   "교사·참고 프로젝트": "Teacher/reference project",
   "학생 프로젝트": "Student project",
   "학생 작품": "Student project",
-  "원본 실행 환경을 확인하세요.": "Check the original runtime environment."
+  "원본 실행 환경을 확인하세요.": "Check the original runtime environment.",
+  "지원하지 않는 캐릭터 모양 버전입니다.": "Unsupported character appearance version.",
+  "보관해 둔 모양을 열었어요.": "Your saved shape is open.",
+  "메인 화면 커비로 바꾸기": "Use the home character shape"
 }

@@ -76,6 +76,8 @@ export function welcomeParts(id='dumpling'){
 }
 export const welcomeWaveAngle=frame=>{let angle=0;for(let i=0;i<=frame;i++)angle+=.024*Math.cos(i*Math.PI/12);return angle;};
 export const rgb=hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255);
+// CSS 색을 Three.js 메인 장면과 같은 선형 RGB 값으로 변환합니다.
+export const welcomeColorVector=hex=>rgb(hex).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
 const n=value=>Number(value.toFixed(5));
 const vec=values=>'vector('+values.map(n).join(', ')+')';
 export const welcomeTogether={id:'friends',label:text('프렌즈','Friends'),line:text('친구들과 함께 통통!','A little bounce with friends!')};
@@ -90,9 +92,9 @@ function welcomeDefinition(id,articulated=false){
   for(const part of parts.filter(p=>!p.name.startsWith('smile_'))){
     const props=Object.entries(part).filter(([key])=>!['name','type','angle'].includes(key)).map(([key,value])=>{
       let expression;
-      if(key==='color')expression=vec(rgb(value));
+      if(key==='color')expression=vec(id==='kirby'?welcomeColorVector(value):rgb(value));
       else if(key==='pos')expression='origin+'+vec(value)+'*scale';
-      else if(Array.isArray(value))expression=vec(value)+(['size','axis'].includes(key)?'*scale':'');
+      else if(Array.isArray(value))expression=vec(value)+(['size','axis'].includes(key)?'*scale':'')+(key==='axis'&&part.type==='ellipsoid'?'*'+n(part.size[0]):'');
       else expression=String(value)+(['radius','thickness'].includes(key)?'*scale':'');
       return key+'='+expression;
     });

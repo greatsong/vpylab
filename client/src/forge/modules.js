@@ -1,4 +1,4 @@
-import { activeParameters, buildForgeModel, createRecipe, forgeParameters, validateRecipe } from './recipes.js';
+import { activeParameters, buildForgeModel, createRecipe, forgeParameters, validateRecipe, forgeColorVector } from './recipes.js';
 
 export const MODULE_PREFIX = '# vpylab-forge:v1 ';
 export const MODULE_FORMAT = 'vpylab-forge';
@@ -47,8 +47,9 @@ export function moduleDefinition(module) {
   for(const key of activeParameters(module.recipe))push(`${forgeParameters[key].variable} = ${module.recipe.params[key]}`);
   // 사용하지 않는 조절기도 부품 식에서 필요할 수 있어 기본 상수를 둡니다.
   for(const [key,spec]of Object.entries(forgeParameters))if(!activeParameters(module.recipe).includes(key))push(`${spec.variable} = ${module.recipe.params[key]}`);
+  if(module.recipe.appearance==='welcome-v1')push('# 색은 VPyLab 메인과 같은 선형 RGB입니다. 조명에 따라 보이는 색은 달라질 수 있습니다.');
   for(const [i,color]of module.recipe.colors.entries()){
-    const rgb=[1,3,5].map(n=>Number((parseInt(color.slice(n,n+2),16)/255).toFixed(6)));
+    const rgb=forgeColorVector(module.recipe,color).map(n=>Number(n.toFixed(6)));
     push(`${i?'accent':'body'}_color = vector(${rgb.join(', ')})`);
   }
   for(const line of model.derived)push(line);
@@ -107,7 +108,7 @@ export function moduleDefinition(module) {
 }
 export function moduleProgram(module,{file=false,metadata=!file}={}) {
   const model=buildForgeModel(module.recipe),fn=factoryName(module),header=MODULE_PREFIX+encode(JSON.stringify(module));
-  const demo=[`scene.range = ${model.range}`,`scene.center = vector(${model.center.join(', ')})`,'scene.forward = vector(-0.25, -0.12, -1)',`my_module = ${fn}(pos=vector(0, 0, 0), scale=1)`,'# 다른 위치에 더 만들기: '+`friend = ${fn}(pos=vector(3,0,0), scale=0.7)`];
+  const demo=[`scene.range = ${model.range}`,`scene.center = vector(${model.center.join(', ')})`,model.recipe.appearance==='welcome-v1'?'scene.forward = vector(-0.13, -0.145, -1)':'scene.forward = vector(-0.25, -0.12, -1)',`my_module = ${fn}(pos=vector(0, 0, 0), scale=1)`,'# 다른 위치에 더 만들기: '+`friend = ${fn}(pos=vector(3,0,0), scale=0.7)`];
   demo.push('# 이동: my_module.move_to(vector(2,0,0))','# 제거: my_module.dispose()');
   const body=moduleDefinition(module);
   return (metadata?header+'\n':'')+'from vpython import *\n\n'+body+'\n'+(file?'if __name__ == "__main__":\n'+demo.map(s=>'    '+s).join('\n'):demo.join('\n'))+'\n';
@@ -132,6 +133,14 @@ export function saveForgeShelfModule(owner,module,storage){const saved=readForge
 export function removeForgeShelfModule(owner,id,storage){const saved=readForgeShelf(owner,storage),modules=saved.modules.filter(m=>m.id!==id);return {modules,saved:writeForgeShelf(owner,{...saved,modules},storage)};}
 export const FORGE_LOGIN_TRANSFER='vpylab:forge:login-transfer:v1';
 export function stageForgeLogin(draft,modules,session){try{session??=globalThis.sessionStorage;session.setItem(FORGE_LOGIN_TRANSFER,JSON.stringify({draft,modules,at:Date.now()}));return true;}catch{return false;}}
+// 구형의 손대지 않은 시작 초안만 새 메인 모양으로 바꿉니다. 저장/포크는 보존합니다.
+export function refreshForgeStarterDraft(module,savedModules=[]) {
+  if(savedModules.some(saved=>saved.id===module?.id))return module;
+  if(!module||module.recipe?.presetId!=='kirby'||module.recipe.appearance||module.recordId||module.source||module.references?.length||module.description||!['커비처럼 동그랗게','Round like Kirby'].includes(module.title))return module;
+  const old={width:2.1,height:1.95,depth:1.7,eyeSize:.18,eyeGap:.18,cheekSize:.23,earLength:.55,armSize:.55,feetSize:.55,wall:.14,point:.48,tone:880};
+  if(module.recipe.expression!=='smile'||module.recipe.accessory!=='none'||module.recipe.colors.join(',')!=='#f8a8cc,#da4772'||Object.entries(old).some(([k,v])=>module.recipe.params[k]!==v))return module;
+  return makeForgeModule(createRecipe('kirby'),module);
+}
 export function initialForgeShelf(owner,storage,session){
   const saved=readForgeShelf(owner,storage),guest=owner?readForgeShelf(null,storage):null;
   if(owner)try{

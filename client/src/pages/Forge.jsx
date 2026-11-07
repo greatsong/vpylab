@@ -5,7 +5,7 @@ import Header from '../components/layout/Header';
 import ForgePreview from '../components/forge/ForgePreview';
 import ForgeLibrary from '../components/forge/ForgeLibrary';
 import { activeParameters, buildForgeModel, createRecipe, forgeParameters, forgePresets } from '../forge/recipes';
-import { factoryName, makeForgeModule, moduleDefinition, moduleProgram, initialForgeShelf, writeForgeShelf, writeForgeDraft, saveForgeShelfModule, removeForgeShelfModule, readForgeShelf, stageForgeLogin, FORGE_LOGIN_TRANSFER } from '../forge/modules';
+import { factoryName, refreshForgeStarterDraft, makeForgeModule, moduleDefinition, moduleProgram, initialForgeShelf, writeForgeShelf, writeForgeDraft, saveForgeShelfModule, removeForgeShelfModule, readForgeShelf, stageForgeLogin, FORGE_LOGIN_TRANSFER } from '../forge/modules';
 import { forkForgeModule, publishForgeModule } from '../forge/registry';
 import { beep, ensureAudioReady } from '../engine/sound-system';
 import useAuthStore from '../stores/authStore';
@@ -19,7 +19,7 @@ function download(text,filename,type='text/plain') {
 function ForgeWorkspace({owner}) {
   const ui = useUiText();
   const newModule = recipe => { const module=makeForgeModule(recipe); return {...module, title:ui(module.title), description:ui(module.description)}; };
-  const [initial]=useState(()=>initialForgeShelf(owner));
+  const [initial]=useState(()=>{const initial=initialForgeShelf(owner);return {...initial,draft:refreshForgeStarterDraft(initial.draft,initial.modules),guestDraft:refreshForgeStarterDraft(initial.guestDraft,[...initial.modules,...readForgeShelf(null).modules])};});
   const [history,setHistory]=useState(()=>({past:[],present:initial.draft||newModule(createRecipe()),future:[]}));
   const [shelf,setShelf]=useState(initial.modules),[kind,setKind]=useState(()=>forgePresets.find(p=>p.id===initial.draft?.recipe.presetId)?.kind||'character'),[tab,setTab]=useState('body'),[pageTab,setPageTab]=useState('workbench');
   const [view,setView]=useState({mode:'three',epoch:0}),[notice,setNotice]=useState(initial.pendingLogin?ui("로그인 전 만들던 모양을 이어서 열었습니다. 공개 등록은 다시 눌러 주세요."):''),[lastChange,setLastChange]=useState('width'),[alias,setAlias]=useState(initial.draft?.author||ui("익명")),[publishing,setPublishing]=useState(false),[storageError,setStorageError]=useState(false),[waveTick,setWaveTick]=useState(0),[referenceTitle,setReferenceTitle]=useState(''),[referenceUrl,setReferenceUrl]=useState('');
@@ -68,6 +68,7 @@ function ForgeWorkspace({owner}) {
       {storageError&&<p role="alert" className="forge-notice">{ui("브라우저에 자동 보관하지 못했습니다. 작업을 잃지 않도록 코드를 복사하거나 Python 파일을 내려받으세요.")}</p>}
       {owner&&initial.guestDraft&&JSON.stringify(current)!==JSON.stringify(initial.guestDraft)&&<button className="btn-secondary my-3" onClick={()=>{replace(initial.guestDraft);setKind(forgePresets.find(p=>p.id===initial.guestDraft.recipe.presetId).kind);setNotice(ui("로그인 전에 만들던 초안을 가져왔습니다."));}}>{ui("로그인 전 게스트 초안 가져오기")}</button>}
       <p role="status" aria-live="polite" className="forge-notice">{ui(notice)||ui("값을 바꾸면 모양과 코드가 함께 바뀝니다. 현재 초안은 이 브라우저에 자동 보관됩니다.")}</p>
+      {recipe.presetId==='kirby'&&!recipe.appearance&&<p className="forge-notice">{ui("보관해 둔 모양을 열었어요.")} <button type="button" className="btn-secondary" onClick={()=>{change(old=>({...old,recipe:createRecipe('kirby')}));setTab('body');setNotice(ui("새 시작 모양입니다. 이전 작업은 되돌리기로 돌아갈 수 있습니다."));}}>{ui("메인 화면 커비로 바꾸기")}</button></p>}
       {pageTab==='library'?<ForgeLibrary localModules={shelf} onChoose={chooseModule} onRemove={id=>{const result=removeForgeShelfModule(owner,id);if(result.saved)setShelf(result.modules);else setNotice(ui("보관함에서 제거하지 못했습니다."));}}/>:<>
       <div className="forge-workbench">
         <aside className="forge-templates" aria-label={ui("시작 모양")}><h2><span>1</span>{ui("어떤 모양으로 시작할까요?")}</h2><div className="forge-kind-tabs">{Object.entries(kindNames).map(([key,name])=><button key={key} aria-pressed={kind===key} onClick={()=>setKind(key)}>{ui(name)}</button>)}</div><div className="forge-template-list">{forgePresets.filter(p=>p.kind===kind).map(p=><button key={p.id} data-forge-preset={p.id} aria-pressed={recipe.presetId===p.id} onClick={()=>choosePreset(p.id)}><span className="forge-preset-icon" style={{background:p.colors[0],color:p.colors[1]}} aria-hidden="true">{p.icon}</span><span><strong>{ui(p.name)}</strong><small>{ui(p.note)}</small></span></button>)}</div><p className="forge-small">{ui("캐릭터는 기본 도형으로 단순화한 연습 모양입니다. 내 비율과 색으로 새 친구를 만들어 보세요.")}</p></aside>

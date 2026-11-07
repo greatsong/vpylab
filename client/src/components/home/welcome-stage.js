@@ -23,5 +23,5 @@ export function createWelcomeStage(scene){
   light.angle=Math.min(.85,.47*option.size);const radius=distance*Math.tan(light.angle)*.72;beams[i].scale.set(radius,distance,radius);light.intensity=13*option.brightness;
   const color=option.color||(i?palette.right:palette.left);light.color.set(color);lenses[i].material.color.set(color).multiplyScalar(Math.min(1,option.brightness));beams[i].material.uniforms.tint.value.set(color);beams[i].material.uniforms.power.value=option.brightness;
  });
- return {setGround(y){ground=y;floor.position.y=y-.07;layout();},setLighting(on,colors,options){effects.visible=on;palette=colors;settings=normalizeStageLights(options)||defaultStageLights();layout();},dispose(){group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();if(o.isLight)o.dispose();});scene.remove(group);}};
+ return {setVisible(visible){group.visible=visible;},setGround(y){ground=y;floor.position.y=y-.07;layout();},setLighting(on,colors,options){effects.visible=on;palette=colors;settings=normalizeStageLights(options)||defaultStageLights();layout();},dispose(){group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();if(o.isLight)o.dispose();});scene.remove(group);}};
 }
