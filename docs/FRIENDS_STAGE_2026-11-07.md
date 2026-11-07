@@ -20,7 +20,7 @@
 ## 검증
 
 - 화면과 실제 CPython/VPython 브리지의 부품별 위치·회전·경계, 4개 compound의 독립 움직임과 원위치 복귀를 검증한 7개 검사 통과.
-- 최종 전체 클라이언트 검사는 Worker 동시 수를 4로 제한하여 **70개 파일, 792개 검사 모두 통과**했습니다. 앞선 기본 동시 실행에서 Worker 검사 프로세스 하나가 종료됐으므로 해당 파일의 6개 검사 분리 실행과 최종 전체 실행으로 다시 확인했습니다.
+- 배포 커밋의 최종 CI에서 **70개 파일, 793개 검사 모두 통과**했습니다. 로컬 전체 792개 통과 후 편집기 위치 참조 검사를 추가했습니다. 앞선 로컬 기본 동시 실행의 Worker 프로세스 종료는 동시 수 4의 전체 실행과 CI로 다시 확인했습니다.
 - 서버 유틸리티 10개 통과. 린트 오류 0개(기존 LoadingScreen 경고 1개), 빌드 성공.
 - 로컬 실제 WebGL/UI 17개 통과: 개별 4종, 프렌즈 움직임의 픽셀 변화, 조명 전환, 인사 재생, 모션 감소, 반응형 메뉴, 영어, WebGL 및 lazy chunk 실패 시 대체 화면.
 - 개별 4종+프렌즈의 실제 Pyodide 실행과 공유 HTML 5종, 기존 카메라·compound 공유 HTML 회귀를 확인합니다. 결과 JSON에 실제 통과 범위를 기록합니다. 공유 HTML CDN은 설치된 동일 버전 Three.js·Pyodide로 치환하며, 계정/DB를 쓰지 않습니다.
@@ -51,4 +51,18 @@
 - [실제 UI 결과](collaboration/friends-3d-stage-browser-2026-11-07.json), [Python/HTML 10개 프로그램](collaboration/friends-pyodide-programs-2026-11-07.json), [최종 프렌즈 재검증](collaboration/friends-final-rhythm-programs-2026-11-07.json)
 - [확대 캡처](review-figures/2026-11-07/friends-3d-closeup.png)
 
-배포 상태와 배포 후 확인 결과는 아래에 이어 기록합니다.
+## 배포 완료 및 운영 확인
+
+- 애플리케이션 커밋: `4d188c9eb3f21b5d568601089eca2ccfdfdf2e27`. Vercel과 Railway 모두 성공. 서버 health의 `commitSha`가 `4d188c9eb3f2`인 것을 확인했습니다.
+- [GitHub CI 42318739166](https://github.com/greatsong/vpylab/actions/runs/42318739166): 7개 작업 모두 성공. 클라이언트 70개 파일/793개 검사, 서버·교실·권한 등 159개 검사 통과.
+- [운영 사이트](https://vpylab.vercel.app): 실제 UI 17개 모두 통과, 네 친구와 프렌즈 예제 5개 모두 실제 Pyodide 실행 통과. 계정 대체나 CDN 의존성 치환, DB 쓰기 없이 실행했습니다. 긴 계정 버튼의 레이아웃 검사만 DOM 텍스트 대체를 사용하며 JSON에 구분했습니다.
+- 로컬 `http://127.0.0.1:4033/`도 최종 UI 17개 통과. 첫 화면에서 **프렌즈 → 통통 튀기**, 또는 **프렌즈, 내 코드로 만들기**를 선택하면 됩니다.
+- 사용 안내 페이지와 `USER_GUIDE_KO.md`, `DESIGN.md`에 compound·friends 목록·캐릭터별 입체 무대 사용법을 반영했습니다.
+
+근거: [CI 결과](collaboration/friends-ci-2026-11-07.json), [배포 상태](collaboration/friends-deployment-2026-11-07.json), [서버 health](collaboration/friends-production-health-2026-11-07.json), [운영 UI 17개](collaboration/friends-production-browser-2026-11-07.json), [운영 Python 5개](collaboration/friends-production-programs-2026-11-07.json), [로컬 UI 17개](collaboration/friends-local-browser-2026-11-07.json).
+
+![운영 프렌즈 확대 캡처](review-figures/2026-11-07/production-friends-closeup.png)
+
+[운영 모바일 캡처](review-figures/2026-11-07/production-friends-mobile.png), [운영 분홍 친구 캡처](review-figures/2026-11-07/production-friends-kirby.png).
+
+이후 증거·보고서 커밋은 애플리케이션 소스를 변경하지 않습니다.

@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-11-07T00:32:59.751Z",
+  "url": "https://vpylab.vercel.app",
+  "results": [
+    {
+      "name": "sandbox-real-pyodide-dumpling",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-flashlight",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-toolbox",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-kirby",
+      "passed": true
+    },
+    {
+      "name": "sandbox-real-pyodide-friends",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Real production Sandbox/Pyodide via actual application loading. No dependency substitution, authentication, or live DB writes."
+}
