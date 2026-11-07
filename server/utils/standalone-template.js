@@ -911,7 +911,7 @@ _vpython_names = [
     'local_light', 'distant_light',
     'rate', 'sleep', 'scene_background',
     'mag', 'mag2', 'hat', 'dot', 'cross', 'norm',
-    'play_sound', 'play_note', 'play_chord', 'play_sequence',
+    'play_sound', 'play_note', 'play_note_and_wait', 'play_chord', 'play_sequence',
     'play_sfx', 'start_bgm', 'stop_bgm', 'note',
     'sound', 'sfx', 'bgm', 'chord',
     '소리', '음표', '효과음', '배경음악', '배경음악정지', '화음',
@@ -2014,6 +2014,7 @@ async def 음표(name, duration=0.5, type='sine', volume=0.4):
     play_note(_resolve_note_name(name), duration, type, volume)
     _send_commands()
     await asyncio.sleep(duration)
+play_note_and_wait = 음표
 def 효과음(name): play_sfx(name)
 def 배경음악(name, loop=True): start_bgm(name,loop)
 def 배경음악정지(): stop_bgm()

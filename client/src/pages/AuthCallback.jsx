@@ -1,9 +1,11 @@
+import { useUiText } from "../i18n/ui-text";
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import useAuthStore from '../stores/authStore';
 
 export default function AuthCallback() {
+  const ui = useUiText();
   const navigate = useNavigate();
   const [callbackError, setCallbackError] = useState('');
 
@@ -21,7 +23,7 @@ export default function AuthCallback() {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         exchangedSession = data?.session;
         callbackFailed ||= !!error || !exchangedSession;
-        if (error) console.error('세션 교환 실패:', error.message);
+        if (error) console.error(ui("세션 교환 실패:"), error.message);
       }
 
       // 세션 확인 후 이동 (재인증 흐름이면 원래 페이지로 복귀, 코드도 복원)
@@ -59,7 +61,7 @@ export default function AuthCallback() {
         // 다른 사용자의 세션으로 원래 프로젝트를 여는 일을 막고 편집 중 코드는 보존합니다.
         const { error } = await useAuthStore.getState().endMismatchedOAuth();
         if (error) {
-          setCallbackError('로그인 세션 정리를 완료하지 못했습니다. 새로고침한 뒤 원래 계정으로 로그인해주세요.');
+          setCallbackError(ui("로그인 세션 정리를 완료하지 못했습니다. 새로고침한 뒤 원래 계정으로 로그인해주세요."));
           return;
         }
         navigate('/sandbox', { replace: true, state: returnCode != null ? { restoredCode: returnCode } : undefined });
@@ -78,14 +80,14 @@ export default function AuthCallback() {
     };
 
     handleCallback();
-  }, [navigate]);
+  }, [navigate, ui]);
 
   return (
     <div
       className="h-screen flex items-center justify-center"
       style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)' }}
     >
-      {callbackError ? <div role="alert"><p>{callbackError}</p><button onClick={() => window.location.reload()}>새로고침</button></div> : '로그인 처리 중...'}
+      {callbackError ? <div role="alert"><p>{ui(callbackError)}</p><button onClick={() => window.location.reload()}>{ui("새로고침")}</button></div> : ui("로그인 처리 중...")}
     </div>
   );
 }

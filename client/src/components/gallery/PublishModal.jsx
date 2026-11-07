@@ -1,3 +1,4 @@
+import { useUiText } from "../../i18n/ui-text";
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPosterThumbnail, isThumbnailUsable } from '../../engine/thumbnail';
@@ -15,6 +16,7 @@ const CATEGORIES = [
 ];
 
 export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFrom, projectContext = null, onRefreshThumbnail }) {
+  const ui = useUiText();
   const navigate = useNavigate();
   const publishWork = useGalleryStore(s => s.publishWork);
   const publishing = useGalleryStore(s => s.publishing);
@@ -35,22 +37,21 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
   const [githubTokenExpired, setGithubTokenExpired] = useState(false);
   const [thumbnailState, setThumbnailState] = useState(null);
 
-  const publishModeText = useMemo(() => {
-    if (!publishToGitHub) return '갤러리 스냅샷만 공개합니다.';
-    if (hasProjectRepo) return `현재 프로젝트 저장소 ${projectRepo}에 Pages 실행 버전을 갱신합니다.`;
-    return '새 GitHub 저장소와 Pages 실행 페이지를 함께 만듭니다.';
-  }, [hasProjectRepo, projectRepo, publishToGitHub]);
+  const publishModeText = !publishToGitHub ? ui("갤러리 스냅샷만 공개합니다.") : hasProjectRepo
+    ? ui`현재 프로젝트 저장소 ${projectRepo}에 Pages 실행 버전을 갱신합니다.`
+    : ui("새 GitHub 저장소와 Pages 실행 페이지를 함께 만듭니다.");
+  const posterTitle=title.trim() || projectContext?.title || ui("VPyLab 작품");
   const posterThumbnail = useMemo(() => createPosterThumbnail({
-    title: title.trim() || projectContext?.title || 'VPyLab 작품',
+    title: posterTitle,
     description,
     category,
     code,
     repo: projectRepo,
     author: authorAlias,
-  }), [authorAlias, category, code, description, projectContext?.title, projectRepo, title]);
+  }), [authorAlias, category, code, description, projectRepo, posterTitle]);
   const capturedThumbnail = thumbnailState?.source === thumbnail && thumbnailState.usable ? thumbnail : null;
   const finalThumbnail = capturedThumbnail || posterThumbnail;
-  const thumbnailMode = capturedThumbnail ? '실행 화면 캡처' : '자동 포스터';
+  const thumbnailMode = capturedThumbnail ? ui("실행 화면 캡처") : ui("자동 포스터");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -86,11 +87,11 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
 
   const handlePublish = async () => {
     if (!title.trim()) {
-      setError('제목을 입력해주세요.');
+      setError(ui("제목을 입력해주세요."));
       return;
     }
     if (!code?.trim()) {
-      setError('코드가 비어있습니다.');
+      setError(ui("코드가 비어있습니다."));
       return;
     }
 
@@ -104,14 +105,14 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
 
       if (publishToGitHub) {
         if (!isGitHubUser()) {
-          setError('GitHub Pages까지 연결하려면 GitHub 로그인이 필요합니다.');
+          setError(ui("GitHub Pages까지 연결하려면 GitHub 로그인이 필요합니다."));
           return;
         }
 
         githubToken = await getGitHubToken();
         if (!githubToken) {
           setGithubTokenExpired(true);
-          setError('GitHub 인증이 만료되었습니다. 다시 로그인한 뒤 발행해주세요.');
+          setError(ui("GitHub 인증이 만료되었습니다. 다시 로그인한 뒤 발행해주세요."));
           return;
         }
 
@@ -128,7 +129,7 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
         remixFrom,
         htmlContent,
         githubToken,
-        authorAlias: authorAlias.trim() || '익명',
+        authorAlias: authorAlias.trim() || ui("익명"),
         projectId: projectContext?.id || null,
         existingRepo: publishToGitHub && hasProjectRepo ? projectRepo : null,
       });
@@ -139,8 +140,8 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
         setResult(res);
       }
     } catch (err) {
-      console.error('[Publish] 오류:', err);
-      setError(err.message || '발행 중 오류가 발생했습니다.');
+      console.error(ui("[Publish] 오류:"), err);
+      setError(err.message || ui("발행 중 오류가 발생했습니다."));
     }
   };
 
@@ -173,11 +174,11 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
                 <path d="M13 21.5L18.5 27L29.5 15" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <h2>발행 완료</h2>
+            <h2>{ui("발행 완료")}</h2>
             <p className="publish-success-desc">
               {result.githubUrl
-                ? '갤러리 작품과 GitHub Pages 실행 페이지가 연결되었습니다.'
-                : '갤러리 작품으로 공개되었습니다.'}
+                ? ui("갤러리 작품과 GitHub Pages 실행 페이지가 연결되었습니다.")
+                : ui("갤러리 작품으로 공개되었습니다.")}
             </p>
             {result.githubUrl && (
               <div className="publish-result-box">
@@ -191,8 +192,8 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
               </div>
             )}
             <div className="publish-actions">
-              <button onClick={handleGoToGallery} className="publish-primary" type="button">갤러리에서 보기</button>
-              <button onClick={handleClose} className="publish-secondary" type="button">닫기</button>
+              <button onClick={handleGoToGallery} className="publish-primary" type="button">{ui("갤러리에서 보기")}</button>
+              <button onClick={handleClose} className="publish-secondary" type="button">{ui("닫기")}</button>
             </div>
           </div>
         ) : (
@@ -200,9 +201,9 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
             <div className="publish-header">
               <div>
                 <p>Gallery Publish</p>
-                <h2>작품 공개하기</h2>
+                <h2>{ui("작품 공개하기")}</h2>
               </div>
-              <button className="publish-close" onClick={handleClose} aria-label="닫기" type="button">
+              <button className="publish-close" onClick={handleClose} aria-label={ui("닫기")} type="button">
                 <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                   <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
@@ -210,13 +211,11 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
             </div>
 
             <div className="publish-thumbnail">
-              <img src={finalThumbnail} alt="미리보기" />
+              <img src={finalThumbnail} alt={ui("미리보기")} />
               <div className="publish-thumbnail-bar">
                 <span>{thumbnailMode}</span>
                 {onRefreshThumbnail && (
-                  <button type="button" onClick={onRefreshThumbnail}>
-                    현재 화면 다시 캡처
-                  </button>
+                  <button type="button" onClick={onRefreshThumbnail}>{ui("현재 화면 다시 캡처")}</button>
                 )}
               </div>
             </div>
@@ -227,53 +226,42 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
             </div>
 
             {remixFrom && (
-              <div className="publish-remix-note">
-                다른 작품에서 출발한 Remix로 연결됩니다.
-              </div>
+              <div className="publish-remix-note">{ui("다른 작품에서 출발한 Remix로 연결됩니다.")}</div>
             )}
 
-            <label className="publish-field">
-              제목 <span className="required">*</span>
+            <label className="publish-field">{ui("제목")}<span className="required">*</span>
               <input
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="작품 제목"
+                placeholder={ui("작품 제목")}
                 maxLength={100}
                 autoFocus
               />
             </label>
 
-            <label className="publish-field">
-              공개 이름
-              <div className="publish-alias-row">
+            <label className="publish-field">{ui("공개 이름")}<div className="publish-alias-row">
                 <input
                   type="text"
                   value={authorAlias}
                   onChange={e => setAuthorAlias(e.target.value)}
-                  placeholder="갤러리에 표시될 이름"
+                  placeholder={ui("갤러리에 표시될 이름")}
                   maxLength={30}
                 />
-                <button type="button" onClick={() => setAuthorAlias('')} className={!authorAlias.trim() ? 'active' : ''}>
-                  익명
-                </button>
+                <button type="button" onClick={() => setAuthorAlias('')} className={!authorAlias.trim() ? 'active' : ''}>{ui("익명")}</button>
               </div>
             </label>
 
-            <label className="publish-field">
-              설명
-              <textarea
+            <label className="publish-field">{ui("설명")}<textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                placeholder="다른 사람이 실행하거나 Remix할 때 도움이 되는 짧은 설명"
+                placeholder={ui("다른 사람이 실행하거나 Remix할 때 도움이 되는 짧은 설명")}
                 maxLength={500}
                 rows={3}
               />
             </label>
 
-            <div className="publish-field">
-              카테고리
-              <div className="publish-category-grid">
+            <div className="publish-field">{ui("카테고리")}<div className="publish-category-grid">
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat.value}
@@ -281,7 +269,7 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
                     onClick={() => setCategory(cat.value)}
                     type="button"
                   >
-                    {cat.label}
+                    {ui(cat.label)}
                   </button>
                 ))}
               </div>
@@ -293,27 +281,25 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
                 checked={publishToGitHub}
                 onChange={e => setPublishToGitHub(e.target.checked)}
               />
-              <span>
-                GitHub Pages 실행 버전까지 발행
-                {hasProjectRepo && <small>현재 프로젝트 저장소를 재사용합니다.</small>}
+              <span>{ui("GitHub Pages 실행 버전까지 발행")}{hasProjectRepo && <small>{ui("현재 프로젝트 저장소를 재사용합니다.")}</small>}
               </span>
             </label>
 
             {publishToGitHub && !isGitHubUser() && (
               <div className="publish-github-prompt">
-                <p>GitHub 저장소와 Pages를 만들려면 GitHub 로그인이 필요합니다.</p>
-                <button onClick={handleGitHubSignIn} type="button">GitHub으로 로그인</button>
+                <p>{ui("GitHub 저장소와 Pages를 만들려면 GitHub 로그인이 필요합니다.")}</p>
+                <button onClick={handleGitHubSignIn} type="button">{ui("GitHub으로 로그인")}</button>
               </div>
             )}
 
             {githubTokenExpired && (
               <div className="publish-token-warning">
-                <p>GitHub 인증이 만료되었습니다. 재로그인 후 다시 발행해주세요.</p>
-                <button onClick={handleGitHubSignIn} type="button">GitHub 재로그인</button>
+                <p>{ui("GitHub 인증이 만료되었습니다. 재로그인 후 다시 발행해주세요.")}</p>
+                <button onClick={handleGitHubSignIn} type="button">{ui("GitHub 재로그인")}</button>
               </div>
             )}
 
-            {error && <div className="publish-error">{error}</div>}
+            {error && <div className="publish-error">{ui(error)}</div>}
 
             <div className="publish-actions">
               <button
@@ -323,10 +309,10 @@ export default function PublishModal({ isOpen, onClose, code, thumbnail, remixFr
                 type="button"
               >
                 {publishing ? (
-                  <span className="publishing-state"><span className="spinner" /> 발행 중</span>
-                ) : '발행하기'}
+                  <span className="publishing-state"><span className="spinner" />{ui("발행 중")}</span>
+                ) : ui("발행하기")}
               </button>
-              <button onClick={handleClose} className="publish-secondary" type="button">취소</button>
+              <button onClick={handleClose} className="publish-secondary" type="button">{ui("취소")}</button>
             </div>
           </>
         )}

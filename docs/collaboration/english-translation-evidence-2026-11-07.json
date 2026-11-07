@@ -1,0 +1,41 @@
+{
+  "catalogs": [
+    {
+      "source": "claude",
+      "keys": 480,
+      "model": null,
+      "fallback": null
+    },
+    {
+      "source": "gemini",
+      "keys": 411,
+      "model": "gemini-4-argon-medium",
+      "fallback": false
+    },
+    {
+      "source": "course-1",
+      "keys": 180,
+      "model": "gemini-4-argon-medium",
+      "fallback": false
+    },
+    {
+      "source": "course-2",
+      "keys": 180,
+      "model": null,
+      "fallback": null
+    },
+    {
+      "source": "course-3",
+      "keys": 79,
+      "model": "gemini-4-argon-medium",
+      "fallback": false
+    },
+    {
+      "source": "extras",
+      "keys": 330,
+      "model": "gemini-4-argon-medium",
+      "fallback": false
+    }
+  ],
+  "total": 1663
+}

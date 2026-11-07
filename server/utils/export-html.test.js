@@ -65,7 +65,7 @@ print(json.dumps(lines, ensure_ascii=False))
   assert.deepEqual(JSON.parse(result.stdout), ['첫 줄', '둘째 줄']);
 });
 
-test('서버가 생성한 Pages HTML에서 8차시가 실행되고 첫 소리 명령도 실제 발생한다', t => {
+test('서버가 생성한 Pages HTML에서 한국어·영어 대기형 소리가 실제 발생한다', t => {
   if (!requirePython(t)) return;
   const page = generateStandaloneHTML(course.lessons[0].code);
   const api = page.match(/const vpythonApi = (`[\s\S]*?`);/);
@@ -106,15 +106,16 @@ print(json.dumps(results, ensure_ascii=False))
   const result = spawnSync('python3', ['-I', '-c', verify], {
     input: JSON.stringify({ api: runInNewContext(api[1]), transform,
       runner: runInNewContext(`${runner[0]}\nrunner`), moduleSetup: runInNewContext(moduleSetup[1]),
-      jobs: course.lessons.map(lesson => ({ id: lesson.id, code: lesson.code })) }) + '\n',
+      jobs: [...course.lessons.map(lesson => ({ id: lesson.id, code: lesson.code })), {id:'english-wait', code:'from vpython import *\nplay_note_and_wait("C4", 0.2)'}] }) + '\n',
     encoding: 'utf8', timeout: 15000, maxBuffer: 16 * 1024 * 1024,
   });
   assert.equal(result.status, 0, result.stderr);
   assert(!result.stderr.includes('was never awaited'), result.stderr);
   const jobs = JSON.parse(result.stdout.trim().split('\n').at(-1));
-  assert.equal(jobs.length, 8);
+  assert.equal(jobs.length, 9);
   for (const job of jobs) assert.equal(job.error, null, JSON.stringify(job));
   assert(jobs[0].commands.some(command => command.action === 'sound'));
+  assert(jobs.at(-1).commands.some(command => command.action === 'sound' && command.name === 'C4'));
 });
 
 test('공유 HTML의 위치 벡터는 입력을 공유하지 않고 저장한 참조의 연속 수정도 화면 명령으로 보낸다', t => {

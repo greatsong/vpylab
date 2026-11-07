@@ -5927,6 +5927,9 @@ async def 음표(name, duration=0.5, type='sine', volume=0.4):
     _before_wait()
     await _sleep_chunked(duration)
 
+# 대기형 영문 명령. 기존 play_note는 즉시 반환하는 동작을 유지합니다.
+play_note_and_wait = 음표
+
 def 효과음(name):
     """play_sfx()의 한글 별칭"""
     play_sfx(name)

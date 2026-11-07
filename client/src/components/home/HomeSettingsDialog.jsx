@@ -1,3 +1,4 @@
+import { useUiText } from "../../i18n/ui-text";
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './home.css';
@@ -5,9 +6,10 @@ import useAuthStore from '../../stores/authStore';
 import { HOME_COLORS, readPersonalHome, resetPersonalHome, writePersonalHome, removePersonalHome } from '../../utils/personal-home';
 
 export default function HomeSettingsDialog({userId,pin,onClose,ko=true}){
+  const ui = useUiText();
  const navigate=useNavigate();
  const dialog=useRef(null),previous=useRef(null),scope=useRef(userId||'guest');
- const [saved]=useState(()=>readPersonalHome(userId)),[greeting,setGreeting]=useState(saved?.greeting||(ko?'나의 코딩 작업실':'My coding studio')),[background,setBackground]=useState(saved?.background||HOME_COLORS[0]),[title,setTitle]=useState(pin?.title||saved?.project?.title||'나의 작품'),[error,setError]=useState(''),[showProject,setShowProject]=useState(!!saved?.project&&saved.enabled!==false&&saved.showProject!==false);
+ const [saved]=useState(()=>readPersonalHome(userId)),[greeting,setGreeting]=useState(saved?.greeting||(ko?'나의 코딩 작업실':'My coding studio')),[background,setBackground]=useState(saved?.background||HOME_COLORS[0]),[title,setTitle]=useState(pin?.title||saved?.project?.title||ui("나의 작품")),[error,setError]=useState(''),[showProject,setShowProject]=useState(!!saved?.project&&saved.enabled!==false&&saved.showProject!==false);
  useEffect(()=>{previous.current=document.activeElement;const el=dialog.current;el.showModal();return()=>{el.close();previous.current?.focus?.();};},[]);
  const sameAccount=()=>{const auth=useAuthStore.getState();return !auth.loading&&(auth.user?.id||'guest')===scope.current;};
  const save=e=>{e.preventDefault();if(!sameAccount()){setError(ko?'계정이 바뀌었습니다. 닫고 다시 설정해 주세요.':'Your account changed. Close and reopen settings.');return;}
@@ -27,7 +29,7 @@ export default function HomeSettingsDialog({userId,pin,onClose,ko=true}){
     <p>{saved?.project?(ko?'등록된 작품: ':'Featured project: ')+saved.project.title:(ko?'만들기 → 도구 → 현재 프로젝트를 내 메인으로 설정에서 작품을 가져오세요.':'Feature a project from Create → Tools → Set current project as my home.')}</p>
    </>}
    {!pin&&saved?.project&&<p>{ko?'기본 화면으로 돌아가도 작품 사본은 남습니다. 다시 표시하려면 위 선택을 켜고 적용하세요.':'Restoring the default keeps the code copy. Enable the checkbox and apply to show it again.'}</p>}
-   {error&&<p role="alert">{error}</p>}
+   {error&&<p role="alert">{ui(error)}</p>}
    <div className="home-settings-actions"><button type="submit" className="btn-primary">{pin?(ko?'내 메인으로 설정':'Set as my home'):(ko?'적용':'Apply')}</button><button type="button" onClick={onClose} className="btn-secondary">{ko?'취소':'Cancel'}</button>{!pin&&<button type="button" onClick={reset} className="btn-secondary">{ko?'기본 화면으로 돌아가기':'Restore default home'}</button>}</div>
    {!pin&&saved&&<details className="mt-4 text-xs"><summary>{ko?'이 브라우저의 보관본 관리':'Manage browser copies'}</summary><p>{ko?'설정과 코드 사본은 이 기기에 보관됩니다. 삭제하면 이 브라우저의 내 메인 사본만 지워집니다.':'Settings and code copies are kept on this device. Deleting removes only this browser’s home copy.'}</p><button type="button" className="btn-secondary" onClick={remove}>{ko?'보관본 삭제':'Delete browser copy'}</button></details>}
    {pin&&<p><Link to="/" onClick={onClose}>{ko?'메인 화면으로':'Go to home'} →</Link></p>}

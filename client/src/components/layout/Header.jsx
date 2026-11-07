@@ -1,3 +1,4 @@
+import { useUiText } from "../../i18n/ui-text";
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useI18n } from '../../i18n/useI18n';
@@ -9,6 +10,7 @@ import BrandLogo from '../shared/BrandLogo';
 import { InstallButton, IosInstallHint } from './InstallPrompt';
 
 export default function Header() {
+  const ui = useUiText();
   const { theme, setTheme, locale, setLocale, THEMES, THEME_META } = useAppStore();
   const { user, profile, signOut, setAuthModalOpen } = useAuthStore();
   const isTeacher = useAuthStore(s => s.isTeacher());
@@ -53,7 +55,7 @@ export default function Header() {
   const menuStyle = { backgroundColor: 'var(--color-bg-panel)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-md)' };
   return (
     <header ref={rootRef} className="sticky top-0 z-50 h-14 shrink-0 w-full min-w-0 flex items-center gap-4 border-b px-5 md:px-8" style={{ backgroundColor: 'var(--color-bg-panel)', borderColor: 'var(--color-border)' }}>
-      <Link to="/" className="no-underline mr-auto shrink-0" aria-label="VPyLab 홈"><BrandLogo size={26} inverse={!!THEME_META[theme]?.dark} /></Link>
+      <Link to="/" className="no-underline mr-auto shrink-0" aria-label={ui("VPyLab 홈")}><BrandLogo size={26} inverse={!!THEME_META[theme]?.dark} /></Link>
       <nav aria-label={ko ? '주 메뉴' : 'Main navigation'} className="hidden lg:flex items-center gap-4 xl:gap-5 mr-1">
         {primary.map(item => <Link key={item.path} to={item.path} aria-current={active(item.path) ? 'page' : undefined} className={`no-underline whitespace-nowrap text-sm font-medium py-3 ${item.reference ? 'ml-2 pl-5 border-l' : ''}`} style={{...linkStyle(item.path), borderColor: 'var(--color-border)'}} onMouseEnter={() => { if (item.path === '/sandbox') prewarm(); }}>{item.label}</Link>)}
       </nav>
@@ -66,8 +68,8 @@ export default function Header() {
               {resources.map(item => <Link key={item.path} to={item.path} className="block px-3 py-2.5 text-sm no-underline hover:underline" style={linkStyle(item.path)}>{item.label}</Link>)}
             </nav>
             <div className="mt-3 pt-4 px-3 space-y-4 text-xs" style={{ borderTop: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}>
-              <label className="flex items-center justify-between gap-3">{ko ? '언어' : 'Language'}<select aria-label={ko ? '언어' : 'Language'} value={locale} onChange={event => setLocale(event.target.value)} className="py-1 px-2 border max-w-32" style={{ backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}><option value="ko">한국어</option><option value="en">English</option></select></label>
-              <label className="flex items-center justify-between gap-3">{t('settings.theme')}<select aria-label={t('settings.theme')} value={theme} onChange={event => setTheme(event.target.value)} className="py-1 px-2 border max-w-32" style={{ backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>{THEMES.map(value => <option key={value} value={value}>{THEME_META[value]?.label}</option>)}</select></label>
+              <label className="flex items-center justify-between gap-3">{ko ? '언어' : 'Language'}<select aria-label={ko ? '언어' : 'Language'} value={locale} onChange={event => setLocale(event.target.value)} className="py-1 px-2 border max-w-32" style={{ backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}><option value="ko">{ui("한국어")}</option><option value="en">English</option></select></label>
+              <label className="flex items-center justify-between gap-3">{t('settings.theme')}<select aria-label={t('settings.theme')} value={theme} onChange={event => setTheme(event.target.value)} className="py-1 px-2 border max-w-32" style={{ backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-primary)', borderColor: 'var(--color-border)' }}>{THEMES.map(value => <option key={value} value={value}>{ui(THEME_META[value]?.label)}</option>)}</select></label>
               <InstallButton />
             </div>
           </div>

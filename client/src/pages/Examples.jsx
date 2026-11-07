@@ -1,3 +1,4 @@
+import { useUiText } from '../i18n/ui-text';
 import { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../i18n/useI18n';
@@ -33,6 +34,7 @@ const LEVEL_LABELS = {
 };
 
 function ExampleCard({ ex, lang }) {
+  const ui=useUiText();
   const accent = CAT_COLOR[ex.category] || '#4A6CF7';
   const cat = EXAMPLE_CATEGORIES.find((c) => c.id === ex.category);
   const catLabel = cat ? (lang === 'ko' ? cat.label : (cat.labelEn || cat.label)) : ex.category;
@@ -72,7 +74,7 @@ function ExampleCard({ ex, lang }) {
         className="font-display text-[15px] font-bold leading-snug mb-2"
         style={{ color: 'var(--color-text-primary)' }}
       >
-        {ex.title}
+        {ui(ex.title)}
       </h3>
 
       {/* 설명 — 2줄 클램프 */}
@@ -86,7 +88,7 @@ function ExampleCard({ ex, lang }) {
           overflow: 'hidden',
         }}
       >
-        {ex.description}
+        {ui(ex.description)}
       </p>
 
       {/* 태그 */}

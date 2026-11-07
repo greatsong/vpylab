@@ -1,3 +1,4 @@
+import { useUiText } from "../../i18n/ui-text";
 import { useState, useRef, useEffect } from 'react';
 import CodeVocabulary from '../learning/CodeVocabulary';
 
@@ -9,7 +10,8 @@ function highlightPython(code) {
   return kind?<span key={index} style={{color:`var(--color-${kind==='muted'?'text-muted':kind})`}}>{value}</span>:value;
  });
 }
-export default function DocCodeBlock({code,copyCode=code,label='Python 예제 코드',locale='ko',vocabulary=true}) {
+export default function DocCodeBlock({code,copyCode=code,label,locale='ko',vocabulary=true}) {
+  const ui = useUiText();
  const ko=locale==='ko';
  const [message,setMessage]=useState('');const timer=useRef(null);
  useEffect(()=>()=>clearTimeout(timer.current),[]);
@@ -19,7 +21,7 @@ export default function DocCodeBlock({code,copyCode=code,label='Python 예제 �
   clearTimeout(timer.current);timer.current=setTimeout(()=>setMessage(''),4000);
  };
  return <div className="mb-3 min-w-0"><div className="flex items-center justify-between gap-3 mb-2"><span role="status" className="text-xs" style={{color:'var(--color-text-muted)'}}>{message}</span><button type="button" onClick={copy} className="btn-secondary text-xs shrink-0" aria-label={copyCode===code?(ko?'예제 코드 복사':'Copy example code'):(ko?'제공 함수 포함 전체 코드 복사':'Copy complete code with helper')}>{copyCode===code?(ko?'코드 복사':'Copy code'):(ko?'전체 코드 복사':'Copy all code')}</button></div>
-  <pre tabIndex={0} aria-label={label} className="overflow-x-auto text-[13px] leading-relaxed p-4 m-0 rounded-lg border" style={{fontFamily:'var(--font-mono)',backgroundColor:'var(--color-bg-secondary)',borderColor:'var(--color-border)',color:'var(--color-text-primary)'}}><code>{highlightPython(code)}</code></pre>
+  <pre tabIndex={0} aria-label={label || ui("Python 예제 코드")} className="overflow-x-auto text-[13px] leading-relaxed p-4 m-0 rounded-lg border" style={{fontFamily:'var(--font-mono)',backgroundColor:'var(--color-bg-secondary)',borderColor:'var(--color-border)',color:'var(--color-text-primary)'}}><code>{highlightPython(code)}</code></pre>
   {vocabulary&&<CodeVocabulary code={code} locale={locale}/>}
  </div>;
 }

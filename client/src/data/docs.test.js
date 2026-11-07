@@ -8,7 +8,7 @@ describe('문서의 출처·검색·링크',()=>{
  it('고유 ID·분류와 관련 링크를 유지하고 가이드를 API 목록에서 구별한다',()=>{
   expect(new Set(docs.map(d=>d.id)).size).toBe(docs.length);
   for(const d of docs){expect(['vpython','vpylab','guide']).toContain(d.origin);expect(docCategories[d.category],d.id).toBeDefined();for(const id of d.related||[])expect(getDocById(id),id).toBeDefined();}
-  expect(apiReferenceDocs).toHaveLength(88);expect(apiReferenceDocs.every(d=>d.origin!=='guide')).toBe(true);
+  expect(apiReferenceDocs).toHaveLength(89);expect(apiReferenceDocs.every(d=>d.origin!=='guide')).toBe(true);
  });
  it('표준 명령은 표준으로, 편의 이름과 혼합 인자는 확장으로 표시한다',()=>{
   for(const id of ['compound','vertex','triangle','scene_camera','scene_range_fov','attach-trail-function','text','graph','gcurve','gdots','gvbars','ghbars'])expect(getDocById(id).origin,id).toBe('vpython');

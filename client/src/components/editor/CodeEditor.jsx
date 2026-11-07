@@ -1,3 +1,4 @@
+import { DEFAULT_CODE, getDefaultCode } from '../../data/default-code';
 import { useRef, useCallback, useEffect, useState } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
@@ -30,22 +31,6 @@ const MONACO_THEME_MAP = {
   'cyber-neon': 'vs-dark',
 };
 
-const DEFAULT_CODE = `from vpython import *
-
-# 구를 만들고 움직여보세요
-ball = sphere(pos=vector(0, 0, 0), radius=0.5, color=color.cyan)
-ball.velocity = vector(1, 0, 0)
-
-dt = 0.01
-while True:
-    rate(100)
-    ball.pos = ball.pos + ball.velocity * dt
-
-    # 벽에 부딪히면 반사
-    if abs(ball.pos.x) > 5:
-        ball.velocity.x = -ball.velocity.x
-`;
-
 export default function CodeEditor({ code, onChange, fontSize = 14, readOnly = false }) {
   const editorRef = useRef(null),hostRef=useRef(null),cleanupRef=useRef(()=>{});
   const [tip,setTip]=useState(null);
@@ -75,10 +60,11 @@ export default function CodeEditor({ code, onChange, fontSize = 14, readOnly = f
       const show=(attempt=0)=>{
         if(!editor.hasTextFocus()||!candidate||candidate.key===lastKey)return;
         const p=editor.getPosition();if(!p||p.lineNumber!==candidate.line||model.getOffsetAt(p)<candidate.end)return;
+        const fullWord=model.getWordAtPosition(p)?.word;if(fullWord?.startsWith(candidate.term.id)&&fullWord!==candidate.term.id)return;
         const widget=editor.getDomNode()?.querySelector('.suggest-widget.visible');
         if(widget){
-          const options=completionChoices(prefix).filter(c=>c.name===candidate.term.id);
-          const exact=match?.[0].trim()===candidate.term.id&&term?.id===candidate.term.id&&options.length>0&&options.every(c=>c.insertText===c.name);
+          const allOptions=completionChoices(prefix),options=allOptions.filter(c=>c.name===candidate.term.id),longer=allOptions.some(c=>c.name.startsWith(candidate.term.id)&&c.name!==candidate.term.id);
+          const exact=match?.[0].trim()===candidate.term.id&&term?.id===candidate.term.id&&!longer&&options.length>0&&options.every(c=>c.insertText===c.name);
           if(!exact){if(attempt<5)pending=setTimeout(()=>show(attempt+1),200);return;}
         }
         const userId=useAuthStore.getState().user?.id,point=editor.getScrolledVisiblePosition(p),host=hostRef.current,dom=editor.getDomNode();
@@ -102,7 +88,7 @@ export default function CodeEditor({ code, onChange, fontSize = 14, readOnly = f
         height="100%"
         language="python"
         theme={MONACO_THEME_MAP[theme] || 'vs-dark'}
-        value={code ?? DEFAULT_CODE}
+        value={code ?? getDefaultCode(locale)}
         onChange={onChange}
         onMount={handleMount}
         beforeMount={instance=>registerPythonHelp(instance,()=>useAppStore.getState().locale||'ko')}

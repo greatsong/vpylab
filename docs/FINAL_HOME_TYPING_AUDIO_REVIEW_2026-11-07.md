@@ -61,3 +61,7 @@ Gemini 4 Argon의 마지막 정적 검토에는 P1/P2 지적이 없었습니다.
 - [Gemini 4 Argon 정적 검토](collaboration/completion-boundary-review-gemini-2026-11-07.json)
 - [실제 운영 입력 카드](review-figures/2026-11-07/typing-card-production.png)
 - [웹 사용 안내 확인](collaboration/guide-production-proof-2026-11-07.json)
+
+## 영문판 최종 점검 후속
+
+이 문서의 이전 SHA·검사 수는 해당 배포 시점의 기록입니다. 이후 조명 선택 카드·전체 영문 UI/기초 교재·공유 소스의 언어 전환 보존·명시적 대기형 소리 도우미를 반영했습니다. 최신 소스·검토·운영 검증은 [영문판 최종 점검](FINAL_ENGLISH_RELEASE_2026-11-07.md)을 확인하세요.

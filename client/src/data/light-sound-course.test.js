@@ -1,3 +1,4 @@
+import { localizeCourse } from '../i18n/owned-content';
 import { describe, expect, it } from 'vitest';
 import course from './light-sound-course';
 import { getCourseById, getLesson } from './courses';
@@ -12,6 +13,26 @@ describe('빛과 소리 입문 코스 연결', () => {
 });
 
 describe.skipIf(!hasPython())('입문 교재의 실제 Python 실행', () => {
+  it('영문 대기형 도우미는 실제 Python에서 한국어 차시와 같은 명령 순서·총 대기를 만든다', () => {
+    const english=localizeCourse(course,'en');
+    const results=runPythonJobs(course.lessons.flatMap((lesson,i)=>[
+      {id:lesson.id,label:'ko',code:lesson.code+'\nimport time\nprint(time.time())'},
+      {id:lesson.id,label:'en',code:english.lessons[i].code+'\nimport time\nprint(time.time())'},
+    ]));
+    for(const lesson of course.lessons){
+      const ko=results.get(lesson.id+':ko'),en=results.get(lesson.id+':en');
+      expect(en.error,lesson.id).toBeNull();
+      expect(en.commands,lesson.id).toEqual(ko.commands);
+      expect(en.stdout,lesson.id).toBe(ko.stdout);
+    }
+  });
+  it('play_note는 즉시 반환하고 play_note_and_wait만 지정 시간만큼 기다린다', () => {
+    const result=runPythonJobs([{id:'wait',label:'contract',code:'from vpython import *\nimport time\nplay_note("C4", 0.2)\nprint(time.time())\nplay_note_and_wait("C4", 0.2)\nprint(time.time())'}]).get('wait:contract');
+    expect(result.error).toBeNull();
+    const times=result.stdout.trim().split('\n').map(Number);
+    expect(times[0]).toBe(0);expect(times[1]).toBeCloseTo(0.2,5);
+  });
+
   it('모든 차시가 정지 신호나 오류 없이 끝나며 남은 태스크가 없다', () => {
     const results = runPythonJobs(course.lessons.map(lesson => ({ id: lesson.id, label: 'base', code: lesson.code })));
     for (const result of results.values()) {

@@ -3,7 +3,7 @@ import { vocabularyWord } from '../../data/code-vocabulary';
 
 const extensions=new Set(['play_sound','play_note','play_chord','play_sequence','play_sfx','bgm','scatter3d','surface3d','line3d','bar3d']);
 const functions=new Map(apiReferenceDocs.filter(d=>/^\w+$/.test(d.id)&&(d.signature?.startsWith(d.id+'(')||extensions.has(d.id))).map(d=>[d.id,d]));
-const aliases={소리:'play_sound',음표:'play_note',화음:'play_chord',효과음:'play_sfx',배경음악:'bgm',산점도:'scatter3d',표면그래프:'surface3d',선그래프:'line3d',막대그래프:'bar3d'};
+const aliases={소리:'play_sound',음표:'play_note_and_wait',화음:'play_chord',효과음:'play_sfx',배경음악:'bgm',산점도:'scatter3d',표면그래프:'surface3d',선그래프:'line3d',막대그래프:'bar3d'};
 for(const [alias,name]of Object.entries(aliases))if(functions.has(name))functions.set(alias,functions.get(name));
 const shapes=new Set(['sphere','box','ellipsoid','cylinder','cone','ring','arrow','pyramid','compound','curve','helix','label','extrusion']);
 const members={

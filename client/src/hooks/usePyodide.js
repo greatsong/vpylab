@@ -1,3 +1,4 @@
+import { translateSystemMessage } from '../i18n/ui-text';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { explainPythonError } from '../engine/python-error-explainer';
 import * as singleton from '../engine/pyodide-singleton';
@@ -7,7 +8,7 @@ const STOP_TIMEOUT = 750;
 
 function getTimeoutMessage(code) {
   const hasLoop = /\b(while|for)\b/.test(code);
-  const hasRate = /(?<![\w.가-힣])(rate|sleep|waitfor|pause|input|악기|음표|화음)\s*\(/.test(code);
+  const hasRate = /(?<![\w.가-힣])(rate|sleep|waitfor|pause|input|악기|음표|play_note_and_wait|화음)\s*\(/.test(code);
   if (hasLoop && !hasRate) {
     return '실행 시간 초과 (10초 무응답). 반복문 안에 rate()를 넣어주세요.';
   }
@@ -60,7 +61,7 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
     clearTimeout(timersRef.current.activity);
     timersRef.current.activity = setTimeout(() => {
       stopRef.current?.();
-      callbacksRef.current.onError?.(getTimeoutMessage(lastCodeRef.current));
+      callbacksRef.current.onError?.(translateSystemMessage(callbacksRef.current.locale, getTimeoutMessage(lastCodeRef.current)));
     }, ACTIVITY_TIMEOUT);
   }, []);
 
@@ -83,7 +84,7 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
         callbacks.onReady?.();
         break;
       case 'stdout':
-        callbacks.onOutput?.(data.text);
+        callbacks.onOutput?.(data.system ? translateSystemMessage(callbacks.locale, data.text) : data.text);
         break;
       case 'stderr':
         callbacks.onOutput?.(data.text, 'error');
@@ -112,7 +113,7 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
         if (data.detail) {
           callbacks.onError?.(data.error, buildErrorDetails(data, lastCodeRef.current, callbacks.locale));
         } else {
-          callbacks.onError?.(data.error);
+          callbacks.onError?.(translateSystemMessage(callbacks.locale, data.error));
         }
         break;
       }
@@ -182,7 +183,7 @@ export default function usePyodide({ onOutput, onError, onBatch, onReady, onDone
   }, [armActivityTimer, clearTimers]);
 
   return {
-    status, progress, progressMessage, initWorker, runCode, stopExecution,
+    status, progress, progressMessage: translateSystemMessage(locale, progressMessage), initWorker, runCode, stopExecution,
     isLoading: status === 'loading',
     isReady: status === 'ready',
     isRunning: status === 'running',

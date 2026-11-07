@@ -1,3 +1,4 @@
+import { localizeCourse } from '../i18n/owned-content';
 import { describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { runInNewContext } from 'node:vm';
@@ -26,8 +27,8 @@ function finalObjects(commands) {
 }
 
 describe.skipIf(!hasPython())('교재 작품의 편집기와 공유 HTML 실행 비교', () => {
-  it('8차시 작품의 최종 도형과 소리 순서·길이가 동일하다', () => {
-    const jobs = course.lessons.map(lesson => ({ id: lesson.id, label: 'export', code: lesson.code }));
+  it.each(['ko','en'])('8차시 작품의 최종 도형과 소리 순서·길이가 동일하다 (%s)', locale => {
+    const jobs = localizeCourse(course,locale).lessons.map(lesson => ({ id: lesson.id, label: 'export', code: lesson.code }));
     const html = generateStandaloneHTML(jobs[0].code);
     const result = spawnSync('python3', ['-I', 'src/test/run-export-python.py'], {
       input: JSON.stringify({ api: exportedApi(html), transform: source, jobs }) + '\n',

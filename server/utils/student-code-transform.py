@@ -31,7 +31,7 @@ import ast
 import inspect
 
 # 바로 부르는 코루틴 이름 (vpython-api.py에서 async def로 정의)
-BLOCKING_NAMES = frozenset({'rate', 'sleep', '악기', '음표', '화음', 'input'})
+BLOCKING_NAMES = frozenset({'rate', 'sleep', '악기', '음표', 'play_note_and_wait', '화음', 'input'})
 # scene.<이름>(...) 형태의 코루틴 메서드
 SCENE_BLOCKING_ATTRS = frozenset({'pause', 'waitfor'})
 # `import vpython as vp` 뒤 vp.rate()·vp.scene.pause()를 인식하기 위한 모듈 이름

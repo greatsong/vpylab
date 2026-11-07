@@ -1,3 +1,4 @@
+import { useUiText } from "../i18n/ui-text";
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import Header from '../components/layout/Header';
@@ -47,6 +48,7 @@ function DetailStat({ label, value, children }) {
 }
 
 export default function GalleryDetail() {
+  const ui = useUiText();
   const { id } = useParams();
   const navigate = useNavigate();
   const { locale: lang, t } = useI18n();
@@ -97,13 +99,13 @@ export default function GalleryDetail() {
   const projectState = useMemo(() => {
     if (!currentWork) return [];
     const flags = [
-      currentWork.github_repo ? 'GitHub 저장소 연결' : '갤러리 코드 스냅샷',
-      currentWork.github_url ? 'Pages 실행 페이지' : 'Pages 미발행',
-      currentWork.project_id ? 'VPyLab 프로젝트에서 발행' : '독립 작품',
+      currentWork.github_repo ? ui("GitHub 저장소 연결") : ui("갤러리 코드 스냅샷"),
+      currentWork.github_url ? ui("Pages 실행 페이지") : ui("Pages 미발행"),
+      currentWork.project_id ? ui("VPyLab 프로젝트에서 발행") : ui("독립 작품"),
     ];
-    if (currentWork.is_public === false) flags.push('비공개 초안');
+    if (currentWork.is_public === false) flags.push(ui("비공개 초안"));
     return flags;
-  }, [currentWork]);
+  }, [currentWork, ui]);
   const posterThumbnail = useMemo(() => createPosterThumbnail({
     title: currentWork?.title,
     description: currentWork?.description,
@@ -260,12 +262,12 @@ export default function GalleryDetail() {
               className={hasStageCapturedThumbnail ? 'captured' : 'poster'}
               onError={() => setDetailThumbnail({ id: currentWork.id, src: null })}
             />
-            {hasStageCapturedThumbnail && <div className="gallery-detail-stage-label">{meta.label}</div>}
+            {hasStageCapturedThumbnail && <div className="gallery-detail-stage-label">{ui(meta.label)}</div>}
           </div>
 
           <div className="gallery-detail-copy">
             <div className="gallery-detail-kicker">
-              <span>{meta.label}</span>
+              <span>{ui(meta.label)}</span>
               {currentWork.github_repo && (
                 <span>
                   <GitHubIcon size={13} />
@@ -287,7 +289,7 @@ export default function GalleryDetail() {
             <h1>{currentWork.title}</h1>
             <p className="gallery-detail-meta">{author} · {date}</p>
             <p className="gallery-detail-description">
-              {currentWork.description || '설명 없이 공개된 VPyLab 작품입니다. 코드를 열어 구조를 살펴보고 내 프로젝트로 발전시킬 수 있습니다.'}
+              {currentWork.description || ui("설명 없이 공개된 VPyLab 작품입니다. 코드를 열어 구조를 살펴보고 내 프로젝트로 발전시킬 수 있습니다.")}
             </p>
 
             {currentWork.originalWork && (

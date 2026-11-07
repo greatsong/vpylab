@@ -1,3 +1,4 @@
+import { useUiText } from "../../i18n/ui-text";
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import * as THREE from 'three';
@@ -9,6 +10,7 @@ import StageLightEditor from './StageLightEditor';
 import { createWelcomeStage } from './welcome-stage';
 
 export default function WelcomeFriends({ko=true,lightSettings=null,onLightChange}){
+  const ui = useUiText();
  const [id,setId]=useState('dumpling'),[webgl,setWebgl]=useState(true),[manualMotion,setManualMotion]=useState(false),[stageOn,setStageOn]=useState(true),[viewReset,setViewReset]=useState(0),[motionAllowed,setMotionAllowed]=useState(()=>typeof matchMedia==='function'&&!matchMedia('(prefers-reduced-motion: reduce)').matches);
  const host=useRef(null),runtime=useRef(null),friend=id==='friends'?welcomeTogether:welcomeFriends.find(f=>f.id===id)||welcomeFriends.at(-1);
  const selectedId=friend.id,lighting=selectedId==='friends'?welcomeTogetherLighting:welcomeLighting[selectedId];
@@ -41,7 +43,7 @@ export default function WelcomeFriends({ko=true,lightSettings=null,onLightChange
    <div ref={host} className="welcome-canvas" style={{visibility:webgl?'visible':'hidden'}}/>
    {!webgl&&<StillFriend id={selectedId}/>}
   </div>
-  <div className="welcome-choices" role="group" aria-label={ko?'맞이할 친구 고르기':'Choose a welcome friend'}>{[...welcomeFriends,welcomeTogether].map(f=><button key={f.id} onClick={()=>{setManualMotion(false);setId(f.id);if(f.id===selectedId)runtime.current?.play();}} aria-pressed={f.id===selectedId}><span style={{background:f.color||'#b9d8ce'}} aria-hidden="true"/>{f.label[ko?'ko':'en'].replace(' 친구','')}</button>)}</div>
+  <div className="welcome-choices" role="group" aria-label={ko?'맞이할 친구 고르기':'Choose a welcome friend'}>{[...welcomeFriends,welcomeTogether].map(f=><button key={f.id} onClick={()=>{setManualMotion(false);setId(f.id);if(f.id===selectedId)runtime.current?.play();}} aria-pressed={f.id===selectedId}><span style={{background:f.color||'#b9d8ce'}} aria-hidden="true"/>{f.label[ko?'ko':'en'].replace(ui("친구"),'')}</button>)}</div>
   <div className="welcome-actions"><button className="welcome-action-play" disabled={!webgl} aria-pressed={manualMotion} onClick={()=>{if(manualMotion)runtime.current?.stop();else runtime.current?.play(true);setManualMotion(active=>!active);}}>{selectedId==='friends'?(ko?'통통 튀기':'Bounce together'):welcomeActions[selectedId][ko?'ko':'en']} <span aria-hidden="true">{manualMotion?'■':'▶'}</span></button><button aria-pressed={stageOn} onClick={()=>setStageOn(on=>!on)}>{ko?'무대 조명':'Stage lights'} <span aria-hidden="true">{stageOn?'●':'○'}</span></button><Link to={'/tutorials/welcome-friend?step='+selectedId}>{ko?(selectedId==='friends'?'프렌즈, 내 코드로 만들기':'이 친구, 내 코드로 만들기'):'Build with code'} →</Link></div>
   <p className="welcome-motion-status" aria-live="polite">{!webgl?(ko?'3D를 사용할 수 없어 정적인 친구를 보여드려요.':'Showing a still friend because 3D is unavailable.'):manualMotion?(ko?'변형 모션 재생 중 · 같은 버튼으로 멈춰요.':'Character action is playing. Press again to stop.'):(ko?(motionAllowed?'▶ 버튼으로 변형 모션을 반복해서 볼 수 있어요.':'자동 모션은 꺼져 있어요. ▶ 버튼을 누르면 직접 볼 수 있어요.'):'Press ▶ to repeat the character action.')}</p>
   <p className="welcome-orbit-hint">{ko?'좌우로 끌어 돌려보세요.':'Drag sideways to rotate.'} <button type="button" disabled={!webgl} onClick={()=>setViewReset(n=>n+1)}>{ko?'시점 초기화':'Reset view'}</button></p>

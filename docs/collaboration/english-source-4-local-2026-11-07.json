@@ -1,0 +1,24 @@
+{
+  "url": "http://127.0.0.1:4036",
+  "results": [
+    {
+      "name": "shared-history-locale-switch-preserves-edit-and-does-not-autorun",
+      "passed": true
+    },
+    {
+      "name": "legacy-base64-locale-switch-preserves-edit-and-does-not-autorun",
+      "passed": true
+    },
+    {
+      "name": "english-core-note-waits-before-changing-color",
+      "passed": true,
+      "yellowMilliseconds": 517.3999999761581
+    },
+    {
+      "name": "english-ui-preserves-identical-student-stdout",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "scope": "Actual Monaco and Pyodide. Shared route uses controlled Router history fixture; legacy base64 uses real decoder. Guest only, no account/DB writes."
+}

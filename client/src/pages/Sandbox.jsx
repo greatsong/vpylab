@@ -1,3 +1,6 @@
+import { localizeLessonCode } from '../i18n/owned-content';
+import { getDefaultCode } from '../data/default-code';
+import { useUiText, getUiLocale } from "../i18n/ui-text";
 import { readPracticeDraft, writePracticeDraft } from '../utils/practice-drafts';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
@@ -70,11 +73,14 @@ function waitForSaveTimeout(ms, message) {
  * 태블릿: 탭 전환 (에디터/3D 토글)
  */
 export default function Sandbox() {
+  const ui = useUiText();
   const { t, locale } = useI18n();
+  const tRef=useRef(t);
+  useEffect(()=>{tRef.current=t;},[t]);
   const audio=useAudioState(),playEpoch=useRef(0),stopSourceRef=useRef(null);
   const [homePin,setHomePin]=useState(null);
   const lastStartedCode=useRef(null);
-  const [code, setCode] = useState(DEFAULT_CODE);
+  const [code, setCode] = useState(() => getDefaultCode(locale));
   const [outputs, setOutputs] = useState([]);
   const [activeTab, setActiveTab] = useState('editor');
   const [mobileMore, setMobileMore] = useState(false);
@@ -133,9 +139,9 @@ export default function Sandbox() {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   // 초기화 시 되돌릴 "원본 코드" — 예제/lesson/remix 로드 시 갱신, 미설정 시 DEFAULT_CODE
-  const initialCodeRef = useRef(DEFAULT_CODE);
-  const codeRef = useRef(DEFAULT_CODE);
-  const homeDraftTitle=useRef(null),consumedHomeDraft=useRef(null);
+  const initialCodeRef = useRef(getDefaultCode(locale));
+  const codeRef = useRef(getDefaultCode(locale));
+  const homeDraftTitle=useRef(null),consumedSharedSource=useRef(null);
   const practiceContextRef = useRef(null);
   const draftWriteFailedRef = useRef(false);
   const pendingPlayRef = useRef(null); // 자동 실행할 코드
@@ -151,7 +157,8 @@ export default function Sandbox() {
   const referenceDoc = getDocById(searchParams.get('doc'));
   const lessonPath = searchParams.get('lesson');
   const lessonParts = (lessonPath || '').split('/');
-  const workbookLesson = lessonParts.length === 2 ? getLesson(lessonParts[0], lessonParts[1]) : null;
+  const sourceLesson = lessonParts.length === 2 ? getLesson(lessonParts[0], lessonParts[1]) : null;
+  const workbookLesson = sourceLesson;
 
   const updateCode = useCallback((nextCode) => {
     const value = typeof nextCode === 'function' ? nextCode(codeRef.current) : nextCode;
@@ -198,7 +205,7 @@ export default function Sandbox() {
       } catch (e) {
         setOutputs((prev) => [
           ...prev,
-          { text: e.message || '프로젝트 컨텍스트를 복원하지 못했습니다.', type: 'warning', id: Date.now() },
+          { text: e.message || ui("프로젝트 컨텍스트를 복원하지 못했습니다."), type: 'warning', id: Date.now() },
         ]);
       }
     };
@@ -232,13 +239,14 @@ export default function Sandbox() {
     location.state?.returnAction,
     location.state?.returnProjectId,
     updateCode,
+    ui,
   ]);
 
   // /s/:id에서 넘어온 공유 코드 로드
   useEffect(() => {
     if (location.state?.sharedCode) {
-      if(location.state.homeDraft&&consumedHomeDraft.current===location.key)return;
-      if(location.state.homeDraft)consumedHomeDraft.current=location.key;
+      if(consumedSharedSource.current===location.key)return;
+      consumedSharedSource.current=location.key;
       stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
       updateCode(location.state.sharedCode);
       homeDraftTitle.current=null; initialCodeRef.current = location.state.sharedCode;
@@ -248,7 +256,7 @@ export default function Sandbox() {
         setTheaterMode(true);
         setTheaterWaiting(true);
       } else {
-        setOutputs([{ text: location.state?.homeDraft ? '내 메인의 코드 사본을 열었습니다. 수정 후 다시 내 메인으로 설정해 주세요.' : t('share.externalCode'), type: 'warning', id: Date.now() }]);
+        setOutputs([{ text: location.state?.homeDraft ? ui("내 메인의 코드 사본을 열었습니다. 수정 후 다시 내 메인으로 설정해 주세요.") : tRef.current('share.externalCode'), type: 'warning', id: Date.now() }]);
       }
       // state 정리 (뒤로가기 시 다시 로드 방지)
       window.history.replaceState({}, '');
@@ -264,10 +272,10 @@ export default function Sandbox() {
         stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
         setRepoLoadStatus('loading');
         pendingPlayRef.current = null;
-        setOutputs([{ text: `${repoParam} 프로젝트 코드를 불러오는 중입니다.`, type: 'log', id: Date.now() }]);
+        setOutputs([{ text: ui`${repoParam} 프로젝트 코드를 불러오는 중입니다.`, type: 'log', id: Date.now() }]);
         try {
           const response = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/main.py`);
-          if (!response.ok) throw new Error(`GitHub main.py 로드 실패 (${response.status})`);
+          if (!response.ok) throw new Error(ui`GitHub main.py 로드 실패 (${response.status})`);
           const repoCode = await response.text();
           updateCode(repoCode);
           homeDraftTitle.current=null; initialCodeRef.current = repoCode;
@@ -275,7 +283,7 @@ export default function Sandbox() {
           if (repoAutorun) {
             pendingPlayRef.current = repoCode;
           }
-          setOutputs([{ text: `${repoParam} 프로젝트 코드를 불러왔습니다.`, type: 'success', id: Date.now() }]);
+          setOutputs([{ text: ui`${repoParam} 프로젝트 코드를 불러왔습니다.`, type: 'success', id: Date.now() }]);
         } catch (e) {
           pendingPlayRef.current = null;
           // ?play=가 함께 있으면 갤러리 스냅샷으로 폴백 (저장소 삭제/404 대응)
@@ -288,12 +296,12 @@ export default function Sandbox() {
               homeDraftTitle.current=null; initialCodeRef.current = playCode;
               pendingPlayRef.current = playCode;
               setRepoLoadStatus(null);
-              setOutputs([{ text: '저장소를 불러올 수 없어 갤러리 스냅샷으로 실행합니다', type: 'warning', id: Date.now() }]);
+              setOutputs([{ text: ui("저장소를 불러올 수 없어 갤러리 스냅샷으로 실행합니다"), type: 'warning', id: Date.now() }]);
               return;
             }
           }
           setRepoLoadStatus('error');
-          setOutputs([{ text: e.message || 'GitHub 프로젝트 코드를 불러오지 못했습니다.', type: 'error', id: Date.now() }]);
+          setOutputs([{ text: e.message || ui("GitHub 프로젝트 코드를 불러오지 못했습니다."), type: 'error', id: Date.now() }]);
         }
       })();
       return;
@@ -301,16 +309,18 @@ export default function Sandbox() {
     // 기존 LZ-String URL 하위 호환
     const { code: shared, isExternal } = decodeCodeFromURL();
     if (shared) {
+      if(consumedSharedSource.current===location.key)return;
+      consumedSharedSource.current=location.key;
       updateCode(shared);
       homeDraftTitle.current=null; initialCodeRef.current = shared;
       if (repoAutorun) {
         pendingPlayRef.current = shared;
       }
       if (isExternal) {
-        setOutputs([{ text: location.state?.homeDraft ? '내 메인의 코드 사본을 열었습니다. 수정 후 다시 내 메인으로 설정해 주세요.' : t('share.externalCode'), type: 'warning', id: Date.now() }]);
+        setOutputs([{ text: location.state?.homeDraft ? ui("내 메인의 코드 사본을 열었습니다. 수정 후 다시 내 메인으로 설정해 주세요.") : tRef.current('share.externalCode'), type: 'warning', id: Date.now() }]);
       }
     }
-  }, [location.state?.sharedCode, location.state?.sharedTitle, location.state?.autoPlay, location.state?.homeDraft, location.key, repoAutorun, repoParam, playParam, t, updateCode]);
+  }, [location.state?.sharedCode, location.state?.sharedTitle, location.state?.autoPlay, location.state?.homeDraft, location.key, repoAutorun, repoParam, playParam, updateCode, ui]);
 
   // 자동 저장: 코드 변경 시 2초 debounce
   // 활성 프로젝트가 있으면 GitHub commit 흐름(수동 저장)을 사용하므로 자동 저장은 건너뜁니다.
@@ -318,12 +328,12 @@ export default function Sandbox() {
   //  실제 갱신 없이 'saved' 표시되는 문제 방지)
   useEffect(() => {
     if (restoringRevision) return;
-    if (!user || !code || code === DEFAULT_CODE) return;
+    if (!user || !code || (code === DEFAULT_CODE || code === getDefaultCode("en"))) return;
     if (activeProject) return;
     // 로드 중일 때만 차단 — 'error' 상태에서 자동 저장이 영구 차단되지 않도록
     if (repoLoadStatus === 'loading') return;
-    autoSave(code, { title: '자유 코딩' });
-  }, [code, user, activeProject, repoLoadStatus, autoSave, restoringRevision]);
+    autoSave(code, { title: ui("자유 코딩") });
+  }, [code, user, activeProject, repoLoadStatus, autoSave, restoringRevision, ui]);
 
   // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => () => clearAutoSave(), [clearAutoSave]);
@@ -408,11 +418,11 @@ export default function Sandbox() {
     githubSetupNoticeRef.current = noticeKey;
 
     if (state === 'pending') {
-      addOutput('GitHub 저장소를 준비하는 중입니다. 프로젝트 작업은 먼저 시작할 수 있습니다.', 'log');
+      addOutput(ui("GitHub 저장소를 준비하는 중입니다. 프로젝트 작업은 먼저 시작할 수 있습니다."), 'log');
     } else if (state === 'success') {
-      addOutput('GitHub 저장소와 Pages 실행 페이지가 연결되었습니다.', 'success');
+      addOutput(ui("GitHub 저장소와 Pages 실행 페이지가 연결되었습니다."), 'success');
     } else if (state === 'error') {
-      addOutput(message || 'GitHub 저장소 연결에 실패했습니다. 프로젝트 패널에서 재연결할 수 있습니다.', 'warning');
+      addOutput(message || ui("GitHub 저장소 연결에 실패했습니다. 프로젝트 패널에서 재연결할 수 있습니다."), 'warning');
     }
   }, [
     activeProject?.id,
@@ -420,6 +430,7 @@ export default function Sandbox() {
     activeGithubSetupStatus?.message,
     activeGithubSetupStatus?.error,
     addOutput,
+    ui,
   ]);
 
 
@@ -436,11 +447,11 @@ export default function Sandbox() {
           updateCode(work.code);
           homeDraftTitle.current=null; initialCodeRef.current = work.code;
           setRemixInfo({ title: work.title, author: work.vpylab_profiles?.display_name });
-          addOutput(`"${work.title}" 작품을 Remix합니다. 자유롭게 수정해보세요!`, 'success');
+          addOutput(ui`"${work.title}" 작품을 Remix합니다. 자유롭게 수정해보세요!`, 'success');
         }
       });
     }
-  }, [searchParams, addOutput, updateCode]);
+  }, [searchParams, addOutput, updateCode, ui]);
 
   // Play 파라미터 처리 (?play=galleryId) — 코드 로드 후 자동 실행
   // ?repo=와 함께 오면 repo 로드가 우선이고, repo 실패 시 위 폴백에서 스냅샷을 사용
@@ -472,23 +483,23 @@ export default function Sandbox() {
       if (sceneRef.current) clearScene(sceneRef.current);
       updateCode(ex.code);
       homeDraftTitle.current=null; initialCodeRef.current = ex.code;  // 초기화 시 이 예제로 복귀
-      addOutput(`예제 "${ex.title}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
+      addOutput(ui`예제 "${ui(ex.title)}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
     } else {
-      addOutput(`예제 ID "${exampleId}"를 찾을 수 없습니다.`, 'error');
+      addOutput(ui`예제 ID "${exampleId}"를 찾을 수 없습니다.`, 'error');
     }
-  }, [searchParams, addOutput, updateCode]);
+  }, [searchParams, addOutput, updateCode, ui]);
 
   useEffect(() => {
     const id = searchParams.get('doc');
     if (!id) return;
     const item = getDocById(id);
-    if (!item?.code) { addOutput('실행할 문서 예제를 찾을 수 없습니다.', 'error'); return; }
+    if (!item?.code) { addOutput(ui("실행할 문서 예제를 찾을 수 없습니다."), 'error'); return; }
     stopAllSounds();
     import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
     if (sceneRef.current) clearScene(sceneRef.current);
     loadPracticeCode(item.code, `doc/${item.id}`);
-    addOutput(`문서 예제 "${item.title.ko}" 준비됨. 실행 버튼을 눌러주세요.`, 'success');
-  }, [searchParams, loadPracticeCode, addOutput]);
+    addOutput(ui`문서 예제 "${item.title[getUiLocale()]}" 준비됨. 실행 버튼을 눌러주세요.`, 'success');
+  }, [searchParams, loadPracticeCode, addOutput, ui]);
 
 
   useEffect(() => {
@@ -496,22 +507,22 @@ export default function Sandbox() {
     if (!tutorialId) return;
     const item = getTutorial(tutorialId, searchParams.get('step'));
     if (!item) {
-      addOutput('튜토리얼을 찾을 수 없습니다.', 'error');
+      addOutput(ui("튜토리얼을 찾을 수 없습니다."), 'error');
       return;
     }
     stopAllSounds();
     import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
     if (sceneRef.current) clearScene(sceneRef.current);
     loadPracticeCode(item.code, `tutorial/${item.id}/${item.activeStep || 'base'}`);
-    addOutput(`튜토리얼 "${item.title.ko}" 준비됨. 실행 버튼을 눌러주세요.`, 'success');
-  }, [searchParams, addOutput, updateCode, loadPracticeCode]);
+    addOutput(ui`튜토리얼 "${item.title[getUiLocale()]}" 준비됨. 실행 버튼을 눌러주세요.`, 'success');
+  }, [searchParams, addOutput, updateCode, loadPracticeCode, ui]);
 
   useEffect(() => {
     const showcaseId = searchParams.get('showcase');
     if (!showcaseId) return;
     const project = getGlowscriptProject(showcaseId);
     if (!project || project.pythonCheck !== 'ready') {
-      addOutput('이 프로젝트는 갤러리의 원본 링크에서 실행해주세요.', 'warning');
+      addOutput(ui("이 프로젝트는 갤러리의 원본 링크에서 실행해주세요."), 'warning');
       return;
     }
     const controller = new AbortController();
@@ -524,12 +535,12 @@ export default function Sandbox() {
       import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
       if (sceneRef.current) clearScene(sceneRef.current);
       loadPracticeCode(data.code, `showcase/${project.id}`);
-      addOutput(`학생·참고 프로젝트 "${project.title}" 준비됨. 실행 버튼을 눌러주세요.`, 'success');
+      addOutput(ui`학생·참고 프로젝트 "${project.title}" 준비됨. 실행 버튼을 눌러주세요.`, 'success');
     }).catch(reason => {
-      if (reason.name !== 'AbortError') addOutput('작품 코드를 불러오지 못했습니다. 갤러리에서 원본을 확인해주세요.', 'error');
+      if (reason.name !== 'AbortError') addOutput(ui("작품 코드를 불러오지 못했습니다. 갤러리에서 원본을 확인해주세요."), 'error');
     });
     return () => controller.abort();
-  }, [searchParams, addOutput, updateCode, loadPracticeCode]);
+  }, [searchParams, addOutput, updateCode, loadPracticeCode, ui]);
 
   // Course lesson 파라미터 처리 (?lesson=<courseId>/<lessonId>) — 코스 차시 코드 prefill
   useEffect(() => {
@@ -537,7 +548,7 @@ export default function Sandbox() {
     if (!lessonParam) return;
     const slash = lessonParam.indexOf('/');
     if (slash <= 0) {
-      addOutput(`잘못된 lesson 파라미터: ${lessonParam} (형식: courseId/lessonId)`, 'error');
+      addOutput(ui`잘못된 lesson 파라미터: ${lessonParam} (형식: courseId/lessonId)`, 'error');
       return;
     }
     const cid = lessonParam.slice(0, slash);
@@ -548,14 +559,14 @@ export default function Sandbox() {
       stopAllSounds();
       import('../engine/pyodide-singleton').then(m => m.softStop()).catch(() => {});
       if (sceneRef.current) clearScene(sceneRef.current);
-      loadPracticeCode(lesson.code, `lesson/${lessonParam}`);  // 초기화 시 이 차시로 복귀
-      addOutput(`코스 차시 "${lesson.title?.ko || lid}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
+      loadPracticeCode(localizeLessonCode(cid, lesson.code, getUiLocale()), `lesson/${lessonParam}`);  // 초기화 시 이 차시로 복귀
+      addOutput(ui`코스 차시 "${lesson.title?.[getUiLocale()] || lid}" 로드됨. 실행 버튼을 눌러주세요.`, 'success');
     } else {
       addOutput(lesson
-        ? '이 차시는 절차 안내입니다. 학습 코스에서 교재를 열고 현재 작품으로 실습하세요.'
-        : `차시를 찾을 수 없습니다: ${lessonParam}`, lesson ? 'warning' : 'error');
+        ? ui("이 차시는 절차 안내입니다. 학습 코스에서 교재를 열고 현재 작품으로 실습하세요.")
+        : ui`차시를 찾을 수 없습니다: ${lessonParam}`, lesson ? 'warning' : 'error');
     }
-  }, [searchParams, addOutput, updateCode, loadPracticeCode]);
+  }, [searchParams, addOutput, updateCode, loadPracticeCode, ui]);
 
   // Edit 파라미터 처리 (?edit=galleryId) — GitHub에서 코드 가져와 수정 모드
   useEffect(() => {
@@ -583,11 +594,11 @@ export default function Sandbox() {
             homeDraftTitle.current=null; initialCodeRef.current = work.code;
           }
           setEditMode({ id: editId, githubRepo: work.github_repo, title: work.title });
-          addOutput(`"${work.title}" 수정 모드. 수정 후 "업데이트"를 눌러주세요.`, 'success');
+          addOutput(ui`"${work.title}" 수정 모드. 수정 후 "업데이트"를 눌러주세요.`, 'success');
         }
       });
     }
-  }, [searchParams, addOutput, updateCode]);
+  }, [searchParams, addOutput, updateCode, ui]);
 
   const handleBatch = useCallback((commands) => {
     if (sceneRef.current) {
@@ -627,7 +638,7 @@ export default function Sandbox() {
       errorSound();
     },
     onBatch: handleBatch,
-    onReady: () => addOutput('Python 엔진 준비 완료!', 'success'),
+    onReady: () => addOutput(ui("Python 엔진 준비 완료!"), 'success'),
     onDone: () => {
       stopBgm();
     },
@@ -653,10 +664,10 @@ export default function Sandbox() {
     setOutputs([]);
     setActiveTab('3d');
     runSound();
-    addOutput('실행을 시작했습니다.', 'log');
+    addOutput(ui("실행을 시작했습니다."), 'log');
     lastStartedCode.current=sourceCode;
     runCode(sourceCode);
-  }, [addOutput, runCode, stopExecution]);
+  }, [addOutput, runCode, stopExecution, ui]);
 
   const handleRun = () => {
     if (!isReady || repoLoadStatus === 'loading') return;
@@ -694,7 +705,7 @@ export default function Sandbox() {
     stopAllSounds();
     // 정지 시 코드 에디터로 복귀. 모바일 전체 화면(CSS 대체 모드) 중에는 탭을 바꾸면 전체 화면이 풀리므로 유지합니다.
     if (!isViewportFullscreen()) setActiveTab('editor');
-    addOutput('⏹ 실행 중지됨', 'warning');
+    addOutput(ui("⏹ 실행 중지됨"), 'warning');
   };
 
   const handleReset = () => {
@@ -702,18 +713,18 @@ export default function Sandbox() {
     stopAllSounds();
     stopExecution();
     if (sceneRef.current) clearScene(sceneRef.current);
-    updateCode(initialCodeRef.current || DEFAULT_CODE);
+    updateCode(initialCodeRef.current || getDefaultCode(locale));
     setOutputs([]);
   };
 
   const handlePullLatestProjectCode = async () => {
     const shouldReplace = codeRef.current === initialCodeRef.current
-      || window.confirm('현재 에디터의 코드가 다른 멤버의 최신 저장본으로 바뀝니다. 계속할까요?');
+      || window.confirm(ui("현재 에디터의 코드가 다른 멤버의 최신 저장본으로 바뀝니다. 계속할까요?"));
     if (!shouldReplace) return;
 
     const latestCode = await pullLatest();
     if (latestCode == null) {
-      addOutput('최신 프로젝트 코드를 불러오지 못했습니다.', 'error');
+      addOutput(ui("최신 프로젝트 코드를 불러오지 못했습니다."), 'error');
       return;
     }
 
@@ -724,7 +735,7 @@ export default function Sandbox() {
     updateCode(latestCode);
     homeDraftTitle.current=null; initialCodeRef.current = latestCode;
     setActiveTab('editor');
-    addOutput('다른 멤버가 저장한 최신 코드를 가져왔습니다.', 'success');
+    addOutput(ui("다른 멤버가 저장한 최신 코드를 가져왔습니다."), 'success');
   };
 
   const openProjectInEditor = useCallback(async (projectId, prefetched = null) => {
@@ -733,11 +744,11 @@ export default function Sandbox() {
       ? { project: store.activeProject, code: prefetched.code }
       : await store.openProject(projectId) || {};
     if (result.error) {
-      throw new Error(result.error.message || '프로젝트를 열지 못했습니다.');
+      throw new Error(result.error.message || ui("프로젝트를 열지 못했습니다."));
     }
     const codeRow = result.code;
     if (codeRow?.code == null) {
-      throw new Error('프로젝트 코드를 찾을 수 없습니다.');
+      throw new Error(ui("프로젝트 코드를 찾을 수 없습니다."));
     }
 
     stopAllSounds();
@@ -749,14 +760,14 @@ export default function Sandbox() {
     updateCode(codeRow.code);
     homeDraftTitle.current=null; initialCodeRef.current = codeRow.code;
     if (codeRow.id) useCodeStore.getState().setCurrentCodeId(codeRow.id);
-    addOutput(`프로젝트 "${result.project?.title || '제목 없음'}"을 열었습니다.`, 'success');
+    addOutput(ui`프로젝트 "${result.project?.title || '제목 없음'}"을 열었습니다.`, 'success');
     if (!result.project?.github_repo) {
-      addOutput('GitHub 저장소는 아직 연결되지 않았습니다. 프로젝트 카드에서 나중에 연결할 수 있습니다.', 'log');
+      addOutput(ui("GitHub 저장소는 아직 연결되지 않았습니다. 프로젝트 카드에서 나중에 연결할 수 있습니다."), 'log');
     }
     setShowTeam(false);
     setTeamInitialAction('browse');
     setTeamInitialJoinCode('');
-  }, [addOutput, stopExecution, updateCode]);
+  }, [addOutput, stopExecution, updateCode, ui]);
 
   useEffect(() => {
     if (!teamInviteCode) return;
@@ -771,7 +782,7 @@ export default function Sandbox() {
           localStorage.setItem('vpylab-oauth-return-path', `/sandbox?team=${teamInviteCode}`);
         } catch { /* localStorage 사용 불가 환경 무시 */ }
         useAuthStore.getState().setAuthModalOpen(true);
-        addOutput('로그인하면 초대 코드가 입력된 프로젝트 패널에서 바로 합류할 수 있습니다.', 'warning');
+        addOutput(ui("로그인하면 초대 코드가 입력된 프로젝트 패널에서 바로 합류할 수 있습니다."), 'warning');
       }
       return;
     }
@@ -799,20 +810,20 @@ export default function Sandbox() {
 
       // 에디터에 기본 예제가 아닌 코드가 있으면 교체 전에 확인
       const hasUserCode = (codeRef.current || '').trim().length > 0
-        && codeRef.current !== DEFAULT_CODE;
-      if (hasUserCode && !window.confirm('현재 코드를 팀 프로젝트로 교체할까요? 저장하지 않은 내용은 사라집니다.')) {
-        addOutput('팀 프로젝트에 합류했습니다. 프로젝트 패널에서 열 수 있습니다.', 'success');
+        && codeRef.current !== DEFAULT_CODE && codeRef.current !== getDefaultCode("en");
+      if (hasUserCode && !window.confirm(ui("현재 코드를 팀 프로젝트로 교체할까요? 저장하지 않은 내용은 사라집니다."))) {
+        addOutput(ui("팀 프로젝트에 합류했습니다. 프로젝트 패널에서 열 수 있습니다."), 'success');
         return;
       }
 
       try {
         await openProjectInEditor(data.projectId);
-        addOutput('초대 코드로 팀 프로젝트에 합류했습니다.', 'success');
+        addOutput(ui("초대 코드로 팀 프로젝트에 합류했습니다."), 'success');
       } catch (e) {
-        useProjectStore.getState().setJoinError(e.message || '팀 프로젝트를 열지 못했습니다.');
+        useProjectStore.getState().setJoinError(e.message || ui("팀 프로젝트를 열지 못했습니다."));
       }
     })();
-  }, [addOutput, openProjectInEditor, setSearchParams, teamInviteCode, user]);
+  }, [addOutput, openProjectInEditor, setSearchParams, teamInviteCode, user, ui]);
 
   // 공유 카드 제목: 프로젝트 제목 → 코드 첫 줄 주석 → 기본 문구
   const shareTitle = () => {
@@ -821,7 +832,7 @@ export default function Sandbox() {
     if(homeDraftTitle.current)return homeDraftTitle.current;
     const firstComment = String(codeRef.current || '').split('\n').map((line) => line.trim()).find((line) => line.startsWith('#'));
     const fromComment = firstComment ? firstComment.replace(/^#+\s*/, '').trim() : '';
-    return (fromComment || 'VPyLab 코드').slice(0, 80);
+    return (fromComment || ui("VPyLab 코드")).slice(0, 80);
   };
 
   const handleShare = async () => {
@@ -891,8 +902,8 @@ export default function Sandbox() {
     if (activeProject) {
       const currentRole = getProjectRole(activeProject, projStore.activeMembers, user.id);
       if (currentRole === 'viewer') {
-        setSaveMsg('보기 전용');
-        addOutput('이 프로젝트는 보기 권한입니다. 저장하려면 팀 소유자에게 편집 권한을 요청해주세요.', 'warning');
+        setSaveMsg(ui("보기 전용"));
+        addOutput(ui("이 프로젝트는 보기 권한입니다. 저장하려면 팀 소유자에게 편집 권한을 요청해주세요."), 'warning');
         setTimeout(() => setSaveMsg(''), 2500);
         return;
       }
@@ -925,23 +936,23 @@ export default function Sandbox() {
     }
     const userId = user?.id;
     if (!userId) {
-      setCommitError('로그인이 필요합니다');
+      setCommitError(ui("로그인이 필요합니다"));
       return;
     }
     const currentRole = getProjectRole(proj, projStore.activeMembers, userId);
     if (currentRole === 'viewer') {
-      setCommitError('보기 권한에서는 프로젝트를 저장할 수 없습니다.');
+      setCommitError(ui("보기 권한에서는 프로젝트를 저장할 수 없습니다."));
       return;
     }
 
     const saveType = payload?.saveType === 'record' ? 'record' : 'code';
     const title = (payload?.title || '').trim();
     if (!title) {
-      setCommitError('제목을 적어주세요.');
+      setCommitError(ui("제목을 적어주세요."));
       return;
     }
     if (saveType === 'record' && !(payload.did || '').trim()) {
-      setCommitError('기록 내용은 한 줄 이상 적어주세요.');
+      setCommitError(ui("기록 내용은 한 줄 이상 적어주세요."));
       return;
     }
 
@@ -964,10 +975,10 @@ export default function Sandbox() {
     };
     const revisionMessage = saveType === 'record'
       ? [
-        `기록: ${title}`,
-        recordPayload.did && `한 일: ${recordPayload.did}`,
-        recordPayload.blocker && `막힌 점: ${recordPayload.blocker}`,
-        recordPayload.next && `다음: ${recordPayload.next}`,
+        ui`기록: ${title}`,
+        recordPayload.did && ui`한 일: ${recordPayload.did}`,
+        recordPayload.blocker && ui`막힌 점: ${recordPayload.blocker}`,
+        recordPayload.next && ui`다음: ${recordPayload.next}`,
       ].filter(Boolean).join(' | ')
       : title;
 
@@ -975,7 +986,7 @@ export default function Sandbox() {
     setCommitElapsed(0);
     setCommitStartedAt(Date.now());
     setCommitError('');
-    setSaveMsg(saveType === 'record' ? '기록 중…' : '저장 중…');
+    setSaveMsg(saveType === 'record' ? ui("기록 중…") : ui("저장 중…"));
     let result = null;
     let error = null;
     try {
@@ -997,14 +1008,14 @@ export default function Sandbox() {
         waitForSaveTimeout(
           saveType === 'record' ? 50000 : 60000,
           saveType === 'record'
-            ? '기록 저장 응답이 늦어 결과를 아직 확인하지 못했습니다. 편집본을 유지한 채 저장 이력을 확인해주세요.'
-            : '코드 저장 응답이 늦어 결과를 아직 확인하지 못했습니다. 편집본을 유지한 채 같은 코드로 다시 저장해 기존 요청 결과를 확인해주세요.',
+            ? ui("기록 저장 응답이 늦어 결과를 아직 확인하지 못했습니다. 편집본을 유지한 채 저장 이력을 확인해주세요.")
+            : ui("코드 저장 응답이 늦어 결과를 아직 확인하지 못했습니다. 편집본을 유지한 채 같은 코드로 다시 저장해 기존 요청 결과를 확인해주세요."),
         ),
       ]);
       result = response?.data || null;
       error = response?.error || null;
     } catch (e) {
-      error = { message: e?.message || (saveType === 'record' ? '기록 저장에 실패했습니다.' : '코드 저장에 실패했습니다.') };
+      error = { message: e?.message || (saveType === 'record' ? ui("기록 저장에 실패했습니다.") : ui("코드 저장에 실패했습니다.")) };
     } finally {
       setCommitSaving(false);
       setCommitStartedAt(null);
@@ -1016,7 +1027,7 @@ export default function Sandbox() {
         setSaveConflict({ projectId: proj.id, codeId: projStore.activeCodeId, userId,
           localCode: codeRef.current, remoteCode: error.latestCode, payload });
       }
-      setSaveMsg(error.code === 'save_result_unknown' ? '결과 확인 필요' : saveType === 'record' ? '기록 실패' : '저장 실패');
+      setSaveMsg(error.code === 'save_result_unknown' ? ui("결과 확인 필요") : saveType === 'record' ? ui("기록 실패") : ui("저장 실패"));
       setCommitError(error.message);
       setTimeout(() => setSaveMsg(''), 2500);
       return;
@@ -1058,21 +1069,21 @@ export default function Sandbox() {
     }
     const title = prompt(t('code.saveTitlePlaceholder'));
     if (title === null) return;
-    const finalTitle = title || `코드 ${new Date().toLocaleDateString()}`;
-    setSaveMsg('저장 중…');
+    const finalTitle = title || ui`코드 ${new Date().toLocaleDateString()}`;
+    setSaveMsg(ui("저장 중…"));
     try {
       const { data, error } = await saveCode({ title: finalTitle, code: codeRef.current });
       if (error || !data) {
-        setSaveMsg('저장 실패');
-        addOutput(`저장 실패: ${error?.message || '저장 결과를 확인할 수 없습니다.'}`, 'error');
+        setSaveMsg(ui("저장 실패"));
+        addOutput(ui`저장 실패: ${error?.message || '저장 결과를 확인할 수 없습니다.'}`, 'error');
         return;
       }
       useCodeStore.getState().setCurrentCodeId(data.id);
       setSaveMsg(t('code.saved'));
-      if (data._revisionWarning) addOutput(`코드는 저장됐지만 이력 확인이 필요합니다: ${data._revisionWarning}`, 'error');
+      if (data._revisionWarning) addOutput(ui`코드는 저장됐지만 이력 확인이 필요합니다: ${data._revisionWarning}`, 'error');
     } catch (error) {
-      setSaveMsg('저장 실패');
-      addOutput(`저장 실패: ${error.message}`, 'error');
+      setSaveMsg(ui("저장 실패"));
+      addOutput(ui`저장 실패: ${error.message}`, 'error');
     } finally {
       setTimeout(() => setSaveMsg(''), 2000);
     }
@@ -1095,12 +1106,12 @@ export default function Sandbox() {
     if (!editMode) return;
     const token = await useAuthStore.getState().getGitHubToken();
     if (!token) {
-      addOutput('GitHub 인증이 필요합니다.', 'error');
+      addOutput(ui("GitHub 인증이 필요합니다."), 'error');
       return;
     }
     const { generateStandaloneHTML } = await import('../utils/export-html');
     const htmlContent = generateStandaloneHTML(codeRef.current, editMode.title);
-    addOutput('GitHub에 업데이트 중...', 'log');
+    addOutput(ui("GitHub에 업데이트 중..."), 'log');
     const result = await useGalleryStore.getState().updateWork({
       id: editMode.id,
       title: editMode.title,
@@ -1110,9 +1121,9 @@ export default function Sandbox() {
       githubToken: token,
     });
     if (result.error) {
-      addOutput('업데이트 실패: ' + result.error, 'error');
+      addOutput(ui("업데이트 실패:") + result.error, 'error');
     } else {
-      addOutput('업데이트 완료!', 'success');
+      addOutput(ui("업데이트 완료!"), 'success');
     }
   };
 
@@ -1151,7 +1162,7 @@ export default function Sandbox() {
           >
             <div style={{ textAlign: 'center', color: 'white' }}>
               <div style={{ fontSize: 64, marginBottom: 16 }}>▶</div>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>클릭하여 시작</div>
+              <div style={{ fontSize: 18, fontWeight: 600 }}>{ui("클릭하여 시작")}</div>
             </div>
           </button>
         )}
@@ -1171,8 +1182,7 @@ export default function Sandbox() {
             onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
             onMouseLeave={e => e.currentTarget.style.opacity = '1'}
           >
-            {'</>'} 코드 보기
-          </button>
+            {'</>'}{ui("코드 보기")}</button>
         )}
 
         {/* 좌하단: 정지 버튼 (실행 중일 때만) */}
@@ -1188,9 +1198,7 @@ export default function Sandbox() {
             }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,1)'}
             onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.8)'}
-          >
-            ⏹ 정지
-          </button>
+          >{ui("⏹ 정지")}</button>
         )}
       </div>
     );
@@ -1223,25 +1231,25 @@ export default function Sandbox() {
       </details>}
 
       <div className="flex flex-wrap items-center gap-2 shrink-0 px-4 py-3 border-b" style={{ backgroundColor: 'var(--color-bg-panel)', borderColor: 'var(--color-border)' }}>
-        <button onClick={handleRun} disabled={!isReady || isRunning || repoLoadStatus === 'loading'} className="toolbar-btn --run">{repoLoadStatus === 'loading' ? '불러오는 중' : t('editor.run')}</button>
+        <button onClick={handleRun} disabled={!isReady || isRunning || repoLoadStatus === 'loading'} className="toolbar-btn --run">{repoLoadStatus === 'loading' ? ui("불러오는 중") : t('editor.run')}</button>
         {(isRunning||audio.playing) && <button onClick={handleStop} className="toolbar-btn --stop">{t('editor.stop')}</button>}
-        <button onClick={handleSave} disabled={!activeProjectCanEdit} className="toolbar-btn" title="현재 코드 저장 (Ctrl/Cmd+S)">{activeProjectRole === 'viewer' ? '보기 전용' : (saveMsg || '저장')}</button>
-        <button onClick={() => { setTeamInitialAction('browse'); setShowTeam(true); }} className="toolbar-btn max-w-36 truncate" title={activeProject?.title || '프로젝트'}>{activeProject ? activeProject.title : '프로젝트'}</button>
+        <button onClick={handleSave} disabled={!activeProjectCanEdit} className="toolbar-btn" title={ui("현재 코드 저장 (Ctrl/Cmd+S)")}>{activeProjectRole === 'viewer' ? ui("보기 전용") : (saveMsg || ui("저장"))}</button>
+        <button onClick={() => { setTeamInitialAction('browse'); setShowTeam(true); }} className="toolbar-btn max-w-36 truncate" title={activeProject?.title || ui("프로젝트")}>{activeProject ? activeProject.title : ui("프로젝트")}</button>
         <div className="relative">
-          <button ref={toolsButtonRef} onClick={() => setMobileMore(previous => !previous)} className="toolbar-btn" aria-label="실습 도구" aria-expanded={mobileMore}>도구 <span aria-hidden="true">⌄</span></button>
+          <button ref={toolsButtonRef} onClick={() => setMobileMore(previous => !previous)} className="toolbar-btn" aria-label={ui("실습 도구")} aria-expanded={mobileMore}>{ui("도구")}<span aria-hidden="true">⌄</span></button>
           {mobileMore && <>
-            <button type="button" aria-label="실습 도구 닫기" className="fixed inset-0 z-40 cursor-default border-0 bg-transparent" onClick={() => setMobileMore(false)} />
+            <button type="button" aria-label={ui("실습 도구 닫기")} className="fixed inset-0 z-40 cursor-default border-0 bg-transparent" onClick={() => setMobileMore(false)} />
             <div className="absolute right-0 top-full mt-2 w-60 max-h-[calc(100dvh-170px)] overflow-y-auto py-2 z-50 border" style={{ backgroundColor: 'var(--color-bg-panel)', borderColor: 'var(--color-border)', boxShadow: 'var(--shadow-md)' }}>
               {[
-                { label: '현재 프로젝트를 내 메인으로 설정', action: () => setHomePin({code:codeRef.current,title:shareTitle(),thumbnail:lastStartedCode.current===codeRef.current?captureThumbnail(sceneRef.current?._renderer?.domElement,600,.7):null,userId:user?.id}) },
-                { label: '초기 코드로 돌아가기', action: handleReset },
+                { label: ui("현재 프로젝트를 내 메인으로 설정"), action: () => setHomePin({code:codeRef.current,title:shareTitle(),thumbnail:lastStartedCode.current===codeRef.current?captureThumbnail(sceneRef.current?._renderer?.domElement,600,.7):null,userId:user?.id}) },
+                { label: ui("초기 코드로 돌아가기"), action: handleReset },
                 { label: shareMsg || t('editor.share'), action: handleShare },
-                { label: 'HTML 내려받기', action: handleExport },
-                { label: t('code.saveAs') || '다른 이름으로 저장', action: handleSaveAs },
-                { label: '저장 이력', action: handleOpenHistory },
+                { label: ui("HTML 내려받기"), action: handleExport },
+                { label: t('code.saveAs') || ui("다른 이름으로 저장"), action: handleSaveAs },
+                { label: ui("저장 이력"), action: handleOpenHistory },
                 { label: t('editor.examples'), action: () => setShowExamples(true) },
                 { label: t('gallery.publish'), action: openPublishModal },
-                ...(editMode ? [{ label: '작품 업데이트', action: handleUpdate }] : []),
+                ...(editMode ? [{ label: ui("작품 업데이트"), action: handleUpdate }] : []),
                 ...(isTeacher() ? [{ label: t('codeShare.sendToStudents'), action: () => setSendModalOpen(true) }] : []),
                 ...(isTeacher() && sharedCodes.length ? [{ label: t('codeShare.clearAll'), action: () => { if (window.confirm(t('codeShare.clearConfirm'))) clearCodes(selectedClassId); } }] : []),
                 ...(!isTeacher() && profile?.class_id && sharedCodes.length ? [{ label: `${t('codeShare.mailbox')}${unreadCount ? ` (${unreadCount})` : ''}`, action: () => setPanelOpen(true) }] : []),
@@ -1251,12 +1259,12 @@ export default function Sandbox() {
           </>}
         </div>
         <div className="hidden md:flex flex-1 justify-end items-center gap-3 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-          {user && saveStatus === 'saving' && <span>저장 중…</span>}
-          {user && saveStatus === 'saved' && <span>저장됨</span>}
-          {user && saveStatus === 'error' && <span style={{ color: 'var(--color-error)' }}>자동 저장 실패 · 저장을 눌러주세요</span>}
-          <span>{isRunning ? '실행 중' : isReady ? '준비됨' : 'Python 준비 중…'}</span>
+          {user && saveStatus === 'saving' && <span>{ui("저장 중…")}</span>}
+          {user && saveStatus === 'saved' && <span>{ui("저장됨")}</span>}
+          {user && saveStatus === 'error' && <span style={{ color: 'var(--color-error)' }}>{ui("자동 저장 실패 · 저장을 눌러주세요")}</span>}
+          <span>{isRunning ? ui("실행 중") : isReady ? ui("준비됨") : ui("Python 준비 중…")}</span>
         </div>
-        <div className="w-full flex md:hidden gap-1 pt-1" aria-label="실습 패널">{[['editor', '코드'], ['3d', '화면'], ['console', '출력']].map(([tab, label]) => <button key={tab} onClick={() => setActiveTab(tab)} aria-pressed={activeTab === tab} className={`tab-btn flex-1 ${activeTab === tab ? '--active' : ''}`}>{label}</button>)}</div>
+        <div className="w-full flex md:hidden gap-1 pt-1" aria-label={ui("실습 패널")}>{[['editor', ui("코드")], ['3d', ui("화면")], ['console', ui("출력")]].map(([tab, label]) => <button key={tab} onClick={() => setActiveTab(tab)} aria-pressed={activeTab === tab} className={`tab-btn flex-1 ${activeTab === tab ? '--active' : ''}`}>{label}</button>)}</div>
       </div>
 
 
@@ -1312,9 +1320,7 @@ export default function Sandbox() {
           position: 'fixed', bottom: 12, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(240,136,62,0.9)', color: 'white', padding: '6px 16px',
           borderRadius: 8, fontSize: 13, zIndex: 50, backdropFilter: 'blur(8px)',
-        }}>
-          수정 모드: "{editMode.title}" — 수정 후 "업데이트"를 눌러주세요
-        </div>
+        }}>{ui("수정 모드: \"")}{editMode.title}{ui("\" — 수정 후 \"업데이트\"를 눌러주세요")}</div>
       )}
 
       {playStartRequired && (
@@ -1339,12 +1345,8 @@ export default function Sandbox() {
             }}
           >
             <div style={{ fontSize: 48, lineHeight: 1, marginBottom: 14 }}>▶</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 10 }}>
-              탭하여 소리와 함께 시작
-            </div>
-            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>
-              모바일과 태블릿에서는 첫 탭에서 오디오를 먼저 활성화해야 합니다.
-            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 10 }}>{ui("탭하여 소리와 함께 시작")}</div>
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--color-text-secondary)' }}>{ui("모바일과 태블릿에서는 첫 탭에서 오디오를 먼저 활성화해야 합니다.")}</div>
           </div>
         </div>
       )}
@@ -1369,7 +1371,7 @@ export default function Sandbox() {
           >
             {/* 헤더 */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: 18, color: 'var(--color-text-primary)' }}>{t('editor.examples') || '예제 갤러리'}</h2>
+              <h2 style={{ margin: 0, fontSize: 18, color: 'var(--color-text-primary)' }}>{t('editor.examples') || ui("예제 갤러리")}</h2>
               <button onClick={() => setShowExamples(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 4 }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3L8 6.5 11.5 3 13 4.5 9.5 8 13 11.5 11.5 13 8 9.5 4.5 13 3 11.5 6.5 8 3 4.5 4.5 3z"/></svg>
               </button>
@@ -1428,8 +1430,8 @@ export default function Sandbox() {
                         </svg>
                       )}
                     </div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 4 }}>{ex.title}</div>
-                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', lineHeight: 1.4 }}>{ex.description}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 4 }}>{ui(ex.title)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', lineHeight: 1.4 }}>{ui(ex.description)}</div>
                     <div style={{ marginTop: 8, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                       {ex.tags.slice(0, 3).map(tag => (
                         <span key={tag} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>{tag}</span>
@@ -1460,7 +1462,7 @@ export default function Sandbox() {
           saving={commitSaving}
           progressLabel={projectSaveStatus}
           elapsedSeconds={commitElapsed}
-          error={commitError}
+          error={ui(commitError)}
           mustDetailed={commitMustDetailed}
           onSubmit={handleProjectCommit}
           onClose={() => {
@@ -1478,7 +1480,7 @@ export default function Sandbox() {
           const state = useProjectStore.getState();
           if (state.activeProject?.id !== saveConflict.projectId || state.activeCodeId !== saveConflict.codeId
             || useAuthStore.getState().user?.id !== saveConflict.userId) {
-            setSaveConflict(null); setCommitError('프로젝트 또는 계정이 바뀌었습니다. 편집본을 보관하고 다시 확인해주세요.'); return;
+            setSaveConflict(null); setCommitError(ui("프로젝트 또는 계정이 바뀌었습니다. 편집본을 보관하고 다시 확인해주세요.")); return;
           }
           useProjectStore.setState({ activeCodeSnapshot: saveConflict.remoteCode });
           codeRef.current = combined; updateCode(combined);
@@ -1499,9 +1501,7 @@ export default function Sandbox() {
 
       {/* 현재 프로젝트/코드 저장 이력 */}
       {restoringRevision && (
-        <div role="status" aria-live="polite" className="fixed inset-0 z-[100] flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-primary)', opacity: 0.9 }}>
-          코드를 보관하고 복원하고 있습니다. 잠시 기다려주세요.
-        </div>
+        <div role="status" aria-live="polite" className="fixed inset-0 z-[100] flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-primary)', opacity: 0.9 }}>{ui("코드를 보관하고 복원하고 있습니다. 잠시 기다려주세요.")}</div>
       )}
       {historyTarget && (
         <RevisionTimeline
@@ -1515,7 +1515,7 @@ export default function Sandbox() {
             updateCode(snapshotCode);
             homeDraftTitle.current=null; initialCodeRef.current = snapshotCode;
             setHistoryTarget(null);
-            addOutput('VPyLab 저장 코드와 에디터를 복원했습니다. GitHub에도 맞추려면 코드 저장을 눌러주세요.', 'success');
+            addOutput(ui("VPyLab 저장 코드와 에디터를 복원했습니다. GitHub에도 맞추려면 코드 저장을 눌러주세요."), 'success');
           }}
         />
       )}
@@ -1523,7 +1523,7 @@ export default function Sandbox() {
       {/* 저장된 코드 목록과 각 코드의 이력 */}
       {showSavedCodes && (
         <SavedCodeList
-          currentCode={code === DEFAULT_CODE ? undefined : code}
+          currentCode={(code === DEFAULT_CODE || code === getDefaultCode("en")) ? undefined : code}
           onClose={() => setShowSavedCodes(false)}
           onLoadCode={(loadedCode, codeId) => {
             stopAllSounds(); stopSourceRef.current?.(); playEpoch.current++; pendingPlayRef.current=null;
@@ -1531,7 +1531,7 @@ export default function Sandbox() {
             homeDraftTitle.current=null; initialCodeRef.current = loadedCode;
             if (codeId) setCurrentCodeId(codeId);
             setShowSavedCodes(false);
-            addOutput('저장된 코드를 에디터로 불러왔습니다.', 'success');
+            addOutput(ui("저장된 코드를 에디터로 불러왔습니다."), 'success');
           }}
         />
       )}
@@ -1610,6 +1610,7 @@ function CommitSaveModal({
   onSubmit,
   onClose,
 }) {
+  const ui = useUiText();
   const [saveType, setSaveType] = useState(mustDetailed ? 'record' : 'code');
   const [title, setTitle] = useState('');
   const [did, setDid] = useState('');
@@ -1627,12 +1628,12 @@ function CommitSaveModal({
 
   const progressPercent = saving ? Math.min(92, 14 + elapsedSeconds * 4) : 0;
   const waitingMessage = elapsedSeconds >= 20
-    ? '저장 응답이 평소보다 오래 걸리고 있어요. 창을 닫지 말고 조금만 기다려주세요.'
+    ? ui("저장 응답이 평소보다 오래 걸리고 있어요. 창을 닫지 말고 조금만 기다려주세요.")
     : saveType === 'record'
-      ? 'VPyLab 기록을 먼저 남기고, GitHub 항해 일지는 뒤에서 반영합니다.'
+      ? ui("VPyLab 기록을 먼저 남기고, GitHub 항해 일지는 뒤에서 반영합니다.")
       : githubConnected
-        ? '보통 6-15초 정도, 미리보기 페이지 갱신이 느리면 30초 안팎까지 걸릴 수 있어요.'
-        : '보통 1-3초 안에 VPyLab 이력에 저장됩니다. GitHub 연결은 나중에 할 수 있어요.';
+        ? ui("보통 6-15초 정도, 미리보기 페이지 갱신이 느리면 30초 안팎까지 걸릴 수 있어요.")
+        : ui("보통 1-3초 안에 VPyLab 이력에 저장됩니다. GitHub 연결은 나중에 할 수 있어요.");
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1684,15 +1685,13 @@ function CommitSaveModal({
             <p className="text-xs font-semibold uppercase" style={{ color: 'var(--color-accent)' }}>
               {projectTitle}
             </p>
-            <h3 className="mt-1 text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              작업 남기기
-            </h3>
+            <h3 className="mt-1 text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>{ui("작업 남기기")}</h3>
             <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
               {saveType === 'record'
-                ? '기록만 남기면 현재 코드는 덮어쓰지 않습니다. 회고, 역할 분담, 다음 할 일을 남길 때 사용하세요.'
+                ? ui("기록만 남기면 현재 코드는 덮어쓰지 않습니다. 회고, 역할 분담, 다음 할 일을 남길 때 사용하세요.")
                 : githubConnected
-                  ? '코드 저장은 최신 코드와 Pages 실행 페이지를 갱신합니다. 기록은 별도로 남길 수 있어요.'
-                  : '코드 저장은 VPyLab 코드 이력에 남습니다. GitHub 연결 후에는 커밋과 Pages도 함께 갱신됩니다.'}
+                  ? ui("코드 저장은 최신 코드와 Pages 실행 페이지를 갱신합니다. 기록은 별도로 남길 수 있어요.")
+                  : ui("코드 저장은 VPyLab 코드 이력에 남습니다. GitHub 연결 후에는 커밋과 Pages도 함께 갱신됩니다.")}
             </p>
           </div>
           <button
@@ -1701,7 +1700,7 @@ function CommitSaveModal({
             disabled={saving}
             className="h-8 w-8 border bg-transparent text-lg disabled:opacity-40"
             style={{ color: 'var(--color-text-muted)', borderColor: 'var(--color-border)' }}
-            aria-label="닫기"
+            aria-label={ui("닫기")}
           >
             ×
           </button>
@@ -1724,9 +1723,7 @@ function CommitSaveModal({
             }}
             role="tab"
             aria-selected={saveType === 'code'}
-          >
-            코드 저장
-          </button>
+          >{ui("코드 저장")}</button>
           <button
             type="button"
             onClick={() => setSaveType('record')}
@@ -1738,9 +1735,7 @@ function CommitSaveModal({
             }}
             role="tab"
             aria-selected={saveType === 'record'}
-          >
-            기록 남기기
-          </button>
+          >{ui("기록 남기기")}</button>
         </div>
 
         {mustDetailed ? (
@@ -1752,31 +1747,24 @@ function CommitSaveModal({
               color: 'var(--color-text-secondary)',
             }}
           >
-            <div className="font-bold mb-0.5" style={{ color: 'var(--color-accent)' }}>
-              잠깐 회고하는 시간이에요
-            </div>
-            오늘 처음이거나 마지막 기록 후 30분이 지났어요. 코드 저장과 별개로 기록을 먼저 남겨두면 이어받기가 훨씬 쉬워집니다.
-          </div>
+            <div className="font-bold mb-0.5" style={{ color: 'var(--color-accent)' }}>{ui("잠깐 회고하는 시간이에요")}</div>{ui("오늘 처음이거나 마지막 기록 후 30분이 지났어요. 코드 저장과 별개로 기록을 먼저 남겨두면 이어받기가 훨씬 쉬워집니다.")}</div>
         ) : null}
 
         {/* 제목 — 항상 노출, 항상 필수 */}
         <label className="block">
-          <span className={labelClass} style={labelStyle}>
-            제목 <span style={{ color: 'var(--color-error)' }}>*</span>
+          <span className={labelClass} style={labelStyle}>{ui("제목")}<span style={{ color: 'var(--color-error)' }}>*</span>
           </span>
           <input
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={saveType === 'code' ? '예: 카메라 위치 조정 코드 저장' : '예: 오늘 역할 정리'}
+            placeholder={saveType === 'code' ? ui("예: 카메라 위치 조정 코드 저장") : ui("예: 오늘 역할 정리")}
             className="w-full border px-3 py-2 text-sm outline-none"
             style={inputStyle}
             maxLength={120}
           />
           {touched && titleMissing && (
-            <span className="mt-1 block text-[11px]" style={{ color: 'var(--color-error)' }}>
-              제목은 한 줄이라도 적어주세요.
-            </span>
+            <span className="mt-1 block text-[11px]" style={{ color: 'var(--color-error)' }}>{ui("제목은 한 줄이라도 적어주세요.")}</span>
           )}
         </label>
 
@@ -1784,33 +1772,29 @@ function CommitSaveModal({
         {saveType === 'record' && (
           <>
             <label className="block mt-3">
-              <span className={labelClass} style={labelStyle}>
-                기록 내용 <span style={{ color: 'var(--color-error)' }}>*</span>
+              <span className={labelClass} style={labelStyle}>{ui("기록 내용")}<span style={{ color: 'var(--color-error)' }}>*</span>
               </span>
               <textarea
                 value={did}
                 onChange={(e) => setDid(e.target.value)}
-                placeholder="예: 민준은 공 움직임을 맡고, 나는 벽 충돌 조건을 확인했다."
+                placeholder={ui("예: 민준은 공 움직임을 맡고, 나는 벽 충돌 조건을 확인했다.")}
                 className="w-full border px-3 py-2 text-sm outline-none resize-y"
                 style={{ ...inputStyle, minHeight: 60 }}
                 maxLength={500}
                 rows={2}
               />
               {touched && didMissing && (
-                <span className="mt-1 block text-[11px]" style={{ color: 'var(--color-error)' }}>
-                  기록 내용은 한 줄 이상 적어주세요.
-                </span>
+                <span className="mt-1 block text-[11px]" style={{ color: 'var(--color-error)' }}>{ui("기록 내용은 한 줄 이상 적어주세요.")}</span>
               )}
             </label>
 
             <label className="block mt-3">
-              <span className={labelClass} style={labelStyle}>
-                막힌 점 <span className="font-normal" style={{ color: 'var(--color-text-muted)' }}>(선택)</span>
+              <span className={labelClass} style={labelStyle}>{ui("막힌 점")}<span className="font-normal" style={{ color: 'var(--color-text-muted)' }}>{ui("(선택)")}</span>
               </span>
               <textarea
                 value={blocker}
                 onChange={(e) => setBlocker(e.target.value)}
-                placeholder="없으면 비워두세요. 있으면 다음 사람이 이어받기 좋아요."
+                placeholder={ui("없으면 비워두세요. 있으면 다음 사람이 이어받기 좋아요.")}
                 className="w-full border px-3 py-2 text-sm outline-none resize-y"
                 style={{ ...inputStyle, minHeight: 50 }}
                 maxLength={500}
@@ -1819,13 +1803,12 @@ function CommitSaveModal({
             </label>
 
             <label className="block mt-3">
-              <span className={labelClass} style={labelStyle}>
-                다음 할 일 <span className="font-normal" style={{ color: 'var(--color-text-muted)' }}>(선택)</span>
+              <span className={labelClass} style={labelStyle}>{ui("다음 할 일")}<span className="font-normal" style={{ color: 'var(--color-text-muted)' }}>{ui("(선택)")}</span>
               </span>
               <textarea
                 value={next}
                 onChange={(e) => setNext(e.target.value)}
-                placeholder="예: 벽과 반사 효과 추가하기"
+                placeholder={ui("예: 벽과 반사 효과 추가하기")}
                 className="w-full border px-3 py-2 text-sm outline-none resize-y"
                 style={{ ...inputStyle, minHeight: 50 }}
                 maxLength={500}
@@ -1840,7 +1823,7 @@ function CommitSaveModal({
             className="mt-3 border px-3 py-2 text-xs"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-error)' }}
           >
-            {error}
+            {ui(error)}
           </p>
         )}
 
@@ -1856,9 +1839,9 @@ function CommitSaveModal({
           >
             <div className="mb-2 flex items-center justify-between gap-3">
               <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                {progressLabel || '저장하는 중입니다.'}
+                {progressLabel || ui("저장하는 중입니다.")}
               </span>
-              <span style={{ color: 'var(--color-text-muted)' }}>{elapsedSeconds}초</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>{elapsedSeconds}{ui("초")}</span>
             </div>
             <div className="h-1.5 overflow-hidden" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
               <div
@@ -1881,9 +1864,7 @@ function CommitSaveModal({
               borderColor: 'var(--color-border)',
               color: 'var(--color-text-secondary)',
             }}
-          >
-            취소
-          </button>
+          >{ui("취소")}</button>
           <button
             type="submit"
             disabled={saving}
@@ -1893,7 +1874,7 @@ function CommitSaveModal({
               color: 'var(--color-accent-text, white)',
             }}
           >
-            {saving ? (saveType === 'record' ? '기록 중' : '저장 중') : (saveType === 'record' ? '기록 남기기' : '코드 저장')}
+            {saving ? (saveType === 'record' ? ui("기록 중") : ui("저장 중")) : (saveType === 'record' ? ui("기록 남기기") : ui("코드 저장"))}
           </button>
         </div>
       </form>
@@ -1902,6 +1883,7 @@ function CommitSaveModal({
 }
 
 function RemoteUpdateToast({ projectTitle, update, onPull, onClose }) {
+  const ui = useUiText();
   const isRecord = update?.kind === 'record';
 
   return (
@@ -1919,12 +1901,12 @@ function RemoteUpdateToast({ projectTitle, update, onPull, onClose }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
-            {isRecord ? '다른 멤버가 기록을 남겼습니다' : '다른 멤버가 코드를 저장했습니다'}
+            {isRecord ? ui("다른 멤버가 기록을 남겼습니다") : ui("다른 멤버가 코드를 저장했습니다")}
           </p>
           <p className="mt-1 text-xs leading-relaxed break-words" style={{ color: 'var(--color-text-secondary)' }}>
             {isRecord
-              ? `${projectTitle || '팀 프로젝트'}의 항해 일지에 새 기록이 추가되었습니다. 현재 코드는 바뀌지 않았습니다.`
-              : `${projectTitle || '팀 프로젝트'}의 최신 코드를 가져와 이어서 작업할 수 있습니다.`}
+              ? ui`${projectTitle || '팀 프로젝트'}의 항해 일지에 새 기록이 추가되었습니다. 현재 코드는 바뀌지 않았습니다.`
+              : ui`${projectTitle || '팀 프로젝트'}의 최신 코드를 가져와 이어서 작업할 수 있습니다.`}
           </p>
         </div>
         <button
@@ -1935,7 +1917,7 @@ function RemoteUpdateToast({ projectTitle, update, onPull, onClose }) {
             color: 'var(--color-text-muted)',
             borderColor: 'var(--color-border)',
           }}
-          aria-label="닫기"
+          aria-label={ui("닫기")}
         >
           ×
         </button>
@@ -1951,9 +1933,7 @@ function RemoteUpdateToast({ projectTitle, update, onPull, onClose }) {
               backgroundColor: 'var(--color-accent)',
               color: 'var(--color-accent-text, white)',
             }}
-          >
-            최신 코드 가져오기
-          </button>
+          >{ui("최신 코드 가져오기")}</button>
         )}
         <button
           type="button"
@@ -1964,7 +1944,7 @@ function RemoteUpdateToast({ projectTitle, update, onPull, onClose }) {
             color: 'var(--color-text-primary)',
           }}
         >
-          {isRecord ? '확인' : '나중에'}
+          {isRecord ? ui("확인") : ui("나중에")}
         </button>
       </div>
     </div>
@@ -1972,34 +1952,35 @@ function RemoteUpdateToast({ projectTitle, update, onPull, onClose }) {
 }
 
 function GitHubSaveToast({ toast, onClose }) {
+  const ui = useUiText();
   const links = [
-    toast.recordUrl && { href: toast.recordUrl, label: '기록 파일' },
-    toast.pageCommitUrl && { href: toast.pageCommitUrl, label: 'Pages 커밋' },
-    !toast.recordUrl && !toast.pageCommitUrl && toast.commitUrl && { href: toast.commitUrl, label: '이번 커밋' },
-    !toast.recordOnly && toast.pagesUrl && { href: toast.pagesUrl, label: '실행 페이지' },
-    toast.repoUrl && { href: toast.repoUrl, label: '저장소' },
+    toast.recordUrl && { href: toast.recordUrl, label: ui("기록 파일") },
+    toast.pageCommitUrl && { href: toast.pageCommitUrl, label: ui("Pages 커밋") },
+    !toast.recordUrl && !toast.pageCommitUrl && toast.commitUrl && { href: toast.commitUrl, label: ui("이번 커밋") },
+    !toast.recordOnly && toast.pagesUrl && { href: toast.pagesUrl, label: ui("실행 페이지") },
+    toast.repoUrl && { href: toast.repoUrl, label: ui("저장소") },
   ].filter(Boolean);
   const statusText = toast.recordOnly
-    ? (toast.pagesWarning || '코드는 바꾸지 않고 기록만 남겼습니다.')
+    ? (toast.pagesWarning || ui("코드는 바꾸지 않고 기록만 남겼습니다."))
     : toast.localOnly || toast.pendingGitHub
     ? toast.pagesWarning
     : toast.pagesWarning
-      ? `Pages 배포 확인: ${toast.pagesWarning}`
+      ? ui`Pages 배포 확인: ${toast.pagesWarning}`
       : toast.pagesStatus
-        ? `Pages 상태: ${toast.pagesStatus}. 반영에는 잠시 시간이 걸릴 수 있습니다.`
-        : 'Pages 반영에는 잠시 시간이 걸릴 수 있습니다.';
+        ? ui`Pages 상태: ${toast.pagesStatus}. 반영에는 잠시 시간이 걸릴 수 있습니다.`
+        : ui("Pages 반영에는 잠시 시간이 걸릴 수 있습니다.");
   const titleText = toast.recordOnly
-    ? '기록 저장 완료'
+    ? ui("기록 저장 완료")
     : toast.localOnly || toast.pendingGitHub
-    ? 'VPyLab 저장 완료'
-    : 'GitHub 저장 완료';
+    ? ui("VPyLab 저장 완료")
+    : ui("GitHub 저장 완료");
   const detailText = toast.recordOnly
-    ? `${toast.nthCommit}번째 기록 · ${toast.message}`
+    ? ui`${toast.nthCommit}번째 기록 · ${toast.message}`
     : toast.localOnly
-    ? `${toast.nthCommit}번째 저장 · ${toast.message}`
+    ? ui`${toast.nthCommit}번째 저장 · ${toast.message}`
     : toast.pendingGitHub
-      ? 'GitHub 반영은 백그라운드에서 진행 중입니다. 편집은 계속해도 됩니다.'
-      : `${toast.nthCommit}번째 커밋 · ${toast.message}`;
+      ? ui("GitHub 반영은 백그라운드에서 진행 중입니다. 편집은 계속해도 됩니다.")
+      : ui`${toast.nthCommit}번째 커밋 · ${toast.message}`;
 
   return (
     <div
@@ -2032,7 +2013,7 @@ function GitHubSaveToast({ toast, onClose }) {
             color: 'var(--color-text-muted)',
             borderColor: 'var(--color-border)',
           }}
-          aria-label="닫기"
+          aria-label={ui("닫기")}
         >
           ×
         </button>

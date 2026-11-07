@@ -1,3 +1,4 @@
+import useAppStore from '../../stores/appStore';
 import { useId, useMemo, useState } from 'react';
 import { vocabularyForCode } from '../../data/code-vocabulary';
 import { readWordHelp, rememberWord } from '../../utils/word-help';
@@ -27,4 +28,4 @@ function WordHelp({code,locale='ko',showWhenEmpty=false,initiallyOpen=false,owne
   </>}</div>
  </aside>;
 }
-export default function CodeVocabulary(props){const owner=useAuthStore(s=>s.user?.id);return <WordHelp key={owner||'guest'} {...props} owner={owner}/>;}
+export default function CodeVocabulary(props){const locale=useAppStore(s=>s.locale);const owner=useAuthStore(s=>s.user?.id);return <WordHelp key={owner||'guest'} locale={locale} {...props} owner={owner}/>;}

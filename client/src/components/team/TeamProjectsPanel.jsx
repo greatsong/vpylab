@@ -1,3 +1,4 @@
+import { useUiText } from "../../i18n/ui-text";
 import { useEffect, useState } from 'react';
 import useProjectStore from '../../stores/projectStore';
 import useAuthStore from '../../stores/authStore';
@@ -67,6 +68,7 @@ export default function TeamProjectsPanel({
   initialAction = 'browse',
   initialJoinCode = '',
 }) {
+  const ui = useUiText();
   const { user, githubTokenExpired, githubAuthError } = useAuthStore();
   const {
     myProjects, loadingProjects, projectsError, projectCreationStatus,
@@ -184,11 +186,11 @@ export default function TeamProjectsPanel({
     setCreateError('');
     const title = createTitle.trim();
     if (!title) {
-      setCreateError('이름을 입력해주세요.');
+      setCreateError(ui("이름을 입력해주세요."));
       return;
     }
     if (createWithGithub && !(await checkGitHubTokenForAction())) {
-      setCreateError('GitHub 저장소까지 바로 연결하려면 GitHub 연결 확인이 필요합니다. 체크를 끄면 VPyLab 프로젝트만 바로 만들 수 있습니다.');
+      setCreateError(ui("GitHub 저장소까지 바로 연결하려면 GitHub 연결 확인이 필요합니다. 체크를 끄면 VPyLab 프로젝트만 바로 만들 수 있습니다."));
       return;
     }
     setCreating(true);
@@ -232,7 +234,7 @@ export default function TeamProjectsPanel({
     setOpenError('');
     setConnectError('');
     if (!(await checkGitHubTokenForAction())) {
-      setOpenError('GitHub 저장소 연결에는 GitHub 연결 확인이 필요합니다. VPyLab 프로젝트 작업은 그대로 할 수 있습니다.');
+      setOpenError(ui("GitHub 저장소 연결에는 GitHub 연결 확인이 필요합니다. VPyLab 프로젝트 작업은 그대로 할 수 있습니다."));
       return;
     }
     setConnectTarget(project);
@@ -244,7 +246,7 @@ export default function TeamProjectsPanel({
     e?.preventDefault();
     setConnectError('');
     if (!connectTarget?.id) {
-      setConnectError('연결할 프로젝트를 찾지 못했습니다.');
+      setConnectError(ui("연결할 프로젝트를 찾지 못했습니다."));
       return;
     }
     setConnectingProjectId(connectTarget.id);
@@ -270,7 +272,7 @@ export default function TeamProjectsPanel({
   const handleJoin = async () => {
     setJoinError('');
     if (!joinCode.trim()) {
-      setJoinError('초대 코드를 입력해주세요.');
+      setJoinError(ui("초대 코드를 입력해주세요."));
       return;
     }
     setJoining(true);
@@ -291,7 +293,7 @@ export default function TeamProjectsPanel({
     try {
       await onOpenProject(projectId, prefetched);
     } catch (e) {
-      setOpenError(e.message || '프로젝트를 열지 못했습니다.');
+      setOpenError(e.message || ui("프로젝트를 열지 못했습니다."));
     } finally {
       setOpeningProjectId(null);
     }
@@ -301,12 +303,12 @@ export default function TeamProjectsPanel({
   if (!user) {
     return (
       <Overlay onClose={onClose}>
-        <Header title="프로젝트" onClose={onClose} />
+        <Header title={ui("프로젝트")} onClose={onClose} />
         <div className="flex-1 flex items-center justify-center" style={{ padding: 48 }}>
           <EmptyState
-            title="로그인이 필요합니다"
-            description="GitHub 프로젝트, 초대 코드, 저장 이력은 로그인 후 사용할 수 있습니다."
-            actionLabel="로그인하기"
+            title={ui("로그인이 필요합니다")}
+            description={ui("GitHub 프로젝트, 초대 코드, 저장 이력은 로그인 후 사용할 수 있습니다.")}
+            actionLabel={ui("로그인하기")}
             onAction={() => {
               onClose?.();
               useAuthStore.getState().setAuthModalOpen(true);
@@ -319,18 +321,14 @@ export default function TeamProjectsPanel({
 
   return (
     <Overlay onClose={onClose}>
-      <Header title="프로젝트" onClose={onClose} />
+      <Header title={ui("프로젝트")} onClose={onClose} />
 
-      {githubAuthError && <StatusBanner tone="warning"><p role="alert">{githubAuthError}</p></StatusBanner>}
+      {githubAuthError && <StatusBanner tone="warning"><p role="alert">{ui(githubAuthError)}</p></StatusBanner>}
       {tokenStatus === 'missing' && (
         <StatusBanner tone="warning">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-              GitHub 연결 확인 필요
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
-              VPyLab 저장은 그대로 됩니다. GitHub 저장소 연결·반영 때만 필요합니다.
-            </p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>{ui("GitHub 연결 확인 필요")}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>{ui("VPyLab 저장은 그대로 됩니다. GitHub 저장소 연결·반영 때만 필요합니다.")}</p>
           </div>
           <button
             onClick={handleReauth}
@@ -339,9 +337,7 @@ export default function TeamProjectsPanel({
               backgroundColor: 'var(--color-accent)',
               color: 'var(--color-accent-text, white)',
             }}
-          >
-            GitHub 연결
-          </button>
+          >{ui("GitHub 연결")}</button>
         </StatusBanner>
       )}
 
@@ -355,13 +351,11 @@ export default function TeamProjectsPanel({
             padding: '14px 16px',
           }}
         >
-          <label className="text-xs font-semibold sm:w-28" style={{ color: 'var(--color-text-secondary)' }}>
-            초대 코드
-          </label>
+          <label className="text-xs font-semibold sm:w-28" style={{ color: 'var(--color-text-secondary)' }}>{ui("초대 코드")}</label>
           <input
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value)}
-            placeholder="8자 코드"
+            placeholder={ui("8자 코드")}
             className="min-w-0 flex-1 px-3 py-2 text-sm border outline-none font-mono"
             style={{
               backgroundColor: 'var(--color-bg-secondary)',
@@ -380,29 +374,25 @@ export default function TeamProjectsPanel({
               color: 'var(--color-text-primary)',
             }}
           >
-            {joining ? '합류 중' : '합류'}
+            {joining ? ui("합류 중") : ui("합류")}
           </button>
           {(joinError || storeJoinError) && (
             <p className="text-xs sm:basis-full sm:pl-28" style={{ color: 'var(--color-error, #e03131)' }}>
-              {joinError || storeJoinError}
+              {ui(joinError || storeJoinError)}
             </p>
           )}
         </form>
 
         {openError && (
           <StatusBanner tone="error" compact>
-            <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{openError}</p>
+            <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{ui(openError)}</p>
           </StatusBanner>
         )}
 
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              최근 프로젝트
-            </h3>
-            <p className="mt-0.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              마지막 코드 저장 시각 기준으로 정렬됩니다.
-            </p>
+            <h3 className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>{ui("최근 프로젝트")}</h3>
+            <p className="mt-0.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>{ui("마지막 코드 저장 시각 기준으로 정렬됩니다.")}</p>
           </div>
           {myProjects.length > 0 && (
             <button
@@ -414,9 +404,7 @@ export default function TeamProjectsPanel({
                 borderColor: 'var(--color-accent)',
                 color: 'var(--color-accent)',
               }}
-            >
-              새 프로젝트
-            </button>
+            >{ui("새 프로젝트")}</button>
           )}
         </div>
 
@@ -445,8 +433,7 @@ export default function TeamProjectsPanel({
                 borderColor: 'var(--color-border)',
               }}
             >
-              <p className="text-sm" style={{ color: 'var(--color-error, #e03131)' }}>
-                프로젝트 목록을 불러오지 못했습니다: {projectsError}
+              <p className="text-sm" style={{ color: 'var(--color-error, #e03131)' }}>{ui("프로젝트 목록을 불러오지 못했습니다:")}{ui(projectsError)}
               </p>
               <button
                 onClick={() => fetchMyProjects()}
@@ -456,9 +443,7 @@ export default function TeamProjectsPanel({
                   borderColor: 'var(--color-accent)',
                   color: 'var(--color-accent)',
                 }}
-              >
-                다시 시도
-              </button>
+              >{ui("다시 시도")}</button>
             </div>
           )}
 
@@ -476,24 +461,20 @@ export default function TeamProjectsPanel({
             >
               <span className="inline-flex h-9 w-9 items-center justify-center border text-xl" style={{ borderColor: 'var(--color-border)', color: 'var(--color-accent)' }}>+</span>
               <span>
-                <span className="block text-base font-bold mb-1">새 프로젝트 만들기</span>
-                <span className="block text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-                  VPyLab 먼저 생성 · GitHub 선택
-                </span>
+                <span className="block text-base font-bold mb-1">{ui("새 프로젝트 만들기")}</span>
+                <span className="block text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{ui("VPyLab 먼저 생성 · GitHub 선택")}</span>
               </span>
             </button>
           )}
 
           {loadingProjects && (
-            <div className="col-span-full text-center text-sm py-8" style={{ color: 'var(--color-text-muted)' }}>
-              프로젝트를 불러오는 중입니다.
-            </div>
+            <div className="col-span-full text-center text-sm py-8" style={{ color: 'var(--color-text-muted)' }}>{ui("프로젝트를 불러오는 중입니다.")}</div>
           )}
         </div>
 
         {createError && (
           <StatusBanner tone="error" compact>
-            <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{createError}</p>
+            <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>{ui(createError)}</p>
           </StatusBanner>
         )}
       </div>
@@ -508,7 +489,7 @@ export default function TeamProjectsPanel({
           creating={creating}
           progressLabel={projectCreationStatus}
           elapsedSeconds={createElapsed}
-          error={createError}
+          error={ui(createError)}
           hasCode={Boolean(currentCode?.trim())}
           onTitleChange={setCreateTitle}
           onDescriptionChange={setCreateDescription}
@@ -535,7 +516,7 @@ export default function TeamProjectsPanel({
           repoName={connectRepoName}
           connecting={connectingProjectId === connectTarget.id}
           elapsedSeconds={connectElapsed}
-          error={connectError}
+          error={ui(connectError)}
           onRepoNameChange={(value) => {
             setConnectRepoNameTouched(true);
             setConnectRepoName(normalizeRepoNameInput(value));
@@ -585,6 +566,7 @@ function Overlay({ children, onClose }) {
 }
 
 function Header({ title, onClose }) {
+  const ui = useUiText();
   return (
     <div
       className="flex items-center justify-between border-b"
@@ -597,9 +579,7 @@ function Header({ title, onClose }) {
         <h2 className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>
           {title}
         </h2>
-        <p className="text-xs mt-0.5 break-keep" style={{ color: 'var(--color-text-muted)' }}>
-          생성 · 합류 · 권한 관리
-        </p>
+        <p className="text-xs mt-0.5 break-keep" style={{ color: 'var(--color-text-muted)' }}>{ui("생성 · 합류 · 권한 관리")}</p>
       </div>
       <button
         onClick={onClose}
@@ -608,7 +588,7 @@ function Header({ title, onClose }) {
           color: 'var(--color-text-muted)',
           borderColor: 'var(--color-border)',
         }}
-        aria-label="닫기"
+        aria-label={ui("닫기")}
       >
         ×
       </button>
@@ -628,11 +608,12 @@ function ProjectCard({
   onMembersClick,
   onConnectGithub,
 }) {
+  const ui = useUiText();
   const repo = project.github_repo;
   const repoUrl = repo ? `https://github.com/${repo}` : null;
   const pagesVersion = project.github_last_pushed_at || project.updated_at || '';
   const pagesUrl = repo ? `https://${repo.split('/')[0]}.github.io/${repo.split('/')[1]}/?v=${encodeURIComponent(pagesVersion)}` : null;
-  const pagesHelpText = '처음 연결 직후에는 GitHub Pages 배포가 1~2분 걸릴 수 있습니다. 404가 계속 보이면 GitHub로 다시 로그인한 뒤 프로젝트를 한 번 저장해주세요.';
+  const pagesHelpText = ui("처음 연결 직후에는 GitHub Pages 배포가 1~2분 걸릴 수 있습니다. 404가 계속 보이면 GitHub로 다시 로그인한 뒤 프로젝트를 한 번 저장해주세요.");
   const lastTouched = project.activity_at || project.latest_code_updated_at || project.github_last_pushed_at || project.updated_at;
   const isOwner = project.my_role === 'owner';
   const memberCount = project.member_count || 1;
@@ -641,10 +622,10 @@ function ProjectCard({
   const githubStatusText = repo
     ? null
     : isGithubPending
-      ? 'GitHub 준비 중'
+      ? ui("GitHub 준비 중")
       : setupStatus?.state === 'error'
-        ? 'GitHub 실패'
-        : 'GitHub 미연결';
+        ? ui("GitHub 실패")
+        : ui("GitHub 미연결");
   const statusColor = isGithubPending
     ? 'var(--color-accent)'
     : setupStatus?.state === 'error'
@@ -688,10 +669,10 @@ function ProjectCard({
 
       <div className="flex items-center justify-between text-[11px] mb-3" style={{ color: 'var(--color-text-muted)' }}>
         <span>
-          {memberCount === 1 ? '개인 프로젝트' : `${memberCount}명 참여`}
+          {memberCount === 1 ? ui("개인 프로젝트") : ui`${memberCount}명 참여`}
         </span>
         <span title={lastTouched ? new Date(lastTouched).toLocaleString() : ''}>
-          {relativeTime(lastTouched)}
+          {ui(relativeTime(lastTouched))}
         </span>
       </div>
 
@@ -717,7 +698,7 @@ function ProjectCard({
             className="text-[10px] px-2 py-1 inline-flex items-center gap-1 no-underline"
             style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
             onClick={(e) => e.stopPropagation()}
-          >커밋</a>
+          >{ui("커밋")}</a>
         </div>
       )}
 
@@ -733,7 +714,7 @@ function ProjectCard({
           <div>{githubStatusText}</div>
           {setupStatus?.state === 'error' && setupStatus?.message && (
             <div className="mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-              {setupStatus.message}
+              {ui(setupStatus.message)}
             </div>
           )}
         </div>
@@ -749,7 +730,7 @@ function ProjectCard({
             color: 'var(--color-accent-text, white)',
           }}
         >
-          {isOpening ? '여는 중' : '작업하기'}
+          {isOpening ? ui("여는 중") : ui("작업하기")}
         </button>
         {canConnectGithub && (
           <button
@@ -762,7 +743,7 @@ function ProjectCard({
               color: 'var(--color-accent)',
             }}
           >
-            {isConnecting ? '연결 중' : setupStatus?.state === 'error' ? '재연결' : 'GitHub'}
+            {isConnecting ? ui("연결 중") : setupStatus?.state === 'error' ? ui("재연결") : 'GitHub'}
           </button>
         )}
         <button
@@ -774,10 +755,8 @@ function ProjectCard({
             borderColor: 'var(--color-border)',
             color: 'var(--color-text-secondary)',
           }}
-          title="멤버 / 초대 코드"
-        >
-          멤버
-        </button>
+          title={ui("멤버 / 초대 코드")}
+        >{ui("멤버")}</button>
       </div>
     </div>
   );
@@ -842,14 +821,15 @@ function CreateProjectModal({
   onSubmit,
   onClose,
 }) {
+  const ui = useUiText();
   const progressPercent = creating
     ? Math.min(92, 12 + elapsedSeconds * 3)
     : 0;
   const waitingMessage = elapsedSeconds >= 25
-    ? 'VPyLab 프로젝트 공간 예약이 평소보다 오래 걸리고 있습니다. 창을 닫지 말고 조금만 기다려주세요.'
+    ? ui("VPyLab 프로젝트 공간 예약이 평소보다 오래 걸리고 있습니다. 창을 닫지 말고 조금만 기다려주세요.")
     : setupGithub
-      ? '프로젝트는 먼저 열리고, GitHub 저장소와 Pages는 뒤에서 이어서 준비됩니다.'
-      : '보통 1-3초 안에 열립니다. GitHub는 프로젝트 카드에서 나중에 연결할 수 있습니다.';
+      ? ui("프로젝트는 먼저 열리고, GitHub 저장소와 Pages는 뒤에서 이어서 준비됩니다.")
+      : ui("보통 1-3초 안에 열립니다. GitHub는 프로젝트 카드에서 나중에 연결할 수 있습니다.");
 
   return (
     <div
@@ -871,12 +851,8 @@ function CreateProjectModal({
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              새 프로젝트
-            </h3>
-            <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-              VPyLab에 먼저 만들고 GitHub는 선택합니다.
-            </p>
+            <h3 className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>{ui("새 프로젝트")}</h3>
+            <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{ui("VPyLab에 먼저 만들고 GitHub는 선택합니다.")}</p>
           </div>
           <button
             type="button"
@@ -884,7 +860,7 @@ function CreateProjectModal({
             disabled={creating}
             className="h-8 w-8 border bg-transparent text-lg disabled:opacity-40"
             style={{ color: 'var(--color-text-muted)', borderColor: 'var(--color-border)' }}
-            aria-label="닫기"
+            aria-label={ui("닫기")}
           >
             ×
           </button>
@@ -892,15 +868,13 @@ function CreateProjectModal({
 
         <div className="space-y-4">
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
-              프로젝트 이름
-            </span>
+            <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>{ui("프로젝트 이름")}</span>
             <input
               autoFocus
               value={title}
               onChange={(e) => onTitleChange(e.target.value)}
               maxLength={80}
-              placeholder="예: 우리 학교 종소리"
+              placeholder={ui("예: 우리 학교 종소리")}
               className="w-full border px-3 py-2 text-sm outline-none"
               style={{
                 backgroundColor: 'var(--color-bg-primary)',
@@ -926,25 +900,17 @@ function CreateProjectModal({
               className="mt-0.5"
             />
             <span className="min-w-0">
-              <span className="block font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                GitHub 저장소도 바로 연결
-              </span>
-              <span className="block mt-0.5">
-                체크 해제 시 더 빨리 시작합니다.
-              </span>
+              <span className="block font-semibold" style={{ color: 'var(--color-text-primary)' }}>{ui("GitHub 저장소도 바로 연결")}</span>
+              <span className="block mt-0.5">{ui("체크 해제 시 더 빨리 시작합니다.")}</span>
               {tokenStatus === 'missing' && (
-                <span className="mt-1 block" style={{ color: 'var(--color-warning, #f59e0b)' }}>
-                  재로그인 필요. 체크 해제 시 프로젝트만 만듭니다.
-                </span>
+                <span className="mt-1 block" style={{ color: 'var(--color-warning, #f59e0b)' }}>{ui("재로그인 필요. 체크 해제 시 프로젝트만 만듭니다.")}</span>
               )}
             </span>
           </label>
 
           {setupGithub && (
             <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
-                GitHub 저장소 이름
-              </span>
+              <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>{ui("GitHub 저장소 이름")}</span>
               <input
                 value={repoName}
                 onChange={(e) => onRepoNameChange(e.target.value)}
@@ -957,22 +923,18 @@ function CreateProjectModal({
                   color: 'var(--color-text-primary)',
                 }}
               />
-              <p className="mt-1 text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                GitHub 주소용 이름입니다.
-              </p>
+              <p className="mt-1 text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{ui("GitHub 주소용 이름입니다.")}</p>
             </label>
           )}
 
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
-              설명
-            </span>
+            <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>{ui("설명")}</span>
             <textarea
               value={description}
               onChange={(e) => onDescriptionChange(e.target.value)}
               maxLength={240}
               rows={3}
-              placeholder="팀원이 알아볼 수 있는 짧은 설명"
+              placeholder={ui("팀원이 알아볼 수 있는 짧은 설명")}
               className="w-full resize-none border px-3 py-2 text-sm outline-none"
               style={{
                 backgroundColor: 'var(--color-bg-primary)',
@@ -990,12 +952,12 @@ function CreateProjectModal({
               color: 'var(--color-text-secondary)',
             }}
           >
-            {hasCode ? '현재 에디터 코드가 첫 커밋으로 저장됩니다.' : '빈 프로젝트 대신 기본 예제 코드로 시작합니다.'}
+            {hasCode ? ui("현재 에디터 코드가 첫 커밋으로 저장됩니다.") : ui("빈 프로젝트 대신 기본 예제 코드로 시작합니다.")}
           </div>
 
           {error && (
             <p className="border px-3 py-2 text-xs" style={{ color: 'var(--color-error)', borderColor: 'var(--color-border)' }}>
-              {error}
+              {ui(error)}
             </p>
           )}
 
@@ -1011,9 +973,9 @@ function CreateProjectModal({
             >
               <div className="mb-2 flex items-center justify-between gap-3">
                 <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  {progressLabel || '프로젝트를 만드는 중입니다.'}
+                  {progressLabel || ui("프로젝트를 만드는 중입니다.")}
                 </span>
-                <span style={{ color: 'var(--color-text-muted)' }}>{elapsedSeconds}초</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{elapsedSeconds}{ui("초")}</span>
               </div>
               <div className="h-1.5 overflow-hidden" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
                 <div
@@ -1040,9 +1002,7 @@ function CreateProjectModal({
               borderColor: 'var(--color-border)',
               color: 'var(--color-text-secondary)',
             }}
-          >
-            취소
-          </button>
+          >{ui("취소")}</button>
           <button
             type="submit"
             disabled={creating}
@@ -1052,7 +1012,7 @@ function CreateProjectModal({
               color: 'var(--color-accent-text, white)',
             }}
           >
-            {creating ? '만드는 중' : '프로젝트 만들기'}
+            {creating ? ui("만드는 중") : ui("프로젝트 만들기")}
           </button>
         </div>
       </form>
@@ -1070,6 +1030,7 @@ function ConnectGithubModal({
   onSubmit,
   onClose,
 }) {
+  const ui = useUiText();
   const progressPercent = connecting
     ? Math.min(92, 18 + elapsedSeconds * 4)
     : 0;
@@ -1094,12 +1055,8 @@ function ConnectGithubModal({
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              GitHub 저장소 연결
-            </h3>
-            <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-              최신 코드를 GitHub와 Pages에 연결합니다.
-            </p>
+            <h3 className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>{ui("GitHub 저장소 연결")}</h3>
+            <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{ui("최신 코드를 GitHub와 Pages에 연결합니다.")}</p>
           </div>
           <button
             type="button"
@@ -1107,7 +1064,7 @@ function ConnectGithubModal({
             disabled={connecting}
             className="h-8 w-8 border bg-transparent text-lg disabled:opacity-40"
             style={{ color: 'var(--color-text-muted)', borderColor: 'var(--color-border)' }}
-            aria-label="닫기"
+            aria-label={ui("닫기")}
           >
             ×
           </button>
@@ -1121,14 +1078,11 @@ function ConnectGithubModal({
               borderColor: 'var(--color-border)',
               color: 'var(--color-text-secondary)',
             }}
-          >
-            연결할 프로젝트: <strong style={{ color: 'var(--color-text-primary)' }}>{project?.title || '제목 없음'}</strong>
+          >{ui("연결할 프로젝트:")}<strong style={{ color: 'var(--color-text-primary)' }}>{project?.title || ui("제목 없음")}</strong>
           </div>
 
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
-              GitHub 저장소 이름
-            </span>
+            <span className="mb-1.5 block text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>{ui("GitHub 저장소 이름")}</span>
             <input
               autoFocus
               value={repoName}
@@ -1142,9 +1096,7 @@ function ConnectGithubModal({
                 color: 'var(--color-text-primary)',
               }}
             />
-            <p className="mt-1 text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-              비워두면 기본 이름을 사용합니다.
-            </p>
+            <p className="mt-1 text-[11px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{ui("비워두면 기본 이름을 사용합니다.")}</p>
           </label>
 
           <div
@@ -1154,13 +1106,11 @@ function ConnectGithubModal({
               borderColor: 'var(--color-border)',
               color: 'var(--color-text-secondary)',
             }}
-          >
-            연결은 백그라운드에서 진행됩니다.
-          </div>
+          >{ui("연결은 백그라운드에서 진행됩니다.")}</div>
 
           {error && (
             <p className="border px-3 py-2 text-xs" style={{ color: 'var(--color-error)', borderColor: 'var(--color-border)' }}>
-              {error}
+              {ui(error)}
             </p>
           )}
 
@@ -1175,10 +1125,8 @@ function ConnectGithubModal({
               role="status"
             >
               <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  GitHub 연결을 시작하는 중입니다.
-                </span>
-                <span style={{ color: 'var(--color-text-muted)' }}>{elapsedSeconds}초</span>
+                <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{ui("GitHub 연결을 시작하는 중입니다.")}</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>{elapsedSeconds}{ui("초")}</span>
               </div>
               <div className="h-1.5 overflow-hidden" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
                 <div
@@ -1204,9 +1152,7 @@ function ConnectGithubModal({
               borderColor: 'var(--color-border)',
               color: 'var(--color-text-secondary)',
             }}
-          >
-            취소
-          </button>
+          >{ui("취소")}</button>
           <button
             type="submit"
             disabled={connecting}
@@ -1216,7 +1162,7 @@ function ConnectGithubModal({
               color: 'var(--color-accent-text, white)',
             }}
           >
-            {connecting ? '연결 중' : '연결 시작'}
+            {connecting ? ui("연결 중") : ui("연결 시작")}
           </button>
         </div>
       </form>

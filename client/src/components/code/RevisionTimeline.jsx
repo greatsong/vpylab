@@ -1,3 +1,4 @@
+import { useUiText } from "../../i18n/ui-text";
 /**
  * VPyLab — 코드 이력 타임라인
  * Phase 1 (Plan C): 특정 코드의 revision 목록을 시간순으로 보여주고,
@@ -40,6 +41,7 @@ function formatRelative(isoStr) {
 }
 
 export default function RevisionTimeline({ codeId, codeTitle, currentCode, currentCodeId, onClose, onRestored }) {
+  const ui = useUiText();
   const { revisions, loading, restoring, fetchRevisions, restoreRevision, fetchRevisionSnapshot } = useRevisionStore();
   const { syncing, pushToGitHub } = useGithubSyncStore();
   const { t } = useI18n();
@@ -51,7 +53,7 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
 
   const handlePush = async (rev) => {
     if (rev.project_id) {
-      window.alert('팀 프로젝트의 GitHub 반영은 Sandbox의 "코드 저장" 또는 "기록 남기기" 흐름에서 처리됩니다.');
+      window.alert(ui("팀 프로젝트의 GitHub 반영은 Sandbox의 \"코드 저장\" 또는 \"기록 남기기\" 흐름에서 처리됩니다."));
       return;
     }
 
@@ -59,13 +61,13 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
     try {
       const snapshot = await fetchRevisionSnapshot(rev.id);
       if (!snapshot) {
-        window.alert('이 버전의 코드를 가져올 수 없습니다.');
+        window.alert(ui("이 버전의 코드를 가져올 수 없습니다."));
         return;
       }
       const { error } = await pushToGitHub({
         code: snapshot.code_snapshot,
-        title: codeTitle || '코드',
-        message: rev.message || `${codeTitle || '코드'} 저장`,
+        title: codeTitle || ui("코드"),
+        message: rev.message || ui`${codeTitle || '코드'} 저장`,
         codeId,
         projectId: rev.project_id || null,
         revisionId: rev.id,
@@ -73,7 +75,7 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
         isTeam: !!rev.project_id,
       });
       if (error) {
-        window.alert(`GitHub 동기화 실패: ${error.message}`);
+        window.alert(ui`GitHub 동기화 실패: ${error.message}`);
         return;
       }
       // 갱신
@@ -85,11 +87,11 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
 
   const handleRestore = async (rev) => {
     if (restoring) return;
-    const label = rev.message || '이 버전';
+    const label = rev.message || ui("이 버전");
     const teamNote = rev.project_id
-      ? '\n\n팀 프로젝트라면 복원 후 "코드 저장"을 한 번 눌러 GitHub 저장소에도 같은 상태를 반영할 수 있습니다.'
+      ? ui("팀 프로젝트라면 복원 후 \"코드 저장\"을 한 번 눌러 GitHub 저장소에도 같은 상태를 반영할 수 있습니다.")
       : '';
-    const ok = window.confirm(`"${label}" 시점으로 되돌릴까요?\n\n복원 전 코드를 이력에 보관한 뒤 VPyLab 저장 코드와 에디터를 바꿉니다.${teamNote}`);
+    const ok = window.confirm(ui`"${label}" 시점으로 되돌릴까요?\n\n복원 전 코드를 이력에 보관한 뒤 VPyLab 저장 코드와 에디터를 바꿉니다.${teamNote}`);
     if (!ok) return;
 
     const { error, warning } = await restoreRevision(rev.id, {
@@ -100,7 +102,7 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
       },
     });
     if (error) {
-      window.alert(`복원 실패: ${error.message || '알 수 없는 오류'}`);
+      window.alert(ui`복원 실패: ${error.message || '알 수 없는 오류'}`);
     } else if (warning) {
       window.alert(warning);
     }
@@ -124,17 +126,15 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
             className="text-sm font-bold truncate"
             style={{ color: 'var(--color-text-primary)' }}
           >
-            📜 {codeTitle || '코드 이력'}
+            📜 {codeTitle || ui("코드 이력")}
           </h3>
-          <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-            저장/복원 시점 누적 · 자동저장은 포함되지 않음
-          </p>
+          <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>{ui("저장/복원 시점 누적 · 자동저장은 포함되지 않음")}</p>
         </div>
         <button
           onClick={onClose}
           className="cursor-pointer border-none bg-transparent text-lg ml-2"
           style={{ color: 'var(--color-text-muted)' }}
-          aria-label={t?.('common.close') || '닫기'}
+          aria-label={t?.('common.close') || ui("닫기")}
         >
           ✕
         </button>
@@ -145,14 +145,12 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
         {loading ? (
           <div className="p-6 text-center">
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              {t?.('common.loading') || '불러오는 중…'}
+              {t?.('common.loading') || ui("불러오는 중…")}
             </p>
           </div>
         ) : revisions.length === 0 ? (
           <div className="p-6 text-center">
-            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              아직 저장 기록이 없습니다.<br />코드를 저장하면 여기에 차곡차곡 쌓여요.
-            </p>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{ui("아직 저장 기록이 없습니다.")}<br />{ui("코드를 저장하면 여기에 차곡차곡 쌓여요.")}</p>
           </div>
         ) : (
           <ol className="relative">
@@ -163,7 +161,7 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
               aria-hidden
             />
             {revisions.map((rev, idx) => {
-              const sourceLabel = SOURCE_LABEL[rev.source] || rev.source;
+              const sourceLabel = ui(SOURCE_LABEL[rev.source] || rev.source);
               const dotColor = SOURCE_COLOR[rev.source] || 'var(--color-text-muted)';
               const isLatest = idx === 0;
               const isTeamRevision = !!rev.project_id;
@@ -207,9 +205,7 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
                               backgroundColor: 'var(--color-success-bg, #d3f9d8)',
                               color: 'var(--color-success, #2f9e44)',
                             }}
-                          >
-                            최신 기록
-                          </span>
+                          >{ui("최신 기록")}</span>
                         )}
                       </div>
                       <span
@@ -217,7 +213,7 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
                         style={{ color: 'var(--color-text-muted)' }}
                         title={new Date(rev.created_at).toLocaleString()}
                       >
-                        {formatRelative(rev.created_at)}
+                        {ui(formatRelative(rev.created_at))}
                       </span>
                     </div>
                     <p
@@ -227,15 +223,14 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
                         fontStyle: rev.message ? 'normal' : 'italic',
                       }}
                     >
-                      {rev.message || '(메시지 없음)'}
+                      {rev.message || ui("(메시지 없음)")}
                     </p>
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span
                         className="text-[10px] font-mono"
                         style={{ color: 'var(--color-text-muted)' }}
                       >
-                        {rev.code_size?.toLocaleString() || 0}자
-                        {rev.github_commit_sha && (
+                        {rev.code_size?.toLocaleString() || 0} {ui("자")}{rev.github_commit_sha && (
                           <span
                             className="ml-1.5 px-1 py-0.5"
                             style={{
@@ -259,10 +254,10 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
                             color: 'var(--color-text-secondary)',
                           }}
                           title={isTeamRevision
-                            ? '팀 프로젝트는 Sandbox의 코드 저장/기록 남기기 흐름에서 GitHub에 반영됩니다.'
-                            : '이 버전을 GitHub 레포에 commit'}
+                            ? ui("팀 프로젝트는 Sandbox의 코드 저장/기록 남기기 흐름에서 GitHub에 반영됩니다.")
+                            : ui("이 버전을 GitHub 레포에 commit")}
                         >
-                          {isTeamRevision ? 'GitHub 자동' : pushingId === rev.id ? '⏳ push…' : '📤 GitHub'}
+                          {isTeamRevision ? ui("GitHub 자동") : pushingId === rev.id ? '⏳ push…' : '📤 GitHub'}
                         </button>
                           <button
                             onClick={() => handleRestore(rev)}
@@ -273,7 +268,7 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
                               color: 'var(--color-accent-text, white)',
                             }}
                           >
-                            {restoring ? '복원 중…' : '↶ 이 버전으로'}
+                            {restoring ? ui("복원 중…") : ui("↶ 이 버전으로")}
                           </button>
                       </div>
                     </div>
@@ -292,9 +287,7 @@ export default function RevisionTimeline({ codeId, codeTitle, currentCode, curre
           borderColor: 'var(--color-border)',
           color: 'var(--color-text-muted)',
         }}
-      >
-        💡 복원 전 코드를 이력에 보관합니다. 복원 후 코드 저장을 누르면 GitHub 반영도 다시 시도됩니다.
-      </div>
+      >{ui("💡 복원 전 코드를 이력에 보관합니다. 복원 후 코드 저장을 누르면 GitHub 반영도 다시 시도됩니다.")}</div>
     </div>
   );
 }

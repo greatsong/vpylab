@@ -1,3 +1,4 @@
+import { useUiText } from "../../i18n/ui-text";
 import { useEffect, useState } from 'react';
 import { useI18n } from '../../i18n/useI18n';
 import useCodeStore from '../../stores/codeStore';
@@ -7,6 +8,7 @@ import RevisionTimeline from './RevisionTimeline';
 import TeamMembersModal from '../team/TeamMembersModal';
 
 export default function SavedCodeList({ onLoadCode, onClose, currentCode }) {
+  const ui = useUiText();
   const { savedCodes, loading, fetchSavedCodes, deleteCode, currentCodeId } = useCodeStore();
   const { user } = useAuthStore();
   const { createProject } = useProjectStore();
@@ -28,7 +30,7 @@ export default function SavedCodeList({ onLoadCode, onClose, currentCode }) {
       setTeamTarget({ id: item.project_id, title: item.title });
       return;
     }
-    const teamTitle = window.prompt('팀 프로젝트 이름은? (취소하면 기존 코드 제목 사용)', item.title);
+    const teamTitle = window.prompt(ui("팀 프로젝트 이름은? (취소하면 기존 코드 제목 사용)"), item.title);
     if (teamTitle === null) return;  // 사용자가 취소
     setConvertingId(item.id);
     const { data, error } = await createProject({
@@ -37,7 +39,7 @@ export default function SavedCodeList({ onLoadCode, onClose, currentCode }) {
     });
     setConvertingId(null);
     if (error) {
-      window.alert(`팀 변환 실패: ${error.message}`);
+      window.alert(ui`팀 변환 실패: ${error.message}`);
       return;
     }
     fetchSavedCodes();  // 코드 목록의 project_id 표시 갱신
@@ -104,18 +106,16 @@ export default function SavedCodeList({ onLoadCode, onClose, currentCode }) {
                   }}
                   className="text-[10px] cursor-pointer border-none bg-transparent ml-2 opacity-70 hover:opacity-100"
                   style={{ color: 'var(--color-text-secondary)' }}
-                  title="이 코드의 저장 이력 보기"
-                >
-                  📜 이력
-                </button>
+                  title={ui("이 코드의 저장 이력 보기")}
+                >{ui("📜 이력")}</button>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleMakeTeam(item); }}
                   disabled={convertingId === item.id}
                   className="text-[10px] cursor-pointer border-none bg-transparent ml-1 opacity-60 hover:opacity-100 disabled:opacity-30"
                   style={{ color: 'var(--color-text-secondary)' }}
-                  title={item.project_id ? '팀 멤버 관리' : '팀 프로젝트로 변환'}
+                  title={item.project_id ? ui("팀 멤버 관리") : ui("팀 프로젝트로 변환")}
                 >
-                  {item.project_id ? '👥' : '＋팀'}
+                  {item.project_id ? '👥' : ui("＋팀")}
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteCode(item.id); }}

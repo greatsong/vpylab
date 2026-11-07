@@ -1,3 +1,4 @@
+import { useUiText } from "../i18n/ui-text";
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/layout/Header';
@@ -8,9 +9,10 @@ import { glowscriptProjects } from '../data/glowscript-projects';
 import { useI18n } from '../i18n/useI18n';
 
 function SourceCard({ project, ko }) {
+  const ui = useUiText();
   return <Link to={`/gallery/glowscript/${project.id}`} className="block border no-underline overflow-hidden" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg-panel)', color: 'var(--color-text-primary)' }}>
     {project.thumbnail ? <img src={project.thumbnail} alt="" loading="lazy" className="w-full aspect-[8/5] object-contain" style={{ backgroundColor: '#111827' }} /> : <div className="aspect-[8/5] flex items-center justify-center text-xs" style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-secondary)' }}>{ko ? '원본 코드 보기' : 'View original code'}</div>}
-    <div className="p-5"><p className="text-xs mb-2" style={{ color: 'var(--color-accent)' }}>{project.credit}</p><h3 className="text-base font-semibold leading-relaxed break-words mb-3">{project.title}</h3><p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{project.folder.startsWith('2021') ? '2021 서울고' : '2024 프로젝트 모음'} · {ko ? '작품 보기' : 'Explore'} →</p></div>
+    <div className="p-5"><p className="text-xs mb-2" style={{ color: 'var(--color-accent)' }}>{ko ? project.credit : project.kind==='student' ? 'Student project' : 'Teacher/reference project'}</p><h3 data-user-content className="text-base font-semibold leading-relaxed break-words mb-3">{project.title}</h3><p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{project.folder.startsWith('2021') ? ui("2021 서울고") : ui("2024 프로젝트 모음")} · {ko ? '작품 보기' : 'Explore'} →</p></div>
   </Link>;
 }
 

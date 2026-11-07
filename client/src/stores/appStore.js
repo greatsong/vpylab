@@ -1,3 +1,4 @@
+import { readInitialLocale } from '../i18n/locale';
 import { create } from 'zustand';
 
 function readLocalProgress() {
@@ -35,7 +36,7 @@ const useAppStore = create((set) => ({
   },
 
   // 언어
-  locale: localStorage.getItem('vpylab-locale') || 'ko',
+  locale: readInitialLocale({search:window.location.search, storage:localStorage}),
   setLocale: (locale) => {
     localStorage.setItem('vpylab-locale', locale);
     set({ locale });

@@ -1700,6 +1700,27 @@ for n in notes:
     tags: ['sound', 'audio', 'note', 'music', 'melody', 'korean', '도레미', '음표'],
   },
   {
+    id: 'play_note_and_wait', category: 'sound',
+    title: { ko: '음표를 내고 기다리기 (play_note_and_wait)', en: 'play_note_and_wait' },
+    description: {
+      ko: 'VPyLab 대기형 소리 도우미입니다. 음표()와 같은 동작으로 음을 낸 뒤 재생 시간만큼 기다립니다. play_note()는 바로 다음 줄로 진행하는 기존 동작을 유지합니다.',
+      en: 'A VPyLab helper that plays a note and waits for its duration, just like the Korean helper. The existing play_note() returns immediately; use this helper for sequential melodies and synchronized color changes.',
+    },
+    signature: "play_note_and_wait(name, duration=0.5, type='sine', volume=0.4)",
+    params: [
+      { name: 'name', type: 'string', default: "'C4'", desc: { ko: '음 이름 (C4, D4, G4 등)', en: 'Note name, such as C4, D4 or G4' } },
+      { name: 'duration', type: 'number', default: '0.5', desc: { ko: '재생하고 기다릴 시간 (초)', en: 'Play and wait duration in seconds' } },
+      { name: 'type', type: 'string', default: "'sine'", desc: { ko: '파형', en: 'Waveform' } },
+      { name: 'volume', type: 'number', default: '0.4', desc: { ko: '음량 (0~1)', en: 'Volume (0–1)' } },
+    ],
+    code: `from vpython import *
+ball = sphere(color=color.blue)
+ball.color = color.yellow
+play_note_and_wait("C4", 0.5)
+ball.color = color.blue`,
+    tags: ['sound', 'note', 'wait', 'melody', '소리', '대기'],
+  },
+  {
     id: 'play_chord',
     category: 'sound',
     title: { ko: '화음 재생 (화음)', en: '화음 / chord' },

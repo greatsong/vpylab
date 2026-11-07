@@ -147,3 +147,15 @@ Phase 2에서 Crowdin 또는 Weblate 연동을 계획하고 있습니다:
 4. 리뷰 후 머지
 
 이 방식은 비개발자(교사, 학부모)도 번역에 쉽게 참여할 수 있게 합니다.
+
+## 2026-11-07 영문판 구현 기준
+
+- `?lang=en` / `?lang=ko`는 명시된 공유 링크 언어를 선택하고 브라우저에 기억합니다. 잘못된 값은 저장된 유효 언어로 돌아갑니다. `I18nProvider`는 문서의 `html.lang`도 갱신합니다.
+- 기존 키 기반 UI는 `t()`와 `ko.json`/`en.json`을 유지합니다. 추가된 고정 UI는 `useUiText()`와 `en-ui-text.json`을 사용합니다. 한국어 원문이 키이며 동적 문자열은 ``ui`원문 ${value}` `` 형태입니다. 사전의 `{0}`, `{1}` 등 자리표시자 개수와 번호를 보존해야 합니다.
+- `useUiText()`는 언어를 구독하지만 반환 함수의 참조는 유지합니다. 소스 로드·Worker 수명 효과에 언어 변경 때문에 불필요한 재실행을 만들지 않습니다.
+- 사용자 제목·설명·이름·코드·stdout에 번역기를 일괄 적용하지 않습니다. `translateSystemMessage()`는 서비스가 만든 안내·오류 전용입니다. Worker의 패키지 안내는 `system:true`로 구분하며 같은 문자열을 학생이 print해도 번역하지 않습니다.
+- `localizeCourse()`는 서비스 교재의 표시 사본만 만듭니다. 원본 데이터는 변경하지 않습니다. 기초 8차시·GitHub 4차시의 영문 사본에는 동등한 `play_note_and_wait`/C4 등의 표기를 사용하고, 만들기에서 처음 여는 해당 차시에도 같은 코드를 제공합니다. 기존 수정 초안은 그대로 보존합니다.
+- 문맥에 따라 번역을 구분합니다. 예를 들어 대화상자의 `확인`은 OK, 학습 확인 단계는 Check입니다. 일반 고정 문구 사전을 내부 상태 값·비교용 키로 사용하지 않습니다.
+- 번역 검증: `ui-text.test.jsx`, `locale.test.js`, 영문 `WorkbookCourse.test.jsx`, `usePyodide.test.jsx`의 출력 보존 검사와 실제 브라우저 `scripts/compat/english-browser.cjs`를 사용합니다. 학생 원문과 실행 코드는 고정 UI의 한글 잔존 검사에서 구분합니다.
+
+영문 사용자 안내: [USER_GUIDE_EN.md](USER_GUIDE_EN.md).

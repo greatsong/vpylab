@@ -261,7 +261,7 @@ _vpython_names = [
     'local_light', 'distant_light', 'attach_arrow',
     'rate', 'sleep', 'input', 'scene_background',
     'mag', 'mag2', 'hat', 'dot', 'cross', 'norm',
-    'play_sound', 'play_note', 'play_chord', 'play_sequence',
+    'play_sound', 'play_note', 'play_note_and_wait', 'play_chord', 'play_sequence',
     'play_sfx', 'start_bgm', 'stop_bgm', 'note',
     'sound', 'sfx', 'bgm', 'chord',
     '\uc18c\ub9ac', '\uc74c\ud45c', '\ud6a8\uacfc\uc74c', '\ubc30\uacbd\uc74c\uc545', '\ubc30\uacbd\uc74c\uc545\uc815\uc9c0', '\ud654\uc74c',
@@ -418,11 +418,11 @@ async function runCode(code, runId = currentRunId + 1) {
       // micropip 지연 로딩 (첫 사용 시에만). 설치 중에만 패키지 출처로의 fetch를 허용합니다.
       await withPackageInstall(async () => {
         if (!micropipLoaded) {
-          sendRunMessage(runId, 'stdout', { text: '📦 패키지 관리자 준비 중...' });
+          sendRunMessage(runId, 'stdout', { system: true, text: '📦 패키지 관리자 준비 중...' });
           await pyodide.loadPackage('micropip');
           micropipLoaded = true;
         }
-        sendRunMessage(runId, 'stdout', { text: `📦 ${packages.join(', ')} 설치 중...` });
+        sendRunMessage(runId, 'stdout', { system: true, text: `📦 ${packages.join(', ')} 설치 중...` });
         await pyodide.runPythonAsync(`
 import micropip
 await micropip.install(${JSON.stringify(packages)})
@@ -431,7 +431,7 @@ await micropip.install(${JSON.stringify(packages)})
       for (const pkg of packages) {
         installedPackages.add(pkg);
       }
-      sendRunMessage(runId, 'stdout', { text: `✅ ${packages.join(', ')} 설치 완료!` });
+      sendRunMessage(runId, 'stdout', { system: true, text: `✅ ${packages.join(', ')} 설치 완료!` });
     }
 
     // Python 문자열 버퍼에 무제한 축적하지 않고 제한된 JS 버퍼로 보냅니다.

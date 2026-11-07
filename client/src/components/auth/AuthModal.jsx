@@ -1,9 +1,11 @@
+import { useUiText } from "../../i18n/ui-text";
 import { useI18n } from '../../i18n/useI18n';
 import useAuthStore from '../../stores/authStore';
 import useAppStore from '../../stores/appStore';
 import { BrandMark } from '../shared/BrandLogo';
 
 export default function AuthModal() {
+  const ui = useUiText();
   const theme = useAppStore((state) => state.theme);
   const { authModalOpen, setAuthModalOpen, signInWithGoogle, signInWithGitHub, githubAuthError } = useAuthStore();
   const { t } = useI18n();
@@ -14,7 +16,7 @@ export default function AuthModal() {
     <div className="auth-modal-overlay" onClick={() => setAuthModalOpen(false)}>
       <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-dialog-title" onClick={(e) => e.stopPropagation()}>
         {/* 닫기 */}
-        <button className="auth-close" onClick={() => setAuthModalOpen(false)} aria-label="닫기">
+        <button className="auth-close" onClick={() => setAuthModalOpen(false)} aria-label={ui("닫기")}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
@@ -27,7 +29,7 @@ export default function AuthModal() {
 
         <h2 id="auth-dialog-title" className="auth-title">VPyLab {t('auth.login')}</h2>
         <p className="auth-desc">{t('auth.loginDescription')}</p>
-        {githubAuthError && <p role="alert" className="auth-desc">{githubAuthError}</p>}
+        {githubAuthError && <p role="alert" className="auth-desc">{ui(githubAuthError)}</p>}
 
         {/* 소셜 버튼 */}
         <div className="auth-buttons">

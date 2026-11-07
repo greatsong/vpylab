@@ -1,3 +1,4 @@
+import { useUiText } from '../../i18n/ui-text';
 import { useState, useEffect } from 'react';
 import { useI18n } from '../../i18n/useI18n';
 
@@ -168,6 +169,7 @@ const ALL_TIPS_EN = [
 
 export default function LoadingScreen({ progress = 0, message = '' }) {
   const { t, locale } = useI18n();
+  const ui=useUiText();
   const [tipIndex, setTipIndex] = useState(0);
   const tips = locale === 'ko' ? ALL_TIPS_KO : ALL_TIPS_EN;
 
@@ -186,7 +188,7 @@ export default function LoadingScreen({ progress = 0, message = '' }) {
       setTipIndex((prev) => (prev + 1) % shuffledOrder.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [tips.length]);
+  }, [tips.length, shuffledOrder.length]);
 
   return (
     <div
@@ -196,7 +198,7 @@ export default function LoadingScreen({ progress = 0, message = '' }) {
       {/* 상태 메시지 */}
       <div className="text-center">
         <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
-          {message || t('loading.pyodide')}
+          {ui(message) || t('loading.pyodide')}
         </p>
         <p className="text-xs font-mono" style={{ color: 'var(--color-text-muted)' }}>
           {Math.round(progress)}%

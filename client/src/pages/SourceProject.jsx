@@ -28,7 +28,7 @@ export default function SourceProject() {
     <main className="max-w-3xl mx-auto px-6 py-10">
       <Link to="/gallery" className="text-sm" style={{ color: 'var(--color-accent)' }}>← {ko ? '갤러리' : 'Gallery'}</Link>
       {!project ? <h1 className="text-2xl my-8">{ko ? '프로젝트를 찾을 수 없습니다.' : 'Project not found.'}</h1> : <>
-        <p className="text-xs mt-8 mb-3" style={{ color: 'var(--color-text-secondary)' }}>{project.credit} · {project.folder}</p>
+        <p className="text-xs mt-8 mb-3" style={{ color: 'var(--color-text-secondary)' }}>{ko ? project.credit : project.kind==='student' ? 'Student project' : 'Teacher/reference project'} · {project.folder}</p>
         <h1 className="font-display text-3xl font-bold mb-5 break-words">{project.title}</h1>
         <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-text-secondary)' }}>{ko ? '완성된 작품을 보고, 어떤 규칙과 코드로 만들었는지 살펴보세요. 전체를 따라 만드는 필수 과제는 아닙니다.' : 'Explore the finished project and the rules behind it. Recreating the entire project is optional.'}</p>
         {project.thumbnail && <img src={project.thumbnail} alt={project.title} className="w-full max-h-72 object-contain border mb-6" style={{ borderColor: 'var(--color-border)', backgroundColor: '#111827' }} />}

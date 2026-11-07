@@ -33,6 +33,18 @@ describe('실제 Python hook와 싱글톤의 Worker 수명', () => {
     cleanup(); singleton.hardStop(); vi.unstubAllGlobals(); vi.useRealTimers();
   });
 
+  it('영문 UI에서도 학생 출력은 그대로 두고 표시된 시스템 출력만 번역한다', async () => {
+    const onOutput=vi.fn();
+    const hook=createRuntime({locale:'en',onOutput});
+    await prepare(hook);
+    let runId;
+    act(()=>{runId=hook.result.current.runCode('print("📦 numpy 설치 중...")');});
+    act(()=>{workers[0].emit({type:'stdout',runId,text:'📦 numpy 설치 중...'});});
+    expect(onOutput).toHaveBeenLastCalledWith('📦 numpy 설치 중...');
+    act(()=>{workers[0].emit({type:'stdout',runId,system:true,text:'📦 numpy 설치 중...'});});
+    expect(onOutput).toHaveBeenLastCalledWith('📦 Installing numpy...');
+  });
+
   it('동시 초기화는 한 Worker를 공유하고 마지막 화면 이탈 때 종료한다', async () => {
     const first = createRuntime();
     const second = createRuntime();

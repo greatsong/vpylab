@@ -1,3 +1,4 @@
+import { localizeCourse } from '../i18n/owned-content';
 import { Link, Navigate, useParams, useNavigate } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import { getCourseById } from '../data/courses';
@@ -92,7 +93,7 @@ function LessonRow({ course, lesson, idx, active, color, lang }) {
 function CourseDetail({ courseId, lessonId }) {
   const { t, locale: lang } = useI18n();
   const navigate = useNavigate();
-  const course = getCourseById(courseId);
+  const course = localizeCourse(getCourseById(courseId), lang);
 
   if (!course) {
     return (

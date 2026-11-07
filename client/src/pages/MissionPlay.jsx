@@ -1,3 +1,4 @@
+import { useUiText } from "../i18n/ui-text";
 import { readPracticeDraft, writePracticeDraft } from '../utils/practice-drafts';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -33,6 +34,7 @@ export default function MissionPlay() {
 }
 
 function MissionSession({ missionId }) {
+  const ui = useUiText();
   const audio=useAudioState();
   const { t, locale: lang } = useI18n();
   const navigate = useNavigate();
@@ -81,9 +83,9 @@ function MissionSession({ missionId }) {
   // 자동 저장: 코드 변경 시 2초 debounce
   useEffect(() => {
     if (user && code && mission) {
-      autoSave(code, { title: `미션: ${mission.title[lang]}`, missionId });
+      autoSave(code, { title: ui`미션: ${mission.title[lang]}`, missionId });
     }
-  }, [code, user, mission, missionId, lang, autoSave]);
+  }, [code, user, mission, missionId, lang, autoSave, ui]);
 
   // details: 파이썬 오류의 구조화 정보(입문자용 설명 포함). 콘솔이 설명을 먼저 보여 준다.
   const addOutput = useCallback((text, type = 'log', details) => {
@@ -130,13 +132,13 @@ function MissionSession({ missionId }) {
           grade: mission?.gradeType || 'run',
           passed: false,
           score: 0,
-          message: '실행 오류가 있어 채점할 수 없습니다.',
+          message: ui("실행 오류가 있어 채점할 수 없습니다."),
         });
       }
     },
     locale: lang,
     onBatch: handleBatch,
-    onReady: () => addOutput('Python 엔진 준비 완료!', 'success'),
+    onReady: () => addOutput(ui("Python 엔진 준비 완료!"), 'success'),
     onDone: () => {
       stopBgm();
       if (pendingGradeRef.current) {
@@ -165,7 +167,7 @@ function MissionSession({ missionId }) {
       setGradeResult(null);
       setActiveTab('3d');
       runSound();
-      addOutput('▶ 실행 중', 'log');
+      addOutput(ui("▶ 실행 중"), 'log');
       runCode(code);
     });
   };
@@ -174,7 +176,7 @@ function MissionSession({ missionId }) {
     stopExecution();
     stopAllSounds();
     setActiveTab('editor');  // 정지 시 코드 에디터로 복귀
-    addOutput('⏹ 실행 중지됨', 'warning');
+    addOutput(ui("⏹ 실행 중지됨"), 'warning');
     // 채점 대기 중이면 정지 후 자동 채점 (무한 루프 미션 대응)
     if (pendingGradeRef.current) {
       pendingGradeRef.current = false;
@@ -202,13 +204,13 @@ function MissionSession({ missionId }) {
       });
       successSound();
       if (result.score >= 100) {
-        addOutput(`🎉 ${t('mission.congratulations')} (${result.score}점)`, 'success');
+        addOutput(ui`🎉 ${t('mission.congratulations')} (${result.score}점)`, 'success');
       } else {
-        addOutput(`✅ 통과! (${result.score}점) — 더 완벽하게 도전해 보세요!`, 'success');
+        addOutput(ui`✅ 통과! (${result.score}점) — 더 완벽하게 도전해 보세요!`, 'success');
       }
     } else {
       if (result.score > 0) {
-        addOutput(`📝 ${result.score}점 — ${result.message || t('mission.notYet')}`, 'warning');
+        addOutput(ui`📝 ${result.score}점 — ${result.message || t('mission.notYet')}`, 'warning');
       } else {
         addOutput(`📝 ${result.message || t('mission.notYet')}`, 'warning');
       }
@@ -238,7 +240,7 @@ function MissionSession({ missionId }) {
       setActiveTab('3d');
       pendingGradeRef.current = true;
       runSound();
-      addOutput('▶ 채점을 위해 현재 코드를 실행 중', 'log');
+      addOutput(ui("▶ 채점을 위해 현재 코드를 실행 중"), 'log');
       runCode(code);
     });
   };
@@ -320,8 +322,8 @@ function MissionSession({ missionId }) {
 
         {/* 상태 */}
         <div className="hidden md:flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          {user && saveStatus === 'saving' && <span>저장 중...</span>}
-          {user && saveStatus === 'saved' && <span style={{ color: 'var(--color-success)' }}>저장됨 ✓</span>}
+          {user && saveStatus === 'saving' && <span>{ui("저장 중...")}</span>}
+          {user && saveStatus === 'saved' && <span style={{ color: 'var(--color-success)' }}>{ui("저장됨 ✓")}</span>}
           <span className="flex items-center gap-1.5">
             <span className={`status-dot ${isRunning ? '--running' : isReady ? '--ready' : '--idle'}`} />
             {isRunning ? t('editor.run') + '...' : isReady ? 'Ready' : '...'}
@@ -437,7 +439,7 @@ function MissionSession({ missionId }) {
                   {gradeResult.passed ? '✅ ' + t('grading.passed') : '❌ ' + t('grading.failed')}
                 </h3>
                 <p className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                  {gradeResult.score}<span className="text-sm font-normal ml-1" style={{ color: 'var(--color-text-muted)' }}>점</span>
+                  {gradeResult.score}<span className="text-sm font-normal ml-1" style={{ color: 'var(--color-text-muted)' }}>{ui("점")}</span>
                 </p>
 
                 {/* 세부 결과 */}
