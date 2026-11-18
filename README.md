@@ -35,8 +35,8 @@ You start without signing in and connect an account only when you need it. The d
 
 - A downloaded HTML file runs by itself (it needs the internet) and carries the code, so **Open file** loads it back into VPyLab.
 - The Google connection survives a refresh and ends when the tab closes. Google limits a token to about one hour; when you save after that, the approval window opens and closes by itself and the save continues.
-- In the open edition, team projects talk to GitHub straight from the browser with no VPyLab server. A deployment turns them on by configuring a GitHub OAuth app ([how](docs/DEPLOY_TWO_EDITIONS.md), Korean).
-- The classroom edition follows the same flow once a Google client ID is configured. Until then it saves to the account and GitHub projects as before.
+- In the open edition, team projects talk to GitHub straight from the browser. Only the one-time exchange of the sign-in code for a token goes through a small Pages function, which stores nothing. They are on at vpylab.pages.dev; another deployment turns them on by configuring a GitHub OAuth app ([how](docs/DEPLOY_TWO_EDITIONS.md), Korean).
+- The classroom edition (vpylab.vercel.app) has followed the same flow since its Google client ID was set on 2026-11-12. Its team projects still go through the classroom server, and code saved to accounts before the switch is kept.
 
 ## Status
 
@@ -44,9 +44,9 @@ VPyLab is in active development. In the open edition (vpylab.pages.dev):
 
 - **Save goes to the student's own Google Drive.** In Create, **Save** (or Ctrl/Cmd+S) signs in with Google once, asks for a file name, and saves to a `VPyLab` folder in the student's Drive. Later saves go to the same file. **My Drive** in the toolbar lists and reopens files. If another tab or device saved first, you choose: save a copy, load the Drive version, or overwrite. **Tools → Download HTML** still works.
 - **Save as video**: **Tools → Save as video** records the 3D view and sound for up to 30 seconds, in the browser. Nothing is sent to a VPyLab server. With Google Drive connected you choose between downloading the file and saving it to a `영상` folder inside the `VPyLab` folder in your Drive; otherwise the file downloads. Files are mp4, or webm where the browser cannot record mp4.
-- **Short share links**: **Tools → Share** creates a short link such as `vpylab.pages.dev/s/k7x2p9`, or `vpylab.pages.dev/s/your-name` if you choose a name (3–30 lowercase letters, numbers or hyphens; first come, first served). The link or its QR code opens straight to the running view (tap to start; the top-left button shows the source), and an embed code is available. Only the code and its title are stored, in Cloudflare D1. No sign-in is needed. If you pick a name, the random link created when the Share window opened is deleted, so share the link shown after naming.
+- **Short share links**: **Tools → Share** creates a short link such as `vpylab.pages.dev/s/k7x2p9`, or `vpylab.pages.dev/s/your-name` if you choose a name (3–30 lowercase letters, numbers or hyphens; first come, first served). The link or its QR code opens straight to the running view (tap to start; the top-left button shows the source), and an embed code is available. Only the code and its title are stored, in Cloudflare D1. No sign-in is needed. If you pick a name, the random link created when the Share window opened is deleted (unless you already copied, opened or embedded it, or showed its QR code, in that window), so share the link shown after naming.
 
-In the classroom edition (vpylab.vercel.app), mission progress now follows the account: signing in on another computer restores the missions a student has passed, and signing out clears them from that computer. Save as video downloads the file there; saving videos to Drive is built but switched off until a Google client ID is configured for that deployment ([details](docs/DEPLOY_TWO_EDITIONS.md)).
+In the classroom edition (vpylab.vercel.app), Save and Save as video can also use the student's Google Drive, since a Google client ID was set for that deployment on 2026-11-12 ([details](docs/DEPLOY_TWO_EDITIONS.md), Korean). Mission progress follows the account there: signing in on another computer restores the missions a student has passed, and signing out clears them from that computer.
 
 ## Two editions, one codebase
 
@@ -55,11 +55,11 @@ The same code is built two ways. The `VITE_EDITION` build setting picks the edit
 | | Open edition | VPyLab Classroom |
 |---|---|---|
 | Address | https://vpylab.pages.dev | https://vpylab.vercel.app |
-| Hosting | Cloudflare Pages (static files + share-link functions) | Vercel + Railway (Express server) |
+| Hosting | Cloudflare Pages (static files + Pages functions for share links and GitHub sign-in) | Vercel + Railway (Express server) |
 | Server and database | Cloudflare D1 for share links only (code and title) | Supabase |
-| Login | None | Google or GitHub (Supabase Auth) |
-| Saving | The student's own Google Drive; download and open files | The student's own Google Drive once a Google client ID is configured; team projects use GitHub repositories and version history |
-| Team projects | GitHub add-on (deployments that configure it) | Through the classroom server |
+| Login | No VPyLab account. Google for saving and GitHub for team projects, connected from the browser | GitHub or Google (Supabase Auth) for team projects, the gallery and teacher tools |
+| Saving | The student's own Google Drive; download and open files | The student's own Google Drive; team projects use GitHub repositories and version history |
+| Team projects | GitHub add-on with no server (on at vpylab.pages.dev) | Through the classroom server |
 | Gallery | GitHub gallery with teacher approval, no server (deployments that configure it) | On (Supabase) |
 | Teams, teacher tools | Off | On |
 | Build setting | `VITE_EDITION=open` | default (`classroom`) |
@@ -72,19 +72,21 @@ Start at https://vpylab.pages.dev. The top menu follows a suggested order:
 
 | Menu | What you do there |
 |---|---|
-| **Training** | An 8-lesson foundation course, *Your first light and sound project*: predict, run, change one thing, explain. Then an optional 6-step practice on variables, loops, conditions and lists, with automatic checks. |
+| **Training** | An 8-lesson foundation course, *Your first light and sound project*: predict, run, change one thing, explain. Then an optional 6-step practice on variables, loops, conditions and lists, with automatic checks, and an optional 4-lesson course, *Save and share your project*. |
 | **Create** | Write and run Python. Editor, 3D view and console side by side (tabs on a phone). **Stop** also ends scheduled sounds. |
 | **Tutorials** | Four short experiences (3D, light and sound, motion, a button), then small projects to explore by making. |
 | **Forge** | Shape one reusable 3D object with sliders, then copy its code or download a `.py` file. |
 | **Docs** | 97 reference entries in 12 categories: shapes, vectors, scene, events, widgets, graphs, colors, materials, sound and more. |
 | **Guide** | In-app instructions. |
 
-More: 57 examples in 8 categories under **Create → Tools → Examples**. Editor completion and word help work without AI, and your code is not sent to an AI service. Switch language and theme under **More**.
+More: 58 examples in 8 categories under **Create → Tools → Examples**. Editor completion and word help work without AI, and your code is not sent to an AI service. Switch language and theme under **More**.
+
+Code can import Python packages. When you press **Run**, VPyLab installs the ones it does not have yet: packages that come with Pyodide (such as numpy) from the Pyodide CDN, and other pure-Python packages from PyPI. This needs the internet. A name one letter away from a common module (for example `import numpi`) is not installed, so a typo shows the usual error instead of a stranger's package.
 
 Guides:
 
 - [docs/GUIDE.ko.md](docs/GUIDE.ko.md): guide for teachers and students on the open edition (Korean).
-- [docs/USER_GUIDE_EN.md](docs/USER_GUIDE_EN.md): student guide written for the classroom edition. It covers login, gallery and team features that the open edition does not have.
+- [docs/USER_GUIDE_EN.md](docs/USER_GUIDE_EN.md): student guide written for the classroom edition. Its sign-in, gallery and team project sections describe the classroom edition, which works differently from the open edition.
 
 <!-- TODO screenshots: Training page (docs/screenshots/readme-training.png) and Forge with a character (docs/screenshots/readme-forge.png) -->
 
@@ -92,21 +94,22 @@ Guides:
 
 **Open edition**
 
-- There are no accounts or sign-in, and VPyLab keeps no personal information. The site is static files on Cloudflare Pages.
-- Your code runs in your browser. The only thing stored is what you share: pressing **Share** saves the code and its title in Cloudflare D1. A hashed IP address is used for rate limiting and deleted within two minutes; the IP address itself is never stored.
-- Progress, theme, language and home settings are kept in your browser (localStorage). Practice drafts are kept in the browser tab (sessionStorage). Clearing browser data removes them, and they do not move to other devices.
-- Third-party requests: web fonts from Google Fonts and Fontshare. The Python runtime is served from vpylab.pages.dev; jsDelivr or unpkg is used only if that fails.
-- A downloaded HTML file loads Pyodide and Three.js from jsDelivr or unpkg when opened.
+- There are no VPyLab accounts, and VPyLab keeps no personal information. Google sign-in is used only to save to the student's own Drive, and GitHub only for team projects. The site is static files on Cloudflare Pages plus two small functions (share links and GitHub sign-in).
+- Your code runs in your browser. The only thing VPyLab stores is what you share: pressing **Share** saves the code and its title in Cloudflare D1. A hash of the IP address, which changes every minute, is used for rate limiting; entries older than two minutes are deleted on the next request, and the IP address itself is never stored.
+- Progress, theme, language and home settings, and the code you were writing in Create (removed after 14 days), are kept in your browser (localStorage). Practice drafts are kept in the browser tab (sessionStorage). Clearing browser data removes them, and they do not move to other devices.
+- Third-party requests: web fonts from Google Fonts and Fontshare. The Python runtime is served from vpylab.pages.dev; jsDelivr or unpkg is used only if that fails. When code imports a package, it is downloaded at run time: packages that come with Pyodide from jsDelivr (or unpkg), others from PyPI (`pypi.org`, `files.pythonhosted.org`).
+- Team projects (optional): connecting GitHub asks for `public_repo` and `repo:invite`. The token stays in the browser tab's storage, and the function that exchanges the sign-in code does not store or log it. Project repositories are public, so code, history and GitHub usernames can be seen by anyone.
+- A downloaded HTML file loads Pyodide and Three.js from jsDelivr (Pyodide falls back to unpkg) when opened, plus numpy, matplotlib, pandas, scipy or sympy if the code imports them.
 
 **Saving to Google Drive** (Save in Create, and the test page https://vpylab.pages.dev/drive-lab)
 
-- The Google sign-in script loads only when you open the save or My Drive window. The Content Security Policy of Create adds only the Google sign-in and Drive API origins; the test page talks only to Google and to itself.
+- The Google sign-in script loads only when you open the save or My Drive window, or when the tab still has a Drive connection. For Drive saving, the app's Content Security Policy adds only the Google sign-in and Drive API origins; the test page talks only to Google and to itself.
 - It asks for `openid email profile` and `drive.file`. With `drive.file`, the app can see only the files it created, not the rest of your Drive.
 - Files go to a `VPyLab` folder in the student's own Google Drive. VPyLab maintainers cannot see them.
 - The Google access token is kept in the browser tab's storage (sessionStorage): it survives a reload and is gone when the tab closes or you sign out. Unsaved drafts stay in the browser, per account. Drafts older than 14 days are removed the next time the save window is opened on that computer.
 - To remove access, press **Revoke access** in the My Drive window or go to https://myaccount.google.com/connections. Signing out offers to delete this account's drafts from the browser (do this on shared computers).
 
-The classroom edition stores accounts and code in Supabase; see its in-app privacy page.
+The classroom edition stores accounts in Supabase, and team project code and history in Supabase and GitHub repositories; personal code is saved to the student's Drive. See its in-app privacy page.
 
 ## Saving to Google Drive
 
@@ -138,11 +141,12 @@ Testing VPyLab at another school: [docs/TESTERS.ko.md](docs/TESTERS.ko.md) (Kore
 |---|---|
 | The app | `vpylab.pages.dev` |
 | Web fonts (optional; the app falls back to system fonts) | `fonts.googleapis.com`, `fonts.gstatic.com`, `api.fontshare.com`, `cdn.fontshare.com` |
-| Python runtime fallback, and downloaded HTML files | `cdn.jsdelivr.net`, `unpkg.com` |
+| Python runtime fallback, packages that come with Pyodide (such as numpy), and downloaded HTML files | `cdn.jsdelivr.net`, `unpkg.com` |
+| Other packages that student code imports (PyPI) | `pypi.org`, `files.pythonhosted.org` |
 | Saving to Google Drive | `accounts.google.com`, `www.googleapis.com`, `oauth2.googleapis.com` |
 | Team projects (GitHub, optional) | `github.com`, `api.github.com`, `*.github.io` |
 
-Allow pop-ups from `vpylab.pages.dev`; Google approval opens in a pop-up.
+Allow pop-ups from `vpylab.pages.dev`; Google approval and GitHub sign-in open in a pop-up.
 
 **Google Workspace accounts (saving to Google Drive)**
 
@@ -155,7 +159,7 @@ Allow pop-ups from `vpylab.pages.dev`; Google approval opens in a pop-up.
 
 **Stack:** React 19, Vite 8, Tailwind CSS 4, Monaco Editor, Three.js, Pyodide 0.27 (in a Web Worker), Web Audio. Classroom edition only: Express 5 server and Supabase.
 
-**Requirements:** Node.js 20 or later (CI runs Node 24).
+**Requirements:** Node.js 20.19+, 22.13+ or 24+ (Vite 8 and the test tools need these; CI runs Node 24).
 
 ```bash
 git clone https://github.com/vpylab/vpylab.git
@@ -171,6 +175,8 @@ cd server && npm install && cd ..
 cd client
 VITE_EDITION=open npm run dev        # http://localhost:4033
 ```
+
+Without `VITE_GOOGLE_CLIENT_ID`, **Save** shows a setup notice instead of saving to Drive.
 
 **Run the classroom edition** (needs Supabase values in `.env` files; see `.env.example`, `client/.env.example`, `server/.env.example`):
 
@@ -188,8 +194,8 @@ npm run dev                          # client 4033 + server 4034
 | `cd client && npm run build:deploy` | Build the classroom edition (main app + drive lab), as `vercel.json` does |
 | `cd client && npm run dev:drive-lab` | Drive experiment at http://localhost:4086/drive-lab.html |
 | `npx wrangler pages dev client/dist --port 4087` | Check a built open edition with Cloudflare Pages behavior |
-| `npm run classroom:lan` | Classroom LAN server mode ([docs](docs/CLASSROOM_LAN_MODE.md)) |
-| `npm run compat:check` | GlowScript compatibility checks ([report](docs/GLOWSCRIPT_COMPAT_REPORT.md)) |
+| `npm run classroom:lan` | Classroom LAN server mode ([docs](docs/CLASSROOM_LAN_MODE.md), Korean) |
+| `npm run compat:check` | GlowScript compatibility checks, needs Python 3.12 ([report](docs/GLOWSCRIPT_COMPAT_REPORT.md), Korean) |
 
 **Ports**
 
@@ -207,16 +213,18 @@ npm run dev                          # client 4033 + server 4034
 |---|---|
 | `client/` | React app, Python engine (`src/engine/`), lessons and docs data (`src/data/`), drive experiment (`src/drive-lab/`) |
 | `server/` | Express server for the classroom edition |
-| `api/` | Vercel functions (link preview cards) for the classroom edition |
+| `api/` | Vercel functions for the classroom edition: link preview cards and the `/srv` relay to the Railway server |
+| `functions/`, `cloudflare/` | Cloudflare Pages functions for the open edition (short share links, GitHub sign-in), their shared code and the D1 schema |
 | `supabase/migrations/` | Database schema for the classroom edition |
+| `scripts/` | GlowScript compatibility checks, the gallery list builder, classroom tools, research tools and maintenance scripts |
 | `docs/` | Design notes, deployment and test reports |
 
 **Deploying**
 
-- Both editions: [docs/DEPLOY_TWO_EDITIONS.md](docs/DEPLOY_TWO_EDITIONS.md)
-- Drive experiment and your own Google OAuth client: [docs/DRIVE_LAB.md](docs/DRIVE_LAB.md)
+- Both editions: [docs/DEPLOY_TWO_EDITIONS.md](docs/DEPLOY_TWO_EDITIONS.md) (Korean)
+- Drive experiment and your own Google OAuth client: [docs/DRIVE_LAB.md](docs/DRIVE_LAB.md) (Korean)
 - Step-by-step classroom deployment for teachers (Supabase + server + Vercel, Korean): [docs/DEPLOY_CLASSROOM.ko.md](docs/DEPLOY_CLASSROOM.ko.md)
-- VPython API supported by VPyLab: [docs/VPYTHON_API.md](docs/VPYTHON_API.md)
+- VPython API supported by VPyLab: [docs/VPYTHON_API.md](docs/VPYTHON_API.md) (Korean)
 
 New features that need the server or the database must be wrapped in `SERVER_FEATURES` (`client/src/lib/api-base.js`), so they stay off in the open edition.
 
@@ -226,14 +234,14 @@ Teachers, students and developers are welcome. Read [CONTRIBUTING.md](CONTRIBUTI
 
 VPyLab is in a feature freeze: bug fixes, tests, translations, lessons and documentation are welcome; new features wait. [docs/SCOPE.md](docs/SCOPE.md) explains the core and the add-on rule. For a map of the code see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); for all documents see [docs/README.md](docs/README.md).
 
-- Lessons and missions: [docs/MISSION_SCHEMA.md](docs/MISSION_SCHEMA.md)
+- Lessons and missions: [docs/MISSION_SCHEMA.md](docs/MISSION_SCHEMA.md) (Korean)
 - Translations: [docs/I18N_GUIDE.md](docs/I18N_GUIDE.md). The interface is in Korean and English today.
 - Bugs and ideas: [GitHub issues](https://github.com/vpylab/vpylab/issues)
 - Security problems: please do not post them in a public issue. [Report them privately](https://github.com/vpylab/vpylab/security/advisories/new) instead.
 
 ## License
 
-- **Code:** GNU Affero General Public License v3 ([LICENSE](LICENSE)). Copyright (C) 2026 석리송 (Seok Ri-song) / 당곡고등학교 수리정보교육부.
+- **Code:** GNU Affero General Public License v3 or later ([LICENSE](LICENSE)). Copyright (C) 2026 석리송 (Seok Ri-song) / 당곡고등학교 수리정보교육부.
 - **Mission content:** CC BY-NC-SA 4.0.
 - **Included MIT code:** the `shapes` and `paths` implementations come from `shapespaths.py` in [vpython-jupyter](https://github.com/vpython/vpython-jupyter). The `compound` coordinate transforms and the `text` positioning were ported from `vpython.py` in the same repository (Copyright (C) 2015 John Coady, Ruth Chabay, Bruce Sherwood). `group` follows `lib/glow/primitives.js` in [GlowScript](https://github.com/vpython/glowscript) (MIT) as its specification. Notices are in the matching sections of `client/src/engine/vpython-api.py`.
 
