@@ -577,14 +577,14 @@ const RULES = [
       const guess = closest(name, KNOWN_MODULES);
       if (guess && guess !== name) return { explanation: `'${name}'이라는 모듈은 없습니다. '${guess}'를 쓰려던 것으로 보입니다.`, hint: `import ${name} 을 import ${guess} 로 고칩니다.` };
       if (INSTALLABLE.includes(name)) return { explanation: `'${name}' 패키지를 설치하지 못했습니다. 패키지는 실행할 때 인터넷에서 내려받으므로 네트워크가 막혀 있으면 실패합니다.`, hint: '네트워크 연결을 확인한 뒤 다시 실행합니다.' };
-      return { explanation: `'${name}' 모듈은 브라우저 안의 파이썬에서 쓸 수 없습니다. 표준 라이브러리(${STDLIB_SAMPLES.join(', ')} 등)와 ${INSTALLABLE.join(', ')}는 쓸 수 있습니다.`, hint: `import ${name} 줄을 지우고, 3D·소리·그래프는 VPyLab의 내장 함수(sphere, play_note, graph 등)를 사용합니다.` };
+      return { explanation: `'${name}' 모듈은 브라우저 안의 파이썬에서 쓸 수 없습니다. VPyLab은 import한 패키지를 실행할 때 설치해 보지만, 이 이름은 설치하지 못했습니다(브라우저에서 못 쓰는 패키지이거나, 설치 이름이 다르거나, 철자가 틀림). 표준 라이브러리(${STDLIB_SAMPLES.join(', ')} 등)와 ${INSTALLABLE.join(', ')}는 쓸 수 있습니다.`, hint: `출력 창의 설치 안내(⚠️)를 확인합니다. 필요 없는 import ${name} 줄은 지우고, 3D·소리·그래프는 VPyLab의 내장 함수(sphere, play_note, graph 등)를 사용합니다.` };
     },
     en: (m) => {
       const name = m[1].split('.')[0];
       const guess = closest(name, KNOWN_MODULES);
       if (guess && guess !== name) return { explanation: `There is no module '${name}'. You probably meant '${guess}'.`, hint: `Change import ${name} to import ${guess}.` };
       if (INSTALLABLE.includes(name)) return { explanation: `The package '${name}' could not be installed. Packages are downloaded when you run, so a blocked network makes this fail.`, hint: 'Check the network connection and run again.' };
-      return { explanation: `'${name}' is not available in the browser Python. Available: the standard library (${STDLIB_SAMPLES.join(', ')} ...) and ${INSTALLABLE.join(', ')}.`, hint: `Remove import ${name}; use VPyLab's built-in functions (sphere, play_note, graph ...) for 3D, sound and graphs.` };
+      return { explanation: `'${name}' is not available in the browser Python. VPyLab tries to install imported packages when you run, but this name could not be installed (not usable in the browser, a different install name, or a typo). Available: the standard library (${STDLIB_SAMPLES.join(', ')} ...) and ${INSTALLABLE.join(', ')}.`, hint: `Check the install notice (⚠️) in the output. Remove import ${name} if you do not need it; use VPyLab's built-in functions (sphere, play_note, graph ...) for 3D, sound and graphs.` };
     },
   },
   {
