@@ -4,7 +4,13 @@
  */
 import { eclipseViewsCode } from './eclipse-views.js';
 
+import { cometCode, timbreCode } from './cinematic-projects.js';
+
 const EXAMPLES = [
+  { id: 'comet-observatory', title: '지구에서 기다리는 혜성', thumbnail: '☄️', category: 'space', level: 3,
+    description: '여덟 행성 사이에서 혜성의 핵과 두 꼬리를 관찰합니다.', tags: ['light', 'camera', 'gravity'], code: cometCode },
+  { id: 'timbre-studio', title: '빛으로 연주하는 다섯 음', thumbnail: '🎹', category: 'sound', level: 2,
+    description: '같은 다섯 음을 펠트 피아노, 마림바, 유리종으로 연주합니다.', tags: ['sound', 'light'], code: timbreCode },
   // ═══════════════════════════════════════
   // 🌌 우주/자연 (6개)
   // ═══════════════════════════════════════

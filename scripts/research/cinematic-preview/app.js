@@ -14,7 +14,7 @@ const amb=new T.AmbientLight(0xffffff,1);scene.add(amb);
 const sky=new T.Group(),stage=new T.Group(),world=new T.Group(),instrument=new T.Group();
 scene.add(sky,world,instrument);instrument.add(stage);
 const textures=await Promise.all(['sun','earth','moon'].map(async name=>{
- const t=await new T.TextureLoader().loadAsync(name+'.jpg');t.colorSpace=T.SRGBColorSpace;return t;
+ const t=await new T.TextureLoader().loadAsync('../../../client/src/assets/planets/'+name+'.jpg');t.colorSpace=T.SRGBColorSpace;return t;
 }));
 function halo(){
  const c=document.createElement('canvas');c.width=c.height=256;

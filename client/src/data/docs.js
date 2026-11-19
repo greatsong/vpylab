@@ -1699,7 +1699,7 @@ play_sound(880, 0.4, type='triangle')`,
     params: [
       { name: 'name',     type: 'string', default: "'도4'",   desc: { ko: "음표 이름 ('도4', '레4', 'C4', 'C#4', '도#4')", en: "Note name ('도4', '레4', 'C4', 'C#4', '도#4')" } },
       { name: 'duration', type: 'number', default: '0.5',    desc: { ko: '재생 시간 (초)', en: 'Duration (seconds)' } },
-      { name: 'type',     type: 'string', default: "'sine'",  desc: { ko: '파형', en: 'Waveform' } },
+      { name: 'type',     type: 'string', default: "'sine'",  desc: { ko: '파형 또는 악기(felt, marimba, glass). 악기 이름 뒤 -room은 공간 잔향', en: 'Waveform or instrument (felt, marimba, glass). Append -room for reverb' } },
       { name: 'volume',   type: 'number', default: '0.4',    desc: { ko: '음량 (0~1)', en: 'Volume (0–1)' } },
     ],
     code: `from vpython import *
@@ -1742,7 +1742,7 @@ ball.color = color.blue`,
     params: [
       { name: 'frequencies', type: 'list',   default: '-',      desc: { ko: '주파수 리스트 (Hz)', en: 'List of frequencies (Hz)' } },
       { name: 'duration',    type: 'number', default: '1.0',    desc: { ko: '재생 시간 (초)', en: 'Duration (seconds)' } },
-      { name: 'type',        type: 'string', default: "'sine'",  desc: { ko: '파형', en: 'Waveform' } },
+      { name: 'type',        type: 'string', default: "'sine'",  desc: { ko: '파형 또는 악기(felt, marimba, glass). 악기 이름 뒤 -room은 공간 잔향', en: 'Waveform or instrument (felt, marimba, glass). Append -room for reverb' } },
       { name: 'volume',      type: 'number', default: '0.25',   desc: { ko: '음량 (0~1)', en: 'Volume (0–1)' } },
     ],
     code: `from vpython import *
