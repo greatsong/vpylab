@@ -560,6 +560,19 @@ function createObject(cmd, scene) {
           transparent: cmd.opacity < 1,
           opacity: cmd.opacity ?? 1,
         });
+        if (cmd.shape === 'mist') {
+          pmat.transparent = true;
+          pmat.depthWrite = false;
+          pmat.blending = THREE.AdditiveBlending;
+          pmat.onBeforeCompile = shader => {
+            shader.fragmentShader = shader.fragmentShader.replace('#include <alphatest_fragment>', `
+              vec2 offset = gl_PointCoord * 2.0 - 1.0;
+              float radiusSquared = dot(offset, offset);
+              diffuseColor.a *= exp(-3.6 * radiusSquared) * (1.0 - smoothstep(0.55, 1.0, radiusSquared));
+              #include <alphatest_fragment>
+            `);
+          };
+        }
         mesh = new THREE.Points(geom, pmat);
       }
       mesh.userData = {

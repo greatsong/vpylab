@@ -17,6 +17,8 @@ URL_LOADER.setCrossOrigin('');
 
 // Vite가 파일을 작품과 같은 출처에서 제공하며 실제로 선택한 재질만 내려받습니다.
 const surfaceImages = {
+  jupiter: new URL('../assets/planets/jupiter.jpg', import.meta.url).href,
+  saturn: new URL('../assets/planets/saturn.jpg', import.meta.url).href,
   sun: new URL('../assets/planets/sun.jpg', import.meta.url).href,
   earth: new URL('../assets/planets/earth.jpg', import.meta.url).href,
   moon: new URL('../assets/planets/moon.jpg', import.meta.url).href,
@@ -38,6 +40,7 @@ const PRESET_GENERATORS = {
   sun: drawFire,
   moon: drawGranite,
   jupiter: drawGasGiant,
+  saturn: drawGasGiant,
   wood: drawWood,
   metal: drawMetal,
   stones: drawStones,

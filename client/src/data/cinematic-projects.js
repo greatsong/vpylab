@@ -2,7 +2,7 @@ export const cometCode = `from vpython import *
 import random
 
 # 전시용 태양계입니다. 크기·거리·공전 속도는 한 화면에서 관찰하도록 조정했습니다.
-scene.background = vector(0.003, 0.006, 0.018)
+scene.background = vector(0.001, 0.002, 0.006)
 scene.range = 18
 scene.lights = []
 scene.ambient = color.gray(0.18)
@@ -36,7 +36,10 @@ for distance, radius, tint, speed, phase in data:
     path = [distance * vector(cos(i*pi/90), 0, sin(i*pi/90)) for i in range(181)]
     curve(pos=path, color=vector(0.09, 0.14, 0.21))
     planets.append(sphere(radius=radius, color=vector(*tint), shininess=0.10))
+planets[4].color = color.white
 planets[4].texture = textures.jupiter
+planets[5].color = color.white
+planets[5].texture = textures.saturn
 earth = planets[2]
 earth.texture = textures.earth
 moon = sphere(radius=0.14, texture=textures.moon, shininess=0)
@@ -48,14 +51,34 @@ for r, width, tone in [(0.99, 0.028, 0.54), (1.08, 0.045, 0.78), (1.20, 0.022, 0
 q = 2.8
 eccentricity = 0.68
 mu = 14
-comet = sphere(pos=vector(-q,0,0), radius=0.13, texture=textures.rock)
+comet = sphere(pos=vector(-q,0,0), radius=0.065, texture=textures.granite)
 velocity = vector(0, 0.18, 0.984).norm() * sqrt(mu*(1+eccentricity)/q)
-coma = sphere(radius=0.24, color=vector(0.42,0.95,0.82), opacity=0.22, emissive=True)
-ion = curve(color=vector(0.17,0.48,1))
-dust = points(size_units='world', radius=0.042, color=vector(0.88,0.70,0.49))
-grains = []
-tick = 0
+# 핵 주위의 코마, 태양 반대쪽의 이온 줄기, 공전 뒤쪽으로 휘는 먼지 부채.
+# 입자는 한 번 만들고 좌표계만 움직입니다. 꼬리의 밀도는 시각화 모형입니다.
+layers = []
+for kind, count, tint, radius, opacity in [
+    ("coma", 520, vector(.22,.76,.64), .23, .038),
+    ("ion", 2300, vector(.055,.25,.86), .195, .052),
+    ("dust", 3200, vector(.85,.51,.23), .25, .044)]:
+    samples = []
+    for i in range(count):
+        u = random.random()**1.2
+        if kind == "coma":
+            offset = vector(random.gauss(0,.12),random.gauss(0,.12),random.gauss(0,.12))
+        elif kind == "ion":
+            strand = i % 5
+            width = .018 + .055*u
+            offset = vector(4.6*u, u*(strand-2)*.073 + .045*u*sin(11*u+strand) + random.gauss(0,width), random.gauss(0,width))
+        else:
+            width = .028 + .26*u
+            offset = vector(3.55*u, 1.42*u**1.65 + random.gauss(0,width), random.gauss(0,.6*width))
+        samples.append(dict(pos=offset, color=tint*((1-u)**1.2)))
+    layers.append(points(pos=samples, shape="mist", size_units="world", radius=radius, opacity=opacity))
 
+# 각 먼지 알갱이가 받는 복사압 비율(beta)에 따라 방출 이후 경로가 달라집니다.
+grains = []
+released = points(shape="mist", size_units="world", radius=.085, color=vector(.94,.68,.4), opacity=.055)
+tick = 0
 view = menu(choices=["태양계 전체", "지표에서 달 보기", "지표에서 태양 보기", "지표에서 혜성 보기", "혜성 따라가기"])
 pace = slider(min=0, max=3, value=1, step=0.1, text="공전 속도 (0 = 정지)")
 last_view = -1
@@ -65,22 +88,24 @@ while True:
     rate(60)
     dt = 0.004 * pace.value
     if dt > 0:
-        # 태양 중력으로 핵을 이동하고, 먼지에는 복사압을 단순화한 작은 유효중력을 적용합니다.
         velocity -= mu * norm(comet.pos) * dt / mag(comet.pos)**2
         comet.pos += velocity * dt
-        if tick % 3 == 0:
-            grains.append([vector(comet.pos.x, comet.pos.y, comet.pos.z), velocity + 0.16*vector(random.random()-.5, random.random()-.5, random.random()-.5), random.uniform(.18,.72)])
+        if tick % 4 == 0:
+            kick = vector(random.gauss(0,.06),random.gauss(0,.06),random.gauss(0,.06))
+            grains.append([comet.pos*1, velocity+kick, random.uniform(.18,.72)])
             grains = grains[-96:]
         for grain in grains:
-            grain[1] -= mu * (1-grain[2]) * norm(grain[0]) * dt / mag(grain[0])**2
-            grain[0] += grain[1] * dt
-        if tick % 3 == 0:
-            dust.splice(0, dust.npoints, [g[0] for g in grains])
+            grain[1] -= mu*(1-grain[2])*norm(grain[0])*dt/mag(grain[0])**2
+            grain[0] += grain[1]*dt
+        if tick % 4 == 0:
+            released.splice(0, released.npoints, [g[0] for g in grains])
         tick += 1
-    coma.pos = comet.pos
-    if tick % 6 == 1 and dt > 0:
-        coma.radius = .17 + .14 * min(1,(q/mag(comet.pos))**2)
-    ion.splice(0, ion.npoints, [comet.pos, comet.pos + 2.8*norm(comet.pos)*(q/mag(comet.pos))**2])
+    away = norm(comet.pos)
+    trailing = -norm(velocity - dot(velocity, away)*away)
+    for layer in layers:
+        layer.origin = comet.pos
+        layer.axis = away
+        layer.up = trailing
     for p, (distance, radius, tint, speed, phase) in zip(planets, data):
         a = phase + speed*t
         p.pos = distance * vector(cos(a), 0, sin(a))
@@ -99,10 +124,11 @@ while True:
             scene.camera.pos = vector(0, 13, 24)
             scene.camera.axis = vector(0, -13, -24)
     elif mode == 4:
-        scene.up = vector(0,1,0)
-        scene.camera.pos = comet.pos + vector(0,1.6,3.4)
-        scene.camera.axis = comet.pos - scene.camera.pos
-        status = "푸른 이온 꼬리와 앞서 방출한 먼지를 비교하세요."
+        focus = comet.pos + 1.85*away + .38*trailing
+        scene.camera.pos = focus + 4.8*norm(cross(trailing, away)) + .85*trailing
+        scene.up = -trailing
+        scene.camera.axis = focus - scene.camera.pos
+        status = "푸른 이온 꼬리는 태양 반대쪽을 향하고, 금빛 먼지 꼬리는 공전 뒤쪽으로 휩니다."
     else:
         zenith = vector(cos(pi/6)*cos(spin), sin(pi/6), cos(pi/6)*sin(spin))
         eye = earth.pos + 0.42*zenith
@@ -152,4 +178,41 @@ while True:
             keys[i].emissive = glow > .1
         if lights[i].intensity != 3*glow**2:
             lights[i].intensity = 3*glow**2
+`;
+
+export const cometCloseupCode = cometCode.replace('view = menu(choices=', 'view = menu(selected="혜성 따라가기", choices=');
+
+export const solarStudyCode = `from vpython import *
+import random
+scene.background = color.black
+scene.lights = []
+scene.ambient = color.gray(.08)
+scene.fov = 55*pi/180
+scene.camera.pos = vector(0,14,24)
+scene.camera.axis = -scene.camera.pos
+sun = sphere(radius=1.5, color=vector(1,.68,0), emissive=True, shininess=0)
+local_light(pos=sun.pos, color=color.white, intensity=400)
+random.seed(18)
+stars = []
+for i in range(2000):
+    y, a = random.uniform(-1,1), random.uniform(0,2*pi)
+    stars.append(random.uniform(80,150)*vector(sqrt(1-y*y)*cos(a), y, sqrt(1-y*y)*sin(a)))
+points(pos=stars, radius=.2, size_units="world")
+data = [(3,.25,(.397,.397,.397),.40,3.95), (4.5,.45,(1,.72,.45),.25,2.23),
+        (6.5,.5,(.053,.141,.753),.16,1.47), (8.5,.35,(1,.06,0),.11,3.59),
+        (12,1.1,(.905,.372,.171),.05,2.92)]
+planets = []
+for distance, radius, tint, speed, phase in data:
+    curve(pos=[distance*vector(cos(i*pi/64),0,sin(i*pi/64)) for i in range(129)], color=color.gray(.033))
+    planets.append(sphere(radius=radius, color=vector(*tint), shininess=.2))
+moon = sphere(radius=.14, color=color.gray(.65))
+pace = slider(min=0,max=3,value=1,step=.1,text="공전 속도")
+t = 0
+while True:
+    rate(60)
+    for planet, (distance, radius, tint, speed, phase) in zip(planets,data):
+        a = phase - speed*pi*t/2
+        planet.pos = distance*vector(cos(a),0,sin(a))
+    moon.pos = planets[2].pos + .9*vector(cos(2*t+2),0,sin(2*t+2))
+    t += pace.value/60
 `;
