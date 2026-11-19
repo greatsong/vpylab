@@ -9,9 +9,15 @@
  * 4) BGM — 루프 가능한 8비트 배경음악
  * 5) processSoundCommand — Python 코드에서 호출하는 브릿지 인터페이스
  *
- * 모든 효과음/BGM은 저작권 없이 Web Audio API로 합성합니다.
+ * 효과음/BGM은 합성하며 펠트 피아노는 녹음 음원과 합성을 함께 사용합니다.
  */
 
+import { instruments } from '../../../server/shared/instrument-profiles.js';
+import { playFeltSample } from './felt-sample.js';
+
+import { createRoomBus } from './room-audio.js';
+
+let roomBus = null;
 let audioCtx = null;
 let audioUnlocked = false;
 let audioUnlockPending = null;
@@ -83,6 +89,8 @@ export function setMasterMuted(value) {
 }
 
 function createMasterGraph(ctx) {
+  roomBus?.close();
+  roomBus = null;
   masterGain = ctx.createGain();
   masterGain.gain.value = masterMuted ? 0 : masterVolume * HEADROOM;
   let output = masterGain;
@@ -183,6 +191,8 @@ function _st(fn, ms) {
 
 /** 예약음을 취소하고 짧게 감쇠한 뒤 모든 소스·필터를 연결 해제합니다. */
 export function stopAllSounds() {
+  roomBus?.close();
+  roomBus = null;
   audioGeneration += 1;
   pendingPreviewCancel?.();
   stopBgm();
@@ -490,9 +500,17 @@ function scheduleEnvelope(gain, ctx, peak, duration, attack = 0.008, time = ctx.
   gain.gain.linearRampToValueAtTime(0, time + duration);
 }
 
-function richTone(ctx, frequency, duration, timbre, volume, group, time) {
-  const partials = timbre === 'musicbox' ? [[1, 0.78], [2, 0.16], [3.01, 0.06]] : [[1, 0.72], [2, 0.2], [3, 0.08]];
-  const tail = timbre === 'musicbox' ? 0.28 : 0.16;
+function richTone(ctx, frequency, duration, timbre, volume, group, time, output) {
+  const { partials, tail, attack } = instruments[timbre];
+  if (activeVoices.size >= MAX_AUDIO_VOICES) return;
+  if (timbre === 'felt') {
+    const voice = playFeltSample(ctx, frequency, duration, volume, time, output);
+    if (voice) {
+      trackOsc(voice.source, voice.gain, voice.end - ctx.currentTime, [], group,
+        { name: freqToNoteName(frequency), start: time, end: voice.end });
+      return;
+    }
+  }
   for (const [ratio, strength] of partials) {
     if (activeVoices.size >= MAX_AUDIO_VOICES || frequency * ratio > 18_000) break;
     const osc = ctx.createOscillator();
@@ -500,8 +518,8 @@ function richTone(ctx, frequency, duration, timbre, volume, group, time) {
     const length = duration + tail / ratio;
     osc.type = 'sine';
     osc.frequency.value = frequency * ratio;
-    scheduleEnvelope(gain, ctx, volume * strength, length, timbre === 'musicbox' ? 0.006 : 0.01, time);
-    osc.connect(gain); connectOutput(gain);
+    scheduleEnvelope(gain, ctx, volume * strength, length, attack, time);
+    osc.connect(gain); gain.connect(output);
     osc.start(time); osc.stop(time + length);
     trackOsc(osc, gain, time - ctx.currentTime + length, [], group, { name: freqToNoteName(frequency), start: time, end: time + duration });
   }
@@ -514,7 +532,13 @@ export function beep(frequency = 440, duration = 0.3, type = 'sine', volume = 0.
   const peak = Math.min(1, level);
   withRunningContext(ctx => {
     const time = Number.isFinite(startAt) ? Math.max(ctx.currentTime, startAt) : ctx.currentTime;
-    if (type === 'piano' || type === 'musicbox') { richTone(ctx, pitch, length, type, peak, group, time); return; }
+    const useRoom = typeof type === 'string' && type.endsWith('-room');
+    const instrument = useRoom ? type.slice(0,-5) : type;
+    if (Object.hasOwn(instruments, instrument)) {
+      if (useRoom && ctx.createConvolver) roomBus ??= createRoomBus(ctx, masterGain);
+      richTone(ctx, pitch, length, instrument, peak, group, time, useRoom && roomBus ? roomBus.input : masterGain);
+      return;
+    }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = ['sine', 'triangle', 'square', 'sawtooth'].includes(type) ? type : 'sine';
@@ -546,7 +570,7 @@ export async function previewInstrument(timbre = 'piano') {
     cancelResume = resumeAndRun(() => {
       if (masterMuted || generation !== audioGeneration || getAudioContext()?.state !== 'running') { finish(false); return; }
       const names = timbre === 'musicbox' ? ['C5', 'E5', 'G5', 'B5', 'C6'] : ['C4', 'E4', 'G4', 'B4', 'C5'];
-      playSequence(names.map((name, index) => ({ freq: noteToFreq(name), duration: index === names.length - 1 ? 0.75 : 0.3, type: timbre === 'musicbox' ? 'musicbox' : 'piano', volume: 0.42 })));
+      playSequence(names.map((name, index) => ({ freq: noteToFreq(name), duration: index === names.length - 1 ? 0.75 : 0.3, type: Object.hasOwn(instruments, timbre) ? timbre : 'piano', volume: 0.42 })));
       finish(true);
     });
   });

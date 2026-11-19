@@ -5,6 +5,8 @@
  */
 
 import * as THREE from 'three';
+import { trackSphere, forgetSphere } from './sphere-detail';
+import { updateSolarGlow } from './solar-glow';
 import { createPrimitiveGeometry } from '../../../server/shared/primitive-geometry.js';
 const primitiveGeometry = createPrimitiveGeometry(THREE);
 import { createCompoundAppearanceTools } from '../../../server/shared/compound-appearance.js';
@@ -17,7 +19,7 @@ import {
   registerSound,
 } from './object-registry';
 import { processSoundCommand, setNotePlayCallback, setSoundEventCallback } from './sound-system';
-import { resolveTexture, whenTexturesReady } from './texture-system';
+import { resolveTexture, whenTexturesReady, surfacePlaceholder, finishSurfaceImage } from './texture-system';
 import { postEvent } from './pyodide-singleton';
 import {
   DEFAULT_OBJECT_PROPS, asNumber, asVectorArray, resolveBoxSize, getRegistryProps,
@@ -131,6 +133,7 @@ function pathCenter(path) {
 /** 메시(그룹이면 자식까지)의 지오메트리·재질·텍스처를 해제 */
 function disposeObject(mesh) {
   const disposeOne = (obj) => {
+    forgetSphere(obj);
     obj.geometry?.dispose?.();
     eachMaterial(obj, (mat) => {
       mat.map?.dispose?.();
@@ -217,6 +220,22 @@ function cloneThreeColor(color) {
   return typeof color?.clone === 'function'
     ? color.clone()
     : new THREE.Color(color?.r ?? 0, color?.g ?? 0, color?.b ?? 0);
+}
+
+// 조명 및 사용자 shininess가 바뀌어도 동일한 재질 규칙을 사용합니다.
+function applySurface(material, spec, texture) {
+  if (!material || !('roughness' in material)) return;
+  const name = String(spec || '').replace('preset:', '');
+  const rocky = ['moon', 'granite', 'stones', 'rough'].includes(name);
+  material.metalness = name === 'metal' ? .72 : DEFAULT_MATERIAL_PARAMS.metalness;
+  material.bumpMap = rocky ? texture : null;
+  material.bumpScale = rocky ? .018 : 0;
+  if (name === 'comet') {
+    material.bumpMap = resolveTexture('preset:cometHeight');
+    material.bumpScale = .006;
+  }
+  material.emissiveMap = texture;
+  material.needsUpdate = true;
 }
 
 function setMaterialEmissive(material, enabled) {
@@ -363,7 +382,7 @@ function createObject(cmd, scene) {
   let mesh;
 
   const col = toThreeColor(cmd.color || [1, 1, 1]);
-  const tex = resolveTexture(cmd.texture);
+  const tex = surfacePlaceholder(cmd.texture, scene._renderer);
   material = new THREE.MeshStandardMaterial({
     color: col,
     map: tex || null,
@@ -375,14 +394,19 @@ function createObject(cmd, scene) {
     opacity: cmd.opacity ?? 1,
   });
   if (tex) {
+    applySurface(material, cmd.texture, tex);
     material.userData = material.userData || {};
     material.userData.textureSpec = cmd.texture;
+    finishSurfaceImage(material, cmd.texture, scene._renderer);
   }
 
   switch (cmd.type) {
     case 'sphere':
-      geometry = new THREE.SphereGeometry(cmd.radius ?? DEFAULT_OBJECT_PROPS.sphere.radius, 32, 16);
+      const segments = tex ? 64 : 32;
+      geometry = new THREE.SphereGeometry(cmd.radius ?? DEFAULT_OBJECT_PROPS.sphere.radius, segments, segments / 2);
       mesh = new THREE.Mesh(geometry, material);
+      trackSphere(scene, mesh);
+      updateSolarGlow(mesh);
       break;
 
     case 'box': {
@@ -540,7 +564,45 @@ function createObject(cmd, scene) {
           transparent: cmd.opacity < 1,
           opacity: cmd.opacity ?? 1,
         });
+        const plume = cmd.shape === 'plume';
+        if (plume || cmd.shape === 'mist') {
+          pmat.transparent = true;
+          pmat.depthWrite = false;
+          pmat.blending = THREE.AdditiveBlending;
+          const clock = { value: 0 };
+          if (plume) pmat.userData.flowTime = clock;
+          pmat.customProgramCacheKey = () => plume ? 'plume-v1' : 'mist-v1';
+          pmat.onBeforeCompile = shader => {
+            if (plume) {
+              shader.uniforms.flowTime = clock;
+              shader.vertexShader = `uniform float flowTime;
+                varying float particleFade;
+                float seed(uint n) {
+                  n = (n ^ (n >> 16u)) * 0x7feb352du;
+                  n = (n ^ (n >> 15u)) * 0x846ca68bu;
+                  return float(n ^ (n >> 16u)) / 4294967296.0;
+                }
+              ` + shader.vertexShader.replace('#include <begin_vertex>', `
+                uint id = uint(gl_VertexID);
+                float variation = seed(id + 19u);
+                float age = fract(seed(id + 571u) + flowTime / mix(2.6, 6.8, variation));
+                vec3 transformed = position * vec3(age, age * age, age);
+                particleFade = smoothstep(0., .045, age) * (1. - smoothstep(.55, 1., age));
+              `).replace('gl_PointSize = size;', 'gl_PointSize = size * mix(.55, 1.65, variation);');
+              shader.fragmentShader = 'varying float particleFade;\n' + shader.fragmentShader;
+            }
+            shader.fragmentShader = shader.fragmentShader.replace('#include <alphatest_fragment>', `
+              vec2 offset = gl_PointCoord * 2.0 - 1.0;
+              float radiusSquared = dot(offset, offset);
+              diffuseColor.a *= ${plume ? 'particleFade' : '1.0'};
+              diffuseColor.a *= exp(-3.6 * radiusSquared) * (1.0 - smoothstep(0.55, 1.0, radiusSquared));
+              #include <alphatest_fragment>
+            `);
+          };
+        }
         mesh = new THREE.Points(geom, pmat);
+        // 곡선 경로가 입력 점들의 경계 밖을 지날 수 있습니다.
+        if (plume) mesh.frustumCulled = false;
       }
       mesh.userData = {
         vpType: cmd.type,
@@ -784,11 +846,14 @@ function updateTrail(cmd) {
 /**
  * 객체 속성 업데이트
  */
-function updateMesh(cmd) {
+function updateMesh(cmd, scene) {
   const mesh = meshRegistry.get(cmd.id);
   if (!mesh) return;
 
   const registryUpdates = {};
+  if (cmd.flow_time !== undefined && mesh.material?.userData.flowTime) {
+    mesh.material.userData.flowTime.value = cmd.flow_time;
+  }
 
   if (cmd.pos) {
     mesh.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
@@ -876,12 +941,14 @@ function updateMesh(cmd) {
   }
 
   if (cmd.texture !== undefined) {
-    const newTex = resolveTexture(cmd.texture);
+    const newTex = surfacePlaceholder(cmd.texture, scene._renderer);
     const apply = (mat) => {
       if (!mat) return;
       mat.map = newTex || null;
+      applySurface(mat, cmd.texture, mat.map);
       mat.userData = mat.userData || {};
       mat.userData.textureSpec = cmd.texture || null;
+      finishSurfaceImage(mat, cmd.texture, scene._renderer);
       mat.needsUpdate = true;
     };
     if (mesh.isGroup) {
@@ -910,7 +977,8 @@ function updateMesh(cmd) {
     // geometry 재생성 (sphere, cone, cylinder, ring)
     let newGeom;
     if (mesh.geometry.type === 'SphereGeometry') {
-      newGeom = new THREE.SphereGeometry(cmd.radius, 32, 16);
+      const segments = mesh.material?.map ? 64 : 32;
+      newGeom = new THREE.SphereGeometry(cmd.radius, segments, segments / 2);
     } else if (mesh.geometry.type === 'ConeGeometry' && mesh.userData?.vpType !== 'pyramid') {
       const h = mesh.geometry.parameters?.height || 1;
       newGeom = primitiveGeometry.cone(cmd.radius, h);
@@ -925,6 +993,10 @@ function updateMesh(cmd) {
       mesh.geometry.dispose();
       mesh.geometry = newGeom;
     }
+  }
+
+  if (mesh.geometry?.type === 'SphereGeometry' && (cmd.radius !== undefined || cmd.texture !== undefined || cmd.emissive !== undefined)) {
+    updateSolarGlow(mesh);
   }
 
   if (mesh.userData?.vpType === 'helix' && ['size', 'radius', 'coils', 'thickness', 'ccw', 'axis'].some(key => cmd[key] !== undefined)) {
@@ -1126,6 +1198,7 @@ export function processBatch(commands, scene) {
       if (mesh) {
         const previousScene = mesh.parent;
         scene.add(mesh);
+        if (mesh.userData.vpType === 'sphere' || mesh.geometry?.type === 'SphereGeometry') trackSphere(scene, mesh);
         mesh.userData.vpCanvasId = canvasId;
         previousScene?._requestRender?.();
         scene._requestRender?.();
@@ -1139,7 +1212,7 @@ export function processBatch(commands, scene) {
         createObject(cmd, scene);
         break;
       case 'update':
-        updateMesh(cmd);
+        updateMesh(cmd, scene);
         break;
       case 'mesh_vertices': {
         const mesh = meshRegistry.get(cmd.id);
@@ -1318,6 +1391,9 @@ export function processBatch(commands, scene) {
           const tex = resolveTexture(cmd.texture);
           group.traverse((child) => eachMaterial(child, (mat) => {
             mat.map = tex || null;
+            applySurface(mat, cmd.texture, mat.map);
+            mat.userData ||= {};
+            mat.userData.textureSpec = cmd.texture;
             mat.needsUpdate = true;
           }));
         }

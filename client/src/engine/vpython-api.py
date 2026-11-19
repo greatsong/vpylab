@@ -472,6 +472,11 @@ class _TexturePresets:
     stucco = "preset:stucco"
     flower = "preset:flower"
     earth = "preset:earth"
+    sun = "preset:sun"
+    moon = "preset:moon"
+    comet = "preset:comet"
+    saturn = "preset:saturn"
+    jupiter = "preset:jupiter"
     brick = "preset:brick"
     checker = "preset:checker"
     grid = "preset:grid"
@@ -1927,12 +1932,13 @@ class curve(_PointList):
 class points(_PointList):
     """3D 점 집합 — 작은 점으로 표시.
     size: 픽셀 크기(size_units='pixels', 기본) 또는 radius로 월드 크기(size_units='world')
-    shape: 'round'(기본) 또는 'square'"""
+    shape: 'round'(기본), 'square', VPyLab 확장 'mist'(부드러운 점), 'plume'(원점에서 각 pos를 향해 방출되는 입자)"""
     _type = 'points'
 
     def __init__(self, *args, **kwargs):
         self._size = float(kwargs.get('size', 5))
         self._size_units = str(kwargs.get('size_units', 'pixels'))
+        self._flow_time = 0.0
         self._shape = str(kwargs.get('shape', 'round'))
         super().__init__(*args, **kwargs)
 
@@ -1947,6 +1953,16 @@ class points(_PointList):
     def size(self, value):
         self._size = float(value)
         _add_command({"action": "update", "id": self._id, "size": self._size})
+
+    @property
+    def flow_time(self):
+        """plume 입자의 방출 시계(초). 같은 값이면 입자가 같은 위치에 멈춘다."""
+        return self._flow_time
+
+    @flow_time.setter
+    def flow_time(self, value):
+        self._flow_time = float(value)
+        _add_command({"action": "update", "id": self._id, "flow_time": self._flow_time})
 
     @property
     def size_units(self):

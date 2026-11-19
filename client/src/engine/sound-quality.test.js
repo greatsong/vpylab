@@ -213,6 +213,18 @@ describe('수업 음원의 출력 경로와 자연스러운 수명', () => {
     expect(context.createOscillator).toHaveBeenCalledTimes(1);
   });
 
+  it('새 악기는 주파수와 배음 비율을 지키고 공간 잔향은 전체 정지 때 해제한다', () => {
+    const reverb = { connect: vi.fn(), disconnect: vi.fn() };
+    context.createConvolver = () => reverb;
+    sound.playNote('A4', .25, 'marimba-room', .6);
+    expect(context.sources.map(source => source.frequency.value)).toEqual([440, 1760, 440 * 9.93]);
+    sound.playNote('A4', .25, 'glass', .3);
+    expect(context.sources.at(-1).frequency.value).toBeCloseTo(440 * 5.43);
+    expect(reverb.buffer).toBeDefined();
+    sound.stopAllSounds();
+    expect(reverb.disconnect).toHaveBeenCalled();
+  });
+
   it('피아노·뮤직박스는 배음과 자연 잔향을 합성하며 limiter 곡선은 유한·대칭이다', () => {
     sound.beep(440, 0.5, 'piano', 0.4); sound.beep(440, 0.5, 'musicbox', 0.4);
     expect(context.createOscillator).toHaveBeenCalledTimes(6);
