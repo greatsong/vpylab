@@ -17,6 +17,8 @@ URL_LOADER.setCrossOrigin('');
 
 // Vite가 파일을 작품과 같은 출처에서 제공하며 실제로 선택한 재질만 내려받습니다.
 const surfaceImages = {
+  comet: new URL('../assets/planets/comet.jpg', import.meta.url).href,
+  cometHeight: new URL('../assets/planets/comet-height.jpg', import.meta.url).href,
   jupiter: new URL('../assets/planets/jupiter.jpg', import.meta.url).href,
   saturn: new URL('../assets/planets/saturn.jpg', import.meta.url).href,
   sun: new URL('../assets/planets/sun.jpg', import.meta.url).href,
@@ -39,6 +41,7 @@ function drawGasGiant(ctx, size) {
 const PRESET_GENERATORS = {
   sun: drawFire,
   moon: drawGranite,
+  comet: drawGranite,
   jupiter: drawGasGiant,
   saturn: drawGasGiant,
   wood: drawWood,
@@ -102,6 +105,7 @@ export function resolveTexture(spec) {
   if (spec.startsWith('preset:')) {
     const name = spec.slice(7);
     texture = makeProceduralTexture(name);
+    if (name === 'cometHeight') texture.colorSpace = THREE.NoColorSpace;
     if (Object.hasOwn(surfaceImages, name)) {
       textureLoads.set(spec, new Promise(done => {
         new THREE.ImageLoader().load(surfaceImages[name], image => {

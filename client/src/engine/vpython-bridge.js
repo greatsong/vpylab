@@ -230,6 +230,10 @@ function applySurface(material, spec, texture) {
   material.metalness = name === 'metal' ? .72 : DEFAULT_MATERIAL_PARAMS.metalness;
   material.bumpMap = rocky ? texture : null;
   material.bumpScale = rocky ? .018 : 0;
+  if (name === 'comet') {
+    material.bumpMap = resolveTexture('preset:cometHeight');
+    material.bumpScale = .006;
+  }
   material.emissiveMap = texture;
   material.needsUpdate = true;
 }
@@ -560,20 +564,45 @@ function createObject(cmd, scene) {
           transparent: cmd.opacity < 1,
           opacity: cmd.opacity ?? 1,
         });
-        if (cmd.shape === 'mist') {
+        const plume = cmd.shape === 'plume';
+        if (plume || cmd.shape === 'mist') {
           pmat.transparent = true;
           pmat.depthWrite = false;
           pmat.blending = THREE.AdditiveBlending;
+          const clock = { value: 0 };
+          if (plume) pmat.userData.flowTime = clock;
+          pmat.customProgramCacheKey = () => plume ? 'plume-v1' : 'mist-v1';
           pmat.onBeforeCompile = shader => {
+            if (plume) {
+              shader.uniforms.flowTime = clock;
+              shader.vertexShader = `uniform float flowTime;
+                varying float particleFade;
+                float seed(uint n) {
+                  n = (n ^ (n >> 16u)) * 0x7feb352du;
+                  n = (n ^ (n >> 15u)) * 0x846ca68bu;
+                  return float(n ^ (n >> 16u)) / 4294967296.0;
+                }
+              ` + shader.vertexShader.replace('#include <begin_vertex>', `
+                uint id = uint(gl_VertexID);
+                float variation = seed(id + 19u);
+                float age = fract(seed(id + 571u) + flowTime / mix(2.6, 6.8, variation));
+                vec3 transformed = position * vec3(age, age * age, age);
+                particleFade = smoothstep(0., .045, age) * (1. - smoothstep(.55, 1., age));
+              `).replace('gl_PointSize = size;', 'gl_PointSize = size * mix(.55, 1.65, variation);');
+              shader.fragmentShader = 'varying float particleFade;\n' + shader.fragmentShader;
+            }
             shader.fragmentShader = shader.fragmentShader.replace('#include <alphatest_fragment>', `
               vec2 offset = gl_PointCoord * 2.0 - 1.0;
               float radiusSquared = dot(offset, offset);
+              diffuseColor.a *= ${plume ? 'particleFade' : '1.0'};
               diffuseColor.a *= exp(-3.6 * radiusSquared) * (1.0 - smoothstep(0.55, 1.0, radiusSquared));
               #include <alphatest_fragment>
             `);
           };
         }
         mesh = new THREE.Points(geom, pmat);
+        // 곡선 경로가 입력 점들의 경계 밖을 지날 수 있습니다.
+        if (plume) mesh.frustumCulled = false;
       }
       mesh.userData = {
         vpType: cmd.type,
@@ -822,6 +851,9 @@ function updateMesh(cmd, scene) {
   if (!mesh) return;
 
   const registryUpdates = {};
+  if (cmd.flow_time !== undefined && mesh.material?.userData.flowTime) {
+    mesh.material.userData.flowTime.value = cmd.flow_time;
+  }
 
   if (cmd.pos) {
     mesh.position.set(cmd.pos[0], cmd.pos[1], cmd.pos[2]);
